@@ -17,3 +17,11 @@ El sistema está desarrollado utilizando las tecnologías **MERN** (MongoDB, Exp
 - **Express.js**: Framework backend para Node.js.
 - **React.js**: Librería frontend para interfaces interactivas.
 - **Node.js**: Entorno de ejecución para el backend.
+
+## Integrantes del equipo:
+- Guillermo Rodrigo Chávez Mejía
+- Luis Fernando Navarró Alemán
+- Jhonatan Josué Valle Gamboa
+- Kevin Josue Alvarado Hernandez
+- Fernando Ariel 
+     
