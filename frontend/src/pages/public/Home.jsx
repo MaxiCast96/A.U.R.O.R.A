@@ -1,10 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
 import BrandCarousel from "../../components/Home/BrandCarousel";
 import PopularCarousel from "../../components/Home/PopularCarousel";
 import AuthModal from "../../components/auth/AuthModal";
+
+//imagenes
+import Converse from "../public/img/Converse.png";
+import Puma from "../public/img/Puma.png";
+import True from "../public/img/True.png";
+
+import Lente1 from "../public/img/Lente1.png";
+import Lente2 from "../public/img/Lente2.png";
+import Lente3 from "../public/img/Lente3.png";
+import Lente4 from "../public/img/Lente4.png";
+import Lente5 from "../public/img/Lente5.png";
+import Lente6 from "../public/img/Lente6.png";
+
+import Hombre from "../public/img/Hombre.png";
+import Mujer from "../public/img/Mujer.png";
+import Nino from "../public/img/Niño.png";
+import Accesorios from "../public/img/Accesorio.png";
 
 const Home = () => {
   const location = useLocation();
@@ -14,18 +32,15 @@ const Home = () => {
   const [currentPopularSlide, setCurrentPopularSlide] = useState(0);
 
   const brands = [
-    { id: 1, name: "Converse", image: "/img/marca-converse.png" },
-    { id: 2, name: "Puma", image: "/img/marca-puma.png" },
-    { id: 3, name: "True", image: "/img/marca-true.png" },
-    { id: 4, name: "RayBan", image: "/img/marca-rayban.png" },
-    { id: 5, name: "Oakley", image: "/img/marca-oakley.png" }
+    { id: 1, name: "Converse", image: Converse },
+    { id: 2, name: "Puma", image: Puma },
+    { id: 3, name: "True", image: True },
   ];
 
   const populars = [
-    { id: 1, image: "/img/popular1.png", name: "Lentes Ray-Ban Classic" },
-    { id: 2, image: "/img/popular2.png", name: "Monturas Oakley Sport" },
-    { id: 3, image: "/img/popular3.png", name: "Gafas de Sol Premium" },
-    { id: 4, image: "/img/popular4.png", name: "Lentes de Contacto" }
+    { id: 1, image: Lente1, name: "Lentes Ray-Ban Classic" },
+    { id: 2, image: Lente2, name: "Monturas Oakley Sport" },
+    { id: 3, image: Lente3, name: "Gafas de Sol Premium" },
   ];
 
   useEffect(() => {
@@ -34,7 +49,9 @@ const Home = () => {
     }, 3000);
 
     const popularTimer = setInterval(() => {
-      setCurrentPopularSlide((prev) => (prev + 1) % Math.ceil(populars.length / 3));
+      setCurrentPopularSlide(
+        (prev) => (prev + 1) % Math.ceil(populars.length / 3)
+      );
     }, 4000);
 
     return () => {
@@ -51,13 +68,51 @@ const Home = () => {
     }
   }, [location.state]);
 
+  // Reemplaza las variantes de animación existentes con estas más sutiles
+  const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5, ease: "easeOut" },
+  };
+
+  const fadeIn = {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    transition: { duration: 0.4 },
+  };
+
+  const staggerContainer = {
+    animate: {
+      transition: {
+        staggerChildren: 0.05,
+      },
+    },
+  };
+
+  // Simplifica las animaciones del hero y sections
   return (
     <PageTransition>
-      <Navbar onOpenAuth={() => setIsAuthModalOpen(true)} />
-      <div className="bg-white min-h-screen flex flex-col font-['Lato']">
-        {/* Hero principal */}
-        <section className="flex flex-col md:flex-row items-center justify-between bg-[#0097c2] rounded-2xl mx-auto mt-8 mb-8 max-w-5xl p-8 shadow-lg hover:shadow-xl transition-shadow">
-          <div className="flex-1 text-white">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white min-h-screen flex flex-col font-['Lato']"
+      >
+        <Navbar onOpenAuth={() => setIsAuthModalOpen(true)} />
+
+        {/* Hero simplificado */}
+        <motion.section
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-col md:flex-row items-center justify-between bg-[#0097c2] rounded-2xl mx-auto mt-8 mb-8 max-w-5xl p-8 shadow-lg"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex-1 text-white"
+          >
             <h2 className="text-3xl font-bold mb-2 text-center md:text-left">
               Cuida tu visión con expertos
             </h2>
@@ -73,24 +128,144 @@ const Home = () => {
                 Agendar Examen Visual
               </a>
             </div>
-          </div>
-          <div className="flex-1 flex justify-center mt-6 md:mt-0">
-            <img
-              src="/img/hero-hombre.jpg"
+          </motion.div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex-1 flex justify-center mt-6 md:mt-0"
+          >
+            <motion.img
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+              src={Hombre}
               alt="Hombre con lentes"
               className="rounded-xl w-60 h-60 object-cover shadow-lg"
             />
-          </div>
-        </section>
+          </motion.div>
+        </motion.section>
 
-        {/* ¿Por qué elegirnos? */}
-        <section className="max-w-6xl mx-auto px-4 mb-12">
+        {/* Categorías simplificadas */}
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-16"
+        >
           <h2 className="text-2xl font-bold text-center mb-8">
-            ¿Por qué elegirnos?
+            Nuestras Categorías
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-lg transition-all">
-              <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
+          <motion.div
+            variants={staggerContainer}
+            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+          >
+            {/* Cada categoría como motion.div */}
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
+            >
+              <motion.img
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+                src={Hombre}
+                alt="Hombres"
+                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
+                Hombres
+              </span>
+            </motion.div>
+
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
+            >
+              <motion.img
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+                src={Mujer}
+                alt="Mujeres"
+                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
+                Mujeres
+              </span>
+            </motion.div>
+
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
+            >
+              <motion.img
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+                src={Nino}
+                alt="Niños"
+                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
+                Niños
+              </span>
+            </motion.div>
+
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
+            >
+              <motion.img
+                whileHover={{ scale: 1.05 }}
+                transition={{ duration: 0.3 }}
+                src={Accesorios}
+                alt="Accesorios"
+                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
+                Accesorios
+              </span>
+            </motion.div>
+          </motion.div>
+        </motion.section>
+
+        <br />
+        <br />
+        <br />
+        <br />
+
+        {/* Servicios con animaciones más sutiles */}
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-12"
+        >
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"
+          >
+            {/* Mejora las cards con animaciones al hacer hover */}
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
+            >
+              <motion.div
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.6 }}
+                className="bg-[#0097c2] text-white rounded-full p-3 mb-3"
+              >
                 <svg
                   className="w-8 h-8"
                   fill="none"
@@ -101,14 +276,18 @@ const Home = () => {
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 16s4-2.5 4-6a4 4 0 10-8 0c0 3.5 4 6 4 6z" />
                 </svg>
-              </div>
+              </motion.div>
               <h3 className="font-semibold mb-2">Examen visual profesional</h3>
               <p className="text-gray-600 text-sm">
                 Realizado por optometristas certificados con equipos de última
                 generación.
               </p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-lg transition-all">
+            </motion.div>
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
+            >
               <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
                 <svg
                   className="w-8 h-8"
@@ -126,8 +305,12 @@ const Home = () => {
                 Todos nuestros productos cuentan con garantía contra defectos de
                 fabricación.
               </p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-lg transition-all">
+            </motion.div>
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
+            >
               <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
                 <svg
                   className="w-8 h-8"
@@ -144,8 +327,12 @@ const Home = () => {
                 Recibe tus lentes en tiempo récord, con la graduación exacta que
                 necesitas.
               </p>
-            </div>
-            <div className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-lg transition-all">
+            </motion.div>
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
+            >
               <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
                 <svg
                   className="w-8 h-8"
@@ -162,67 +349,33 @@ const Home = () => {
               <p className="text-gray-600 text-sm">
                 En compras mayores a $1000, el envío va por nuestra cuenta.
               </p>
-            </div>
-          </div>
-        </section>
+            </motion.div>
+          </motion.div>
+        </motion.section>
+        <br />
+        <br />
 
-        {/* Nuestras Categorías */}
-        <section className="max-w-6xl mx-auto px-4 mb-12">
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Nuestras Categorías
-          </h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all relative group">
-              <img
-                src="/img/categoria-hombre.jpg"
-                alt="Hombres"
-                className="w-full h-40 object-cover group-hover:scale-105 transition"
-              />
-              <span className="absolute bottom-2 left-2 text-white text-lg font-semibold bg-black/40 px-3 py-1 rounded">
-                Hombres
-              </span>
-            </div>
-            <div className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all relative group">
-              <img
-                src="/img/categoria-mujer.jpg"
-                alt="Mujeres"
-                className="w-full h-40 object-cover group-hover:scale-105 transition"
-              />
-              <span className="absolute bottom-2 left-2 text-white text-lg font-semibold bg-black/40 px-3 py-1 rounded">
-                Mujeres
-              </span>
-            </div>
-            <div className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all relative group">
-              <img
-                src="/img/categoria-nino.jpg"
-                alt="Niños"
-                className="w-full h-40 object-cover group-hover:scale-105 transition"
-              />
-              <span className="absolute bottom-2 left-2 text-white text-lg font-semibold bg-black/40 px-3 py-1 rounded">
-                Niños
-              </span>
-            </div>
-            <div className="rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all relative group">
-              <img
-                src="/img/categoria-accesorios.jpg"
-                alt="Accesorios"
-                className="w-full h-40 object-cover group-hover:scale-105 transition"
-              />
-              <span className="absolute bottom-2 left-2 text-white text-lg font-semibold bg-black/40 px-3 py-1 rounded">
-                Accesorios
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Lo que dicen nuestros clientes */}
-        <section className="max-w-6xl mx-auto px-4 mb-12">
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Lo que dicen nuestros clientes
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 flex flex-col items-center">
-              <img
+        {/* Testimonios más sutiles */}
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-12"
+        >
+          <motion.div
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            {/* Convertir cada testimonio en un motion.div */}
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl shadow-md p-6"
+            >
+              <motion.img
+                whileHover={{ scale: 1.1, rotate: 10 }}
+                transition={{ duration: 0.3 }}
                 src="/img/cliente1.jpg"
                 alt="Cliente 1"
                 className="w-14 h-14 rounded-full mb-2 object-cover"
@@ -248,8 +401,12 @@ const Home = () => {
                   </svg>
                 ))}
               </div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 flex flex-col items-center">
+            </motion.div>
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl shadow-md p-6"
+            >
               <img
                 src="/img/cliente2.jpg"
                 alt="Cliente 2"
@@ -276,8 +433,12 @@ const Home = () => {
                   </svg>
                 ))}
               </div>
-            </div>
-            <div className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 flex flex-col items-center">
+            </motion.div>
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-white rounded-2xl shadow-md p-6"
+            >
               <img
                 src="/img/cliente3.jpg"
                 alt="Cliente 3"
@@ -304,23 +465,47 @@ const Home = () => {
                   </svg>
                 ))}
               </div>
-            </div>
-          </div>
-        </section>
+            </motion.div>
+          </motion.div>
+        </motion.section>
 
-        {/* Nuestras Sucursales */}
-        <section className="max-w-6xl mx-auto px-4 mb-12">
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Nuestras Sucursales
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {/* Sucursal Principal */}
-            <div className="bg-gradient-to-br from-[#0097c2] to-[#00b4e4] text-white rounded-2xl p-6 flex flex-col shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+        {/* Sucursales con animaciones minimalistas */}
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-12"
+        >
+          <motion.div
+            variants={staggerContainer}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
+          >
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-gradient-to-br from-[#0097c2] to-[#00b4e4] text-white rounded-2xl p-6"
+            >
               <div className="flex items-center mb-4">
                 <div className="p-2 bg-white/10 rounded-lg mr-3">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
                 </div>
                 <h3 className="font-semibold text-lg">Sucursal Principal</h3>
@@ -330,14 +515,34 @@ const Home = () => {
               </p>
               <div className="mt-auto space-y-3">
                 <div className="flex items-center text-sm">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   Lun-Vie: 8:00 AM - 5:00 PM
                 </div>
                 <div className="flex items-center text-sm">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                   2222-2222
                 </div>
@@ -348,42 +553,89 @@ const Home = () => {
                   rel="noopener noreferrer"
                 >
                   <span>Ver en Google Maps</span>
-                  <svg 
-                    className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
                   </svg>
                 </a>
               </div>
-            </div>
+            </motion.div>
 
             {/* Sucursal Quezaltepeque */}
-            <div className="bg-gradient-to-br from-[#0097c2] to-[#00b4e4] text-white rounded-2xl p-6 flex flex-col shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+            <motion.div
+              variants={fadeInUp}
+              whileHover={{ y: -5 }}
+              className="bg-gradient-to-br from-[#0097c2] to-[#00b4e4] text-white rounded-2xl p-6"
+            >
               <div className="flex items-center mb-4">
                 <div className="p-2 bg-white/10 rounded-lg mr-3">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-lg">Sucursal Quezaltepeque</h3>
+                <h3 className="font-semibold text-lg">
+                  Sucursal Quezaltepeque
+                </h3>
               </div>
               <p className="mb-6 text-white/90">
-                1ra Avenida Norte y 8va Calle Poniente, #22, Quezaltepeque, La Libertad.
+                1ra Avenida Norte y 8va Calle Poniente, #22, Quezaltepeque, La
+                Libertad.
               </p>
               <div className="mt-auto space-y-3">
                 <div className="flex items-center text-sm">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   Lun-Vie: 8:00 AM - 5:00 PM
                 </div>
                 <div className="flex items-center text-sm">
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
                   </svg>
                   2222-2222
                 </div>
@@ -394,26 +646,31 @@ const Home = () => {
                   rel="noopener noreferrer"
                 >
                   <span>Ver en Google Maps</span>
-                  <svg 
-                    className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform" 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform"
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 8l4 4m0 0l-4 4m4-4H3"
+                    />
                   </svg>
                 </a>
               </div>
-            </div>
-          </div>
-        </section>
+            </motion.div>
+          </motion.div>
+        </motion.section>
 
         {/* Nuestras marcas */}
         <section className="max-w-6xl mx-auto px-4 mb-12">
           <h2 className="text-2xl font-bold text-center mb-8">
             Nuestras marcas
           </h2>
-          <BrandCarousel 
+          <BrandCarousel
             brands={brands}
             currentSlide={currentBrandSlide}
             onSlideChange={setCurrentBrandSlide}
@@ -423,26 +680,38 @@ const Home = () => {
         {/* Populares */}
         <section className="max-w-6xl mx-auto px-4 mb-12">
           <h2 className="text-2xl font-bold text-center mb-8">Populares</h2>
-          <PopularCarousel 
+          <PopularCarousel
             items={populars}
             currentSlide={currentPopularSlide}
             onSlideChange={setCurrentPopularSlide}
           />
         </section>
 
-        {/* Productos Destacados */}
+        {/* Productos Destacados con animations */}
         <section className="max-w-6xl mx-auto px-4 mb-12">
-          <h2 className="text-2xl font-bold text-center mb-8">
+          <motion.h2
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            className="text-2xl font-bold text-center mb-8"
+          >
             Productos Destacados
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          </motion.h2>
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            whileInView="animate"
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
             {[1, 2, 3].map((i) => (
-              <div
+              <motion.div
                 key={i}
+                variants={fadeInUp}
+                whileHover={{ scale: 1.05 }}
                 className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 flex flex-col items-center"
               >
                 <img
-                  src={`/img/destacado${i}.png`}
+                  src={Lente4}
                   alt={`Producto Destacado ${i}`}
                   className="w-32 h-24 object-contain mb-4"
                 />
@@ -458,9 +727,9 @@ const Home = () => {
                 >
                   Ver detalles
                 </a>
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         </section>
 
         {/* Footer */}
@@ -475,8 +744,9 @@ const Home = () => {
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
-                  Comprometidos con tu salud visual desde 2010. Ofrecemos servicios
-                  profesionales y productos de alta calidad para el cuidado de tus ojos.
+                  Comprometidos con tu salud visual desde 2010. Ofrecemos
+                  servicios profesionales y productos de alta calidad para el
+                  cuidado de tus ojos.
                 </p>
                 <div className="flex space-x-4 mt-4">
                   <a
@@ -652,7 +922,7 @@ const Home = () => {
           isOpen={isAuthModalOpen}
           onClose={() => setIsAuthModalOpen(false)}
         />
-      </div>
+      </motion.div>
     </PageTransition>
   );
 };
