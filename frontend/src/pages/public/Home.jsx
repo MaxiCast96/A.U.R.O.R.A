@@ -43,6 +43,57 @@ const Home = () => {
     { id: 3, image: Lente3, name: "Gafas de Sol Premium" },
   ];
 
+  // Promociones para el carrusel
+  const promociones = [
+    {
+      titulo: "2x1 en Lentes Oftálmicos",
+      descripcion: "Aprovecha nuestra promoción especial y obtén dos lentes al precio de uno. Solo por tiempo limitado.",
+      imagen: Lente1,
+      enlace: "/promociones/2x1"
+    },
+    {
+      titulo: "Examen Visual Gratis",
+      descripcion: "Realiza tu compra y recibe un examen visual completamente gratis con nuestros expertos.",
+      imagen: Lente2,
+      enlace: "/promociones/examen-gratis"
+    },
+    {
+      titulo: "30% de Descuento en Armazones",
+      descripcion: "Descuento especial en armazones seleccionados. Renueva tu look hoy mismo.",
+      imagen: Lente3,
+      enlace: "/promociones/30-descuento"
+    },
+  ];
+  const [promoIndex, setPromoIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  const handlePrevPromo = () => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setPromoIndex((prev) => (prev === 0 ? promociones.length - 1 : prev - 1));
+      setTimeout(() => setIsAnimating(false), 1000);
+    }
+  };
+
+  const handleNextPromo = () => {
+    if (!isAnimating) {
+      setIsAnimating(true);
+      setPromoIndex((prev) => (prev === promociones.length - 1 ? 0 : prev + 1));
+      setTimeout(() => setIsAnimating(false), 1000);
+    }
+  };
+
+  // Efecto para la animación automática
+  useEffect(() => {
+    const autoAnimate = setInterval(() => {
+      if (!isAnimating) {
+        handleNextPromo();
+      }
+    }, 5000); // Cambia cada 5 segundos
+
+    return () => clearInterval(autoAnimate);
+  }, [isAnimating]);
+
   useEffect(() => {
     const brandTimer = setInterval(() => {
       setCurrentBrandSlide((prev) => (prev + 1) % Math.ceil(brands.length / 3));
@@ -100,50 +151,143 @@ const Home = () => {
       >
         <Navbar onOpenAuth={() => setIsAuthModalOpen(true)} />
 
-        {/* Hero simplificado */}
+        {/* Hero simplificado ahora es un carrusel de promociones */}
         <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="flex flex-col md:flex-row items-center justify-between bg-[#0097c2] rounded-2xl mx-auto mt-8 mb-8 max-w-5xl p-8 shadow-lg"
+          className="w-full relative py-8 px-4 md:px-8 overflow-hidden"
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex-1 text-white"
-          >
-            <h2 className="text-3xl font-bold mb-2 text-center md:text-left">
-              Cuida tu visión con expertos
-            </h2>
-            <p className="mb-6 text-lg text-center md:text-left">
-              Descubre nuestra amplia gama de productos ópticos y servicios
-              profesionales para el cuidado de tus ojos.
-            </p>
-            <div className="flex justify-center md:justify-start">
-              <a
-                href="/agendar"
-                className="bg-white text-[#0097c2] font-semibold px-6 py-3 rounded-full shadow hover:bg-gray-100 transition"
+          {/* Fondo principal con diseño moderno */}
+          <div className="absolute inset-0 bg-[#0097c2]"></div>
+          
+          {/* Efecto de ondas */}
+          <div className="absolute inset-0 opacity-20">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJ3YXZlIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiPjxwYXRoIGQ9Ik0wIDUwIEMyMCAzMCA0MCAzMCA2MCA1MCBDODAgNzAgMTAwIDcwIDEwMCA1MCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjd2F2ZSkiLz48L3N2Zz4=')]"></div>
+          </div>
+
+          {/* Efectos de luz */}
+          <div className="absolute inset-0">
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white/5 to-transparent"></div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="max-w-[1000px] mx-auto relative">
+            {/* Botón anterior */}
+            <button
+              onClick={handlePrevPromo}
+              className="absolute -left-12 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:rotate-12 backdrop-blur-sm border border-white/20"
+              aria-label="Anterior"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            </button>
+
+            {/* Contenido de la promoción */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 min-h-[300px]">
+              <motion.div
+                key={promoIndex}
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -40 }}
+                transition={{ duration: 0.4 }}
+                className="flex-1 text-white max-w-xl flex flex-col items-center justify-center px-4 md:px-6 text-center transform transition-transform duration-300"
               >
-                Agendar Examen Visual
-              </a>
+                <motion.h2 
+                  animate={{ 
+                    scale: [1, 1.05, 1],
+                    translateZ: [0, 20, 0]
+                  }}
+                  transition={{ 
+                    duration: 5,
+                    repeat: Infinity,
+                    repeatType: "reverse"
+                  }}
+                  className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg"
+                >
+                  {promociones[promoIndex].titulo}
+                </motion.h2>
+                <motion.p 
+                  animate={{ 
+                    translateZ: [0, 10, 0]
+                  }}
+                  transition={{ 
+                    duration: 5,
+                    repeat: Infinity,
+                    repeatType: "reverse"
+                  }}
+                  className="mb-6 text-base text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
+                >
+                  {promociones[promoIndex].descripcion}
+                </motion.p>
+                <motion.div 
+                  animate={{ 
+                    y: [0, -5, 0],
+                    rotate: [0, 1, 0]
+                  }}
+                  transition={{ 
+                    duration: 5,
+                    repeat: Infinity,
+                    repeatType: "reverse"
+                  }}
+                  className="flex justify-center w-full"
+                >
+                  <a
+                    href={promociones[promoIndex].enlace}
+                    className="bg-white text-[#0097c2] font-semibold px-5 py-2 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-sm border-2 border-white hover:bg-transparent hover:text-white"
+                  >
+                    Ver Promoción
+                  </a>
+                </motion.div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="flex-1 flex justify-center items-center"
+              >
+                <motion.div
+                  animate={{ 
+                    rotateY: [0, 5, 0],
+                    rotateX: [0, 5, 0],
+                    scale: [1, 1.05, 1]
+                  }}
+                  transition={{ 
+                    duration: 5,
+                    repeat: Infinity,
+                    repeatType: "reverse"
+                  }}
+                  className="relative transform-style-3d"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full blur-xl transform -rotate-2 translate-z-[-20px]"></div>
+                  <motion.img
+                    key={promociones[promoIndex].imagen}
+                    src={promociones[promoIndex].imagen}
+                    alt={promociones[promoIndex].titulo}
+                    className="rounded-full w-64 h-64 md:w-[300px] md:h-[300px] object-cover shadow-2xl relative z-10 border-2 border-white/30"
+                    style={{
+                      transformStyle: 'preserve-3d',
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-full transform translate-z-[-10px]"></div>
+                </motion.div>
+              </motion.div>
             </div>
-          </motion.div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="flex-1 flex justify-center mt-6 md:mt-0"
-          >
-            <motion.img
-              whileHover={{ scale: 1.02 }}
-              transition={{ duration: 0.2 }}
-              src={Hombre}
-              alt="Hombre con lentes"
-              className="rounded-xl w-60 h-60 object-cover shadow-lg"
-            />
-          </motion.div>
+
+            {/* Botón siguiente */}
+            <button
+              onClick={handleNextPromo}
+              className="absolute -right-12 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:-rotate-12 backdrop-blur-sm border border-white/20"
+              aria-label="Siguiente"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+            </button>
+          </div>
         </motion.section>
+        <br />
+        <br />
+        <br />
+        <br />
 
         {/* Categorías simplificadas */}
         <motion.section
@@ -238,7 +382,6 @@ const Home = () => {
         <br />
         <br />
         <br />
-        <br />
 
         {/* Servicios con animaciones más sutiles */}
         <motion.section
@@ -246,111 +389,122 @@ const Home = () => {
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
-          className="max-w-6xl mx-auto px-4 mb-12"
+          className="relative w-full py-16"
         >
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"
-          >
-            {/* Mejora las cards con animaciones al hacer hover */}
+          {/* Fondo curvo */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#f8f9fa] to-white">
+            {/* Curva superior */}
+            <div className="absolute -top-16 left-0 w-full h-32 bg-[#f8f9fa] rounded-t-[100px]"></div>
+            {/* Curva inferior */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[100%] h-32 bg-[#f8f9fa] rounded-b-[200px]"></div>
+          </div>
+
+          {/* Contenido */}
+          <div className="relative max-w-7xl mx-auto px-4 pt-8">
             <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
+              variants={staggerContainer}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"
             >
+              {/* Mejora las cards con animaciones al hacer hover */}
               <motion.div
-                whileHover={{ rotate: 360 }}
-                transition={{ duration: 0.6 }}
-                className="bg-[#0097c2] text-white rounded-full p-3 mb-3"
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
               >
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
+                <motion.div
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                  className="bg-[#0097c2] text-white rounded-full p-3 mb-3"
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 16s4-2.5 4-6a4 4 0 10-8 0c0 3.5 4 6 4 6z" />
-                </svg>
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16s4-2.5 4-6a4 4 0 10-8 0c0 3.5 4 6 4 6z" />
+                  </svg>
+                </motion.div>
+                <h3 className="font-semibold mb-2">Examen visual profesional</h3>
+                <p className="text-gray-600 text-sm">
+                  Realizado por optometristas certificados con equipos de última
+                  generación.
+                </p>
               </motion.div>
-              <h3 className="font-semibold mb-2">Examen visual profesional</h3>
-              <p className="text-gray-600 text-sm">
-                Realizado por optometristas certificados con equipos de última
-                generación.
-              </p>
+
+              <motion.div
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <path d="M8 12l2 2 4-4" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold mb-2">Garantía de calidad</h3>
+                <p className="text-gray-600 text-sm">
+                  Todos nuestros productos cuentan con garantía contra defectos de
+                  fabricación.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 12h18M9 6l-6 6 6 6" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold mb-2">Entrega rápida</h3>
+                <p className="text-gray-600 text-sm">
+                  Recibe tus lentes en tiempo récord, con la graduación exacta que
+                  necesitas.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 8v4l3 3" />
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold mb-2">Envío gratuito</h3>
+                <p className="text-gray-600 text-sm">
+                  En compras mayores a $1000, el envío va por nuestra cuenta.
+                </p>
+              </motion.div>
             </motion.div>
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
-            >
-              <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <rect x="4" y="4" width="16" height="16" rx="2" />
-                  <path d="M8 12l2 2 4-4" />
-                </svg>
-              </div>
-              <h3 className="font-semibold mb-2">Garantía de calidad</h3>
-              <p className="text-gray-600 text-sm">
-                Todos nuestros productos cuentan con garantía contra defectos de
-                fabricación.
-              </p>
-            </motion.div>
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
-            >
-              <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M3 12h18M9 6l-6 6 6 6" />
-                </svg>
-              </div>
-              <h3 className="font-semibold mb-2">Entrega rápida</h3>
-              <p className="text-gray-600 text-sm">
-                Recibe tus lentes en tiempo récord, con la graduación exacta que
-                necesitas.
-              </p>
-            </motion.div>
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md"
-            >
-              <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
-                <svg
-                  className="w-8 h-8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path d="M12 8v4l3 3" />
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
-              </div>
-              <h3 className="font-semibold mb-2">Envío gratuito</h3>
-              <p className="text-gray-600 text-sm">
-                En compras mayores a $1000, el envío va por nuestra cuenta.
-              </p>
-            </motion.div>
-          </motion.div>
+          </div>
         </motion.section>
         <br />
         <br />
