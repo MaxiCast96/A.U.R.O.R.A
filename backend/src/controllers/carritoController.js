@@ -1,6 +1,5 @@
 const cartController = {};
-import cartModel from "../models/cart.js";
-
+import cartModel from "../models/carrito.js"
 // SELECT - Obtener todos los carritos
 cartController.getCarts = async (req, res) => {
   try {
