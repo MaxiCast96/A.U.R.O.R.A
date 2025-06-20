@@ -1,5 +1,13 @@
 import empleadosModel from "../models/Empleados.js";
 import bcryptjs from "bcryptjs";
+import { v2 as cloudinary } from "cloudinary";
+
+// Configuración de Cloudinary
+cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const empleadosController = {};
 
@@ -14,7 +22,6 @@ empleadosController.getEmpleados = async (req, res) => {
         res.json({ message: "Error obteniendo empleados: " + error.message });
     }
 };
-
 
 // INSERT
 empleadosController.createEmpleados = async (req, res) => {
@@ -32,7 +39,20 @@ empleadosController.createEmpleados = async (req, res) => {
         isVerified
     } = req.body;
 
+    let fotoPerfilURL = "";
+
     try {
+        // Subir imagen a Cloudinary si se envió archivo
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: "empleados",
+                allowed_formats: ["png", "jpg", "jpeg", "webp"]
+            });
+            fotoPerfilURL = result.secure_url;
+        } else if (req.body.fotoPerfil) {
+            fotoPerfilURL = req.body.fotoPerfil;
+        }
+
         // Verificar si ya existe un empleado con el mismo correo
         const existsEmpleado = await empleadosModel.findOne({ correo });
         if (existsEmpleado) {
@@ -60,7 +80,8 @@ empleadosController.createEmpleados = async (req, res) => {
             sucursalId,
             fechaContratacion,
             password: passwordHash,
-            isVerified: isVerified || false
+            isVerified: isVerified || false,
+            fotoPerfil: fotoPerfilURL // Cambiado de foto a fotoPerfil
         });
 
         // Guardar el empleado en la base de datos
@@ -107,7 +128,18 @@ empleadosController.updateEmpleados = async (req, res) => {
         isVerified
     } = req.body;
 
+    let fotoPerfilURL = req.body.fotoPerfil;
+
     try {
+        // Subir imagen a Cloudinary si se envió archivo
+        if (req.file) {
+            const result = await cloudinary.uploader.upload(req.file.path, {
+                folder: "empleados",
+                allowed_formats: ["png", "jpg", "jpeg", "webp"]
+            });
+            fotoPerfilURL = result.secure_url;
+        }
+
         // Verificar si existe otro empleado con el mismo correo
         const existsEmpleado = await empleadosModel.findOne({
             correo,
@@ -136,7 +168,8 @@ empleadosController.updateEmpleados = async (req, res) => {
             cargo,
             sucursalId,
             fechaContratacion,
-            isVerified
+            isVerified,
+            fotoPerfil: fotoPerfilURL // Cambiado de foto a fotoPerfil
         };
 
         // Si se proporciona una nueva contraseña, encriptarla

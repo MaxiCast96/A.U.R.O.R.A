@@ -12,7 +12,7 @@ PENDIENTE PARA MAÑANA:
 */
 import "../models/Marcas.js";
 import "../models/Sucursales.js";
-import "../models/Promocion.js";
+//import "../models/Promocion.js";
 import accesoriosModel from "../models/Accesorios.js";
 import { v2 as cloudinary } from "cloudinary";
 
