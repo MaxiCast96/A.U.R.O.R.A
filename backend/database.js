@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
-import {config} from "./src/config.js";
+import { config } from "./src/config.js";
+
+// Importa todos los modelos que tengan referencias (ref)
+import "./src/models/Sucursales.js";
+import "./src/models/Empleados.js";
+
 
 mongoose.connect(config.db.URI);
 
@@ -9,10 +14,10 @@ connection.once("open", () => {
     console.log("DB is connected");
 });
 
-connection.on("disconnected", () =>{
+connection.on("disconnected", () => {
     console.log("DB is disconnected");
 });
 
-connection.on("error", (error) =>{
+connection.on("error", (error) => {
     console.log("Error en la conexión", error);
 });

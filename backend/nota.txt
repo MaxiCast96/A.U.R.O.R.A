@@ -1,0 +1,22 @@
+Resumen de avances y pendientes del backend
+Avances realizados
+CRUD de Marcas:
+Implementado y probado, incluyendo subida de imágenes a Cloudinary.
+CRUD de Sucursales:
+Implementado y probado.
+CRUD de Accesorios:
+Implementado (crear, obtener, actualizar, eliminar).
+Soporta subida de múltiples imágenes a Cloudinary.
+Permite asociar sucursales y marcas a cada accesorio.
+Permite recibir arrays (como sucursales) desde form-data usando JSON string.
+Integración con Cloudinary:
+Configurada y funcionando para marcas y accesorios.
+Referencias y populates:
+Accesorios pueden hacer populate de marcas y sucursales correctamente.
+Pendientes y limitaciones
+No se ha probado el CRUD completo de accesorios
+Debido a que el modelo de Accesorios referencia promocionId y no existe el modelo, controlador ni rutas de Promocion (esto es responsabilidad de otro compañero).
+Los endpoints que usan populate('promocionId') lanzan error MissingSchemaError.
+No se puede probar correctamente populate de promociones
+Hasta que se implemente el modelo de Promocion.
+El resto de la funcionalidad (marcas, sucursales, accesorios sin promoción) funciona y puede probarse.

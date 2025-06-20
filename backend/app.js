@@ -1,29 +1,32 @@
-// Importo todo lo de la libreria de Express
 import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 
+import empleadosRoutes from "./src/routes/empleados.js";
+import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js";
+import sucursalesRoutes from "./src/routes/sucursales.js";
+import marcasRoutes from "./src/routes/marcas.js";
+import accesoriosRoutes from "./src/routes/accesorios.js";
 
-// Creo una constante que es igual a la libreria que importé
 const app = express();
 
-app.use(cookieParser())  
+app.use(cookieParser());
 
 // Configuración de CORS
 app.use(
     cors({
-      origin: "http://localhost:5173",
-      // Permitir envío de cookies y credenciales
-      credentials: true
+        origin: "http://localhost:5173",
+        credentials: true
     })
-  );
+);
 
-
-//Que acepte datos en json
+// Para aceptar datos en JSON
 app.use(express.json());
 
-// Definir las rutas de las funciones que tendrá la página web
+app.use("/api/empleados", empleadosRoutes);
+app.use("/api/registroEmpleados", registroEmpleadosRoutes);
+app.use("/api/sucursales", sucursalesRoutes);
+app.use("/api/marcas", marcasRoutes);
+app.use("/api/accesorios", accesoriosRoutes);
 
-
-// Exporto la constante para poder usar express en otros archivos
 export default app;
