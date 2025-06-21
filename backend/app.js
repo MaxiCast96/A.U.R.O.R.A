@@ -7,6 +7,9 @@ import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js";
 import sucursalesRoutes from "./src/routes/sucursales.js";
 import marcasRoutes from "./src/routes/marcas.js";
 import accesoriosRoutes from "./src/routes/accesorios.js";
+import lentesRoutes from "./src/routes/lentes.js";
+import categoriaRoutes from "./src/routes/categoria.js";
+import historialMedicoRoutes from "./src/routes/historialMedico.js";
 
 const app = express();
 
@@ -28,5 +31,8 @@ app.use("/api/registroEmpleados", registroEmpleadosRoutes);
 app.use("/api/sucursales", sucursalesRoutes);
 app.use("/api/marcas", marcasRoutes);
 app.use("/api/accesorios", accesoriosRoutes);
+app.use("/api/lentes", lentesRoutes);
+app.use("/api/categoria", categoriaRoutes);
+app.use("/api/historialMedico", historialMedicoRoutes);
 
 export default app;

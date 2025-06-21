@@ -1,19 +1,7 @@
-/*
-=========================================================
-PENDIENTE PARA MAÑANA:
-- No se ha podido probar el CRUD completo de accesorios porque falta el modelo, controlador y rutas de Promocion.
-- Los endpoints que usan populate('promocionId') lanzan error MissingSchemaError.
-- Para continuar:
-    1. Implementar el modelo, controlador y rutas de Promocion.
-    2. Probar todos los endpoints de accesorios (crear, obtener, actualizar, eliminar).
-    3. Verificar el funcionamiento de populate para marcas, sucursales y promociones.
-- El resto de la funcionalidad (marcas, sucursales, accesorios sin promoción) ya funciona y puede probarse.
-=========================================================
-*/
 import "../models/Marcas.js";
-import "../models/Sucursales.js";
+import "../models/Categoria.js";
 //import "../models/Promocion.js";
-import accesoriosModel from "../models/Accesorios.js";
+import lentesModel from "../models/Lentes.js";
 import { v2 as cloudinary } from "cloudinary";
 
 // Configuración de Cloudinary
@@ -23,24 +11,25 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const accesoriosController = {};
-
+const lentesController = {};
 // SELECT
-accesoriosController.getAccesorios = async (req, res) => {
+lentesController.getLentes = async (req, res) => {
     try {
-        const accesorios = await accesoriosModel.find()
+        const lentes = await lentesModel.find()
+            .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
-        res.json(accesorios);
+        res.json(lentes);
     } catch (error) {
         console.log("Error: " + error);
         res.json({ message: "Error obteniendo accesorios: " + error.message });
     }
 };
 
+
 // INSERT
-accesoriosController.createAccesorios = async (req, res) => {
+lentesController.createLentes = async (req, res) => {
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
     if (typeof sucursales === "string") {
@@ -54,14 +43,18 @@ accesoriosController.createAccesorios = async (req, res) => {
     const {
         nombre,
         descripcion,
-        tipo,
+        categoriaId,
         marcaId,
         material,
         color,
+        tipoLente,
         precioBase,
         precioActual,
+        linea,
+        medidas,
         enPromocion,
-        promocionId
+        promocionId,
+        fechaCreacion,
     } = req.body;
 
     let imagenesURLs = [];
@@ -81,23 +74,27 @@ accesoriosController.createAccesorios = async (req, res) => {
             imagenesURLs = Array.isArray(req.body.imagenes) ? req.body.imagenes : [req.body.imagenes];
         }
 
-        const newAccesorio = new accesoriosModel({
+        const newLentes = new lentesModel({
             nombre,
             descripcion,
-            tipo,
+            categoriaId,
             marcaId,
             material,
             color,
+            tipoLente,
             precioBase,
             precioActual,
+            linea,
+            medidas,
             imagenes: imagenesURLs,
             enPromocion: enPromocion || false,
             promocionId: enPromocion ? promocionId : undefined,
+            fechaCreacion,
             sucursales: sucursales || []
         });
 
-        await newAccesorio.save();
-        res.json({ message: "Accesorio guardado" });
+        await newLentes.save();
+        res.json({ message: "Lentes guardado" });
     } catch (error) {
         console.log("Error: " + error);
         res.json({ message: "Error creando accesorio: " + error.message });
@@ -105,21 +102,25 @@ accesoriosController.createAccesorios = async (req, res) => {
 };
 
 // DELETE
-accesoriosController.deleteAccesorios = async (req, res) => {
+lentesController.deleteLentes = async (req, res) => {
     try {
-        const deleteAccesorio = await accesoriosModel.findByIdAndDelete(req.params.id);
-        if (!deleteAccesorio) {
-            return res.json({ message: "Accesorio no encontrado" });
+        // Buscar y eliminar el empleado por ID
+        const deleteLentes = await lentesModel.findByIdAndDelete(req.params.id);
+
+        // Verificar si el empleado existía
+        if (!deleteLentes) {
+            return res.json({ message: "Lentes no encontrado" });
         }
-        res.json({ message: "Accesorio eliminado" });
+
+        res.json({ message: "Lentes eliminado" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error eliminando accesorio: " + error.message });
+        res.json({ message: "Error eliminando empleado: " + error.message });
     }
 };
 
 // UPDATE
-accesoriosController.updateAccesorios = async (req, res) => {
+lentesController.updateLentes = async (req, res) => {
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
     if (typeof sucursales === "string") {
@@ -133,14 +134,18 @@ accesoriosController.updateAccesorios = async (req, res) => {
     const {
         nombre,
         descripcion,
-        tipo,
+        categoriaId,
         marcaId,
         material,
         color,
+        tipoLente,
         precioBase,
         precioActual,
+        linea,
+        medidas,
         enPromocion,
-        promocionId
+        promocionId,
+        fechaCreacion,
     } = req.body;
 
     let imagenesURLs = req.body.imagenes || [];
@@ -161,14 +166,19 @@ accesoriosController.updateAccesorios = async (req, res) => {
         const updateData = {
             nombre,
             descripcion,
-            tipo,
+            categoriaId,
             marcaId,
             material,
             color,
+            tipoLente,
             precioBase,
             precioActual,
+            linea,
+            medidas,
             imagenes: imagenesURLs,
             enPromocion: enPromocion || false,
+            promocionId: enPromocion ? promocionId : undefined,
+            fechaCreacion,
             sucursales: sucursales || []
         };
 
@@ -178,66 +188,69 @@ accesoriosController.updateAccesorios = async (req, res) => {
             updateData.$unset = { promocionId: "" };
         }
 
-        const updatedAccesorio = await accesoriosModel.findByIdAndUpdate(
+        const updatedLentes = await lentesModel.findByIdAndUpdate(
             req.params.id,
             updateData,
             { new: true }
         );
 
-        if (!updatedAccesorio) {
-            return res.json({ message: "Accesorio no encontrado" });
+        if (!updatedLentes) {
+            return res.json({ message: "Lentes no encontrados" });
         }
 
-        res.json({ message: "Accesorio actualizado" });
+        res.json({ message: "Lentes actualizado" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error actualizando accesorio: " + error.message });
+        res.json({ message: "Error actualizando lentes: " + error.message });
     }
 };
 
 // SELECT by ID
-accesoriosController.getAccesorioById = async (req, res) => {
+lentesController.getLentesById = async (req, res) => {
     try {
-        const accesorio = await accesoriosModel.findById(req.params.id)
+        const lentes = await accesoriosModel.findById(req.params.id)
+            .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
-        if (!accesorio) {
-            return res.json({ message: "Accesorio no encontrado" });
+        if (!lentes) {
+            return res.json({ message: "Lentes no encontrado" });
         }
-        res.json(accesorio);
+        res.json(lentes);
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo accesorio: " + error.message });
+        res.json({ message: "Error obteniendo lentes: " + error.message });
     }
 };
 
 // SELECT by Marca
-accesoriosController.getAccesoriosByMarca = async (req, res) => {
+lentesController.getLentesByIdMarca = async (req, res) => {
     try {
-        const accesorios = await accesoriosModel.find({ marcaId: req.params.marcaId })
+        const lentes = await lentesModel.find({ marcaId: req.params.marcaId })
+            .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
-        res.json(accesorios);
+        res.json(lentes);
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo accesorios por marca: " + error.message });
+        res.json({ message: "Error obteniendo Lentes por marca: " + error.message });
     }
 };
 
 // SELECT by Promoción
-accesoriosController.getAccesoriosEnPromocion = async (req, res) => {
+lentesController.getLentesByPromocion = async (req, res) => {
     try {
-        const accesorios = await accesoriosModel.find({ enPromocion: true })
+        const lentes = await lentesModel.find({ enPromocion: true })
+            .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
         res.json(accesorios);
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo accesorios en promoción: " + error.message });
+        res.json({ message: "Error obteniendo Lentes en promoción: " + error.message });
     }
 };
 
-export default accesoriosController;
+export default lentesController;
