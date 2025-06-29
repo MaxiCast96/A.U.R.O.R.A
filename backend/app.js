@@ -10,6 +10,9 @@ import accesoriosRoutes from "./src/routes/accesorios.js";
 import lentesRoutes from "./src/routes/lentes.js";
 import categoriaRoutes from "./src/routes/categoria.js";
 import historialMedicoRoutes from "./src/routes/historialMedico.js";
+import citasRoutes from "./src/routes/citas.js";
+import clientesRoutes from "./src/routes/clientes.js";
+import optometristaRoutes from "./src/routes/optometrista.js";
 
 const app = express();
 
@@ -34,5 +37,8 @@ app.use("/api/accesorios", accesoriosRoutes);
 app.use("/api/lentes", lentesRoutes);
 app.use("/api/categoria", categoriaRoutes);
 app.use("/api/historialMedico", historialMedicoRoutes);
+app.use("/api/citas", citasRoutes);
+app.use("/api/clientes", clientesRoutes);
+app.use("/api/optometrista", optometristaRoutes);
 
 export default app;

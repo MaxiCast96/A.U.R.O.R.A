@@ -1,14 +1,5 @@
 /*
-=========================================================
-PENDIENTE PARA MAÑANA:
-- No se ha podido probar el CRUD completo de accesorios porque falta el modelo, controlador y rutas de Promocion.
-- Los endpoints que usan populate('promocionId') lanzan error MissingSchemaError.
-- Para continuar:
-    1. Implementar el modelo, controlador y rutas de Promocion.
-    2. Probar todos los endpoints de accesorios (crear, obtener, actualizar, eliminar).
-    3. Verificar el funcionamiento de populate para marcas, sucursales y promociones.
-- El resto de la funcionalidad (marcas, sucursales, accesorios sin promoción) ya funciona y puede probarse.
-=========================================================
+Lo que falta es básicamente es que haga el GET de accesorios con promociones, pero para eso necesito el CRUD de Aleman.
 */
 import "../models/Marcas.js";
 import "../models/Sucursales.js";
@@ -24,7 +15,7 @@ cloudinary.config({
 });
 
 const accesoriosController = {};
-
+{}
 // SELECT
 accesoriosController.getAccesorios = async (req, res) => {
     try {

@@ -1,19 +1,19 @@
-import { Schema, model } from 'mongoose';
+import mongoose from "mongoose";
 
-const citaSchema = new Schema({
-    clientId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Clientes',
+const citaSchema = new mongoose.Schema({
+    clienteId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Clientes",
         required: true,
     },
     optometristaId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Empleados',
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Optometrista",
         required: true,
     },
     sucursalId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Sucursales',
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Sucursales",
         required: true,
     },
     fecha: {
@@ -26,9 +26,8 @@ const citaSchema = new Schema({
     },
     estado: {
         type: String,
-        required: true,
-        enum: ['agendada', 'confirmada', 'completada', 'cancelada', 'reprogramada'], // Posibles estados de la cita
-        default: 'agendada',
+        enum: ["agendada", "pendiente", "confirmada", "cancelada", "completada"],
+        default: "agendada",
     },
     motivoCita: {
         type: String,
@@ -36,19 +35,16 @@ const citaSchema = new Schema({
     },
     tipoLente: {
         type: String,
-        required: false,
+        required: true,
     },
     graduacion: {
         type: String,
-        required: false,
+        required: true,
     },
     notasAdicionales: {
         type: String,
-        required: false
+        default: "",
     }
-}, {
-    timestamps: true,
-    strict: true
-});
+}, { timestamps: true });
 
-export default model('Citas', citaSchema);
+export default mongoose.model("Citas", citaSchema);
