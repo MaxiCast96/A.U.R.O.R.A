@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import empleadosRoutes from "./src/routes/empleados.js";
+import clientesRoutes from "./src/routes/clientes.js"
 import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js";
 import sucursalesRoutes from "./src/routes/sucursales.js";
 import marcasRoutes from "./src/routes/marcas.js";
@@ -10,6 +11,12 @@ import accesoriosRoutes from "./src/routes/accesorios.js";
 import lentesRoutes from "./src/routes/lentes.js";
 import categoriaRoutes from "./src/routes/categoria.js";
 import historialMedicoRoutes from "./src/routes/historialMedico.js";
+import CarritoRoutes from "./src/routes/carrito.js";
+import promocionesRoutes from "./src/routes/promociones.js";
+import cotizacionesRoutes from "./src/routes/cotizaciones.js";
+import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.js";
+import ventasRoutes from "./src/routes/ventas.js"
+import recetasRoutes from "./src/routes/recetas.js"
 
 const app = express();
 
@@ -27,6 +34,7 @@ app.use(
 app.use(express.json());
 
 app.use("/api/empleados", empleadosRoutes);
+app.use("/api/clientes", clientesRoutes)
 app.use("/api/registroEmpleados", registroEmpleadosRoutes);
 app.use("/api/sucursales", sucursalesRoutes);
 app.use("/api/marcas", marcasRoutes);
@@ -34,5 +42,10 @@ app.use("/api/accesorios", accesoriosRoutes);
 app.use("/api/lentes", lentesRoutes);
 app.use("/api/categoria", categoriaRoutes);
 app.use("/api/historialMedico", historialMedicoRoutes);
-
+app.use("/api/carrito", CarritoRoutes);
+app.use("/api/promociones", promocionesRoutes);
+app.use("/api/cotizaciones", cotizacionesRoutes);
+app.use("/api/productosPersonalizados", productosPersonalizadosRoutes);
+app.use("/api/ventas", ventasRoutes);
+app.use("/api/recetas", recetasRoutes);
 export default app;
