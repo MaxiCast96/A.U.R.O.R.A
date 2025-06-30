@@ -63,18 +63,7 @@ const promocionSchema = new Schema({
         required: true,
         default: true
     }
-}, {
-    timestamps: true,
-    strict: true
-});
-
-// Validación personalizada para fechas
-promocionSchema.pre('save', function(next) {
-    if (this.fechaFin <= this.fechaInicio) {
-        next(new Error('La fecha de fin debe ser posterior a la fecha de inicio'));
-    }
-    next();
-});
+},);
 
 // Validación para valor de descuento según tipo
 promocionSchema.pre('save', function(next) {
@@ -84,4 +73,4 @@ promocionSchema.pre('save', function(next) {
     next();
 });
 
-export default model('Promocion', promocionSchema);
+export default model('promociones', promocionSchema);

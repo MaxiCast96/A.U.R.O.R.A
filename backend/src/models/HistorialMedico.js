@@ -74,4 +74,4 @@ const HistorialMedicoSchema = new Schema({
     strict: true
 });
 
-export default model('HistorialMedico', HistorialMedicoSchema);
+export default model('historialMedico', HistorialMedicoSchema);

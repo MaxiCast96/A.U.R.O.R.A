@@ -138,4 +138,4 @@ const productosPersonalizadosSchema = new Schema({
     strict: true
 });
 
-export default model('ProductosPersonalizados', productosPersonalizadosSchema);
+export default model('productosPersonalizados', productosPersonalizadosSchema);

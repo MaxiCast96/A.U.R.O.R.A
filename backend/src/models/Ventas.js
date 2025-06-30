@@ -122,4 +122,4 @@ ventasSchema.pre('save', async function(next) {
     next();
 });
 
-export default model('Ventas', ventasSchema);
+export default model('ventas', ventasSchema);

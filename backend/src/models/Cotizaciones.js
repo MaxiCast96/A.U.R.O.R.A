@@ -109,21 +109,34 @@ const cotizacionesSchema = new Schema({
     strict: true
 });
 
-// Middleware para calcular el total antes de guardar
-cotizacionesSchema.pre('save', function(next) {
+// Middleware para calcular el total antes de validar
+cotizacionesSchema.pre('validate', function(next) {
+    // 1. Asegurar que descuento e impuesto tengan valores numéricos
+    this.descuento = this.descuento || 0;
+    this.impuesto = this.impuesto || 0;
+
+    // 2. Calcular subtotales si no existen
     if (this.productos && this.productos.length > 0) {
+        this.productos.forEach(producto => {
+            if (!producto.subtotal) {
+                producto.subtotal = producto.precioUnitario * producto.cantidad;
+            }
+        });
+
+        // 3. Calcular el total
         this.total = this.productos.reduce((sum, producto) => sum + producto.subtotal, 0);
         this.total = this.total - this.descuento + this.impuesto;
+    } else {
+        this.total = 0; // Asegurar que siempre haya un total
     }
-    
-    // Si no se especifica validaHasta, establecer 30 días desde la fecha
-    if (!this.validaHasta && this.fecha) {
-        const fechaVencimiento = new Date(this.fecha);
-        fechaVencimiento.setDate(fechaVencimiento.getDate() + 30);
-        this.validaHasta = fechaVencimiento;
+
+    // 4. Establecer fecha de vencimiento
+    if (!this.validaHasta) {
+        this.validaHasta = new Date(this.fecha || Date.now());
+        this.validaHasta.setDate(this.validaHasta.getDate() + 30);
     }
-    
+
     next();
 });
 
-export default model('Cotizaciones', cotizacionesSchema);
+export default model('cotizaciones', cotizacionesSchema);

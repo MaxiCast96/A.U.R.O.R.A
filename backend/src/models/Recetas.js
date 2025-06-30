@@ -74,4 +74,4 @@ const recetaSchema = new Schema({
     strict: true
 });
 
-export default model('Recetas', recetaSchema);
+export default model('recetas', recetaSchema);
