@@ -23,9 +23,23 @@ const promocionSchema = new Schema({
     aplicaA: {
         type: String,
         required: true,
-        enum: ['lente', 'accesorio', 'consulta', 'todos'],
+        enum: ['categoria', 'lente', 'todos'],
         default: 'todos'
     },
+    categoriasAplicables: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Categoria',
+        required: function() {
+            return this.aplicaA === 'categoria';
+        }
+    }],
+    lentesAplicables: [{
+        type: Schema.Types.ObjectId,
+        ref: 'Lentes',
+        required: function() {
+            return this.aplicaA === 'lente';
+        }
+    }],
     idsAplicacion: [{
         type: Schema.Types.ObjectId,
         required: false
@@ -48,17 +62,6 @@ const promocionSchema = new Schema({
         type: Boolean,
         required: true,
         default: true
-    },
-    limiteUsos: {
-        type: Number,
-        required: false,
-        min: 1
-    },
-    usosActuales: {
-        type: Number,
-        required: true,
-        default: 0,
-        min: 0
     }
 }, {
     timestamps: true,

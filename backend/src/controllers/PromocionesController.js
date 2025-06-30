@@ -38,12 +38,12 @@ promocionesController.createPromocion = async (req, res) => {
         tipoDescuento,
         valorDescuento,
         aplicaA,
-        idsAplicacion,
+        categoriasAplicables,
+        lentesAplicables,
         fechaInicio,
         fechaFin,
         codigoPromo,
-        activo,
-        limiteUsos
+        activo
     } = req.body;
 
     try {
@@ -59,6 +59,15 @@ promocionesController.createPromocion = async (req, res) => {
         
         if (fechaFinDate <= fechaInicioDate) {
             return res.json({ message: "La fecha de fin debe ser posterior a la fecha de inicio" });
+        }
+
+        // Validar que se proporcionen las categorías o lentes según corresponda
+        if (aplicaA === 'categoria' && (!categoriasAplicables || categoriasAplicables.length === 0)) {
+            return res.json({ message: "Debe especificar al menos una categoría cuando la promoción aplica a categorías" });
+        }
+
+        if (aplicaA === 'lente' && (!lentesAplicables || lentesAplicables.length === 0)) {
+            return res.json({ message: "Debe especificar al menos un lente cuando la promoción aplica a lentes específicos" });
         }
 
         // Validar valor de descuento
@@ -77,13 +86,12 @@ promocionesController.createPromocion = async (req, res) => {
             tipoDescuento,
             valorDescuento,
             aplicaA,
-            idsAplicacion: idsAplicacion || [],
+            categoriasAplicables: aplicaA === 'categoria' ? categoriasAplicables : [],
+            lentesAplicables: aplicaA === 'lente' ? lentesAplicables : [],
             fechaInicio: fechaInicioDate,
             fechaFin: fechaFinDate,
             codigoPromo: codigoPromo.toUpperCase(),
-            activo: activo !== undefined ? activo : true,
-            limiteUsos,
-            usosActuales: 0
+            activo: activo !== undefined ? activo : true
         });
 
         // Guardar la promoción en la base de datos
@@ -122,12 +130,12 @@ promocionesController.updatePromocion = async (req, res) => {
         tipoDescuento,
         valorDescuento,
         aplicaA,
-        idsAplicacion,
+        categoriasAplicables,
+        lentesAplicables,
         fechaInicio,
         fechaFin,
         codigoPromo,
-        activo,
-        limiteUsos
+        activo
     } = req.body;
 
     try {
@@ -159,18 +167,27 @@ promocionesController.updatePromocion = async (req, res) => {
             return res.json({ message: "El valor del descuento debe ser mayor a 0" });
         }
 
+        // Validar que se proporcionen las categorías o lentes según corresponda
+        if (aplicaA === 'categoria' && (!categoriasAplicables || categoriasAplicables.length === 0)) {
+            return res.json({ message: "Debe especificar al menos una categoría cuando la promoción aplica a categorías" });
+        }
+
+        if (aplicaA === 'lente' && (!lentesAplicables || lentesAplicables.length === 0)) {
+            return res.json({ message: "Debe especificar al menos un lente cuando la promoción aplica a lentes específicos" });
+        }
+
         let updateData = {
             nombre,
             descripcion,
             tipoDescuento,
             valorDescuento,
             aplicaA,
-            idsAplicacion: idsAplicacion || [],
+            categoriasAplicables: aplicaA === 'categoria' ? categoriasAplicables : [],
+            lentesAplicables: aplicaA === 'lente' ? lentesAplicables : [],
             fechaInicio: fechaInicio ? new Date(fechaInicio) : undefined,
             fechaFin: fechaFin ? new Date(fechaFin) : undefined,
             codigoPromo: codigoPromo ? codigoPromo.toUpperCase() : undefined,
-            activo,
-            limiteUsos
+            activo
         };
 
         // Remover campos undefined
@@ -237,40 +254,10 @@ promocionesController.getPromocionByCodigo = async (req, res) => {
             return res.json({ message: "Promoción no vigente" });
         }
 
-        // Verificar límite de usos si existe
-        if (promocion.limiteUsos && promocion.usosActuales >= promocion.limiteUsos) {
-            return res.json({ message: "Promoción ha alcanzado su límite de usos" });
-        }
-
         res.json(promocion);
     } catch (error) {
         console.log("Error: " + error);
         res.json({ message: "Error obteniendo promoción: " + error.message });
-    }
-};
-
-// Incrementar uso de promoción
-promocionesController.incrementarUsoPromocion = async (req, res) => {
-    try {
-        const promocion = await promocionModel.findById(req.params.id);
-
-        if (!promocion) {
-            return res.json({ message: "Promoción no encontrada" });
-        }
-
-        // Verificar límite de usos
-        if (promocion.limiteUsos && promocion.usosActuales >= promocion.limiteUsos) {
-            return res.json({ message: "Promoción ha alcanzado su límite de usos" });
-        }
-
-        // Incrementar uso
-        promocion.usosActuales += 1;
-        await promocion.save();
-
-        res.json({ message: "Uso de promoción registrado", promocion });
-    } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error registrando uso de promoción: " + error.message });
     }
 };
 

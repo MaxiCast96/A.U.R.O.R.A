@@ -16,10 +16,6 @@ router.route("/activas")
 router.route("/codigo/:codigo")
     .get(promocionesController.getPromocionByCodigo);
 
-// Ruta para incrementar uso de promoción
-router.route("/:id/usar")
-    .patch(promocionesController.incrementarUsoPromocion);
-
 // Rutas por ID
 router.route("/:id")
     .get(promocionesController.getPromocionById)

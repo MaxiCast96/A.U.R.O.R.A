@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import empleadosRoutes from "./src/routes/empleados.js";
+import optometristaRoutes from "./src/routes/optometrista.js"
 import clientesRoutes from "./src/routes/clientes.js"
 import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js";
 import sucursalesRoutes from "./src/routes/sucursales.js";
@@ -34,6 +35,7 @@ app.use(
 app.use(express.json());
 
 app.use("/api/empleados", empleadosRoutes);
+app.use("/api/optometrista", optometristaRoutes);
 app.use("/api/clientes", clientesRoutes)
 app.use("/api/registroEmpleados", registroEmpleadosRoutes);
 app.use("/api/sucursales", sucursalesRoutes);
