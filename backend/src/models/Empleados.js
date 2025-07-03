@@ -57,6 +57,10 @@ const empleadoSchema = new Schema({
     isVerified: {
         type: Boolean,
         required: true
+    },
+    fotoPerfil: {
+        type: String,
+        required: false
     }
 }, {
     timestamps: true,

@@ -1,18 +1,9 @@
 /*
-=========================================================
-PENDIENTE PARA MAÑANA:
-- No se ha podido probar el CRUD completo de accesorios porque falta el modelo, controlador y rutas de Promocion.
-- Los endpoints que usan populate('promocionId') lanzan error MissingSchemaError.
-- Para continuar:
-    1. Implementar el modelo, controlador y rutas de Promocion.
-    2. Probar todos los endpoints de accesorios (crear, obtener, actualizar, eliminar).
-    3. Verificar el funcionamiento de populate para marcas, sucursales y promociones.
-- El resto de la funcionalidad (marcas, sucursales, accesorios sin promoción) ya funciona y puede probarse.
-=========================================================
+Lo que falta es básicamente es que haga el GET de accesorios con promociones, pero para eso necesito el CRUD de Aleman.
 */
 import "../models/Marcas.js";
 import "../models/Sucursales.js";
-//import "../models/Promocion.js";
+import "../models/Promociones.js";
 import accesoriosModel from "../models/Accesorios.js";
 import { v2 as cloudinary } from "cloudinary";
 
@@ -30,7 +21,10 @@ accesoriosController.getAccesorios = async (req, res) => {
     try {
         const accesorios = await accesoriosModel.find()
             .populate('marcaId')
-            .populate('promocionId')
+            .populate({
+                path: 'promocionId',
+                model: 'Promociones'
+            })
             .populate('sucursales.sucursalId');
         res.json(accesorios);
     } catch (error) {
@@ -200,7 +194,10 @@ accesoriosController.getAccesorioById = async (req, res) => {
     try {
         const accesorio = await accesoriosModel.findById(req.params.id)
             .populate('marcaId')
-            .populate('promocionId')
+            .populate({
+                path: 'promocionId',
+                model: 'Promociones'
+            })
             .populate('sucursales.sucursalId');
         if (!accesorio) {
             return res.json({ message: "Accesorio no encontrado" });
@@ -217,7 +214,10 @@ accesoriosController.getAccesoriosByMarca = async (req, res) => {
     try {
         const accesorios = await accesoriosModel.find({ marcaId: req.params.marcaId })
             .populate('marcaId')
-            .populate('promocionId')
+            .populate({
+                path: 'promocionId',
+                model: 'Promociones'
+            })
             .populate('sucursales.sucursalId');
         res.json(accesorios);
     } catch (error) {
@@ -231,7 +231,10 @@ accesoriosController.getAccesoriosEnPromocion = async (req, res) => {
     try {
         const accesorios = await accesoriosModel.find({ enPromocion: true })
             .populate('marcaId')
-            .populate('promocionId')
+            .populate({
+                path: 'promocionId',
+                model: 'Promociones'
+            })
             .populate('sucursales.sucursalId');
         res.json(accesorios);
     } catch (error) {
