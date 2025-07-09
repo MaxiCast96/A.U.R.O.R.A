@@ -3,6 +3,7 @@ import "../models/Categoria.js";
 //import "../models/Promocion.js";
 import lentesModel from "../models/Lentes.js";
 import { v2 as cloudinary } from "cloudinary";
+import Lentes from '../models/Lentes.js';
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -11,9 +12,8 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const lentesController = {};
 // SELECT
-lentesController.getLentes = async (req, res) => {
+async function getLentes(req, res) {
     try {
         const lentes = await lentesModel.find()
             .populate('categoriaId')
@@ -25,11 +25,10 @@ lentesController.getLentes = async (req, res) => {
         console.log("Error: " + error);
         res.json({ message: "Error obteniendo accesorios: " + error.message });
     }
-};
-
+}
 
 // INSERT
-lentesController.createLentes = async (req, res) => {
+async function createLentes(req, res) {
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
     if (typeof sucursales === "string") {
@@ -99,10 +98,10 @@ lentesController.createLentes = async (req, res) => {
         console.log("Error: " + error);
         res.json({ message: "Error creando accesorio: " + error.message });
     }
-};
+}
 
 // DELETE
-lentesController.deleteLentes = async (req, res) => {
+async function deleteLentes(req, res) {
     try {
         // Buscar y eliminar el empleado por ID
         const deleteLentes = await lentesModel.findByIdAndDelete(req.params.id);
@@ -117,10 +116,10 @@ lentesController.deleteLentes = async (req, res) => {
         console.log("Error: " + error);
         res.json({ message: "Error eliminando empleado: " + error.message });
     }
-};
+}
 
 // UPDATE
-lentesController.updateLentes = async (req, res) => {
+async function updateLentes(req, res) {
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
     if (typeof sucursales === "string") {
@@ -203,10 +202,10 @@ lentesController.updateLentes = async (req, res) => {
         console.log("Error: " + error);
         res.json({ message: "Error actualizando lentes: " + error.message });
     }
-};
+}
 
 // SELECT by ID
-lentesController.getLentesById = async (req, res) => {
+async function getLentesById(req, res) {
     try {
         const lentes = await accesoriosModel.findById(req.params.id)
             .populate('categoriaId')
@@ -221,10 +220,10 @@ lentesController.getLentesById = async (req, res) => {
         console.log("Error: " + error);
         res.json({ message: "Error obteniendo lentes: " + error.message });
     }
-};
+}
 
 // SELECT by Marca
-lentesController.getLentesByIdMarca = async (req, res) => {
+async function getLentesByIdMarca(req, res) {
     try {
         const lentes = await lentesModel.find({ marcaId: req.params.marcaId })
             .populate('categoriaId')
@@ -236,10 +235,10 @@ lentesController.getLentesByIdMarca = async (req, res) => {
         console.log("Error: " + error);
         res.json({ message: "Error obteniendo Lentes por marca: " + error.message });
     }
-};
+}
 
 // SELECT by Promoción
-lentesController.getLentesByPromocion = async (req, res) => {
+async function getLentesByPromocion(req, res) {
     try {
         const lentes = await lentesModel.find({ enPromocion: true })
             .populate('categoriaId')
@@ -251,6 +250,33 @@ lentesController.getLentesByPromocion = async (req, res) => {
         console.log("Error: " + error);
         res.json({ message: "Error obteniendo Lentes en promoción: " + error.message });
     }
+}
+
+// Obtener lentes populares
+async function getLentesPopulares(req, res) {
+    try {
+        // Si el campo popular no existe, devuelve los primeros 5
+        let populares;
+        if (Lentes.schema.obj.popular) {
+            populares = await Lentes.find({ popular: true });
+        } else {
+            populares = await Lentes.find().limit(5);
+        }
+        res.json(populares);
+    } catch (error) {
+        res.status(500).json({ message: 'Error al obtener lentes populares', error });
+    }
+}
+
+const lentesController = {
+    getLentes,
+    getLentesById,
+    createLentes,
+    updateLentes,
+    deleteLentes,
+    getLentesByIdMarca,
+    getLentesByPromocion,
+    getLentesPopulares,
 };
 
 export default lentesController;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ForgotPassword from './ForgotPassword'; // Importa el componente de recuperación de contraseña
+import { useAuth } from './AuthContext';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -12,10 +13,19 @@ const AuthModal = ({ isOpen, onClose }) => {
     apellido: '',
     dui: '',
     telefono: '',
-    direccion: '',
+    calle: '',
+    ciudad: '',
+    departamento: '',
     email: '',
     password: ''
   });
+
+  const { login } = useAuth();
+  const [loginError, setLoginError] = useState(null);
+  const [registerMsg, setRegisterMsg] = useState(null);
+  const [showVerify, setShowVerify] = useState(false);
+  const [verifyCode, setVerifyCode] = useState('');
+  const [verifyMsg, setVerifyMsg] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -39,10 +49,59 @@ const AuthModal = ({ isOpen, onClose }) => {
     navigate('/recuperar-password');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aquí irá la lógica de autenticación
-    console.log('Form data:', formData);
+    setLoginError(null);
+    setRegisterMsg(null);
+    if (isLogin) {
+      try {
+        const res = await fetch('http://localhost:4000/api/clientes/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo: formData.email, password: formData.password })
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setLoginError(data.message || 'Error al iniciar sesión');
+          return;
+        }
+        login(data);
+        onClose();
+      } catch (err) {
+        setLoginError('Error de red o del servidor');
+      }
+    } else {
+      // Registro real
+      try {
+        const res = await fetch('http://localhost:4000/api/registroClientes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            nombre: formData.nombre,
+            apellido: formData.apellido,
+            edad: 18, // Puedes pedirlo en el formulario si lo necesitas
+            dui: formData.dui,
+            telefono: formData.telefono,
+            correo: formData.email,
+            direccion: {
+              calle: formData.calle,
+              ciudad: formData.ciudad,
+              departamento: formData.departamento
+            },
+            password: formData.password
+          })
+        });
+        const data = await res.json();
+        if (!res.ok || data.message?.toLowerCase().includes('error')) {
+          setRegisterMsg(data.message || 'Error al registrarse');
+          return;
+        }
+        setRegisterMsg('Registro exitoso. Revisa tu correo para verificar tu cuenta.');
+        setShowVerify(true);
+      } catch (err) {
+        setRegisterMsg('Error de red o del servidor');
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -114,106 +173,181 @@ const AuthModal = ({ isOpen, onClose }) => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className={`space-y-4 transition-all duration-300 ${
-            !isLogin ? 'opacity-100 max-h-[1000px]' : 'opacity-0 max-h-0 overflow-hidden'
-          }`}>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Nombre</label>
-              <input
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
-                placeholder="Ingresa tu nombre"
-              />
+        {!showVerify ? (
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {registerMsg && !isLogin && (
+              <div className={`mb-2 p-2 rounded text-center text-sm ${registerMsg.toLowerCase().includes('exitoso') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{registerMsg}</div>
+            )}
+            {loginError && (
+              <div className="mb-2 p-2 bg-red-100 text-red-700 rounded text-center text-sm">{loginError}</div>
+            )}
+            <div className={`space-y-4 transition-all duration-300 ${
+              !isLogin ? 'opacity-100 max-h-[1000px]' : 'opacity-0 max-h-0 overflow-hidden'
+            }`}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Nombre</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={formData.nombre}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                  placeholder="Ingresa tu nombre"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Apellido</label>
+                <input
+                  type="text"
+                  name="apellido"
+                  value={formData.apellido}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                  placeholder="Ingresa tu apellido"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">DUI</label>
+                <input
+                  type="text"
+                  name="dui"
+                  value={formData.dui}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                  placeholder="00000000-0"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Teléfono</label>
+                <input
+                  type="tel"
+                  name="telefono"
+                  value={formData.telefono}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                  placeholder="0000-0000"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Calle</label>
+                <input
+                  type="text"
+                  name="calle"
+                  value={formData.calle}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                  placeholder="Ingresa tu calle"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Ciudad</label>
+                <input
+                  type="text"
+                  name="ciudad"
+                  value={formData.ciudad}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                  placeholder="Ingresa tu ciudad"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Departamento</label>
+                <input
+                  type="text"
+                  name="departamento"
+                  value={formData.departamento}
+                  onChange={handleChange}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                  placeholder="Ingresa tu departamento"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Apellido</label>
-              <input
-                type="text"
-                name="apellido"
-                value={formData.apellido}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
-                placeholder="Ingresa tu apellido"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">DUI</label>
-              <input
-                type="text"
-                name="dui"
-                value={formData.dui}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
-                placeholder="00000000-0"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-              <input
-                type="tel"
-                name="telefono"
-                value={formData.telefono}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
-                placeholder="0000-0000"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Dirección</label>
-              <input
-                type="text"
-                name="direccion"
-                value={formData.direccion}
-                onChange={handleChange}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
-                placeholder="Ingresa tu dirección"
-              />
-            </div>
-          </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
-              placeholder="nombre@ejemplo.com"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Contraseña</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
-              placeholder="********"
-            />
-          </div>
-          {isLogin && (
-            <div className="text-right">
-              <button 
-                onClick={handleForgotPassword}
-                className="text-sm text-[#0097c2] hover:underline transition-colors"
-              >
-                ¿Olvidaste tu contraseña?
-              </button>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                placeholder="nombre@ejemplo.com"
+              />
             </div>
-          )}
-          <button
-            type="submit"
-            className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02]"
-          >
-            {isLogin ? 'Iniciar Sesión' : 'Crear cuenta'}
-          </button>
-        </form>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2] transition-colors"
+                placeholder="********"
+              />
+            </div>
+            {isLogin && (
+              <div className="text-right">
+                <button 
+                  onClick={handleForgotPassword}
+                  className="text-sm text-[#0097c2] hover:underline transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </button>
+              </div>
+            )}
+            <button
+              type="submit"
+              className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02]"
+            >
+              {isLogin ? 'Iniciar Sesión' : 'Crear cuenta'}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={async (e) => {
+            e.preventDefault();
+            setVerifyMsg(null);
+            try {
+              const res = await fetch('http://localhost:4000/api/registroClientes/verifyCodeEmail', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ verificationCodeRequest: verifyCode })
+              });
+              const data = await res.json();
+              if (!res.ok || data.message?.toLowerCase().includes('error')) {
+                setVerifyMsg(data.message || 'Error al verificar el código');
+                return;
+              }
+              setVerifyMsg('¡Email verificado con éxito! Ahora puedes iniciar sesión.');
+              setTimeout(() => {
+                setShowVerify(false);
+                setIsLogin(true);
+                setRegisterMsg(null);
+                setVerifyMsg(null);
+              }, 2000);
+            } catch (err) {
+              setVerifyMsg('Error de red o del servidor');
+            }
+          }} className="space-y-4">
+            <div className="mb-2 p-2 bg-blue-100 text-blue-700 rounded text-center text-sm">
+              Ingresa el código de verificación que recibiste por correo.
+            </div>
+            <input
+              type="text"
+              value={verifyCode}
+              onChange={e => setVerifyCode(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#0097c2] focus:border-[#0097c2]"
+              placeholder="Código de verificación"
+              required
+            />
+            <button type="submit" className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300">
+              Verificar Email
+            </button>
+            {verifyMsg && (
+              <div className={`mt-2 p-2 rounded text-center text-sm ${verifyMsg.toLowerCase().includes('éxito') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{verifyMsg}</div>
+            )}
+          </form>
+        )}
       </div>
     </div>
   );

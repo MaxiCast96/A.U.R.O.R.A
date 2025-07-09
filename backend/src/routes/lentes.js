@@ -19,4 +19,15 @@ router.route("/:id")
 .put(upload.array("imagenes", 5), lentesController.updateLentes)
 .delete(lentesController.deleteLentes);
 
+// Endpoint para obtener lentes populares
+router.get("/populares", lentesController.getLentesPopulares);
+
+// Permitir filtro por query param popular=true
+router.get("/", (req, res, next) => {
+  if (req.query.popular === 'true') {
+    return lentesController.getLentesPopulares(req, res, next);
+  }
+  return lentesController.getLentes(req, res, next);
+});
+
 export default router;

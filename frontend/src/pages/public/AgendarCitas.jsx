@@ -17,6 +17,9 @@ const AgendarCitas = () => {
     hora: "",
     contacto: "telefono", // Default contact method
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   const horarios = {
     Lun: ["9:00", "10:00", "11:00", "12:00"],
@@ -37,11 +40,38 @@ const AgendarCitas = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (step === 3) {
-      // Aquí iría la lógica para guardar la cita
-      setShowNotification(true);
-      setTimeout(() => {
-        setShowNotification(false);
-      }, 3000);
+      setLoading(true);
+      setError(null);
+      setSuccess(false);
+      try {
+        const res = await fetch('http://localhost:3001/citas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+        if (!res.ok) throw new Error('Error al agendar la cita');
+        setSuccess(true);
+        setFormData({
+          nombres: "",
+          apellidos: "",
+          telefono: "",
+          email: "",
+          motivo: "",
+          sucursal: "",
+          fecha: "",
+          hora: "",
+          contacto: "telefono",
+        });
+        setStep(1);
+        setShowNotification(true);
+        setTimeout(() => {
+          setShowNotification(false);
+        }, 3000);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     } else {
       setStep((prev) => Math.min(prev + 1, 3));
     }
@@ -141,7 +171,7 @@ const AgendarCitas = () => {
                     <tr key={hora}>
                       {["Lun", "Mar", "Mie", "Jue", "Vie"].map((dia) => (
                         <td key={`${dia}-${hora}`} className="p-2 text-center">
-                          {horarios[dia]?.includes(hora) && (
+                          {horarios[dia]?.includes(hora) ? (
                             <button
                               type="button"
                               onClick={() =>
@@ -157,6 +187,8 @@ const AgendarCitas = () => {
                             >
                               {hora}
                             </button>
+                          ) : (
+                            <span className="text-gray-400">No disponible</span>
                           )}
                         </td>
                       ))}
@@ -164,6 +196,9 @@ const AgendarCitas = () => {
                   ))}
                 </tbody>
               </table>
+              {Object.values(horarios).every(arr => arr.length === 0) && (
+                <div className="text-center text-gray-500 mt-4">No hay horarios disponibles actualmente.</div>
+              )}
             </div>
           </div>
         );
@@ -266,6 +301,8 @@ const AgendarCitas = () => {
               onSubmit={handleSubmit}
               className="space-y-6"
             >
+              {success && <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">Cita agendada correctamente.</div>}
+              {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}
               <AnimatePresence mode="wait">
                 <motion.div
                   key={step}

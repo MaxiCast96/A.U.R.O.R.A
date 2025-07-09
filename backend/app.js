@@ -19,6 +19,7 @@ import cotizacionesRoutes from "./src/routes/cotizaciones.js";
 import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.js";
 import ventasRoutes from "./src/routes/ventas.js";
 import recetasRoutes from "./src/routes/recetas.js";
+import registroClientesRoutes from "./src/routes/registroClientes.js";
 
 const app = express();
 
@@ -52,5 +53,6 @@ app.use("/api/cotizaciones", cotizacionesRoutes);
 app.use("/api/productosPersonalizados", productosPersonalizadosRoutes);
 app.use("/api/ventas", ventasRoutes);
 app.use("/api/recetas", recetasRoutes);
+app.use("/api/registroClientes", registroClientesRoutes);
 
 export default app;

@@ -169,4 +169,30 @@ clientesController.getClienteById = async (req, res) => {
     }
 };
 
+// LOGIN
+clientesController.login = async (req, res) => {
+    const { correo, password } = req.body;
+    try {
+        const cliente = await clientesModel.findOne({ correo });
+        if (!cliente) {
+            return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
+        }
+        const isMatch = await bcryptjs.compare(password, cliente.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
+        }
+        // Devuelve solo los datos necesarios
+        res.json({
+            clienteId: cliente._id,
+            nombre: cliente.nombre,
+            apellido: cliente.apellido,
+            correo: cliente.correo,
+            telefono: cliente.telefono
+        });
+    } catch (error) {
+        console.log('Error: ' + error);
+        res.status(500).json({ message: 'Error en login: ' + error.message });
+    }
+};
+
 export default clientesController;

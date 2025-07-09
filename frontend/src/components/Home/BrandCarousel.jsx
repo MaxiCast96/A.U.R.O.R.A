@@ -8,14 +8,14 @@ const BrandCarousel = ({ brands, currentSlide, onSlideChange }) => {
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         <div className="flex items-center justify-center gap-8 min-w-full">
-          {brands.slice(currentSlide * 3, currentSlide * 3 + 3).map((brand) => (
+          {brands.slice(currentSlide * 3, currentSlide * 3 + 3).map((brand, idx) => (
             <div 
-              key={brand.id}
+              key={brand.id || idx}
               className="w-32 h-32 bg-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all flex items-center justify-center"
             >
               <img
-                src={brand.image}
-                alt={brand.name}
+                src={brand.image || brand.logo || ''}
+                alt={brand.name || 'Marca'}
                 className="w-24 h-24 object-contain transition-transform duration-300 hover:scale-110"
               />
             </div>

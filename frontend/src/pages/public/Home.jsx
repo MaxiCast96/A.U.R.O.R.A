@@ -6,6 +6,7 @@ import Navbar from "../../components/layout/Navbar";
 import BrandCarousel from "../../components/Home/BrandCarousel";
 import PopularCarousel from "../../components/Home/PopularCarousel";
 import AuthModal from "../../components/auth/AuthModal";
+import useData from '../../hooks/useData';
 
 //imagenes
 import Converse from "../public/img/Converse.png";
@@ -31,46 +32,23 @@ const Home = () => {
   const [currentBrandSlide, setCurrentBrandSlide] = useState(0);
   const [currentPopularSlide, setCurrentPopularSlide] = useState(0);
 
-  const brands = [
-    { id: 1, name: "Converse", image: Converse },
-    { id: 2, name: "Puma", image: Puma },
-    { id: 3, name: "True", image: True },
-  ];
+  // Reemplazo arrays locales por hooks que traen datos de la base de datos
+  const { data: promociones, loading: loadingPromos, error: errorPromos } = useData('promociones');
+  const { data: brands, loading: loadingBrands, error: errorBrands } = useData('marcas');
+  const { data: populars, loading: loadingPopulars, error: errorPopulars } = useData('lentes?popular=true');
 
-  const populars = [
-    { id: 1, image: Lente1, name: "Lentes Ray-Ban Classic" },
-    { id: 2, image: Lente2, name: "Monturas Oakley Sport" },
-    { id: 3, image: Lente3, name: "Gafas de Sol Premium" },
-  ];
-
-  // Promociones para el carrusel
-  const promociones = [
-    {
-      titulo: "2x1 en Lentes Oftálmicos",
-      descripcion: "Aprovecha nuestra promoción especial y obtén dos lentes al precio de uno. Solo por tiempo limitado.",
-      imagen: Lente1,
-      enlace: "/promociones/2x1"
-    },
-    {
-      titulo: "Examen Visual Gratis",
-      descripcion: "Realiza tu compra y recibe un examen visual completamente gratis con nuestros expertos.",
-      imagen: Lente2,
-      enlace: "/promociones/examen-gratis"
-    },
-    {
-      titulo: "30% de Descuento en Armazones",
-      descripcion: "Descuento especial en armazones seleccionados. Renueva tu look hoy mismo.",
-      imagen: Lente3,
-      enlace: "/promociones/30-descuento"
-    },
-  ];
   const [promoIndex, setPromoIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Aseguro que los datos sean arrays aunque data sea null
+  const safePromociones = promociones || [];
+  const safeBrands = brands || [];
+  const safePopulars = populars || [];
 
   const handlePrevPromo = () => {
     if (!isAnimating) {
       setIsAnimating(true);
-      setPromoIndex((prev) => (prev === 0 ? promociones.length - 1 : prev - 1));
+      setPromoIndex((prev) => (prev === 0 ? safePromociones.length - 1 : prev - 1));
       setTimeout(() => setIsAnimating(false), 1000);
     }
   };
@@ -78,7 +56,7 @@ const Home = () => {
   const handleNextPromo = () => {
     if (!isAnimating) {
       setIsAnimating(true);
-      setPromoIndex((prev) => (prev === promociones.length - 1 ? 0 : prev + 1));
+      setPromoIndex((prev) => (prev === safePromociones.length - 1 ? 0 : prev + 1));
       setTimeout(() => setIsAnimating(false), 1000);
     }
   };
@@ -96,12 +74,12 @@ const Home = () => {
 
   useEffect(() => {
     const brandTimer = setInterval(() => {
-      setCurrentBrandSlide((prev) => (prev + 1) % Math.ceil(brands.length / 3));
+      setCurrentBrandSlide((prev) => (prev + 1) % Math.ceil(safeBrands.length / 3));
     }, 3000);
 
     const popularTimer = setInterval(() => {
       setCurrentPopularSlide(
-        (prev) => (prev + 1) % Math.ceil(populars.length / 3)
+        (prev) => (prev + 1) % Math.ceil(safePopulars.length / 3)
       );
     }, 4000);
 
@@ -109,7 +87,7 @@ const Home = () => {
       clearInterval(brandTimer);
       clearInterval(popularTimer);
     };
-  }, [brands.length, populars.length]);
+  }, [safeBrands.length, safePopulars.length]);
 
   useEffect(() => {
     if (location.state?.openAuthModal) {
@@ -172,117 +150,125 @@ const Home = () => {
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-white/5 rounded-full blur-3xl"></div>
           </div>
 
-          <div className="max-w-[1000px] mx-auto relative">
-            {/* Botón anterior */}
-            <button
-              onClick={handlePrevPromo}
-              className="absolute -left-12 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:rotate-12 backdrop-blur-sm border border-white/20"
-              aria-label="Anterior"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-            </button>
-
-            {/* Contenido de la promoción */}
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 min-h-[300px]">
-              <motion.div
-                key={promoIndex}
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -40 }}
-                transition={{ duration: 0.4 }}
-                className="flex-1 text-white max-w-xl flex flex-col items-center justify-center px-4 md:px-6 text-center transform transition-transform duration-300"
+          {loadingPromos ? (
+            <div className="text-center text-white py-12">Cargando promociones...</div>
+          ) : errorPromos ? (
+            <div className="text-center text-red-200 py-12">Error al cargar promociones</div>
+          ) : safePromociones.length === 0 ? (
+            <div className="text-center text-white py-12">No hay promociones disponibles actualmente.</div>
+          ) : (
+            <div className="max-w-[1000px] mx-auto relative">
+              {/* Botón anterior */}
+              <button
+                onClick={handlePrevPromo}
+                className="absolute -left-12 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:rotate-12 backdrop-blur-sm border border-white/20"
+                aria-label="Anterior"
               >
-                <motion.h2 
-                  animate={{ 
-                    scale: [1, 1.05, 1],
-                    translateZ: [0, 20, 0]
-                  }}
-                  transition={{ 
-                    duration: 5,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
-                  className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg"
-                >
-                  {promociones[promoIndex].titulo}
-                </motion.h2>
-                <motion.p 
-                  animate={{ 
-                    translateZ: [0, 10, 0]
-                  }}
-                  transition={{ 
-                    duration: 5,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
-                  className="mb-6 text-base text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
-                >
-                  {promociones[promoIndex].descripcion}
-                </motion.p>
-                <motion.div 
-                  animate={{ 
-                    y: [0, -5, 0],
-                    rotate: [0, 1, 0]
-                  }}
-                  transition={{ 
-                    duration: 5,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
-                  className="flex justify-center w-full"
-                >
-                  <a
-                    href={promociones[promoIndex].enlace}
-                    className="bg-white text-[#0097c2] font-semibold px-5 py-2 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-sm border-2 border-white hover:bg-transparent hover:text-white"
-                  >
-                    Ver Promoción
-                  </a>
-                </motion.div>
-              </motion.div>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              </button>
 
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="flex-1 flex justify-center items-center"
-              >
+              {/* Contenido de la promoción */}
+              <div className="flex flex-col md:flex-row items-center justify-center gap-8 min-h-[300px]">
                 <motion.div
-                  animate={{ 
-                    rotateY: [0, 5, 0],
-                    rotateX: [0, 5, 0],
-                    scale: [1, 1.05, 1]
-                  }}
-                  transition={{ 
-                    duration: 5,
-                    repeat: Infinity,
-                    repeatType: "reverse"
-                  }}
-                  className="relative transform-style-3d"
+                  key={promoIndex}
+                  initial={{ opacity: 0, x: 40 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -40 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex-1 text-white max-w-xl flex flex-col items-center justify-center px-4 md:px-6 text-center transform transition-transform duration-300"
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full blur-xl transform -rotate-2 translate-z-[-20px]"></div>
-                  <motion.img
-                    key={promociones[promoIndex].imagen}
-                    src={promociones[promoIndex].imagen}
-                    alt={promociones[promoIndex].titulo}
-                    className="rounded-full w-64 h-64 md:w-[300px] md:h-[300px] object-cover shadow-2xl relative z-10 border-2 border-white/30"
-                    style={{
-                      transformStyle: 'preserve-3d',
+                  <motion.h2 
+                    animate={{ 
+                      scale: [1, 1.05, 1],
+                      translateZ: [0, 20, 0]
                     }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-full transform translate-z-[-10px]"></div>
+                    transition={{ 
+                      duration: 5,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                    className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg"
+                  >
+                    {safePromociones[promoIndex]?.titulo}
+                  </motion.h2>
+                  <motion.p 
+                    animate={{ 
+                      translateZ: [0, 10, 0]
+                    }}
+                    transition={{ 
+                      duration: 5,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                    className="mb-6 text-base text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
+                  >
+                    {safePromociones[promoIndex]?.descripcion}
+                  </motion.p>
+                  <motion.div 
+                    animate={{ 
+                      y: [0, -5, 0],
+                      rotate: [0, 1, 0]
+                    }}
+                    transition={{ 
+                      duration: 5,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                    className="flex justify-center w-full"
+                  >
+                    <a
+                      href={safePromociones[promoIndex]?.enlace}
+                      className="bg-white text-[#0097c2] font-semibold px-5 py-2 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-sm border-2 border-white hover:bg-transparent hover:text-white"
+                    >
+                      Ver Promoción
+                    </a>
+                  </motion.div>
                 </motion.div>
-              </motion.div>
-            </div>
 
-            {/* Botón siguiente */}
-            <button
-              onClick={handleNextPromo}
-              className="absolute -right-12 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:-rotate-12 backdrop-blur-sm border border-white/20"
-              aria-label="Siguiente"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-            </button>
-          </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex-1 flex justify-center items-center"
+                >
+                  <motion.div
+                    animate={{ 
+                      rotateY: [0, 5, 0],
+                      rotateX: [0, 5, 0],
+                      scale: [1, 1.05, 1]
+                    }}
+                    transition={{ 
+                      duration: 5,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                    className="relative transform-style-3d"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full blur-xl transform -rotate-2 translate-z-[-20px]"></div>
+                    <motion.img
+                      key={safePromociones[promoIndex]?.imagen}
+                      src={safePromociones[promoIndex]?.imagen}
+                      alt={safePromociones[promoIndex]?.titulo}
+                      className="rounded-full w-64 h-64 md:w-[300px] md:h-[300px] object-cover shadow-2xl relative z-10 border-2 border-white/30"
+                      style={{
+                        transformStyle: 'preserve-3d',
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-full transform translate-z-[-10px]"></div>
+                  </motion.div>
+                </motion.div>
+              </div>
+
+              {/* Botón siguiente */}
+              <button
+                onClick={handleNextPromo}
+                className="absolute -right-12 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:-rotate-12 backdrop-blur-sm border border-white/20"
+                aria-label="Siguiente"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          )}
         </motion.section>
         <br />
         <br />
@@ -820,71 +806,86 @@ const Home = () => {
         </motion.section>
 
         {/* Nuestras marcas */}
-        <section className="max-w-6xl mx-auto px-4 mb-12">
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Nuestras marcas
-          </h2>
-          <BrandCarousel
-            brands={brands}
-            currentSlide={currentBrandSlide}
-            onSlideChange={setCurrentBrandSlide}
-          />
-        </section>
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-12"
+        >
+          <h2 className="text-2xl font-bold text-center mb-8">Marcas</h2>
+          {loadingBrands ? (
+            <div className="text-center py-8">Cargando marcas...</div>
+          ) : errorBrands ? (
+            <div className="text-center text-red-500 py-8">Error al cargar marcas</div>
+          ) : Array.isArray(safeBrands) && safeBrands.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No hay marcas disponibles actualmente.</div>
+          ) : (
+            <BrandCarousel
+              brands={Array.isArray(safeBrands) ? safeBrands : []}
+              currentSlide={currentBrandSlide}
+              onSlideChange={setCurrentBrandSlide}
+            />
+          )}
+        </motion.section>
 
         {/* Populares */}
-        <section className="max-w-6xl mx-auto px-4 mb-12">
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-12"
+        >
           <h2 className="text-2xl font-bold text-center mb-8">Populares</h2>
-          <PopularCarousel
-            items={populars}
-            currentSlide={currentPopularSlide}
-            onSlideChange={setCurrentPopularSlide}
-          />
-        </section>
+          {loadingPopulars ? (
+            <div className="text-center py-8">Cargando productos populares...</div>
+          ) : errorPopulars ? (
+            <div className="text-center text-red-500 py-8">Error al cargar productos populares</div>
+          ) : Array.isArray(safePopulars) && safePopulars.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">No hay productos populares disponibles actualmente.</div>
+          ) : (
+            <PopularCarousel
+              items={Array.isArray(safePopulars) ? safePopulars : []}
+              currentSlide={currentPopularSlide}
+              onSlideChange={setCurrentPopularSlide}
+            />
+          )}
+        </motion.section>
 
-        {/* Productos Destacados con animations */}
-        <section className="max-w-6xl mx-auto px-4 mb-12">
-          <motion.h2
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            className="text-2xl font-bold text-center mb-8"
-          >
-            Productos Destacados
-          </motion.h2>
-          <motion.div
-            variants={staggerContainer}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {[1, 2, 3].map((i) => (
-              <motion.div
-                key={i}
-                variants={fadeInUp}
-                whileHover={{ scale: 1.05 }}
-                className="bg-white rounded-2xl shadow-md hover:shadow-lg transition-all p-6 flex flex-col items-center"
-              >
-                <img
-                  src={Lente4}
-                  alt={`Producto Destacado ${i}`}
-                  className="w-32 h-24 object-contain mb-4"
-                />
-                <h3 className="font-semibold mb-2">Código: ABC123</h3>
-                <ul className="text-gray-600 text-sm mb-4 list-disc list-inside">
-                  <li>Armazón de acetato</li>
-                  <li>Incluye estuche y paño</li>
-                  <li>Disponible en varios colores</li>
-                </ul>
-                <a
-                  href="#"
-                  className="bg-[#0097c2] text-white px-4 py-2 rounded-full font-semibold shadow hover:bg-[#0077a2] transition"
-                >
-                  Ver detalles
-                </a>
-              </motion.div>
-            ))}
-          </motion.div>
-        </section>
+        {/* Productos Destacados */}
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-12"
+        >
+          <h2 className="text-2xl font-bold text-center mb-8">Productos Destacados</h2>
+          {loadingPopulars ? (
+            <div className="text-center py-8">Cargando productos destacados...</div>
+          ) : errorPopulars ? (
+            <div className="text-center text-red-500 py-8">Error al cargar productos destacados</div>
+          ) : !Array.isArray(safePopulars) ? (
+            <div className="text-center py-8 text-gray-500">No hay productos destacados disponibles actualmente.</div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+              {safePopulars.slice(0, 4).map((item, idx) => (
+                <div key={item.id || idx} className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+                  <img
+                    src={item.image || item.imagen || ''}
+                    alt={item.nombre || item.name || 'Producto Destacado'}
+                    className="w-32 h-32 object-contain mb-4"
+                  />
+                  <h3 className="text-lg font-bold mb-2 text-center">{item.nombre || item.name || 'Producto Destacado'}</h3>
+                  <p className="text-gray-600 text-sm mb-2 text-center">{item.descripcion || 'Sin descripción.'}</p>
+                  <span className="text-[#0097c2] font-bold text-lg mb-2">${item.precioActual || item.precio || '—'}</span>
+                  <button className="mt-auto bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition">Ver detalles</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </motion.section>
 
         {/* Footer */}
         <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white">

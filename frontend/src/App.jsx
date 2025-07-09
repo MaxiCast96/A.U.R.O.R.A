@@ -16,6 +16,7 @@ import Cotizaciones from "./pages/public/Cotizaciones";
 import Servicio from "./pages/public/Servicio";
 import AgendarCitas from "./pages/public/AgendarCitas";
 import Nosotros from "./pages/public/Nosotros";
+import PerfilPage from './pages/private/PerfilPage';
 
 //Importacion de paginas extra de publicas
 import CrearCotizacion from "./components/Cotizaciones/CrearCotizacion";
@@ -36,6 +37,7 @@ function AnimatedRoutes() {
         <Route path="/servicios" element={<Servicio />} />
         <Route path="/agendar" element={<AgendarCitas />} />
         <Route path="/nosotros" element={<Nosotros />} />
+        <Route path="/perfil" element={<PerfilPage />} />
         
         // Rutas adicionales
         <Route path="/cotizaciones/crear" element={<CrearCotizacion />} />

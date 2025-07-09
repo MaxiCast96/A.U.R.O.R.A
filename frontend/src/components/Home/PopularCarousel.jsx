@@ -1,6 +1,7 @@
 import React from 'react';
 
 const PopularCarousel = ({ items, currentSlide, onSlideChange }) => {
+  const safeItems = Array.isArray(items) ? items : [];
   return (
     <div className="relative overflow-hidden bg-[#0097c2] rounded-2xl p-8">
       <div 
@@ -8,14 +9,14 @@ const PopularCarousel = ({ items, currentSlide, onSlideChange }) => {
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         <div className="flex items-center justify-center gap-8 min-w-full">
-          {items.slice(currentSlide * 3, currentSlide * 3 + 3).map((item) => (
+          {safeItems.slice(currentSlide * 3, currentSlide * 3 + 3).map((item, idx) => (
             <div 
-              key={item.id}
+              key={item.id || idx}
               className="w-40 h-40 bg-white rounded-xl p-4 shadow-lg hover:shadow-xl transition-all flex items-center justify-center group"
             >
               <img
-                src={item.image}
-                alt={`Popular ${item.id}`}
+                src={item.image || item.imagen || ''}
+                alt={`Popular ${item.id || idx}`}
                 className="w-32 h-32 object-contain transition-transform duration-300 group-hover:scale-110"
               />
             </div>
@@ -23,7 +24,7 @@ const PopularCarousel = ({ items, currentSlide, onSlideChange }) => {
         </div>
       </div>
       <div className="flex justify-center mt-6 space-x-2">
-        {Array.from({ length: Math.ceil(items.length / 3) }).map((_, index) => (
+        {Array.from({ length: Math.ceil(safeItems.length / 3) }).map((_, index) => (
           <button
             key={index}
             onClick={() => onSlideChange(index)}

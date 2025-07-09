@@ -2,49 +2,19 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageTransition from '../../components/transition/PageTransition';
 import Navbar from '../../components/layout/Navbar';
+import useData from '../../hooks/useData';
 
 const VerCotizacion = () => {
   const { id } = useParams();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [cotizacion, setCotizacion] = useState({
-    numero: `COT-${id}`,
-    fecha: '2023-10-15',
-    estado: 'Pendiente',
-    cliente: {
-      nombre: 'Juan Pérez',
-      email: 'juan@example.com',
-      telefono: '1234-5678'
-    },
-    items: [
-      {
-        id: 1,
-        producto: 'Lentes de Sol Ray-Ban',
-        descripcion: 'Wayfarer Classic',
-        cantidad: 1,
-        precio: 159.99
-      },
-      {
-        id: 2,
-        producto: 'Monturas',
-        descripcion: 'Acetato Premium',
-        cantidad: 1,
-        precio: 89.99
-      }
-    ],
-    total: 249.98
-  });
+  const { data: cotizacion, loading, error } = useData(`cotizaciones/${id}`);
 
   const handleConvertirACompra = () => {
     setShowConfirmDialog(true);
   };
 
   const confirmarCompra = () => {
-    setCotizacion(prev => ({
-      ...prev,
-      estado: 'Convertido a Compra'
-    }));
     setShowConfirmDialog(false);
-    // Backend Aca :V
   };
 
   const getEstadoColor = (estado) => {
@@ -56,6 +26,10 @@ const VerCotizacion = () => {
     return estados[estado] || estados['Pendiente'];
   };
 
+  if (loading) return <div className="p-8 text-center">Cargando...</div>;
+  if (error) return <div className="p-8 text-center text-red-500">Error: {error}</div>;
+  if (!cotizacion) return <div className="p-8 text-center">No se encontró la cotización.</div>;
+
   return (
     <PageTransition>
       <Navbar />
@@ -63,7 +37,7 @@ const VerCotizacion = () => {
         {/* Encabezado y Acciones */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">
-            Cotización {cotizacion.numero}
+            Cotización {cotizacion.numero || cotizacion.id}
           </h1>
           <div className="flex space-x-4">
             {cotizacion.estado === 'Pendiente' && (
@@ -128,10 +102,10 @@ const VerCotizacion = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Información de la Cotización</h3>
               <div className="space-y-2">
-                <p><span className="font-medium">Fecha:</span> {cotizacion.fecha}</p>
+                <p><span className="font-medium">Fecha:</span> {cotizacion.fecha || '-'}</p>
                 <p><span className="font-medium">Estado:</span> 
                   <span className={`ml-2 px-3 py-1 text-xs font-medium rounded-full ${getEstadoColor(cotizacion.estado)}`}>
-                    {cotizacion.estado}
+                    {cotizacion.estado || 'Pendiente'}
                   </span>
                 </p>
               </div>
@@ -139,9 +113,9 @@ const VerCotizacion = () => {
             <div>
               <h3 className="text-lg font-semibold mb-4">Información del Cliente</h3>
               <div className="space-y-2">
-                <p><span className="font-medium">Nombre:</span> {cotizacion.cliente.nombre}</p>
-                <p><span className="font-medium">Email:</span> {cotizacion.cliente.email}</p>
-                <p><span className="font-medium">Teléfono:</span> {cotizacion.cliente.telefono}</p>
+                <p><span className="font-medium">Nombre:</span> {cotizacion.cliente?.nombre || '-'}</p>
+                <p><span className="font-medium">Email:</span> {cotizacion.cliente?.email || '-'}</p>
+                <p><span className="font-medium">Teléfono:</span> {cotizacion.cliente?.telefono || '-'}</p>
               </div>
             </div>
           </div>
@@ -162,15 +136,19 @@ const VerCotizacion = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {cotizacion.items.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm text-gray-700">{item.producto}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{item.descripcion}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">{item.cantidad}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">${item.precio.toFixed(2)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-700">${(item.cantidad * item.precio).toFixed(2)}</td>
-                  </tr>
-                ))}
+                {cotizacion.items && cotizacion.items.length > 0 ? (
+                  cotizacion.items.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-700">{item.producto}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{item.descripcion}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{item.cantidad}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">${item.precio?.toFixed(2) ?? '0.00'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">${((item.cantidad || 0) * (item.precio || 0)).toFixed(2)}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={5} className="text-center py-4">No hay productos en esta cotización actualmente.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -182,7 +160,7 @@ const VerCotizacion = () => {
             <div className="w-full max-w-xs">
               <div className="flex justify-between py-2">
                 <span className="font-medium">Total:</span>
-                <span className="font-bold text-lg">${cotizacion.total}</span>
+                <span className="font-bold text-lg">${cotizacion.total?.toFixed(2) ?? '0.00'}</span>
               </div>
             </div>
           </div>

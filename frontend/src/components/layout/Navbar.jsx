@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AuthModal from "../auth/AuthModal";
+import { useAuth } from '../auth/AuthContext';
 
 const Navbar = ({ onOpenAuth }) => {
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const location = useLocation();
   const isHome = location.pathname === "/";
+  const { user } = useAuth();
 
   return (
     <>
@@ -151,12 +153,22 @@ const Navbar = ({ onOpenAuth }) => {
               </Link>
             </li>
           </ul>
-          <button
-            onClick={onOpenAuth}
-            className="bg-[#0097c2] text-white px-4 py-2 rounded-full shadow hover:bg-[#0077a2] transition"
-          >
-            Iniciar Sesión
-          </button>
+          {/* Botón de sesión/perfil */}
+          {user ? (
+            <Link
+              to="/perfil"
+              className="bg-[#0097c2] text-white px-4 py-2 rounded-full shadow hover:bg-[#0077a2] transition"
+            >
+              Perfil
+            </Link>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="bg-[#0097c2] text-white px-4 py-2 rounded-full shadow hover:bg-[#0077a2] transition"
+            >
+              Iniciar Sesión
+            </button>
+          )}
         </div>
       </nav>
 

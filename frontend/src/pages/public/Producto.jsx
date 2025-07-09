@@ -2,10 +2,16 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import PageTransition from "../../components/transition/PageTransition.jsx";
 import Navbar from "../../components/layout/Navbar";
+import useData from '../../hooks/useData';
 
 const Producto = () => {
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const location = useLocation();
+
+  // Hooks para traer datos reales
+  const { data: lentes, loading: loadingLentes, error: errorLentes } = useData('lentes');
+  const { data: accesorios, loading: loadingAccesorios, error: errorAccesorios } = useData('accesorios');
+  const { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables } = useData('productosPersonalizados');
 
   const renderContent = () => {
     switch (location.pathname) {
@@ -14,29 +20,24 @@ const Producto = () => {
           <div className="container mx-auto py-10">
             <h2 className="text-4xl font-bold text-center mb-12">Lentes</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden"
-                >
-                  <img
-                    src="/lentes-modelo.jpg"
-                    alt="Lentes"
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-xl font-bold mb-2">
-                      Lentes Modelo {index + 1}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Lentes con protección UV y diseño moderno.
-                    </p>
-                    <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition">
-                      Ver detalles
-                    </button>
+              {loadingLentes ? (
+                <div>Cargando...</div>
+              ) : errorLentes ? (
+                <div className="text-red-500">Error al cargar lentes</div>
+              ) : lentes && lentes.length === 0 ? (
+                <div className="col-span-4 text-center">No hay lentes disponibles actualmente.</div>
+              ) : lentes && lentes.length > 0 ? (
+                lentes.map((lente) => (
+                  <div key={lente.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <img src={lente.imagen || "/lentes-modelo.jpg"} alt={lente.nombre} className="w-full h-48 object-cover" />
+                    <div className="p-4">
+                      <h3 className="text-xl font-bold mb-2">{lente.nombre}</h3>
+                      <p className="text-gray-600 text-sm mb-4">{lente.descripcion}</p>
+                      <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition">Ver detalles</button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : null}
             </div>
           </div>
         );
@@ -46,29 +47,24 @@ const Producto = () => {
           <div className="container mx-auto py-10">
             <h2 className="text-4xl font-bold text-center mb-12">Accesorios</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden"
-                >
-                  <img
-                    src="/accesorio-modelo.jpg"
-                    alt="Accesorio"
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-xl font-bold mb-2">
-                      Accesorio {index + 1}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Accesorios de alta calidad para tus lentes.
-                    </p>
-                    <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition">
-                      Ver detalles
-                    </button>
+              {loadingAccesorios ? (
+                <div>Cargando...</div>
+              ) : errorAccesorios ? (
+                <div className="text-red-500">Error al cargar accesorios</div>
+              ) : accesorios && accesorios.length === 0 ? (
+                <div className="col-span-4 text-center">No hay accesorios disponibles actualmente.</div>
+              ) : accesorios && accesorios.length > 0 ? (
+                accesorios.map((acc) => (
+                  <div key={acc.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <img src={acc.imagen || "/accesorio-modelo.jpg"} alt={acc.nombre} className="w-full h-48 object-cover" />
+                    <div className="p-4">
+                      <h3 className="text-xl font-bold mb-2">{acc.nombre}</h3>
+                      <p className="text-gray-600 text-sm mb-4">{acc.descripcion}</p>
+                      <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition">Ver detalles</button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : null}
             </div>
           </div>
         );
@@ -76,33 +72,26 @@ const Producto = () => {
       case "/productos/personalizables":
         return (
           <div className="container mx-auto py-10">
-            <h2 className="text-4xl font-bold text-center mb-12">
-              Productos Personalizables
-            </h2>
+            <h2 className="text-4xl font-bold text-center mb-12">Productos Personalizables</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {Array.from({ length: 8 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="bg-white rounded-lg shadow-lg overflow-hidden"
-                >
-                  <img
-                    src="/personalizable-modelo.jpg"
-                    alt="Personalizable"
-                    className="w-full h-48 object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="text-xl font-bold mb-2">
-                      Personalizable {index + 1}
-                    </h3>
-                    <p className="text-gray-600 text-sm mb-4">
-                      Diseña tus lentes a tu gusto.
-                    </p>
-                    <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition">
-                      Personalizar
-                    </button>
+              {loadingPersonalizables ? (
+                <div>Cargando...</div>
+              ) : errorPersonalizables ? (
+                <div className="text-red-500">Error al cargar productos personalizables</div>
+              ) : personalizables && personalizables.length === 0 ? (
+                <div className="col-span-4 text-center">No hay productos personalizables disponibles actualmente.</div>
+              ) : personalizables && personalizables.length > 0 ? (
+                personalizables.map((pers) => (
+                  <div key={pers.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <img src={pers.imagen || "/personalizable-modelo.jpg"} alt={pers.nombre} className="w-full h-48 object-cover" />
+                    <div className="p-4">
+                      <h3 className="text-xl font-bold mb-2">{pers.nombre}</h3>
+                      <p className="text-gray-600 text-sm mb-4">{pers.descripcion}</p>
+                      <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition">Personalizar</button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              ) : null}
             </div>
           </div>
         );
