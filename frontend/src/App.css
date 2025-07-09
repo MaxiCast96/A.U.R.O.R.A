@@ -1,0 +1,268 @@
+#root {
+    width: 100vw;           /* 100% del viewport width */
+    min-height: 100vh;      /* Al menos 100% del viewport height */
+    margin: 0;              /* Sin márgenes */
+    padding: 0;             /* Sin padding */
+    text-align: left;       /* Alineación natural para interfaces */
+    background-color: aliceblue;
+    box-sizing: border-box; /* Incluye padding y border en el cálculo del tamaño */
+    color-scheme: light;
+    scroll-behavior: smooth;
+    background-color: #ffffff;
+    color: #000000;
+  }
+  
+  /* styles.css */
+  .light {
+    background-color: white;
+    color: black;
+  }
+  
+  /* Sobrescribimos cualquier intento de dark mode */
+  .light body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  @import "tailwindcss";
+  
+  
+  /* Animaciones de Focus para Óptica Inteligente */
+  * {
+    outline: none !important;
+  }
+  
+  /* Botones principales - Secuencia cian a naranja complementario */
+  button:focus, .btn:focus {
+    animation: buttonGlow 2.5s ease-in-out infinite;
+  }
+  
+  @keyframes buttonGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.6); /* Tu cian principal */
+    }
+    25% { 
+      box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.7); /* Naranja complementario */
+    }
+    50% { 
+      box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.6); /* Rosa vibrante */
+    }
+    75% { 
+      box-shadow: 0 0 0 4px rgba(156, 39, 176, 0.7); /* Púrpura */
+    }
+  }
+  
+  /* Inputs - Secuencia más suave con colores que contrastan */
+  input:focus, select:focus, textarea:focus {
+    animation: inputGlow 3s linear infinite;
+  }
+  
+  @keyframes inputGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.5); /* Tu cian */
+    }
+    20% { 
+      box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.6); /* Verde como tus estados activos */
+    }
+    40% { 
+      box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.7); /* Amarillo dorado */
+    }
+    60% { 
+      box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.6); /* Naranja */
+    }
+    80% { 
+      box-shadow: 0 0 0 4px rgba(103, 58, 183, 0.6); /* Púrpura profundo */
+    }
+  }
+  
+  /* Botones de acción específicos (como "Añadir Categoría") */
+  .btn-primary:focus, .btn-add:focus {
+    animation: primaryButtonGlow 2s ease-in-out infinite;
+  }
+  
+  @keyframes primaryButtonGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.8); 
+    }
+    33% { 
+      box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.8); /* Dorado brillante */
+    }
+    66% { 
+      box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.7); /* Rosa magenta */
+    }
+  }
+  
+  /* Elementos de navegación */
+  .nav-item:focus, .menu-item:focus {
+    animation: navGlow 2.8s ease-in-out infinite;
+  }
+  
+  @keyframes navGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.4); 
+    }
+    25% { 
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5); /* Verde activo */
+    }
+    50% { 
+      box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.6); /* Naranja cálido */
+    }
+    75% { 
+      box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.5); /* Azul índigo */
+    }
+  }
+  
+  /* Radio buttons y checkboxes */
+  input[type="radio"]:focus,
+  input[type="checkbox"]:focus {
+    animation: checkboxGlow 2.2s ease-in-out infinite;
+  }
+  
+  @keyframes checkboxGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.4); 
+    }
+    50% { 
+      box-shadow: 0 0 0 6px rgba(255, 87, 34, 0.6); /* Naranja complementario */
+    }
+  }
+  
+  /* Estados especiales - para elementos inactivos */
+  .inactive:focus {
+    animation: inactiveGlow 2s ease-in-out infinite;
+  }
+  
+  @keyframes inactiveGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.5); /* Rojo como tu estado inactivo */
+    }
+    33% { 
+      box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.6); /* Amarillo advertencia */
+    }
+    66% { 
+      box-shadow: 0 0 0 4px rgba(156, 39, 176, 0.5); /* Púrpura */
+    }
+  }
+  
+  /* Animación especial para tablas y cards */
+  .card:focus-within, .table-row:focus-within {
+    animation: cardGlow 3.5s linear infinite;
+  }
+  
+  @keyframes cardGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 2px rgba(0, 188, 212, 0.3); 
+    }
+    20% { 
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.4); 
+    }
+    40% { 
+      box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.4); 
+    }
+    60% { 
+      box-shadow: 0 0 0 2px rgba(233, 30, 99, 0.4); 
+    }
+    80% { 
+      box-shadow: 0 0 0 2px rgba(103, 58, 183, 0.4); 
+    }
+  }
+  
+  
+  
+  
+  
+  
+  /* src/styles/animations.css */
+  /* O puedes agregarlo a tu App.css o index.css */
+  
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  @keyframes bounceIn {
+      0% { opacity: 0; transform: scale(0.3); }
+      50% { opacity: 1; transform: scale(1.05); }
+      70% { transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+  }
+  
+  .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  .animate-slideInDown { animation: slideInDown 0.3s ease-out; }
+  .animate-slideInScale { animation: slideInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .animate-bounceIn { animation: bounceIn 0.5s ease-out; }
+  
+  /* Estilos base para botones y inputs para que los componentes reutilizables se vean bien */
+  .btn-primary {
+      @apply px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105;
+  }
+  .btn-secondary {
+      @apply px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105;
+  }
+  .btn-danger {
+      @apply px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 hover:scale-105;
+  }
+  .pagination-btn {
+      @apply px-3 py-1 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  }
+  .input {
+      @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  
+  
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slideInScale {
+    from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  
+  @keyframes slideInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  @keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { opacity: 1; transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  
+  .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+  .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  .animate-slideInScale { animation: slideInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .animate-slideInDown { animation: slideInDown 0.3s ease-out; }
+  .animate-slideInLeft { animation: slideInLeft 0.5s ease-out; }
+  .animate-slideInRight { animation: slideInRight 0.5s ease-out; }
+  .animate-bounceIn { animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+  .animate-bounce-subtle { animation: bounce-subtle 2s infinite; }
+  .animate-shake { animation: shake 0.5s ease-in-out; }
+  
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }

@@ -146,7 +146,11 @@ const AuthModal = ({ isOpen, onClose }) => {
 
         {/* Logo and Title */}
         <div className="text-center mb-6">
-          <img src="/logo.png" alt="Logo" className="h-16 mx-auto mb-4" />
+        <img 
+              src="https://i.imgur.com/rYfBDzN.png" 
+              alt="Óptica La Inteligente" 
+              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+            />
           <h2 className="text-2xl font-bold text-gray-800">
             {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
           </h2>
