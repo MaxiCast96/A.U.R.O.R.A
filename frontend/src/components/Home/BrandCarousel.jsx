@@ -1,6 +1,11 @@
 import React from 'react';
 
 const BrandCarousel = ({ brands, currentSlide, onSlideChange }) => {
+  const safeBrands = Array.isArray(brands) ? brands.filter(brand => brand.image || brand.logo) : [];
+  if (safeBrands.length === 0) {
+    return <div className="text-center py-8">No se encontraron marcas.</div>;
+  }
+
   return (
     <div className="relative overflow-hidden">
       <div 
@@ -8,13 +13,13 @@ const BrandCarousel = ({ brands, currentSlide, onSlideChange }) => {
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
         <div className="flex items-center justify-center gap-8 min-w-full">
-          {brands.slice(currentSlide * 3, currentSlide * 3 + 3).map((brand, idx) => (
+          {safeBrands.slice(currentSlide * 3, currentSlide * 3 + 3).map((brand, idx) => (
             <div 
               key={brand.id || idx}
               className="w-32 h-32 bg-white rounded-xl p-4 shadow-md hover:shadow-xl transition-all flex items-center justify-center"
             >
               <img
-                src={brand.image || brand.logo || ''}
+                src={brand.image || brand.logo}
                 alt={brand.name || 'Marca'}
                 className="w-24 h-24 object-contain transition-transform duration-300 hover:scale-110"
               />

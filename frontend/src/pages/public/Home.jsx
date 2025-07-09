@@ -154,8 +154,6 @@ const Home = () => {
             <div className="text-center text-white py-12">Cargando promociones...</div>
           ) : errorPromos ? (
             <div className="text-center text-red-200 py-12">Error al cargar promociones</div>
-          ) : safePromociones.length === 0 ? (
-            <div className="text-center text-white py-12">No hay promociones disponibles actualmente.</div>
           ) : (
             <div className="max-w-[1000px] mx-auto relative">
               {/* Botón anterior */}
@@ -169,94 +167,105 @@ const Home = () => {
 
               {/* Contenido de la promoción */}
               <div className="flex flex-col md:flex-row items-center justify-center gap-8 min-h-[300px]">
-                <motion.div
-                  key={promoIndex}
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -40 }}
-                  transition={{ duration: 0.4 }}
-                  className="flex-1 text-white max-w-xl flex flex-col items-center justify-center px-4 md:px-6 text-center transform transition-transform duration-300"
-                >
-                  <motion.h2 
-                    animate={{ 
-                      scale: [1, 1.05, 1],
-                      translateZ: [0, 20, 0]
-                    }}
-                    transition={{ 
-                      duration: 5,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }}
-                    className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg"
-                  >
-                    {safePromociones[promoIndex]?.titulo}
-                  </motion.h2>
-                  <motion.p 
-                    animate={{ 
-                      translateZ: [0, 10, 0]
-                    }}
-                    transition={{ 
-                      duration: 5,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }}
-                    className="mb-6 text-base text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
-                  >
-                    {safePromociones[promoIndex]?.descripcion}
-                  </motion.p>
-                  <motion.div 
-                    animate={{ 
-                      y: [0, -5, 0],
-                      rotate: [0, 1, 0]
-                    }}
-                    transition={{ 
-                      duration: 5,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }}
-                    className="flex justify-center w-full"
-                  >
-                    <a
-                      href={safePromociones[promoIndex]?.enlace}
-                      className="bg-white text-[#0097c2] font-semibold px-5 py-2 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-sm border-2 border-white hover:bg-transparent hover:text-white"
+                {safePromociones.length > 0 ? (
+                  <>
+                    <motion.div
+                      key={promoIndex}
+                      initial={{ opacity: 0, x: 40 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -40 }}
+                      transition={{ duration: 0.4 }}
+                      className="flex-1 text-white max-w-xl flex flex-col items-center justify-center px-4 md:px-6 text-center transform transition-transform duration-300"
                     >
-                      Ver Promoción
-                    </a>
-                  </motion.div>
-                </motion.div>
+                      <motion.h2 
+                        animate={{ 
+                          scale: [1, 1.05, 1],
+                          translateZ: [0, 20, 0]
+                        }}
+                        transition={{ 
+                          duration: 5,
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }}
+                        className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg"
+                      >
+                        {safePromociones[promoIndex]?.titulo}
+                      </motion.h2>
+                      <motion.p 
+                        animate={{ 
+                          translateZ: [0, 10, 0]
+                        }}
+                        transition={{ 
+                          duration: 5,
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }}
+                        className="mb-6 text-base text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
+                      >
+                        {safePromociones[promoIndex]?.descripcion}
+                      </motion.p>
+                      <motion.div 
+                        animate={{ 
+                          y: [0, -5, 0],
+                          rotate: [0, 1, 0]
+                        }}
+                        transition={{ 
+                          duration: 5,
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }}
+                        className="flex justify-center w-full"
+                      >
+                        {safePromociones[promoIndex]?.enlace && (
+                          <a
+                            href={safePromociones[promoIndex]?.enlace}
+                            className="bg-white text-[#0097c2] font-semibold px-5 py-2 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-sm border-2 border-white hover:bg-transparent hover:text-white"
+                          >
+                            Ver Promoción
+                          </a>
+                        )}
+                      </motion.div>
+                    </motion.div>
 
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.3 }}
-                  className="flex-1 flex justify-center items-center"
-                >
-                  <motion.div
-                    animate={{ 
-                      rotateY: [0, 5, 0],
-                      rotateX: [0, 5, 0],
-                      scale: [1, 1.05, 1]
-                    }}
-                    transition={{ 
-                      duration: 5,
-                      repeat: Infinity,
-                      repeatType: "reverse"
-                    }}
-                    className="relative transform-style-3d"
-                  >
-                    <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full blur-xl transform -rotate-2 translate-z-[-20px]"></div>
-                    <motion.img
-                      key={safePromociones[promoIndex]?.imagen}
-                      src={safePromociones[promoIndex]?.imagen}
-                      alt={safePromociones[promoIndex]?.titulo}
-                      className="rounded-full w-64 h-64 md:w-[300px] md:h-[300px] object-cover shadow-2xl relative z-10 border-2 border-white/30"
-                      style={{
-                        transformStyle: 'preserve-3d',
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-full transform translate-z-[-10px]"></div>
-                  </motion.div>
-                </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 }}
+                      className="flex-1 flex justify-center items-center"
+                    >
+                      <motion.div
+                        animate={{ 
+                          rotateY: [0, 5, 0],
+                          rotateX: [0, 5, 0],
+                          scale: [1, 1.05, 1]
+                        }}
+                        transition={{ 
+                          duration: 5,
+                          repeat: Infinity,
+                          repeatType: "reverse"
+                        }}
+                        className="relative transform-style-3d"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-full blur-xl transform -rotate-2 translate-z-[-20px]"></div>
+                        <motion.img
+                          key={safePromociones[promoIndex]?.imagen}
+                          src={safePromociones[promoIndex]?.imagen}
+                          alt={safePromociones[promoIndex]?.titulo}
+                          className="rounded-full w-64 h-64 md:w-[300px] md:h-[300px] object-cover shadow-2xl relative z-10 border-2 border-white/30"
+                          style={{
+                            transformStyle: 'preserve-3d',
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-full transform translate-z-[-10px]"></div>
+                      </motion.div>
+                    </motion.div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center w-full">
+                    <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg">No hay promociones activas en este momento</h2>
+                    <p className="mb-6 text-base text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow">Vuelve pronto para descubrir nuevas ofertas y promociones especiales.</p>
+                  </div>
+                )}
               </div>
 
               {/* Botón siguiente */}
@@ -869,21 +878,25 @@ const Home = () => {
           ) : !Array.isArray(safePopulars) ? (
             <div className="text-center py-8 text-gray-500">No hay productos destacados disponibles actualmente.</div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-              {safePopulars.slice(0, 4).map((item, idx) => (
-                <div key={item.id || idx} className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                  <img
-                    src={item.image || item.imagen || ''}
-                    alt={item.nombre || item.name || 'Producto Destacado'}
-                    className="w-32 h-32 object-contain mb-4"
-                  />
-                  <h3 className="text-lg font-bold mb-2 text-center">{item.nombre || item.name || 'Producto Destacado'}</h3>
-                  <p className="text-gray-600 text-sm mb-2 text-center">{item.descripcion || 'Sin descripción.'}</p>
-                  <span className="text-[#0097c2] font-bold text-lg mb-2">${item.precioActual || item.precio || '—'}</span>
-                  <button className="mt-auto bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition">Ver detalles</button>
-                </div>
-              ))}
-            </div>
+            safePopulars.filter(item => item.image || item.imagen).slice(0, 4).length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No se encontraron productos destacados.</div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+                {safePopulars.filter(item => item.image || item.imagen).slice(0, 4).map((item, idx) => (
+                  <div key={item.id || idx} className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
+                    <img
+                      src={item.image || item.imagen}
+                      alt={item.nombre || item.name || 'Producto Destacado'}
+                      className="w-32 h-32 object-contain mb-4"
+                    />
+                    <h3 className="text-lg font-bold mb-2 text-center">{item.nombre || item.name || 'Producto Destacado'}</h3>
+                    <p className="text-gray-600 text-sm mb-2 text-center">{item.descripcion || 'Sin descripción.'}</p>
+                    <span className="text-[#0097c2] font-bold text-lg mb-2">${item.precioActual || item.precio || '—'}</span>
+                    <button className="mt-auto bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition">Ver detalles</button>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </motion.section>
 
