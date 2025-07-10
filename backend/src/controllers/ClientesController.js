@@ -3,20 +3,33 @@ import bcryptjs from "bcryptjs";
 
 const clientesController = {};
 
-// SELECT
+// GET todos los clientes
 clientesController.getClientes = async (req, res) => {
     try {
-        // Buscar todos los empleados
-        const clientes = await clientesModel.find()
+        const clientes = await clientesModel.find();
         res.json(clientes);
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo clientes: " + error.message });
+        res.status(500).json({ message: "Error obteniendo clientes: " + error.message });
     }
 };
 
+// GET cliente por ID
+clientesController.getClienteById = async (req, res) => {
+    try {
+        // --- CORRECCIÓN: Usar clientesModel en lugar de empleadosModel ---
+        const cliente = await clientesModel.findById(req.params.id);
+        if (!cliente) {
+            return res.status(404).json({ message: "Cliente no encontrado" });
+        }
+        res.json(cliente);
+    } catch (error) {
+        console.log("Error: " + error);
+        res.status(500).json({ message: "Error obteniendo cliente: " + error.message });
+    }
+};
 
-// INSERT
+// CREATE un nuevo cliente
 clientesController.createClientes = async (req, res) => {
     const {
         nombre,
@@ -25,27 +38,26 @@ clientesController.createClientes = async (req, res) => {
         dui,
         telefono,
         correo,
-        direccion,
-        password
+        calle, // Recibimos los campos de dirección de forma plana
+        ciudad,
+        departamento,
+        password,
+        estado
     } = req.body;
 
     try {
-        // Verificar si ya existe un empleado con el mismo correo
         const existsClientes = await clientesModel.findOne({ correo });
         if (existsClientes) {
-            return res.json({ message: "Clientes already exists" });
+            return res.status(400).json({ message: "El correo ya está registrado" });
         }
 
-        // Verificar si ya existe un empleado con el mismo DUI
         const existsDui = await clientesModel.findOne({ dui });
         if (existsDui) {
-            return res.json({ message: "DUI already registered" });
+            return res.status(400).json({ message: "El DUI ya está registrado" });
         }
 
-        // Encriptar la contraseña usando bcrypt
         const passwordHash = await bcryptjs.hash(password, 10);
 
-        // Crear nueva instancia del empleado con la contraseña encriptada
         const newCliente = new clientesModel({
             nombre,
             apellido,
@@ -53,40 +65,28 @@ clientesController.createClientes = async (req, res) => {
             dui,
             telefono,
             correo,
-            direccion,
-            password: passwordHash
+            // --- AJUSTE: Construir el objeto anidado 'direccion' ---
+            direccion: {
+                calle,
+                ciudad,
+                departamento
+            },
+            password: passwordHash,
+            estado
         });
 
-        // Guardar el empleado en la base de datos
         await newCliente.save();
+        res.status(201).json({ message: "Cliente creado exitosamente" });
 
-        res.json({ message: "Cliente creado exitosamente" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error creando cliente: " + error.message });
+        res.status(500).json({ message: "Error creando cliente: " + error.message });
     }
 };
 
-// DELETE
-clientesController.deleteClientes = async (req, res) => {
-    try {
-        // Buscar y eliminar el empleado por ID
-        const deletedClientes = await clientesModel.findByIdAndDelete(req.params.id);
-
-        // Verificar si el empleado existía
-        if (!deletedClientes) {
-            return res.json({ message: "Clientes no encontrado" });
-        }
-
-        res.json({ message: "Clientes eliminado" });
-    } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error eliminando Clientes: " + error.message });
-    }
-};
-
-// UPDATE
+// UPDATE un cliente existente
 clientesController.updateClientes = async (req, res) => {
+    const { id } = req.params;
     const {
         nombre,
         apellido,
@@ -94,78 +94,70 @@ clientesController.updateClientes = async (req, res) => {
         dui,
         telefono,
         correo,
-        password
+        calle,
+        ciudad,
+        departamento,
+        password,
+        estado
     } = req.body;
 
     try {
-        // Verificar si existe otro empleado con el mismo correo
-        const existsCliente = await clientesModel.findOne({
-            correo,
-            _id: { $ne: req.params.id }
-        });
-        if (existsCliente) {
-            return res.json({ message: "Otro cliente con este correo ya existe" });
+        const existsClienteCorreo = await clientesModel.findOne({ correo, _id: { $ne: id } });
+        if (existsClienteCorreo) {
+            return res.status(400).json({ message: "Otro cliente con este correo ya existe" });
         }
 
-        // Verificar si existe otro empleado con el mismo DUI
-        const existsDui = await clientesModel.findOne({
-            dui,
-            _id: { $ne: req.params.id }
-        });
-        if (existsDui) {
-            return res.json({ message: "Otro cliente con este DUI ya existe" });
+        const existsClienteDui = await clientesModel.findOne({ dui, _id: { $ne: id } });
+        if (existsClienteDui) {
+            return res.status(400).json({ message: "Otro cliente con este DUI ya existe" });
         }
 
-        let updateData = {
+        // --- AJUSTE: Construcción de datos a actualizar ---
+        const updateData = {
             nombre,
             apellido,
             edad,
             dui,
             telefono,
             correo,
-            direccion,
+            direccion: {
+                calle,
+                ciudad,
+                departamento
+            },
+            estado,
         };
 
-        // Si se proporciona una nueva contraseña, encriptarla
         if (password) {
-            const passwordHash = await bcryptjs.hash(password, 10);
-            updateData.password = passwordHash;
+            updateData.password = await bcryptjs.hash(password, 10);
         }
 
-        // Buscar y actualizar el empleado por ID
-        const updatedCliente = await clientesModel.findByIdAndUpdate(
-            req.params.id,
-            updateData,
-            { new: true }
-        );
+        const updatedCliente = await clientesModel.findByIdAndUpdate(id, updateData, { new: true });
 
-        // Verificar si el empleado existía
         if (!updatedCliente) {
-            return res.json({ message: "Cliente no encontrado" });
+            return res.status(404).json({ message: "Cliente no encontrado" });
         }
 
-        res.json({ message: "Cliente actualizado" });
+        res.json({ message: "Cliente actualizado exitosamente" });
+
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error actualizando cliente: " + error.message });
+        res.status(500).json({ message: "Error actualizando cliente: " + error.message });
     }
 };
 
-// GET by ID
-clientesController.getClienteById = async (req, res) => {
+
+// DELETE un cliente
+clientesController.deleteClientes = async (req, res) => {
     try {
-        // Buscar empleado por ID y popular la referencia de sucursal
-        const cliente = await empleadosModel.findById(req.params.id);
-
-        // Verificar si el empleado existe
-        if (!cliente) {
-            return res.json({ message: "Cliente no encontrado" });
+        const deletedClientes = await clientesModel.findByIdAndDelete(req.params.id);
+        if (!deletedClientes) {
+            return res.status(404).json({ message: "Cliente no encontrado" });
         }
-
-        res.json(cliente);
+        res.json({ message: "Cliente eliminado exitosamente" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo cliente: " + error.message });
+        res.status(500).json({ message: "Error eliminando Cliente: " + error.message });
     }
 };
 
@@ -181,7 +173,6 @@ clientesController.login = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
         }
-        // Devuelve solo los datos necesarios
         res.json({
             clienteId: cliente._id,
             nombre: cliente.nombre,
@@ -194,5 +185,6 @@ clientesController.login = async (req, res) => {
         res.status(500).json({ message: 'Error en login: ' + error.message });
     }
 };
+
 
 export default clientesController;

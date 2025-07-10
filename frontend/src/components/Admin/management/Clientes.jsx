@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import { useForm } from '../../../hooks/admin/useForm';
 import { usePagination } from '../../../hooks/admin/usePagination';
 
-// Importación de Componentes de UI
 import PageHeader from '../ui/PageHeader';
 import StatsGrid from '../ui/StatsGrid';
 import FilterBar from '../ui/FilterBar';
@@ -11,23 +11,17 @@ import Pagination from '../ui/Pagination';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
+import ClientesFormModal from './employees/ClientesFormModal';
 
-// Importación del componente de formulario específico para clientes
-import ClientesFormModal from './employees/ClientesFormModal'; // Asegúrate que la ruta sea correcta
-
-// Iconos
 import { Users, UserCheck, UserX, Trash2, Eye, Edit, Phone, Mail, MapPin } from 'lucide-react';
 
-// Datos de ejemplo
-const initialClientes = [
-    { _id: "60ed4a45524bcd4877bd8d4f", nombre: "Luis", apellido: "López", edad: 34, dui: "64565911-0", telefono: "+50366545426606", correo: "user1@mail.com", direccion: { calle: "Calle Principal 123", ciudad: "San Salvador", departamento: "San Salvador" }, password: "encrypted_password", estado: "Activo", fechaRegistro: "2024-01-15" },
-    { _id: "60ed4a45524bcd4877bd8d50", nombre: "María", apellido: "González", edad: 28, dui: "12345678-9", telefono: "+50377889900", correo: "maria.gonzalez@mail.com", direccion: { calle: "Avenida Las Flores 456", ciudad: "Santa Tecla", departamento: "La Libertad" }, password: "encrypted_password", estado: "Activo", fechaRegistro: "2024-01-20" },
-    { _id: "60ed4a45524bcd4877bd8d51", nombre: "Carlos", apellido: "Martínez", edad: 45, dui: "98765432-1", telefono: "+50366778899", correo: "carlos.martinez@mail.com", direccion: { calle: "Boulevard Los Héroes 789", ciudad: "San Salvador", departamento: "San Salvador" }, password: "encrypted_password", estado: "Inactivo", fechaRegistro: "2024-02-01" },
-];
+// --- CONFIGURACIÓN DE API ---
+const API_URL = 'http://localhost:4000/api/clientes'; // Asegúrate que el puerto sea el de tu backend
 
 const Clientes = () => {
     // --- ESTADOS ---
-    const [clientes, setClientes] = useState(initialClientes);
+    const [clientes, setClientes] = useState([]);
+    const [loading, setLoading] = useState(true); // Estado para la carga inicial
     const [selectedCliente, setSelectedCliente] = useState(null);
     const [alert, setAlert] = useState(null);
     const [showAddEditModal, setShowAddEditModal] = useState(false);
@@ -35,6 +29,30 @@ const Clientes = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('todos');
+
+    // --- FUNCIÓN PARA OBTENER DATOS ---
+    const fetchClientes = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(API_URL);
+            // Formateamos la fecha para que sea legible
+            const formattedData = response.data.map(c => ({
+                ...c,
+                fechaRegistro: new Date(c.createdAt).toLocaleDateString(),
+            }));
+            setClientes(formattedData);
+        } catch (error) {
+            showAlert('error', 'Error al cargar los clientes desde el servidor.');
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // --- EFECTO PARA CARGA INICIAL ---
+    useEffect(() => {
+        fetchClientes();
+    }, []);
 
     // --- LÓGICA DE FILTRADO Y PAGINACIÓN ---
     const filteredClientes = useMemo(() => clientes.filter(cliente => {
@@ -51,25 +69,27 @@ const Clientes = () => {
 
     // --- MANEJO DEL FORMULARIO Y VALIDACIÓN ---
     const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm({
-        nombre: '', apellido: '', edad: '', dui: '', telefono: '', correo: '', calle: '', ciudad: '', departamento: '', estado: 'Activo'
-    }, (data) => {
+        nombre: '', apellido: '', edad: '', dui: '', telefono: '', correo: '', calle: '', ciudad: '', departamento: '', estado: 'Activo', password: ''
+    }, (data, isEditing) => {
         const newErrors = {};
         if (!data.nombre.trim()) newErrors.nombre = 'El nombre es requerido';
         if (!data.apellido.trim()) newErrors.apellido = 'El apellido es requerido';
-        if (!data.edad || data.edad < 1 || data.edad > 120) newErrors.edad = 'Edad inválida';
+        if (!data.edad || data.edad < 18 || data.edad > 100) newErrors.edad = 'La edad debe ser entre 18 y 100';
         if (!/^\d{8}-\d$/.test(data.dui)) newErrors.dui = 'DUI inválido (formato: 12345678-9)';
-        if (!/^\+503\d{8}$/.test(data.telefono)) newErrors.telefono = 'Teléfono inválido (+503XXXXXXXX)';
+        if (!/^\+503[6-7]\d{7}$/.test(data.telefono)) newErrors.telefono = 'Teléfono inválido (formato: +503XXXXXXXX)';
         if (!/\S+@\S+\.\S+/.test(data.correo)) newErrors.correo = 'Email inválido';
         if (!data.calle.trim()) newErrors.calle = 'La dirección es requerida';
         if (!data.ciudad.trim()) newErrors.ciudad = 'La ciudad es requerida';
         if (!data.departamento.trim()) newErrors.departamento = 'El departamento es requerido';
+        // La contraseña es requerida solo si no estamos editando
+        if (!isEditing && !data.password) newErrors.password = 'La contraseña es requerida';
         return newErrors;
     });
 
     // --- HANDLERS PARA MODALES Y ACCIONES CRUD ---
     const showAlert = (type, message) => {
         setAlert({ type, message });
-        setTimeout(() => setAlert(null), 4000);
+        setTimeout(() => setAlert(null), 5000);
     };
 
     const handleCloseModals = () => {
@@ -82,6 +102,7 @@ const Clientes = () => {
 
     const handleOpenAddModal = () => {
         resetForm();
+        setErrors({});
         setSelectedCliente(null);
         setShowAddEditModal(true);
     };
@@ -99,6 +120,7 @@ const Clientes = () => {
             ciudad: cliente.direccion.ciudad,
             departamento: cliente.direccion.departamento,
             estado: cliente.estado,
+            password: '' // El password se deja en blanco en la edición por seguridad
         });
         setErrors({});
         setShowAddEditModal(true);
@@ -114,45 +136,41 @@ const Clientes = () => {
         setShowDeleteModal(true);
     };
     
-    const handleSubmit = () => {
-        if (!validateForm()) return;
-        if (selectedCliente) {
-            setClientes(clientes.map(c => c._id === selectedCliente._id ? {
-                ...c,
-                nombre: formData.nombre,
-                apellido: formData.apellido,
-                edad: parseInt(formData.edad),
-                dui: formData.dui,
-                telefono: formData.telefono,
-                correo: formData.correo,
-                direccion: { calle: formData.calle, ciudad: formData.ciudad, departamento: formData.departamento },
-                estado: formData.estado
-            } : c));
-            showAlert('success', '¡Cliente actualizado exitosamente!');
-        } else {
-            const newCliente = {
-                _id: Date.now().toString(),
-                nombre: formData.nombre,
-                apellido: formData.apellido,
-                edad: parseInt(formData.edad),
-                dui: formData.dui,
-                telefono: formData.telefono,
-                correo: formData.correo,
-                direccion: { calle: formData.calle, ciudad: formData.ciudad, departamento: formData.departamento },
-                estado: formData.estado,
-                fechaRegistro: new Date().toISOString().split('T')[0],
-                password: "encrypted_password",
-            };
-            setClientes([...clientes, newCliente]);
-            showAlert('success', '¡Cliente agregado exitosamente!');
+    const handleSubmit = async () => {
+        if (!validateForm(!!selectedCliente)) return;
+    
+        try {
+            if (selectedCliente) {
+                // --- LÓGICA DE ACTUALIZACIÓN ---
+                await axios.put(`${API_URL}/${selectedCliente._id}`, formData);
+                showAlert('success', '¡Cliente actualizado exitosamente!');
+            } else {
+                // --- LÓGICA DE CREACIÓN ---
+                await axios.post(API_URL, formData);
+                showAlert('success', '¡Cliente agregado exitosamente!');
+            }
+            fetchClientes(); // Recargar datos
+            handleCloseModals();
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Ocurrió un error inesperado.';
+            showAlert('error', errorMessage);
+            console.error(error);
         }
-        handleCloseModals();
     };
-
-    const handleDelete = () => {
-        setClientes(clientes.filter(c => c._id !== selectedCliente._id));
-        showAlert('success', '¡Cliente eliminado exitosamente!');
-        handleCloseModals();
+    
+    const handleDelete = async () => {
+        if (!selectedCliente) return;
+        try {
+            // --- LÓGICA DE ELIMINACIÓN ---
+            await axios.delete(`${API_URL}/${selectedCliente._id}`);
+            showAlert('success', '¡Cliente eliminado exitosamente!');
+            fetchClientes(); // Recargar datos
+            handleCloseModals();
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || 'Ocurrió un error inesperado.';
+            showAlert('error', errorMessage);
+            console.error(error);
+        }
     };
 
     // --- DEFINICIONES PARA LA TABLA ---
@@ -168,6 +186,7 @@ const Clientes = () => {
         { header: 'Fecha Registro', key: 'fechaRegistro' },
         { header: 'Acciones', key: 'acciones' },
     ];
+
     const renderRow = (cliente) => (
         <>
             <td className="px-6 py-4"><div className="flex items-center space-x-3"><div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center"><span className="text-cyan-600 font-semibold">{cliente.nombre.charAt(0)}{cliente.apellido.charAt(0)}</span></div><div><div className="font-medium text-gray-900">{cliente.nombre} {cliente.apellido}</div><div className="text-sm text-gray-500">{cliente.edad} años</div></div></div></td>
@@ -208,47 +227,45 @@ const Clientes = () => {
                     columns={tableColumns}
                     data={currentClientes}
                     renderRow={renderRow}
+                    isLoading={loading}
                     noDataMessage="No se encontraron clientes"
                     noDataSubMessage={searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza registrando tu primer cliente'}
                 />
                 <Pagination {...paginationProps} />
             </div>
             
-            {/* MODAL DE FORMULARIO REFACORIZADO */}
-            <ClientesFormModal
-                isOpen={showAddEditModal}
-                onClose={handleCloseModals}
-                onSubmit={handleSubmit}
-                title={selectedCliente ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}
-                formData={formData}
-                handleInputChange={handleInputChange}
-                errors={errors}
-                submitLabel={selectedCliente ? 'Actualizar Cliente' : 'Guardar Cliente'}
-            />
+            {showAddEditModal && (
+              <ClientesFormModal
+                  isOpen={showAddEditModal}
+                  onClose={handleCloseModals}
+                  onSubmit={handleSubmit}
+                  title={selectedCliente ? 'Editar Cliente' : 'Agregar Nuevo Cliente'}
+                  formData={formData}
+                  handleInputChange={handleInputChange}
+                  errors={errors}
+                  submitLabel={selectedCliente ? 'Actualizar Cliente' : 'Guardar Cliente'}
+                  isEditing={!!selectedCliente}
+              />
+            )}
 
-            <DetailModal
-    isOpen={showDetailModal}
-    onClose={handleCloseModals}
-    title="Detalles del Cliente"
-    item={selectedCliente}
-    data={selectedCliente ? [
-        { label: "Nombre Completo", value: `${selectedCliente.nombre} ${selectedCliente.apellido}` },
-        { label: "DUI", value: selectedCliente.dui },
-        { label: "Edad", value: `${selectedCliente.edad} años` },
-        { label: "Teléfono", value: selectedCliente.telefono },
-        { label: "Correo Electrónico", value: selectedCliente.correo },
-        { 
-            label: "Dirección", 
-            value: `${selectedCliente.direccion.calle}, ${selectedCliente.direccion.ciudad}, ${selectedCliente.direccion.departamento}` 
-        },
-        { label: "Fecha de Registro", value: selectedCliente.fechaRegistro },
-        { 
-            label: "Estado", 
-            value: selectedCliente.estado, 
-            color: getEstadoColor(selectedCliente.estado) 
-        },
-    ] : []}
-/>
+            {selectedCliente && (
+              <DetailModal
+                  isOpen={showDetailModal}
+                  onClose={handleCloseModals}
+                  title="Detalles del Cliente"
+                  item={selectedCliente}
+                  data={[
+                      { label: "Nombre Completo", value: `${selectedCliente.nombre} ${selectedCliente.apellido}` },
+                      { label: "DUI", value: selectedCliente.dui },
+                      { label: "Edad", value: `${selectedCliente.edad} años` },
+                      { label: "Teléfono", value: selectedCliente.telefono },
+                      { label: "Correo Electrónico", value: selectedCliente.correo },
+                      { label: "Dirección", value: `${selectedCliente.direccion.calle}, ${selectedCliente.direccion.ciudad}, ${selectedCliente.direccion.departamento}` },
+                      { label: "Fecha de Registro", value: selectedCliente.fechaRegistro },
+                      { label: "Estado", value: selectedCliente.estado, color: getEstadoColor(selectedCliente.estado) },
+                  ]}
+              />
+            )}
 
             <ConfirmationModal
                 isOpen={showDeleteModal}

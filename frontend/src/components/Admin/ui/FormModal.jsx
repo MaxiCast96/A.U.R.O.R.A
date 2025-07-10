@@ -2,74 +2,107 @@ import React from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 
 // Componentes auxiliares
-const InputField = ({ name, label, error, formData, handleInputChange, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <input
-      name={name}
-      value={formData[name] || ''}
-      onChange={handleInputChange}
-      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
-        error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
-      }`}
-      {...props}
-    />
-    {error && (
-      <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
-        <AlertCircle className="w-4 h-4" />
-        <span>{error}</span>
-      </div>
-    )}
-  </div>
-);
+const InputField = ({ name, label, error, formData, handleInputChange, nested, ...props }) => {
+  const getValue = () => {
+    if (nested) {
+      const keys = name.split('.');
+      return keys.reduce((obj, key) => obj?.[key], formData) || '';
+    }
+    return formData[name] || '';
+  };
 
-const SelectField = ({ name, label, error, formData, handleInputChange, options, placeholder, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <select
-      name={name}
-      value={formData[name] || ''}
-      onChange={handleInputChange}
-      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
-        error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
-      }`}
-      {...props}
-    >
-      <option value="">{placeholder || 'Seleccione una opción'}</option>
-      {options.map(option => (
-        <option key={option} value={option}>{option}</option>
-      ))}
-    </select>
-    {error && (
-      <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
-        <AlertCircle className="w-4 h-4" />
-        <span>{error}</span>
-      </div>
-    )}
-  </div>
-);
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <input
+        name={name}
+        value={getValue()}
+        onChange={handleInputChange}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
+          error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
+        }`}
+        {...props}
+      />
+      {error && (
+        <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
-const TextAreaField = ({ name, label, error, formData, handleInputChange, ...props }) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <textarea
-      name={name}
-      value={formData[name] || ''}
-      onChange={handleInputChange}
-      className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none ${
-        error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
-      }`}
-      rows="3"
-      {...props}
-    />
-    {error && (
-      <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
-        <AlertCircle className="w-4 h-4" />
-        <span>{error}</span>
-      </div>
-    )}
-  </div>
-);
+const SelectField = ({ name, label, error, formData, handleInputChange, options, placeholder, nested, ...props }) => {
+  const getValue = () => {
+    if (nested) {
+      const keys = name.split('.');
+      return keys.reduce((obj, key) => obj?.[key], formData) || '';
+    }
+    return formData[name] || '';
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <select
+        name={name}
+        value={getValue()}
+        onChange={handleInputChange}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
+          error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
+        }`}
+        {...props}
+      >
+        <option value="">{placeholder || 'Seleccione una opción'}</option>
+        {options.map(option => (
+          <option key={typeof option === 'object' ? option.value : option} 
+          value={typeof option === 'object' ? option.value : option}>
+      {typeof option === 'object' ? option.label : option}
+  </option>
+        ))}
+      </select>
+      {error && (
+        <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const TextAreaField = ({ name, label, error, formData, handleInputChange, nested, ...props }) => {
+  const getValue = () => {
+    if (nested) {
+      const keys = name.split('.');
+      return keys.reduce((obj, key) => obj?.[key], formData) || '';
+    }
+    return formData[name] || '';
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <textarea
+        name={name}
+        value={getValue()}
+        onChange={handleInputChange}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none ${
+          error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
+        }`}
+        rows="3"
+        {...props}
+      />
+      {error && (
+        <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FormModal = ({
   isOpen,
@@ -80,12 +113,14 @@ const FormModal = ({
   handleInputChange,
   errors,
   submitLabel = 'Guardar',
-  fields = [] // Nueva prop para definir los campos
+  fields = [],
+  children, // Agregamos children para componentes personalizados
+  gridCols = 2 // Agregamos flexibilidad para las columnas
 }) => {
   if (!isOpen) return null;
 
   const renderField = (field) => {
-    const { name, label, type, options, required, ...fieldProps } = field;
+    const { name, label, type, options, required, colSpan = 1, nested, ...fieldProps } = field;
     const displayLabel = required ? `${label} *` : label;
     const error = errors[name];
 
@@ -95,74 +130,83 @@ const FormModal = ({
       error,
       formData,
       handleInputChange,
+      nested,
       ...fieldProps
     };
 
-    switch (type) {
-      case 'select':
-        return (
-          <SelectField
-            key={name}
-            {...commonProps}
-            options={options}
-          />
-        );
-      case 'textarea':
-        return (
-          <TextAreaField
-            key={name}
-            {...commonProps}
-          />
-        );
-      case 'number':
-        return (
-          <InputField
-            key={name}
-            {...commonProps}
-            type="number"
-          />
-        );
-      case 'email':
-        return (
-          <InputField
-            key={name}
-            {...commonProps}
-            type="email"
-          />
-        );
-      case 'date':
-        return (
-          <InputField
-            key={name}
-            {...commonProps}
-            type="date"
-          />
-        );
-      case 'url':
-        return (
-          <InputField
-            key={name}
-            {...commonProps}
-            type="url"
-          />
-        );
-      case 'text':
-      default:
-        return (
-          <InputField
-            key={name}
-            {...commonProps}
-            type="text"
-          />
-        );
-    }
+    const fieldElement = (() => {
+      switch (type) {
+        case 'select':
+          return (
+            <SelectField
+              {...commonProps}
+              options={options}
+            />
+          );
+        case 'textarea':
+          return (
+            <TextAreaField
+              {...commonProps}
+            />
+          );
+        case 'number':
+          return (
+            <InputField
+              {...commonProps}
+              type="number"
+            />
+          );
+        case 'email':
+          return (
+            <InputField
+              {...commonProps}
+              type="email"
+            />
+          );
+        case 'date':
+          return (
+            <InputField
+              {...commonProps}
+              type="date"
+            />
+          );
+        case 'url':
+          return (
+            <InputField
+              {...commonProps}
+              type="url"
+            />
+          );
+        case 'password':
+          return (
+            <InputField
+              {...commonProps}
+              type="password"
+            />
+          );
+        case 'text':
+        default:
+          return (
+            <InputField
+              {...commonProps}
+              type="text"
+            />
+          );
+      }
+    })();
+
+    return (
+      <div key={name} className={`col-span-${colSpan}`}>
+        {fieldElement}
+      </div>
+    );
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
       <form 
         onSubmit={(e) => { e.preventDefault(); onSubmit(); }} 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
       >
         <div className="bg-cyan-500 text-white p-6 rounded-t-xl sticky top-0 z-10">
           <div className="flex justify-between items-center">
@@ -178,7 +222,11 @@ const FormModal = ({
         </div>
         
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`grid grid-cols-1 md:grid-cols-${gridCols} gap-4`}>
+            {/* Renderizar los campos personalizados (children) primero */}
+            {children}
+            
+            {/* Luego renderizar los campos normales */}
             {fields.map(renderField)}
           </div>
         </div>

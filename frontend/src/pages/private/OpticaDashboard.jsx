@@ -5651,9 +5651,7 @@ const PromocionesContent = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
-                
-              </div>
+              
             </div>
           </div>
         </header>

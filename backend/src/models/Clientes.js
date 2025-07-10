@@ -44,6 +44,12 @@ const clientesSchema = new Schema({
     password: {
         type: String,
         required: true
+    },
+    // --- CAMPO AÑADIDO ---
+    estado: {
+        type: String,
+        required: true,
+        default: 'Activo' // Valor por defecto
     }
 }, {
     timestamps: true,
