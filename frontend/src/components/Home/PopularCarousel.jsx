@@ -3,7 +3,7 @@ import React from 'react';
 const PopularCarousel = ({ items, currentSlide, onSlideChange }) => {
   const safeItems = Array.isArray(items) ? items.filter(item => item.image || item.imagen) : [];
   if (safeItems.length === 0) {
-    return <div className="text-center py-8 text-white">No se encontraron productos populares.</div>;
+    return <div className="text-center py-8 text-black">No se encontraron productos populares.</div>;
   }
   return (
     <div className="relative overflow-hidden bg-[#0097c2] rounded-2xl p-8">
@@ -41,4 +41,4 @@ const PopularCarousel = ({ items, currentSlide, onSlideChange }) => {
   );
 };
 
-export default PopularCarousel;
+export default PopularCarousel; 
