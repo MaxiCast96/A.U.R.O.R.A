@@ -372,7 +372,10 @@ const Optometristas = () => {
                 ]}
             />
 
-            <DataTable columns={columns} data={currentData} />
+<DataTable 
+    columns={columns} 
+    data={currentData || []} // Aseguramos que siempre sea un array
+/>
 
             <Pagination
                 currentPage={currentPage}
