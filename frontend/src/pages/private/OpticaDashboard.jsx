@@ -7,6 +7,7 @@ import {
 import Clientes from '../../components/Admin/management/Clientes';
 import Empleados from '../../components/Admin/management/Empleados';
 import Optometristas from '../../components/Admin/management/Optometristas'
+import Recetas from '../../components/Admin/management/Recetas';
 
 const OpticaDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -5587,7 +5588,7 @@ const PromocionesContent = () => {
       case 'historial': 
         return <HistorialMedicoContent />;
       case 'recetas': 
-        return <RecetasContent />;
+        return <Recetas />;
       case 'sucursales':
         return <SucursalesContent />;
       case 'promociones':
