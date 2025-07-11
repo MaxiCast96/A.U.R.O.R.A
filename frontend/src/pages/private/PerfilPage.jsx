@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../components/auth/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const PerfilPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [editMode, setEditMode] = useState(false);
   const [formData, setFormData] = useState({
     nombre: user?.nombre || '',
@@ -12,6 +13,7 @@ const PerfilPage = () => {
     telefono: user?.telefono || ''
   });
   const [showLoginMsg, setShowLoginMsg] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(location.state?.message || null);
 
   useEffect(() => {
     if (!user) {
@@ -21,6 +23,16 @@ const PerfilPage = () => {
       }, 1800);
     }
   }, [user, navigate]);
+
+  // Limpiar mensaje de error después de 5 segundos
+  useEffect(() => {
+    if (errorMessage) {
+      const timer = setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMessage]);
 
   if (!user) {
     return (
@@ -46,6 +58,18 @@ const PerfilPage = () => {
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-8 bg-white rounded-2xl shadow-lg border border-gray-100">
+      {/* Mensaje de error por falta de permisos */}
+      {errorMessage && (
+        <div className="mb-6 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded shadow-md">
+          <div className="flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-semibold">{errorMessage}</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-3xl font-bold text-[#0097c2] flex items-center gap-2">
           <svg className="w-8 h-8 text-[#0097c2]" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
@@ -59,6 +83,34 @@ const PerfilPage = () => {
           Regresar
         </button>
       </div>
+
+      {/* Información del rol del usuario */}
+      <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="flex items-center">
+          <svg className="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="text-blue-800 font-semibold">
+            Rol: {user.rol || user.role || user.userType || 'Usuario'}
+          </span>
+        </div>
+        {user.rol !== 'Cliente' && (
+          <p className="text-blue-600 text-sm mt-1">
+            Tienes acceso al panel de administración. <button 
+              onClick={() => navigate('/dashboard')}
+              className="underline hover:text-blue-800"
+            >
+              Ir al Dashboard
+            </button>
+          </p>
+        )}
+        {user.rol === 'Cliente' && (
+          <p className="text-blue-600 text-sm mt-1">
+            Puedes acceder a tus cotizaciones y gestionar tu cuenta.
+          </p>
+        )}
+      </div>
+
       <form onSubmit={handleSave} className="space-y-5">
         <div>
           <label className="block text-sm font-semibold text-[#0097c2] mb-1">Nombre</label>

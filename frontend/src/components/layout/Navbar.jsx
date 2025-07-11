@@ -176,12 +176,23 @@ const Navbar = ({ onOpenAuth }) => {
           {/* Botón de sesión/perfil */}
           <div className="flex items-center space-x-2">
             {user ? (
-              <Link
-                to="/perfil"
-                className="bg-[#0097c2] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow hover:bg-[#0077a2] transition text-xs sm:text-sm"
-              >
-                Perfil
-              </Link>
+              <>
+                {/* Mostrar enlace al dashboard para cualquier rol que NO sea Cliente */}
+                {user.rol !== 'Cliente' && (
+                  <Link
+                    to="/dashboard"
+                    className="bg-cyan-600 text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow hover:bg-cyan-700 transition text-xs sm:text-sm"
+                  >
+                    Dashboard
+                  </Link>
+                )}
+                <Link
+                  to="/perfil"
+                  className="bg-[#0097c2] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow hover:bg-[#0077a2] transition text-xs sm:text-sm"
+                >
+                  Perfil
+                </Link>
+              </>
             ) : (
               <button
                 onClick={onOpenAuth}
@@ -267,13 +278,17 @@ const Navbar = ({ onOpenAuth }) => {
                 )}
               </div>
 
-              <Link
-                to="/cotizaciones"
-                onClick={closeMobileMenu}
-                className="block py-2 px-3 text-gray-700 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors"
-              >
-                Cotizaciones
-              </Link>
+              {/* Mostrar cotizaciones solo si el usuario está autenticado */}
+              {user && (
+                <Link
+                  to="/cotizaciones"
+                  onClick={closeMobileMenu}
+                  className="block py-2 px-3 text-gray-700 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  Cotizaciones
+                </Link>
+              )}
+
               <Link
                 to="/servicios"
                 onClick={closeMobileMenu}
@@ -295,6 +310,17 @@ const Navbar = ({ onOpenAuth }) => {
               >
                 Nosotros
               </Link>
+
+              {/* Mostrar dashboard para cualquier rol que NO sea Cliente */}
+              {user && user.rol !== 'Cliente' && (
+                <Link
+                  to="/dashboard"
+                  onClick={closeMobileMenu}
+                  className="block py-2 px-3 text-cyan-600 hover:text-cyan-700 hover:bg-cyan-50 rounded-lg transition-colors font-semibold"
+                >
+                  Dashboard
+                </Link>
+              )}
             </div>
           </div>
         )}

@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import OpticaDashboard from "./pages/private/OpticaDashboard";
+import PrivateRoute from "./components/auth/PrivateRoute";
 
 // Importación de las páginas públicas
 import Home from "./pages/public/Home";
@@ -32,24 +33,50 @@ function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
+        {/* Rutas públicas */}
         <Route path="/" element={<Home />} />
         <Route path="/productos" element={<Producto />} />
-        <Route path="/cotizaciones" element={<Cotizaciones />} />
         <Route path="/servicios" element={<Servicio />} />
         <Route path="/agendar" element={<AgendarCitas />} />
         <Route path="/nosotros" element={<Nosotros />} />
-        <Route path="/perfil" element={<PerfilPage />} />
-        <Route path="/dashboard" element={<OpticaDashboard />} />
+        <Route path="/recuperar-password" element={<RecuperarPassword />} />
         
-        // Rutas adicionales
-        <Route path="/cotizaciones/crear" element={<CrearCotizacion />} />
-        <Route path="/cotizaciones/:id" element={<VerCotizacion />} />
+        {/* Rutas de productos específicos */}
         <Route path="/productos/lentes" element={<Producto />} />
         <Route path="/productos/accesorios" element={<Producto />} />
         <Route path="/productos/personalizables" element={<Producto />} />
-        <Route path="/recuperar-password" element={<RecuperarPassword />} />
+        
+        {/* Rutas que requieren autenticación de cliente */}
+        <Route path="/cotizaciones" element={
+          <PrivateRoute requiredRole="Cliente">
+            <Cotizaciones />
+          </PrivateRoute>
+        } />
+        <Route path="/cotizaciones/crear" element={
+          <PrivateRoute requiredRole="Cliente">
+            <CrearCotizacion />
+          </PrivateRoute>
+        } />
+        <Route path="/cotizaciones/:id" element={
+          <PrivateRoute requiredRole="Cliente">
+            <VerCotizacion />
+          </PrivateRoute>
+        } />
+        
+        {/* Rutas que requieren autenticación de empleado */}
+        <Route path="/dashboard" element={
+          <PrivateRoute requiredRole="Empleado">
+            <OpticaDashboard />
+          </PrivateRoute>
+        } />
+        
+        {/* Ruta de perfil - accesible para todos los usuarios autenticados */}
+        <Route path="/perfil" element={
+          <PrivateRoute>
+            <PerfilPage />
+          </PrivateRoute>
+        } />
       </Routes>
-      
     </AnimatePresence>
   );
 }
