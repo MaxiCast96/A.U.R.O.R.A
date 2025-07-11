@@ -2,10 +2,10 @@
 import React from 'react';
 import { Users } from 'lucide-react';
 
-const DataTable = ({ 
+const DataTable = ({
     columns = [], // Valor predeterminado: array vacío
     data = [],    // Valor predeterminado: array vacío
-    renderRow, 
+    renderRow,
     noDataMessage = "No se encontraron datos.",
     noDataSubMessage = "Intenta con otros términos de búsqueda"
 }) => {
@@ -13,8 +13,14 @@ const DataTable = ({
         if (column.render) {
             return column.render(item);
         }
-        const value = column.key.split('.').reduce((obj, key) => obj?.[key], item);
-        return value || '-';
+        // Add a check to ensure column.key exists before calling split
+        if (column.key) {
+            const value = column.key.split('.').reduce((obj, key) => obj?.[key], item);
+            return value || '-';
+        }
+        // Fallback for columns missing 'key' (and no 'render' function)
+        console.warn('Column definition missing "key" property and no custom render function:', column);
+        return '-'; // Display a placeholder or handle as appropriate
     };
 
     return (
