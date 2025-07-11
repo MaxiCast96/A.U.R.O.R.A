@@ -3,7 +3,7 @@ import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
-import BrandCarousel from "../../components/Home/BrandCarousel";
+import BrandsCarousel from "../../components/Home/BrandCarousel";
 import PopularCarousel from "../../components/Home/PopularCarousel";
 import AuthModal from "../../components/auth/AuthModal";
 import useData from '../../hooks/useData';
@@ -129,7 +129,7 @@ const Home = () => {
       >
         <Navbar onOpenAuth={() => setIsAuthModalOpen(true)} />
 
-       {/* Hero simplificado ahora es un carrusel de promociones */}
+        {/* Hero simplificado ahora es un carrusel de promociones */}
         <motion.section
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -140,7 +140,7 @@ const Home = () => {
           <div className="relative max-w-7xl w-full mx-auto h-90  ">
             {/* Fondo principal con diseño moderno */}
             <div className="absolute inset-0 bg-[#0097c2] rounded-lg"></div>
-            
+
             {/* Efecto de ondas */}
             <div className="absolute inset-0 opacity-20 rounded-2xl overflow-hidden">
               <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJ3YXZlIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiPjxwYXRoIGQ9Ik0wIDUwIEMyMCAzMCA0MCAzMCA2MCA1MCBDODAgNzAgMTAwIDcwIDEwMCA1MCIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjd2F2ZSkiLz48L3N2Zz4=')]"></div>
@@ -158,137 +158,136 @@ const Home = () => {
               <div className="text-center text-red-200 py-12">Error al cargar promociones</div>
             ) : (
               <div className="relative h-[280px] md:h-[320px]">
-              {/* Botón anterior */}
-              <button
-                onClick={handlePrevPromo}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:rotate-12 backdrop-blur-sm border border-white/20 "
-                aria-label="Anterior"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-              </button>
+                {/* Botón anterior */}
+                <button
+                  onClick={handlePrevPromo}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:rotate-12 backdrop-blur-sm border border-white/20 "
+                  aria-label="Anterior"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+                </button>
 
-              {/* Contenido de la promoción */}
-              <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 h-full px-6 md:px-8">
-                {safePromociones.length > 0 ? (
-                  <>
-                    <motion.div
-                      key={promoIndex}
-                      initial={{ opacity: 0, x: 40 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -40 }}
-                      transition={{ duration: 0.4 }}
-                      className="flex-1 text-white max-w-lg flex flex-col items-center justify-center text-center"
-                    >
-                      <motion.h2 
-                        animate={{ 
-                          scale: [1, 1.02, 1],
-                          translateZ: [0, 15, 0]
-                        }}
-                        transition={{ 
-                          duration: 5,
-                          repeat: Infinity,
-                          repeatType: "reverse"
-                        }}
-                        className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 text-center text-white drop-shadow-lg"
-                      >
-                        {safePromociones[promoIndex]?.titulo}
-                      </motion.h2>
-                      <motion.p 
-                        animate={{ 
-                          translateZ: [0, 8, 0]
-                        }}
-                        transition={{ 
-                          duration: 5,
-                          repeat: Infinity,
-                          repeatType: "reverse"
-                        }}
-                        className="mb-6 text-base md:text-lg text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
-                      >
-                        {safePromociones[promoIndex]?.descripcion}
-                      </motion.p>
-                      <motion.div 
-                        animate={{ 
-                          y: [0, -4, 0],
-                          rotate: [0, 1, 0]
-                        }}
-                        transition={{ 
-                          duration: 5,
-                          repeat: Infinity,
-                          repeatType: "reverse"
-                        }}
-                        className="flex justify-center w-full"
-                      >
-                        {safePromociones[promoIndex]?.enlace && (
-                          <a
-                            href={safePromociones[promoIndex]?.enlace}
-                            className="bg-white text-[#0097c2] font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-base border-2 border-white hover:bg-transparent hover:text-white"
-                          >
-                            Ver Promoción
-                          </a>
-                        )}
-                      </motion.div>
-                    </motion.div>
-
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.3 }}
-                      className="flex-1 flex justify-center items-center"
-                    >
+                {/* Contenido de la promoción */}
+                <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 h-full px-6 md:px-8">
+                  {safePromociones.length > 0 ? (
+                    <>
                       <motion.div
-                        animate={{ 
-                          rotateY: [0, 4, 0],
-                          rotateX: [0, 4, 0],
-                          scale: [1, 1.03, 1]
-                        }}
-                        transition={{ 
-                          duration: 5,
-                          repeat: Infinity,
-                          repeatType: "reverse"
-                        }}
-                        className="relative transform-style-3d"
+                        key={promoIndex}
+                        initial={{ opacity: 0, x: 40 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -40 }}
+                        transition={{ duration: 0.4 }}
+                        className="flex-1 text-white max-w-lg flex flex-col items-center justify-center text-center"
                       >
-                        <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-2xl blur-xl transform -rotate-1 translate-z-[-20px]"></div>
-                        <motion.img
-                          key={safePromociones[promoIndex]?.imagen}
-                          src={safePromociones[promoIndex]?.imagen}
-                          alt={safePromociones[promoIndex]?.titulo}
-                          className="rounded-2xl w-60 h-40 md:w-80 md:h-52 lg:w-96 lg:h-60 object-cover shadow-2xl relative z-10 border-2 border-white/30"
-                          style={{
-                            transformStyle: 'preserve-3d',
+                        <motion.h2
+                          animate={{
+                            scale: [1, 1.02, 1],
+                            translateZ: [0, 15, 0]
                           }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl transform translate-z-[-10px]"></div>
+                          transition={{
+                            duration: 5,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                          }}
+                          className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 text-center text-white drop-shadow-lg"
+                        >
+                          {safePromociones[promoIndex]?.titulo}
+                        </motion.h2>
+                        <motion.p
+                          animate={{
+                            translateZ: [0, 8, 0]
+                          }}
+                          transition={{
+                            duration: 5,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                          }}
+                          className="mb-6 text-base md:text-lg text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
+                        >
+                          {safePromociones[promoIndex]?.descripcion}
+                        </motion.p>
+                        <motion.div
+                          animate={{
+                            y: [0, -4, 0],
+                            rotate: [0, 1, 0]
+                          }}
+                          transition={{
+                            duration: 5,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                          }}
+                          className="flex justify-center w-full"
+                        >
+                          {safePromociones[promoIndex]?.enlace && (
+                            <a
+                              href={safePromociones[promoIndex]?.enlace}
+                              className="bg-white text-[#0097c2] font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-base border-2 border-white hover:bg-transparent hover:text-white"
+                            >
+                              Ver Promoción
+                            </a>
+                          )}
+                        </motion.div>
                       </motion.div>
-                    </motion.div>
-                  </>
-                ) : (
-                  <div className="flex flex-col items-center flex justify-center w-full h-full">
-                    
-                    <br/>
-                    <br/>
-                    <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg">No hay promociones activas en este momento</h2>
-                    <p className="mb-6 text-base md:text-lg text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow">Vuelve pronto para descubrir nuevas ofertas y promociones especiales.</p>
-                  </div>
-                )}
-              </div>
 
-              {/* Botón siguiente */}
-              <button
-                onClick={handleNextPromo}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:-rotate-12 backdrop-blur-sm border border-white/20"
-                aria-label="Siguiente"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </div>
-          )}
-        </div>
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                        className="flex-1 flex justify-center items-center"
+                      >
+                        <motion.div
+                          animate={{
+                            rotateY: [0, 4, 0],
+                            rotateX: [0, 4, 0],
+                            scale: [1, 1.03, 1]
+                          }}
+                          transition={{
+                            duration: 5,
+                            repeat: Infinity,
+                            repeatType: "reverse"
+                          }}
+                          className="relative transform-style-3d"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-2xl blur-xl transform -rotate-1 translate-z-[-20px]"></div>
+                          <motion.img
+                            key={safePromociones[promoIndex]?.imagen}
+                            src={safePromociones[promoIndex]?.imagen}
+                            alt={safePromociones[promoIndex]?.titulo}
+                            className="rounded-2xl w-60 h-40 md:w-80 md:h-52 lg:w-96 lg:h-60 object-cover shadow-2xl relative z-10 border-2 border-white/30"
+                            style={{
+                              transformStyle: 'preserve-3d',
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl transform translate-z-[-10px]"></div>
+                        </motion.div>
+                      </motion.div>
+                    </>
+                  ) : (
+                    <div className="flex flex-col items-center flex justify-center w-full h-full">
+
+                      <br />
+                      <br />
+                      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg">No hay promociones activas en este momento</h2>
+                      <p className="mb-6 text-base md:text-lg text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow">Vuelve pronto para descubrir nuevas ofertas y promociones especiales.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Botón siguiente */}
+                <button
+                  onClick={handleNextPromo}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/15 hover:bg-white/25 text-white rounded-full p-2.5 shadow-lg transition-all duration-300 hover:scale-110 z-20 transform hover:-rotate-12 backdrop-blur-sm border border-white/20"
+                  aria-label="Siguiente"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+            )}
+          </div>
         </motion.section>
         <br />
         <br />
-        <br />
-        <br />
+
 
         {/* Categorías simplificadas */}
         <motion.section
@@ -381,10 +380,9 @@ const Home = () => {
         </motion.section>
 
         <br />
-        <br />
-        <br />
 
-        {/* Servicios con animaciones más sutiles */}
+
+        {/* Servici os con animaciones más sutiles */}
         <motion.section
           variants={fadeIn}
           initial="initial"
@@ -821,28 +819,26 @@ const Home = () => {
         </motion.section>
 
         {/* Nuestras marcas */}
-        <motion.section
-          variants={fadeIn}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          className="max-w-6xl mx-auto px-4 mb-12"
-        >
-          <h2 className="text-2xl font-bold text-center mb-8">Marcas</h2>
-          {loadingBrands ? (
-            <div className="text-center py-8">Cargando marcas...</div>
-          ) : errorBrands ? (
-            <div className="text-center text-red-500 py-8">Error al cargar marcas</div>
-          ) : Array.isArray(safeBrands) && safeBrands.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No hay marcas disponibles actualmente.</div>
-          ) : (
-            <BrandCarousel
-              brands={Array.isArray(safeBrands) ? safeBrands : []}
-              currentSlide={currentBrandSlide}
-              onSlideChange={setCurrentBrandSlide}
-            />
-          )}
-        </motion.section>
+<motion.section
+  variants={fadeIn}
+  initial="initial"
+  whileInView="animate"
+  viewport={{ once: true }}
+  className="w-full"
+>
+  <h2 className="text-2xl font-bold text-center mb-8">Marcas</h2>
+  {loadingBrands ? (
+    <div className="text-center py-8">Cargando marcas...</div>
+  ) : errorBrands ? (
+    <div className="text-center text-red-500 py-8">Error al cargar marcas</div>
+  ) : Array.isArray(safeBrands) && safeBrands.length === 0 ? (
+    <div className="text-center py-8 text-gray-500">No hay marcas disponibles actualmente.</div>
+  ) : (
+    <BrandsCarousel brands={Array.isArray(safeBrands) ? safeBrands : []} />
+  )}
+</motion.section>
+
+        <br /><br />
 
         {/* Populares */}
         <motion.section
@@ -914,11 +910,11 @@ const Home = () => {
               {/* Logo and description column */}
               <div className="md:col-span-4 space-y-4">
                 <div className="flex items-center space-x-3">
-                <img 
-              src="https://i.imgur.com/rYfBDzN.png" 
-              alt="Óptica La Inteligente" 
-              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
-            />
+                  <img
+                    src="https://i.imgur.com/rYfBDzN.png"
+                    alt="Óptica La Inteligente"
+                    className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+                  />
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
