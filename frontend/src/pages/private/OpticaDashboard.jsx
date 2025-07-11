@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '../../components/Admin/Sidebar';
 import '../../App.css';
 import { 
@@ -23,6 +23,20 @@ const OpticaDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setActiveSection('recetas');
+    window.addEventListener('goToRecetasAndEdit', handler);
+    // Cierra el menú móvil si cambias a escritorio
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) setMobileMenuOpen(false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('goToRecetasAndEdit', handler);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard', section: 'Principal' },
@@ -102,7 +116,7 @@ const OpticaDashboard = () => {
         setActiveSection={setActiveSection}
       />
       
-      <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <div className={`transition-all duration-300 ml-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
         {/* Header móvil */}
         <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between">
           <button

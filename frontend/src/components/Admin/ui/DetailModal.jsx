@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const DetailModal = ({ isOpen, onClose, title, item, data = [] }) => {
+const DetailModal = ({ isOpen, onClose, title, item, data = [], actions = [] }) => {
   if (!isOpen || !item) return null;
 
   return (
@@ -49,7 +49,22 @@ const DetailModal = ({ isOpen, onClose, title, item, data = [] }) => {
         </div>
 
         {/* Pie de página */}
-        <div className="p-4 bg-gray-50 rounded-b-xl flex justify-end flex-shrink-0">
+        <div className="p-4 bg-gray-50 rounded-b-xl flex flex-wrap gap-2 justify-end flex-shrink-0">
+          {actions && actions.map((action, idx) => (
+            <button
+              key={idx}
+              onClick={action.onClick}
+              className={`px-5 py-2 rounded-lg font-semibold transition-all duration-200 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-400 ${
+                action.color === 'red' ? 'bg-red-500 text-white hover:bg-red-600' :
+                action.color === 'green' ? 'bg-green-500 text-white hover:bg-green-600' :
+                'bg-cyan-500 text-white hover:bg-cyan-600'
+              }`}
+              style={action.style}
+            >
+              {action.icon && <span className="inline-block mr-2 align-middle">{action.icon}</span>}
+              {action.label}
+            </button>
+          ))}
           <button onClick={onClose} className="px-5 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105">Cerrar</button>
         </div>
       </div>

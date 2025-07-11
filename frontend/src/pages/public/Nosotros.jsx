@@ -8,14 +8,14 @@ const Nosotros = () => {
       <Navbar />
       <div className="font-['Lato'] bg-gray-50">
         {/* Hero Section */}
-        <section className="bg-[#0097c2] text-white py-24 relative overflow-hidden">
+        <section className="bg-[#0097c2] text-white py-16 sm:py-24 relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-[#0097c2] to-[#00b4e4] opacity-90"></div>
-          <div className="container mx-auto px-4 relative z-10">
+          <div className="container mx-auto px-2 sm:px-4 relative z-10">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-5xl font-bold mb-6">
+              <h1 className="text-3xl sm:text-5xl font-bold mb-4 sm:mb-6">
                 Óptica la Inteligente
               </h1>
-              <p className="text-xl opacity-90">
+              <p className="text-base sm:text-xl opacity-90">
                 Cuidando tu visión desde hace más de una década
               </p>
             </div>
@@ -23,29 +23,29 @@ const Nosotros = () => {
         </section>
 
         {/* Historia Section */}
-        <section className="py-20">
-          <div className="container mx-auto px-4">
+        <section className="py-10 sm:py-20">
+          <div className="container mx-auto px-2 sm:px-4">
             <div className="max-w-6xl mx-auto">
-              <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12 mb-12">
-                <h2 className="text-3xl font-bold text-gray-800 mb-8 text-center">
+              <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-8 md:p-12 mb-8 sm:mb-12">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 sm:mb-8 text-center">
                   Nuestra Historia
                 </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-12 items-center">
                   <div className="flex justify-center">
                     <img
                       src="/logo.png"
                       alt="Óptica La Inteligente"
-                      className="w-64 h-64 rounded-full bg-white p-4 shadow-lg transform hover:scale-105 transition-transform duration-300"
+                      className="w-40 h-40 sm:w-64 sm:h-64 rounded-full bg-white p-2 sm:p-4 shadow-lg transform hover:scale-105 transition-transform duration-300 max-w-full"
                     />
                   </div>
-                  <div className="space-y-6">
-                    <p className="text-lg text-gray-600 leading-relaxed">
+                  <div className="space-y-4 sm:space-y-6">
+                    <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
                       Óptica la Inteligente nació del corazón y la visión de una
                       mujer valiente: Norita González. Con un profundo deseo de
                       ayudar a quienes más lo necesitan, ella comenzó este
                       emprendimiento familiar con fe, esfuerzo y mucho amor.
                     </p>
-                    <p className="text-lg text-gray-600 leading-relaxed">
+                    <p className="text-base sm:text-lg text-gray-600 leading-relaxed">
                       Fundada en 2010, nuestra historia comenzó en un pequeño local
                       en el centro de la ciudad. Con dedicación y trabajo duro, hemos
                       crecido hasta convertirnos en una referencia en servicios
@@ -59,8 +59,8 @@ const Nosotros = () => {
         </section>
 
         {/* Misión y Visión Grid */}
-        <section className="py-16">
-          <div className="container mx-auto px-4">
+        <section className="py-10 sm:py-16">
+          <div className="container mx-auto px-2 sm:px-4">
             <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Misión Card */}
               <div className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-shadow">
@@ -97,12 +97,12 @@ const Nosotros = () => {
         </section>
 
         {/* Valores Section with Icons */}
-        <section className="py-20 bg-white">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center text-gray-800 mb-12">
+        <section className="py-10 sm:py-20 bg-white">
+          <div className="container mx-auto px-2 sm:px-4">
+            <h2 className="text-2xl sm:text-3xl font-bold text-center text-gray-800 mb-8 sm:mb-12">
               Nuestros Valores
             </h2>
-            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="max-w-6xl mx-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
               {[
                 {
                   title: "Compromiso",
@@ -181,9 +181,9 @@ const Nosotros = () => {
         </section>
 
         {/* Estadísticas Section */}
-        <section className="py-16 bg-[#0097c2] text-white">
-          <div className="container mx-auto px-4">
-            <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 text-center">
+        <section className="py-10 sm:py-16 bg-[#0097c2] text-white">
+          <div className="container mx-auto px-2 sm:px-4">
+            <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-8 text-center">
               {[
                 { number: "10+", label: "Años de Experiencia" },
                 { number: "5000+", label: "Pacientes Atendidos" },

@@ -1,86 +1,299 @@
-import React, { useState } from 'react';
-import { Search, Plus, Trash2, Eye, Edit, Calendar, User, Clock, CheckCircle, XCircle, AlertTriangle, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { Search, Plus, Trash2, Eye, Edit, Calendar, User, Clock, CheckCircle, XCircle, AlertTriangle, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import FormModal from '../ui/FormModal';
+import DetailModal from '../ui/DetailModal';
+import Alert from '../ui/Alert';
+import ConfirmationModal from '../ui/ConfirmationModal';
+
+const API_URL = 'http://localhost:4000/api';
+
+const initialFormState = {
+  clienteId: '',
+  optometristaId: '',
+  sucursalId: '',
+  fecha: '',
+  hora: '',
+  estado: 'Pendiente',
+  motivoCita: '',
+  tipoLente: '',
+  graduacion: '',
+  notasAdicionales: ''
+};
 
 const CitasContent = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]); // Fecha actual en formato YYYY-MM-DD
-    const [setShowAddModal] = useState(false);
-    
-    // Paginación
-    const [currentPage, setCurrentPage] = useState(0);
-    const [pageSize, setPageSize] = useState(5);
+  const [selectedDate, setSelectedDate] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedCita, setSelectedCita] = useState(null);
+  const [citas, setCitas] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [optometristas, setOptometristas] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
+  const [formData, setFormData] = useState(initialFormState);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [detailCita, setDetailCita] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, cita: null });
 
-    // Datos de ejemplo para citas
-    const citas = [
-      {
-        id: 1,
-        cliente: 'Juan Pérez',
-        servicio: 'Examen de la vista',
-        fecha: '2024-05-28',
-        hora: '10:00',
-        sucursal: 'Sucursal Principal',
-        estado: 'Confirmada'
-      },
-      {
-        id: 2,
-        cliente: 'María García',
-        servicio: 'Adaptación de lentes de contacto',
-        fecha: '2024-05-28',
-        hora: '11:30',
-        sucursal: 'Sucursal Centro',
-        estado: 'Pendiente'
-      },
-      {
-        id: 3,
-        cliente: 'Roberto Martínez',
-        servicio: 'Consulta oftalmológica',
-        fecha: '2024-05-29',
-        hora: '14:00',
-        sucursal: 'Sucursal Principal',
-        estado: 'Realizada'
-      },
-      {
-        id: 4,
-        cliente: 'Ana López',
-        servicio: 'Examen de la vista',
-        fecha: '2024-05-29',
-        hora: '09:00',
-        sucursal: 'Sucursal Norte',
-        estado: 'Cancelada'
-      },
-      {
-        id: 5,
-        cliente: 'Carlos Sánchez',
-        servicio: 'Ajuste de armazón',
-        fecha: '2024-05-28',
-        hora: '15:00',
-        sucursal: 'Sucursal Principal',
-        estado: 'Confirmada'
-      },
-      {
-        id: 6,
-        cliente: 'Laura Gómez',
-        servicio: 'Examen de la vista',
-        fecha: '2024-05-30',
-        hora: '10:30',
-        sucursal: 'Sucursal Centro',
-        estado: 'Pendiente'
-      },
-      {
-        id: 7,
-        cliente: 'Javier Fernández',
-        servicio: 'Consulta de seguimiento',
-        fecha: '2024-05-30',
-        hora: '16:00',
-        sucursal: 'Sucursal Norte',
-        estado: 'Confirmada'
+  // Fetch datos
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [citasRes, clientesRes, optosRes, sucursalesRes] = await Promise.all([
+          axios.get(`${API_URL}/citas`),
+          axios.get(`${API_URL}/clientes`),
+          axios.get(`${API_URL}/optometrista`),
+          axios.get(`${API_URL}/sucursales`)
+        ]);
+        setCitas(Array.isArray(citasRes.data) ? citasRes.data : []);
+        setClientes(clientesRes.data || []);
+        setOptometristas(optosRes.data || []);
+        setSucursales(sucursalesRes.data || []);
+      } catch (err) {
+        setError('Error al cargar datos.');
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
+    fetchData();
+  }, []);
+
+  // Handlers
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleOpenAddModal = () => {
+    setFormData(initialFormState);
+    setShowAddModal(true);
+    setSelectedCita(null);
+  };
+
+  const handleOpenEditModal = (cita) => {
+    setFormData({
+      clienteId: cita.clienteId?._id || cita.clienteId || '',
+      optometristaId: cita.optometristaId?._id || cita.optometristaId || '',
+      sucursalId: cita.sucursalId?._id || cita.sucursalId || '',
+      fecha: cita.fecha ? cita.fecha.slice(0, 10) : '',
+      hora: cita.hora || '',
+      estado: cita.estado || 'Pendiente',
+      motivoCita: cita.motivoCita || '',
+      tipoLente: cita.tipoLente || '',
+      graduacion: cita.graduacion || '',
+      notasAdicionales: cita.notasAdicionales || ''
+    });
+    setSelectedCita(cita);
+    setShowEditModal(true);
+    setShowDetailModal(false); // Cierra el modal de detalle si está abierto
+  };
+
+  const handleCloseModal = () => {
+    setShowAddModal(false);
+    setShowEditModal(false);
+    setShowDetailModal(false);
+    setSelectedCita(null);
+    setFormData(initialFormState);
+  };
+
+  const handleShowDetail = (cita) => {
+    setDetailCita(cita);
+    setShowDetailModal(true);
+  };
+
+  // Opciones para selects
+  const clienteOptions = clientes.map(c => ({
+    value: c._id,
+    label: `${c.nombre} ${c.apellido}`
+  }));
+  const optometristaOptions = optometristas.map(o => ({
+    value: o._id,
+    label: o.empleadoId ? `${o.empleadoId.nombre} ${o.empleadoId.apellido}` : `Optometrista ${o._id}`
+  }));
+  const sucursalOptions = sucursales.map(s => ({
+    value: s._id,
+    label: s.nombre
+  }));
+  const estadoOptions = [
+    { value: 'agendada', label: 'Agendada' },
+    { value: 'pendiente', label: 'Pendiente' },
+    { value: 'confirmada', label: 'Confirmada' },
+    { value: 'cancelada', label: 'Cancelada' },
+    { value: 'completada', label: 'Completada' }
+  ];
+
+  // Definición de campos para el FormModal
+  const fields = [
+    {
+      name: 'clienteId',
+      label: 'Cliente',
+      type: 'select',
+      options: clienteOptions,
+      placeholder: 'Seleccione un cliente',
+      required: true,
+      colSpan: 2
+    },
+    {
+      name: 'optometristaId',
+      label: 'Optometrista',
+      type: 'select',
+      options: optometristaOptions,
+      placeholder: 'Seleccione un optometrista',
+      required: true,
+      colSpan: 2
+    },
+    {
+      name: 'sucursalId',
+      label: 'Sucursal',
+      type: 'select',
+      options: sucursalOptions,
+      placeholder: 'Seleccione una sucursal',
+      required: true,
+      colSpan: 2
+    },
+    {
+      name: 'fecha',
+      label: 'Fecha',
+      type: 'date',
+      required: true,
+      colSpan: 1
+    },
+    {
+      name: 'hora',
+      label: 'Hora',
+      type: 'text',
+      placeholder: 'Ej. 10:30',
+      required: true,
+      colSpan: 1
+    },
+    {
+      name: 'estado',
+      label: 'Estado',
+      type: 'select',
+      options: estadoOptions,
+      required: true,
+      colSpan: 2
+    },
+    {
+      name: 'motivoCita',
+      label: 'Motivo de la cita',
+      type: 'text',
+      placeholder: 'Ej. Examen visual',
+      required: true,
+      colSpan: 4
+    },
+    {
+      name: 'tipoLente',
+      label: 'Tipo de lente',
+      type: 'text',
+      placeholder: 'Ej. Monofocal',
+      colSpan: 2
+    },
+    {
+      name: 'graduacion',
+      label: 'Graduación',
+      type: 'text',
+      placeholder: 'Ej. -1.25',
+      colSpan: 2
+    },
+    {
+      name: 'notasAdicionales',
+      label: 'Notas adicionales',
+      type: 'textarea',
+      placeholder: 'Observaciones...',
+      colSpan: 4
+    }
+  ];
+
+  // Validación simple
+  const validate = () => {
+    const newErrors = {};
+    fields.forEach(field => {
+      if (field.required && !formData[field.name]) {
+        newErrors[field.name] = 'Este campo es obligatorio';
+      }
+    });
+    // Validar tipoLente y graduacion explícitamente
+    if (!formData.tipoLente) newErrors.tipoLente = 'Este campo es obligatorio';
+    if (!formData.graduacion) newErrors.graduacion = 'Este campo es obligatorio';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Refactorizar handleSubmit para usar validación y feedback visual
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    setLoading(true);
+    try {
+      // Asegurar que la fecha se envía como Date
+      const dataToSend = {
+        ...formData,
+        fecha: formData.fecha ? new Date(formData.fecha) : undefined
+      };
+      if (selectedCita) {
+        await axios.put(`${API_URL}/citas/${selectedCita._id}`, dataToSend);
+        showNotification('Cita editada correctamente', 'success');
+      } else {
+        await axios.post(`${API_URL}/citas`, dataToSend);
+        showNotification('Cita creada correctamente', 'success');
+      }
+      // Refrescar citas
+      const citasRes = await axios.get(`${API_URL}/citas`);
+      setCitas(Array.isArray(citasRes.data) ? citasRes.data : []);
+      handleCloseModal();
+    } catch (err) {
+      if (err.response && err.response.data && err.response.data.message) {
+        setError('Error: ' + err.response.data.message);
+        showNotification('Error: ' + err.response.data.message, 'error');
+      } else {
+        setError('Error al guardar la cita.');
+        showNotification('Error al guardar la cita.', 'error');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Eliminar cita (desde tabla o modal de detalle)
+  const handleDelete = (cita) => {
+    setConfirmDelete({ open: true, cita });
+  };
+
+  const confirmDeleteCita = async () => {
+    const cita = confirmDelete.cita;
+    setLoading(true);
+    try {
+      await axios.delete(`${API_URL}/citas/${cita._id}`);
+      setCitas(citas.filter(c => c._id !== cita._id));
+      setShowDetailModal(false);
+      setConfirmDelete({ open: false, cita: null });
+      const clienteNombre = cita.clienteId && (cita.clienteId.nombre || cita.clienteId.apellido)
+        ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.trim()
+        : 'cliente';
+      showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete');
+    } catch (err) {
+      setError('Error al eliminar la cita.');
+      showNotification('Error al eliminar la cita.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
     const filteredCitas = citas.filter(cita => {
-        const matchesSearch = cita.cliente.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              cita.servicio.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesDate = selectedDate ? cita.fecha === selectedDate : true;
+        const clienteStr = (cita.cliente || '').toLowerCase();
+        const servicioStr = (cita.servicio || '').toLowerCase();
+        const matchesSearch = clienteStr.includes(searchTerm.toLowerCase()) ||
+                              servicioStr.includes(searchTerm.toLowerCase());
+        const matchesDate = !selectedDate || (cita.fecha && (new Date(cita.fecha).toISOString().split('T')[0] === selectedDate));
         return matchesSearch && matchesDate;
     });
 
@@ -106,8 +319,39 @@ const CitasContent = () => {
     const citasPendientes = citas.filter(c => c.estado === 'Pendiente').length;
     const citasConfirmadas = citas.filter(c => c.estado === 'Confirmada').length;
 
+    // Función para avanzar o retroceder días en el calendario
+    const changeDay = (direction) => {
+      let baseDate;
+      if (!selectedDate) {
+        baseDate = new Date();
+      } else {
+        baseDate = new Date(selectedDate);
+      }
+      baseDate.setDate(baseDate.getDate() + direction);
+      setSelectedDate(baseDate.toISOString().split('T')[0]);
+    };
+
+  // Función para mostrar notificaciones
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3500);
+  };
+
+  // Personaliza notificaciones para visualizar y eliminar cita
+  useEffect(() => {
+    if (showDetailModal && detailCita) {
+      showNotification('Visualizando cita de ' + (detailCita.clienteId ? `${detailCita.clienteId.nombre || ''} ${detailCita.clienteId.apellido || ''}`.trim() : 'N/A'), 'info');
+    }
+    // eslint-disable-next-line
+  }, [showDetailModal, detailCita]);
+
     return (
       <div className="space-y-6 animate-fade-in">
+      {notification && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
+          <Alert type={notification.type} message={notification.message} />
+        </div>
+      )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
@@ -170,14 +414,31 @@ const CitasContent = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 />
               </div>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+            <div className="relative flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => changeDay(-1)}
+                className="p-2 rounded-full hover:bg-cyan-100 transition-colors"
+                title="Día anterior"
+              >
+                <ChevronLeft className="w-5 h-5 text-cyan-500" />
+              </button>
+              <Calendar className="w-5 h-5 text-gray-400 absolute left-10 top-3" />
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                />
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent min-w-[140px]"
+                style={{ minWidth: '140px' }}
+              />
+              <button
+                type="button"
+                onClick={() => changeDay(1)}
+                className="p-2 rounded-full hover:bg-cyan-100 transition-colors"
+                title="Día siguiente"
+              >
+                <ChevronRight className="w-5 h-5 text-cyan-500" />
+              </button>
               </div>
             </div>
           </div>
@@ -188,6 +449,7 @@ const CitasContent = () => {
                 <tr>
                   <th className="px-6 py-4 text-left font-semibold">Cliente</th>
                   <th className="px-6 py-4 text-left font-semibold">Servicio</th>
+                <th className="px-6 py-4 text-left font-semibold">Optometrista</th>
                   <th className="px-6 py-4 text-left font-semibold">Fecha y Hora</th>
                   <th className="px-6 py-4 text-left font-semibold">Sucursal</th>
                   <th className="px-6 py-4 text-left font-semibold">Estado</th>
@@ -197,20 +459,27 @@ const CitasContent = () => {
               <tbody className="divide-y divide-gray-200">
                 {currentCitas.map((cita) => {
                   const estadoInfo = getEstadoInfo(cita.estado);
+                // Obtener nombres de los campos populados
+                const clienteNombre = cita.clienteId ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.trim() : '';
+                const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
+                const optometristaNombre = cita.optometristaId && cita.optometristaId.empleadoId ? `${cita.optometristaId.empleadoId.nombre || ''} ${cita.optometristaId.empleadoId.apellido || ''}`.trim() : (cita.optometristaId?.nombre || 'N/A');
+                // Motivo de la cita como servicio
+                const servicio = cita.motivoCita || '';
                   return (
-                    <tr key={cita.id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={cita._id || cita.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <User className="w-5 h-5 text-gray-400" />
-                          <span className="font-medium text-gray-900">{cita.cliente}</span>
+                        <span className="font-medium text-gray-900">{clienteNombre || 'N/A'}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-gray-600">{cita.servicio}</td>
+                    <td className="px-6 py-4 text-gray-600">{servicio || 'N/A'}</td>
+                    <td className="px-6 py-4 text-gray-600">{optometristaNombre || 'N/A'}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <Clock className="w-5 h-5 text-gray-400" />
                           <div>
-                            <div className="font-medium text-gray-900">{cita.fecha}</div>
+                          <div className="font-medium text-gray-900">{cita.fecha ? (new Date(cita.fecha)).toLocaleDateString() : ''}</div>
                             <div className="text-sm text-gray-500">{cita.hora}</div>
                           </div>
                         </div>
@@ -218,7 +487,7 @@ const CitasContent = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <MapPin className="w-5 h-5 text-gray-400" />
-                          <span className="text-gray-800">{cita.sucursal}</span>
+                        <span className="text-gray-800">{sucursalNombre || 'N/A'}</span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
@@ -229,13 +498,13 @@ const CitasContent = () => {
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex space-x-2">
-                          <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Cancelar">
+                        <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar" onClick={() => handleDelete(cita)}>
                             <Trash2 className="w-4 h-4" />
                           </button>
-                          <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
+                        <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles" onClick={() => handleShowDetail(cita)}>
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Editar">
+                        <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Editar" onClick={() => handleOpenEditModal(cita)}>
                             <Edit className="w-4 h-4" />
                           </button>
                         </div>
@@ -287,6 +556,61 @@ const CitasContent = () => {
             </div>
           </div>
         </div>
+    {/* MODAL DE ALTA/EDICIÓN */}
+    <FormModal
+      isOpen={showAddModal || showEditModal}
+      onClose={handleCloseModal}
+      onSubmit={handleSubmit}
+      title={selectedCita ? 'Editar Cita' : 'Agendar Cita'}
+      formData={formData}
+      handleInputChange={handleInputChange}
+      errors={errors}
+      submitLabel={selectedCita ? 'Guardar cambios' : 'Agendar'}
+      fields={fields}
+      gridCols={4}
+    />
+    {/* MODAL DE DETALLE DE CITA */}
+    <DetailModal
+      isOpen={showDetailModal}
+      onClose={() => setShowDetailModal(false)}
+      title="Detalle de Cita"
+      item={detailCita}
+      data={[
+        { label: 'Cliente', value: detailCita && detailCita.clienteId ? `${detailCita.clienteId.nombre || ''} ${detailCita.clienteId.apellido || ''}`.trim() : 'N/A' },
+        { label: 'Optometrista', value: detailCita && detailCita.optometristaId && detailCita.optometristaId.empleadoId ? `${detailCita.optometristaId.empleadoId.nombre || ''} ${detailCita.optometristaId.empleadoId.apellido || ''}`.trim() : (detailCita?.optometristaId?.nombre || 'N/A') },
+        { label: 'Sucursal', value: detailCita && detailCita.sucursalId ? detailCita.sucursalId.nombre : 'N/A' },
+        { label: 'Fecha', value: detailCita && detailCita.fecha ? (new Date(detailCita.fecha)).toLocaleDateString() : 'N/A' },
+        { label: 'Hora', value: detailCita && detailCita.hora ? detailCita.hora : 'N/A' },
+        { label: 'Estado', value: detailCita && detailCita.estado ? detailCita.estado : 'N/A' },
+        { label: 'Motivo de la cita', value: detailCita && detailCita.motivoCita ? detailCita.motivoCita : 'N/A' },
+        { label: 'Tipo de lente', value: detailCita && detailCita.tipoLente ? detailCita.tipoLente : 'N/A' },
+        { label: 'Graduación', value: detailCita && detailCita.graduacion ? detailCita.graduacion : 'N/A' },
+        { label: 'Notas adicionales', value: detailCita && detailCita.notasAdicionales ? detailCita.notasAdicionales : 'N/A' },
+      ]}
+      actions={[
+        {
+          label: 'Editar',
+          onClick: () => detailCita && handleOpenEditModal(detailCita),
+          color: 'green',
+          icon: <Edit className="w-4 h-4 inline-block align-middle" />
+        },
+        {
+          label: 'Eliminar',
+          onClick: () => detailCita && handleDelete(detailCita),
+          color: 'red',
+          icon: <Trash2 className="w-4 h-4 inline-block align-middle" />
+        }
+      ]}
+    />
+    {/* MODAL DE CONFIRMACIÓN DE ELIMINAR CITA */}
+    <ConfirmationModal
+      isOpen={confirmDelete.open}
+      onClose={() => setConfirmDelete({ open: false, cita: null })}
+      onConfirm={confirmDeleteCita}
+      title="¿Estás seguro de eliminar la cita?"
+      message="Esta acción eliminará la cita de forma permanente."
+    />
+    {/* ... otros modales si aplica ... */}
       </div>
     );
 };

@@ -81,7 +81,7 @@ const AgendarCitas = () => {
     switch (step) {
       case 1:
         return (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <input
                 type="text"
@@ -156,46 +156,48 @@ const AgendarCitas = () => {
         return (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <table className="w-full">
-                <thead>
-                  <tr>
-                    <th className="py-2">Lun</th>
-                    <th className="py-2">Mar</th>
-                    <th className="py-2">Mie</th>
-                    <th className="py-2">Jue</th>
-                    <th className="py-2">Vie</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {["9:00", "10:00", "11:00", "12:00", "13:00"].map((hora) => (
-                    <tr key={hora}>
-                      {["Lun", "Mar", "Mie", "Jue", "Vie"].map((dia) => (
-                        <td key={`${dia}-${hora}`} className="p-2 text-center">
-                          {horarios[dia]?.includes(hora) ? (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleInputChange({
-                                  target: { name: "hora", value: `${dia} ${hora}` },
-                                })
-                              }
-                              className={`w-full py-2 rounded-lg transition-all ${
-                                formData.hora === `${dia} ${hora}`
-                                  ? "bg-[#0097c2] text-white"
-                                  : "bg-gray-50 hover:bg-gray-100"
-                              }`}
-                            >
-                              {hora}
-                            </button>
-                          ) : (
-                            <span className="text-gray-400">No disponible</span>
-                          )}
-                        </td>
-                      ))}
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm md:text-base">
+                  <thead>
+                    <tr>
+                      <th className="py-2">Lun</th>
+                      <th className="py-2">Mar</th>
+                      <th className="py-2">Mie</th>
+                      <th className="py-2">Jue</th>
+                      <th className="py-2">Vie</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {["9:00", "10:00", "11:00", "12:00", "13:00"].map((hora) => (
+                      <tr key={hora}>
+                        {["Lun", "Mar", "Mie", "Jue", "Vie"].map((dia) => (
+                          <td key={`${dia}-${hora}`} className="p-2 text-center">
+                            {horarios[dia]?.includes(hora) ? (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleInputChange({
+                                    target: { name: "hora", value: `${dia} ${hora}` },
+                                  })
+                                }
+                                className={`w-full py-2 rounded-lg transition-all ${
+                                  formData.hora === `${dia} ${hora}`
+                                    ? "bg-[#0097c2] text-white"
+                                    : "bg-gray-50 hover:bg-gray-100"
+                                }`}
+                              >
+                                {hora}
+                              </button>
+                            ) : (
+                              <span className="text-gray-400">No disponible</span>
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               {Object.values(horarios).every(arr => arr.length === 0) && (
                 <div className="text-center text-gray-500 mt-4">No hay horarios disponibles actualmente.</div>
               )}
@@ -240,7 +242,7 @@ const AgendarCitas = () => {
   return (
     <PageTransition>
       <Navbar />
-      <div className="container mx-auto px-4 py-8 font-['Lato'] min-h-screen bg-gray-50">
+      <div className="container mx-auto px-2 sm:px-4 py-8 font-['Lato'] min-h-screen bg-gray-50">
         <div className="max-w-2xl mx-auto">
           {/* Notification */}
           <AnimatePresence>
@@ -266,9 +268,7 @@ const AgendarCitas = () => {
             layout
             className="bg-white rounded-xl shadow-sm p-8"
           >
-            <h1 className="text-2xl font-medium mb-8 text-gray-800">
-              Agenda una cita
-            </h1>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-800 text-center">Agendar Cita</h1>
 
             {/* Progress Steps - More minimal version */}
             <div className="flex items-center justify-center mb-12">
@@ -327,7 +327,7 @@ const AgendarCitas = () => {
                 )}
                 <button
                   type="submit"
-                  className="bg-[#0097c2] text-white px-6 py-2 rounded-lg hover:bg-[#0077a2] transition-all"
+                  className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition text-sm sm:text-base"
                 >
                   {step === 3 ? "Finalizar" : "Siguiente"}
                 </button>

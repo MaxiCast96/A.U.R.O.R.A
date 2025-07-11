@@ -69,7 +69,7 @@ const Servicio = () => {
   return (
     <PageTransition>
       <Navbar />
-      <div className="font-['Lato'] bg-gray-50">
+      <div className="font-['Lato'] bg-gray-50 px-2 sm:px-4">
         {/* Hero Section */}
         <br />
         <br />
@@ -81,7 +81,7 @@ const Servicio = () => {
             <h2 className="text-3xl font-bold text-center mb-12">
               Beneficios de nuestro examen visual
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
               <BenefitCard
                 title="Detección temprana"
                 description="Identificamos problemas visuales antes de que se conviertan en condiciones graves."
@@ -108,7 +108,7 @@ const Servicio = () => {
             <h2 className="text-3xl font-bold text-center mb-12">
               Nuestro proceso
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
               <div className="space-y-6">
                 <ProcessStep
                   title="Historia clínica"
@@ -135,7 +135,7 @@ const Servicio = () => {
                 <img
                   src="/img/proceso-examen.png"
                   alt="Proceso de examen visual"
-                  className="rounded-2xl shadow-lg max-w-md w-full"
+                  className="rounded-2xl shadow-lg max-w-full w-full"
                 />
               </div>
             </div>
@@ -148,7 +148,7 @@ const Servicio = () => {
             <h2 className="text-3xl font-bold text-center mb-12">
               Nuestros Servicios
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
               <ServiceCard
                 title="Examen Visual"
                 description="Evaluación integral de tu salud visual utilizando tecnología de vanguardia."

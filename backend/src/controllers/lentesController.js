@@ -207,7 +207,7 @@ async function updateLentes(req, res) {
 // SELECT by ID
 async function getLentesById(req, res) {
     try {
-        const lentes = await accesoriosModel.findById(req.params.id)
+        const lentes = await lentesModel.findById(req.params.id)
             .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
@@ -245,7 +245,7 @@ async function getLentesByPromocion(req, res) {
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
-        res.json(accesorios);
+        res.json(lentes);
     } catch (error) {
         console.log("Error: " + error);
         res.json({ message: "Error obteniendo Lentes en promoción: " + error.message });

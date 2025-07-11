@@ -1,6 +1,9 @@
 // Sidebar.jsx
 
-import React from 'react';
+import React, { useState } from 'react';
+import Alert from './ui/Alert';
+import { useAuth } from '../auth/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { ChevronRight, X, ChevronDown, User, LogOut } from 'lucide-react';
 
 const Sidebar = ({ 
@@ -18,12 +21,31 @@ const Sidebar = ({
   const [profileMenuOpen, setProfileMenuOpen] = React.useState(false);
   const profileMenuRef = React.useRef(null);
   
-  // Datos del empleado en sesión (esto vendría de tu estado global o context)
-  const currentUser = {
-    name: "Juan Pérez",
-    role: "Administrador",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80"
+  // Datos del usuario autenticado
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [logoutNotification, setLogoutNotification] = useState(false);
+  // Construir el perfil según el tipo de usuario autenticado
+  let currentUser = {
+    name: 'Usuario',
+    role: 'Sin rol',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80'
   };
+  if (user) {
+    if (user.userType === 'cliente' || user.rol === 'Cliente') {
+      currentUser = {
+        name: `${user.nombre || ''} ${user.apellido || ''}`.trim(),
+        role: user.rol || 'Cliente',
+        avatar: user.avatar || user.foto || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(user.nombre || 'C')
+      };
+    } else {
+      currentUser = {
+        name: user.nombre || user.name || 'Empleado',
+        role: user.rol || user.role || 'Empleado',
+        avatar: user.avatar || user.foto || 'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(user.nombre || 'E')
+      };
+    }
+  }
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
@@ -59,8 +81,11 @@ const Sidebar = ({
   }, []);
 
   const handleLogout = () => {
-    console.log('Cerrando sesión...');
+    logout();
     setProfileMenuOpen(false);
+    setLogoutNotification(true);
+    setTimeout(() => setLogoutNotification(false), 2500);
+    setTimeout(() => navigate('/'), 800);
   };
 
   const handleViewProfile = () => {
@@ -70,6 +95,11 @@ const Sidebar = ({
 
   return (
     <>
+      {logoutNotification && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
+          <Alert type="info" message="Sesión cerrada correctamente" onClose={() => setLogoutNotification(false)} />
+        </div>
+      )}
       {/* Overlay para móvil */}
       {mobileMenuOpen && (
         <div 
@@ -82,34 +112,34 @@ const Sidebar = ({
         bg-white shadow-xl min-h-screen fixed left-0 top-0 z-50 overflow-visible
         transition-all duration-700 ease-in-out transform-gpu
         ${sidebarOpen ? 'w-64' : 'w-16'}
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        lg:translate-x-0 border-r border-gray-200
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'}
+        sm:translate-x-0 border-r border-gray-200
         ${isExpanding ? 'animate-expandSidebar' : ''}
         ${isContracting ? 'animate-contractSidebar' : ''}
       `}>
-        {/* Header de la sidebar con logo */}
-         <div className="p-3 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
+        {/* Header de la sidebar con logo más compacto */}
+         <div className="p-1.5 sm:p-2 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
           <div className="flex items-center">
             <button
-              onClick={() => window.innerWidth >= 1024 && setSidebarOpen(!sidebarOpen)}
-              className="w-10 h-10 bg-white rounded-lg shadow-md flex items-center justify-center p-1 flex-shrink-0 hover:shadow-lg transition-all duration-300 lg:cursor-pointer hover:scale-110 hover:rotate-3 active:scale-95 active:rotate-0 group"
+              onClick={() => window.innerWidth >= 640 && setSidebarOpen(!sidebarOpen)}
+              className="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md flex items-center justify-center p-1 flex-shrink-0 hover:shadow-lg transition-all duration-300 sm:cursor-pointer hover:scale-110 hover:rotate-3 active:scale-95 active:rotate-0 group"
               title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
             >
               <div className={`transform transition-all duration-700 ease-in-out group-hover:scale-125 ${
                 sidebarOpen ? 'rotate-180' : 'rotate-0'
               }`}>
-                <ChevronRight className="w-5 h-5 text-gray-600 transition-all duration-700 ease-in-out" />
+                <ChevronRight className="w-4 h-4 text-gray-600 transition-all duration-700 ease-in-out" />
               </div>
             </button>
-            <div className={`ml-3 min-w-0 transition-all duration-700 ease-in-out transform ${
+            <div className={`ml-1.5 sm:ml-2 min-w-0 transition-all duration-700 ease-in-out transform ${
               sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
             }`}>
                <img 
               src="https://i.imgur.com/rYfBDzN.png" 
               alt="Óptica La Inteligente" 
-              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+              className="w-16 h-6 sm:w-20 sm:h-8 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
             />
-              <span className="text-xs text-gray-500 block truncate animate-pulse">
+              <span className="text-[8px] sm:text-[10px] text-gray-500 block truncate animate-pulse">
                 Sistema de Gestión
               </span>
             </div>
@@ -124,10 +154,11 @@ const Sidebar = ({
           </button>
         </div>
         
-        <div className="py-2 overflow-y-auto h-[calc(100vh-120px)]">
+        {/* Contenedor principal con menos padding */}
+        <div className="py-1 overflow-y-auto h-[calc(100vh-100px)]">
           {['Principal', 'Personal', 'Productos', 'Médico', 'Administración'].map((section, sectionIndex) => (
-            <div key={section} className="mb-4" style={{ animationDelay: `${sectionIndex * 100}ms` }}>
-              <h3 className={`px-4 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider transition-all duration-700 ease-in-out transform ${
+            <div key={section} className="mb-2" style={{ animationDelay: `${sectionIndex * 100}ms` }}>
+              <h3 className={`px-2 sm:px-3 mb-1 text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider transition-all duration-700 ease-in-out transform ${
                 sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
               }`}>
                 {section}
@@ -141,11 +172,11 @@ const Sidebar = ({
                       setActiveSection(item.id);
                       closeMobileMenu();
                     }}
-                    className={`w-full flex items-center px-4 py-2.5 text-left bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 hover:text-cyan-700 transition-all duration-300 group relative transform hover:scale-105 hover:translate-x-1 active:scale-95 active:translate-x-0 overflow-hidden ${
+                    className={`w-full flex items-center px-1.5 sm:px-3 py-1 sm:py-1.5 text-left bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 hover:text-cyan-700 transition-all duration-300 group relative transform hover:scale-105 hover:translate-x-1 active:scale-95 active:translate-x-0 overflow-hidden ${
                       activeSection === item.id 
                         ? 'active-gradient-item text-cyan-700 border-r-4 border-cyan-500 shadow-sm' 
                         : 'text-gray-600'
-                    } ${item.id === 'dashboard' ? 'lg:hover:bg-gradient-to-r lg:hover:from-gray-50 lg:hover:to-gray-100 lg:hover:text-gray-700' : ''}`}
+                    } ${item.id === 'dashboard' ? 'sm:hover:bg-gradient-to-r sm:hover:from-gray-50 sm:hover:to-gray-100 sm:hover:text-gray-700' : ''}`}
                     style={{ 
                       animationDelay: `${(sectionIndex * 200) + (itemIndex * 50)}ms`,
                       animationFillMode: 'both'
@@ -158,11 +189,11 @@ const Sidebar = ({
                       </div>
                     )}
                     
-                    <item.icon className={`w-5 h-5 ${
+                    <item.icon className={`w-4 h-4 ${
                       activeSection === item.id ? 'text-cyan-600' : 'text-gray-400'
                     } group-hover:text-cyan-600 transition-all duration-300 flex-shrink-0 transform group-hover:scale-125 group-hover:rotate-12 group-hover:animate-bounce-soft relative z-10`} />
                     
-                    <span className={`ml-3 font-medium text-sm truncate transform transition-all duration-700 ease-in-out group-hover:translate-x-1 relative z-10 ${
+                    <span className={`ml-1.5 sm:ml-2 font-medium text-xs sm:text-sm truncate transform transition-all duration-700 ease-in-out group-hover:translate-x-1 relative z-10 ${
                       sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
                     }`}>
                       {item.label}
@@ -190,7 +221,7 @@ const Sidebar = ({
         </div>
 
         {/* Sección de perfil del usuario */}
-        <div className="absolute bottom-0 left-0 right-0 p-1.5 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 bg-white">
+        <div className="absolute bottom-0 left-0 right-0 p-1 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 bg-white">
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => {
@@ -204,7 +235,7 @@ const Sidebar = ({
                 }
               }}
               className={`w-full flex items-center bg-white hover:bg-white rounded-lg transition-all duration-300 group hover:shadow-md transform hover:scale-105 active:scale-95 ${
-                sidebarOpen ? 'p-1.5' : 'p-1 justify-center'
+                sidebarOpen ? 'p-1' : 'p-1 justify-center'
               }`}
             >
               <div className="relative flex-shrink-0">
@@ -212,21 +243,21 @@ const Sidebar = ({
                   src={currentUser.avatar}
                   alt={currentUser.name}
                   className={`rounded-full object-cover border-2 border-cyan-200 group-hover:border-cyan-400 transition-all duration-300 shadow-md group-hover:shadow-lg ${
-                    sidebarOpen ? 'w-12 h-12' : 'w-8 h-8'
+                    sidebarOpen ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-6 h-6'
                   }`}
                 />
                 <div className={`absolute -bottom-0.5 -right-0.5 bg-green-400 border-2 border-white rounded-full animate-pulse ${
-                  sidebarOpen ? 'w-2 h-2' : 'w-1.5 h-1.5'
+                  sidebarOpen ? 'w-1.5 h-1.5' : 'w-1 h-1'
                 }`}></div>
               </div>
 
-              <div className={`ml-2 flex-1 min-w-0 transition-all duration-700 ease-in-out transform ${
+              <div className={`ml-1.5 flex-1 min-w-0 transition-all duration-700 ease-in-out transform ${
                 sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
               }`}>
-                <p className="text-s font-semibold text-gray-800 truncate group-hover:text-cyan-700 transition-colors leading-tight">
+                <p className="text-[10px] sm:text-xs font-semibold text-gray-800 truncate group-hover:text-cyan-700 transition-colors leading-tight">
                   {currentUser.name}
                 </p>
-                <p className="text-xs text-gray-500 truncate leading-tight">
+                <p className="text-[8px] sm:text-[10px] text-gray-500 truncate leading-tight">
                   {currentUser.role}
                 </p>
               </div>

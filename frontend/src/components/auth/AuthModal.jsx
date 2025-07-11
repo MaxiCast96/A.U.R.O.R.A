@@ -8,6 +8,7 @@ const AuthModal = ({ isOpen, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [userType, setUserType] = useState('cliente'); // Eliminar esta línea
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -55,18 +56,26 @@ const AuthModal = ({ isOpen, onClose }) => {
     setRegisterMsg(null);
     if (isLogin) {
       try {
-        const res = await fetch('http://localhost:4000/api/clientes/login', {
+        const url = 'http://localhost:4000/api/clientes/login';
+        const correo = formData.email.trim();
+        const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo: formData.email, password: formData.password })
+          body: JSON.stringify({ correo, password: formData.password })
         });
         const data = await res.json();
         if (!res.ok) {
           setLoginError(data.message || 'Error al iniciar sesión');
           return;
         }
-        login(data);
+        login({ ...data });
         onClose();
+        // Redirección según rol
+        if (data.rol === 'Cliente') {
+          navigate('/');
+        } else {
+          navigate('/dashboard');
+        }
       } catch (err) {
         setLoginError('Error de red o del servidor');
       }
@@ -155,6 +164,9 @@ const AuthModal = ({ isOpen, onClose }) => {
             {isLogin ? 'Iniciar Sesión' : 'Registrarse'}
           </h2>
         </div>
+
+        {/* Selector de tipo de usuario */}
+        {/* Eliminar el bloque de botones para seleccionar tipo de usuario */}
 
         {/* Toggle buttons */}
         <div className="flex mb-6">

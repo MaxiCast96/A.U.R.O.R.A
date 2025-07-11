@@ -1,6 +1,8 @@
 import "../models/Empleados.js";
 import "../models/Sucursales.js";
 import optometristaModel from "../models/Optometrista.js";
+import empleadosModel from "../models/Empleados.js";
+import bcryptjs from "bcryptjs";
 
 const optometristaController = {};
 

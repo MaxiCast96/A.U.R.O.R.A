@@ -32,8 +32,8 @@ const Recetas = () => {
         historialMedicoId: '',
         optometristaId: '',
         diagnostico: '',
-        ojoDerecho: { esfera: '', cilindro: '', eje: '', adicion: '' },
-        ojoIzquierdo: { esfera: '', cilindro: '', eje: '', adicion: '' },
+        ojoDerecho: { esfera: null, cilindro: null, eje: null, adicion: null },
+        ojoIzquierdo: { esfera: null, cilindro: null, eje: null, adicion: null },
         observaciones: '',
         vigencia: 12,
     };
@@ -42,7 +42,7 @@ const Recetas = () => {
     const [errors, setErrors] = useState({});
 
     const handleInputChange = useCallback((e) => {
-        const { name, value } = e.target;
+        const { name, value, type } = e.target;
         // Lógica para manejar campos anidados (ej. ojoDerecho.esfera)
         if (name.includes('.')) {
             const [parent, child] = name.split('.');
@@ -50,11 +50,14 @@ const Recetas = () => {
                 ...prev,
                 [parent]: {
                     ...prev[parent],
-                    [child]: value
+                    [child]: type === 'number' ? (value === '' ? null : Number(value)) : value
                 }
             }));
         } else {
-            setFormData(prev => ({ ...prev, [name]: value }));
+            setFormData(prev => ({
+                ...prev,
+                [name]: type === 'number' ? (value === '' ? null : Number(value)) : value
+            }));
         }
     }, []);
 
@@ -126,6 +129,18 @@ const Recetas = () => {
     useEffect(() => {
         fetchRecetas(); // Carga recetas cuando cambia el filtro
     }, [selectedFilter]);
+
+    // --- Abrir modal de edición si viene de otra sección ---
+    useEffect(() => {
+        const editId = window.localStorage.getItem('editRecetaId');
+        if (editId && recetas.length > 0) {
+            const receta = recetas.find(r => r._id === editId);
+            if (receta) {
+                handleOpenEditModal(receta);
+                window.localStorage.removeItem('editRecetaId');
+            }
+        }
+    }, [recetas]);
 
     // --- FILTRADO Y PAGINACIÓN ---
     const filteredRecetas = useMemo(() => {

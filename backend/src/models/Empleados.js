@@ -1,34 +1,11 @@
 import { Schema, model } from 'mongoose';
 
 const empleadoSchema = new Schema({
-    nombre: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    apellido: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    dui: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true
-    },
-    telefono: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    correo: {
-        type: String,
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true
-    },
+    nombre: { type: String, required: [true, 'El nombre es obligatorio'], trim: true },
+    apellido: { type: String, required: [true, 'El apellido es obligatorio'], trim: true },
+    dui: { type: String, required: [true, 'El DUI es obligatorio'], unique: true, trim: true },
+    telefono: { type: String, required: [true, 'El teléfono es obligatorio'], trim: true },
+    correo: { type: String, required: [true, 'El correo es obligatorio'], unique: true, trim: true, lowercase: true },
     direccion: {
         departamento: { 
             type: String, 
@@ -49,35 +26,16 @@ const empleadoSchema = new Schema({
             default: ""
         }
     },
-    cargo: {
-        type: String,
-        required: true,
-        enum: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista']
-    },
-    sucursalId: {
-        type: Schema.Types.ObjectId,
-        ref: 'Sucursales',
-        required: true,
-    },
-    fechaContratacion: {
-        type: Date,
-        required: true,
-    },
-    salario: {
-        type: Number,
-        required: true,
-        min: 0
-    },
+    cargo: { type: String, required: [true, 'El cargo es obligatorio'], enum: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'] },
+    sucursalId: { type: Schema.Types.ObjectId, ref: 'Sucursales', required: [true, 'La sucursal es obligatoria'] },
+    fechaContratacion: { type: Date, required: [true, 'La fecha de contratación es obligatoria'] },
+    salario: { type: Number, required: [true, 'El salario es obligatorio'], min: 0 },
     estado: {
         type: String,
         enum: ['Activo', 'Inactivo'],
         default: 'Activo'
     },
-    password: {
-        type: String,
-        required: true,
-        minlength: 6
-    },
+    password: { type: String, required: [true, 'La contraseña es obligatoria'], minlength: 6 },
     isVerified: {
         type: Boolean,
         default: false,
@@ -86,15 +44,12 @@ const empleadoSchema = new Schema({
         type: String,
         required: false,
         default: ""
-    }
+    },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
 }, {
     timestamps: true,
     strict: true
 });
-
-// Índices para optimización
-empleadoSchema.index({ correo: 1 });
-empleadoSchema.index({ dui: 1 });
-empleadoSchema.index({ sucursalId: 1 });
 
 export default model('Empleados', empleadoSchema);

@@ -17,9 +17,9 @@ const Producto = () => {
     switch (location.pathname) {
       case "/productos/lentes":
         return (
-          <div className="container mx-auto py-10">
-            <h2 className="text-4xl font-bold text-center mb-12">Lentes</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="container mx-auto py-10 px-2 sm:px-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 sm:mb-12">Lentes</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
               {loadingLentes ? (
                 <div>Cargando...</div>
               ) : errorLentes ? (
@@ -29,11 +29,11 @@ const Producto = () => {
               ) : lentes && lentes.length > 0 ? (
                 lentes.map((lente) => (
                   <div key={lente.id} className="bg-white rounded-lg shadow-lg overflow-hidden">
-                    <img src={lente.imagen || "/lentes-modelo.jpg"} alt={lente.nombre} className="w-full h-48 object-cover" />
+                    <img src={lente.imagen || "/lentes-modelo.jpg"} alt={lente.nombre} className="w-full h-40 sm:h-48 object-cover" />
                     <div className="p-4">
                       <h3 className="text-xl font-bold mb-2">{lente.nombre}</h3>
                       <p className="text-gray-600 text-sm mb-4">{lente.descripcion}</p>
-                      <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition">Ver detalles</button>
+                      <button className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition text-sm sm:text-base">Ver detalles</button>
                     </div>
                   </div>
                 ))
@@ -136,10 +136,10 @@ const Producto = () => {
       {renderContent()}
 
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white">
-        <div className="max-w-7xl mx-auto">
+      <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10 text-xs sm:text-sm">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4">
           {/* Top Footer with main content */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 px-0 sm:px-4 py-8 sm:py-12">
             {/* Logo and description column */}
             <div className="md:col-span-4 space-y-4">
               <div className="flex items-center space-x-3">

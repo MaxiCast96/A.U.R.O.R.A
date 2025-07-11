@@ -239,7 +239,7 @@ const AccesoriosContent = () => {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Estadísticas rápidas arriba */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
         <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
           <div className="flex items-center justify-between">
             <div>
@@ -305,19 +305,19 @@ const AccesoriosContent = () => {
         </div>
         
         {/* Filtros */}
-        <div className="p-6 bg-gray-50 border-b">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1">
+        <div className="p-4 sm:p-6 bg-gray-50 border-b">
+          <div className="flex flex-col md:flex-row gap-2 sm:gap-4 items-center">
+            <div className="relative flex-1 w-full">
               <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 placeholder="Buscar accesorio..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-xs sm:text-sm"
               />
             </div>
-            <div className="flex gap-2 flex-wrap">
+            <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
               {['todos', 'estuche', 'cadena', 'limpieza', 'plaquetas', 'soporte', 'herramientas'].map(filter => (
                 <button
                   key={filter}
@@ -337,7 +337,7 @@ const AccesoriosContent = () => {
 
         {/* Tabla */}
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full text-xs sm:text-sm md:text-base">
             <thead className="bg-cyan-500 text-white">
               <tr>
                 <th className="px-6 py-4 text-left font-semibold">Imagen</th>
@@ -355,7 +355,7 @@ const AccesoriosContent = () => {
               {currentAccesorios.map((accesorio) => (
                 <tr key={accesorio._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-gray-200">
                       <img 
                         src={accesorio.imagenes[0]} 
                         alt={accesorio.nombre}

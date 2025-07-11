@@ -6,8 +6,13 @@ const InputField = ({ name, label, error, formData, handleInputChange, nested, .
   const getValue = () => {
     if (nested) {
       const keys = name.split('.');
-      return keys.reduce((obj, key) => obj?.[key], formData) || '';
+      const val = keys.reduce((obj, key) => obj?.[key], formData);
+      // Si es number y null, devolver '' para que el input quede vacío
+      if (props.type === 'number') return val === null || val === undefined ? '' : val;
+      return val || '';
     }
+    // Si es number y null, devolver '' para que el input quede vacío
+    if (props.type === 'number') return formData[name] === null || formData[name] === undefined ? '' : formData[name];
     return formData[name] || '';
   };
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import PageTransition from '../../components/transition/PageTransition';
 import Navbar from '../../components/layout/Navbar';
 
@@ -13,6 +13,7 @@ const RecuperarPassword = () => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -23,32 +24,79 @@ const RecuperarPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (step === 3) {
+    if (step === 1) {
+      setLoading(true);
+      try {
+        // Intentar en clientes
+        let res = await fetch('http://localhost:4000/api/clientes/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo: formData.email })
+        });
+        let data = await res.json();
+        if (!res.ok && data.message?.toLowerCase().includes('no existe')) {
+          // Si no existe en clientes, intentar en empleados
+          res = await fetch('http://localhost:4000/api/empleados/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ correo: formData.email })
+          });
+          data = await res.json();
+        }
+        if (!res.ok) throw new Error(data.message || 'Error enviando código');
+        alert('Código de recuperación enviado. Revisa tu correo.');
+        setStep(2);
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setLoading(false);
+      }
+    } else if (step === 2) {
       if (formData.newPassword !== formData.confirmPassword) {
         alert('Las contraseñas no coinciden');
         return;
       }
-      
+      setLoading(true);
       try {
-        // Aquí iría la lógica para cambiar la contraseña
-        console.log('Cambiando contraseña:', formData);
-        
+        // Intentar en clientes
+        let res = await fetch('http://localhost:4000/api/clientes/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            correo: formData.email,
+            code: formData.code,
+            newPassword: formData.newPassword
+          })
+        });
+        let data = await res.json();
+        if (!res.ok && data.message?.toLowerCase().includes('correo')) {
+          // Si no existe en clientes, intentar en empleados
+          res = await fetch('http://localhost:4000/api/empleados/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              correo: formData.email,
+              code: formData.code,
+              newPassword: formData.newPassword
+            })
+          });
+          data = await res.json();
+        }
+        if (!res.ok) throw new Error(data.message || 'Error al cambiar la contraseña');
         setShowSuccess(true);
         setTimeout(() => {
-          navigate('/'); // Simplemente navegar al home
+          navigate('/');
         }, 3000);
       } catch (error) {
-        console.error('Error:', error);
-        alert('Ocurrió un error al cambiar la contraseña');
+        alert(error.message);
+      } finally {
+        setLoading(false);
       }
-    } else {
-      setStep(prev => prev + 1);
     }
   };
 
   const handleBackToLogin = () => {
-    navigate('/'); // Simplemente navegar al home
+    navigate('/');
   };
 
   if (showSuccess) {
@@ -89,16 +137,14 @@ const RecuperarPassword = () => {
       <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            {/* Logo */}
             <div className="text-center mb-8">
-            <img 
-              src="https://i.imgur.com/rYfBDzN.png" 
-              alt="Óptica La Inteligente" 
-              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
-            />
+              <img 
+                src="https://i.imgur.com/rYfBDzN.png" 
+                alt="Óptica La Inteligente" 
+                className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+              />
               <h2 className="text-3xl font-bold text-gray-800">
-                {step === 1 ? 'Recuperar Contraseña' : 
-                 step === 2 ? 'Verificar Código' : 'Nueva Contraseña'}
+                {step === 1 ? 'Recuperar Contraseña' : 'Nueva Contraseña'}
               </h2>
             </div>
 
@@ -121,11 +167,12 @@ const RecuperarPassword = () => {
                 <button
                   type="submit"
                   className="w-full bg-[#0097c2] text-white py-3 rounded-xl font-medium hover:bg-[#0088b0] transition-all duration-300"
+                  disabled={loading}
                 >
-                  Enviar Código
+                  {loading ? 'Enviando...' : 'Enviar Código'}
                 </button>
                 <button
-                  type="button" // Cambiado a type="button"
+                  type="button"
                   onClick={handleBackToLogin}
                   className="w-full text-[#0097c2] py-2 font-medium hover:underline"
                 >
@@ -150,17 +197,6 @@ const RecuperarPassword = () => {
                     required
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="w-full bg-[#0097c2] text-white py-3 rounded-xl font-medium hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02]"
-                >
-                  Verificar Código
-                </button>
-              </form>
-            )}
-
-            {step === 3 && (
-              <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Nueva Contraseña
@@ -192,8 +228,9 @@ const RecuperarPassword = () => {
                 <button
                   type="submit"
                   className="w-full bg-[#0097c2] text-white py-3 rounded-xl font-medium hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02]"
+                  disabled={loading}
                 >
-                  Cambiar Contraseña
+                  {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
                 </button>
               </form>
             )}

@@ -10,7 +10,8 @@ recetasController.getRecetas = async (req, res) => {
                 path: 'historialMedicoId',
                 populate: {
                     path: 'clienteId',
-                    select: 'nombre apellido'
+                    select: 'nombre apellido',
+                    model: 'Clientes'
                 }
             })
             .populate({
@@ -20,10 +21,18 @@ recetasController.getRecetas = async (req, res) => {
                     select: 'nombre apellido'
                 }
             });
-        res.json(recetas);
+        const recetasConCliente = recetas.map(r => {
+            let cliente = r.historialMedicoId?.clienteId;
+            if (!cliente) {
+                cliente = { nombre: 'Cliente no encontrado', apellido: '' };
+                if (r.historialMedicoId) r.historialMedicoId.clienteId = cliente;
+            }
+            return r;
+        });
+        res.status(200).json(recetasConCliente);
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo recetas: " + error.message });
+        res.status(500).json({ message: "Error obteniendo recetas: " + error.message });
     }
 };
 
@@ -41,8 +50,12 @@ recetasController.createReceta = async (req, res) => {
         urlReceta
     } = req.body;
 
+    // Validación básica
+    if (!historialMedicoId || !optometristaId || !diagnostico || !ojoDerecho || !ojoIzquierdo) {
+        return res.status(400).json({ message: "Faltan campos obligatorios" });
+    }
+
     try {
-        // Crear nueva instancia de receta
         const newReceta = new recetasModel({
             historialMedicoId,
             optometristaId,
@@ -55,34 +68,29 @@ recetasController.createReceta = async (req, res) => {
             urlReceta
         });
 
-        // Guardar la receta en la base de datos
         await newReceta.save();
 
-        res.json({ 
+        res.status(201).json({ 
             message: "Receta creada exitosamente",
             receta: newReceta
         });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error creando receta: " + error.message });
+        res.status(500).json({ message: "Error creando receta: " + error.message });
     }
 };
 
 // DELETE - Eliminar receta
 recetasController.deleteReceta = async (req, res) => {
     try {
-        // Buscar y eliminar la receta por ID
         const deletedReceta = await recetasModel.findByIdAndDelete(req.params.id);
-
-        // Verificar si la receta existía
         if (!deletedReceta) {
-            return res.json({ message: "Receta no encontrada" });
+            return res.status(404).json({ message: "Receta no encontrada" });
         }
-
-        res.json({ message: "Receta eliminada exitosamente" });
+        res.status(200).json({ message: "Receta eliminada exitosamente" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error eliminando receta: " + error.message });
+        res.status(500).json({ message: "Error eliminando receta: " + error.message });
     }
 };
 
@@ -100,6 +108,11 @@ recetasController.updateReceta = async (req, res) => {
         urlReceta
     } = req.body;
 
+    // Validación básica
+    if (!historialMedicoId || !optometristaId || !diagnostico || !ojoDerecho || !ojoIzquierdo) {
+        return res.status(400).json({ message: "Faltan campos obligatorios" });
+    }
+
     try {
         const updateData = {
             historialMedicoId,
@@ -113,32 +126,29 @@ recetasController.updateReceta = async (req, res) => {
             urlReceta
         };
 
-        // Buscar y actualizar la receta por ID
         const updatedReceta = await recetasModel.findByIdAndUpdate(
             req.params.id,
             updateData,
             { new: true }
         );
 
-        // Verificar si la receta existía
         if (!updatedReceta) {
-            return res.json({ message: "Receta no encontrada" });
+            return res.status(404).json({ message: "Receta no encontrada" });
         }
 
-        res.json({ 
+        res.status(200).json({ 
             message: "Receta actualizada exitosamente",
             receta: updatedReceta
         });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error actualizando receta: " + error.message });
+        res.status(500).json({ message: "Error actualizando receta: " + error.message });
     }
 };
 
 // GET by ID - Obtener receta por ID
 recetasController.getRecetaById = async (req, res) => {
     try {
-        // Buscar receta por ID y popular las referencias
         const receta = await recetasModel.findById(req.params.id)
             .populate({
                 path: 'historialMedicoId',
@@ -155,15 +165,14 @@ recetasController.getRecetaById = async (req, res) => {
                 }
             });
 
-        // Verificar si la receta existe
         if (!receta) {
-            return res.json({ message: "Receta no encontrada" });
+            return res.status(404).json({ message: "Receta no encontrada" });
         }
 
-        res.json(receta);
+        res.status(200).json(receta);
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo receta: " + error.message });
+        res.status(500).json({ message: "Error obteniendo receta: " + error.message });
     }
 };
 
