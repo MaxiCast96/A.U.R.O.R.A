@@ -8,6 +8,8 @@ const ForgotPassword = ({ onClose }) => {
     newPassword: '',
     confirmPassword: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -16,10 +18,76 @@ const ForgotPassword = ({ onClose }) => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Aquí iría la lógica para cada paso
-    setStep(step + 1);
+    if (step === 1) {
+      setLoading(true);
+      try {
+        // Intentar en clientes
+        let res = await fetch('http://localhost:4000/api/clientes/forgot-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ correo: formData.email })
+        });
+        let data = await res.json();
+        if (!res.ok && data.message?.toLowerCase().includes('no existe')) {
+          // Si no existe en clientes, intentar en empleados
+          res = await fetch('http://localhost:4000/api/empleados/forgot-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ correo: formData.email })
+          });
+          data = await res.json();
+        }
+        if (!res.ok) throw new Error(data.message || 'Error enviando código');
+        setStep(2);
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setLoading(false);
+      }
+    } else if (step === 2) {
+      if (formData.newPassword !== formData.confirmPassword) {
+        alert('Las contraseñas no coinciden');
+        return;
+      }
+      setLoading(true);
+      try {
+        // Intentar en clientes
+        let res = await fetch('http://localhost:4000/api/clientes/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            correo: formData.email,
+            code: formData.code,
+            newPassword: formData.newPassword
+          })
+        });
+        let data = await res.json();
+        if (!res.ok && data.message?.toLowerCase().includes('correo')) {
+          // Si no existe en clientes, intentar en empleados
+          res = await fetch('http://localhost:4000/api/empleados/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              correo: formData.email,
+              code: formData.code,
+              newPassword: formData.newPassword
+            })
+          });
+          data = await res.json();
+        }
+        if (!res.ok) throw new Error(data.message || 'Error al cambiar la contraseña');
+        setSuccess(true);
+        setTimeout(() => {
+          if (onClose) onClose();
+        }, 2500);
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -44,7 +112,7 @@ const ForgotPassword = ({ onClose }) => {
             />
         </div>
 
-        {step === 1 && (
+        {step === 1 && !success && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-center text-gray-800">Olvidé mi contraseña</h2>
             <p className="text-gray-600 text-center">
@@ -66,18 +134,19 @@ const ForgotPassword = ({ onClose }) => {
               <button
                 type="submit"
                 className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300"
+                disabled={loading}
               >
-                Siguiente
+                {loading ? 'Enviando...' : 'Siguiente'}
               </button>
             </form>
           </div>
         )}
 
-        {step === 2 && (
+        {step === 2 && !success && (
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-center text-gray-800">Verificación</h2>
             <p className="text-gray-600 text-center">
-              Ingresa el código de verificación que enviamos a tu correo
+              Ingresa el código de verificación que enviamos a tu correo y tu nueva contraseña
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
@@ -92,23 +161,6 @@ const ForgotPassword = ({ onClose }) => {
                   required
                 />
               </div>
-              <button
-                type="submit"
-                className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300"
-              >
-                Verificar
-              </button>
-            </form>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-center text-gray-800">Nueva Contraseña</h2>
-            <p className="text-gray-600 text-center">
-              Ingresa tu nueva contraseña
-            </p>
-            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Nueva Contraseña</label>
                 <input
@@ -136,10 +188,18 @@ const ForgotPassword = ({ onClose }) => {
               <button
                 type="submit"
                 className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300"
+                disabled={loading}
               >
-                Cambiar Contraseña
+                {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
               </button>
             </form>
+          </div>
+        )}
+
+        {success && (
+          <div className="space-y-4 text-center">
+            <h2 className="text-2xl font-bold text-green-600">¡Contraseña cambiada!</h2>
+            <p className="text-gray-700">Ahora puedes iniciar sesión con tu nueva contraseña.</p>
           </div>
         )}
       </div>

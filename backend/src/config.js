@@ -25,5 +25,6 @@ export const config = {
         cloud_name: process.env.CLOUD_NAME,
         cloudinary_api_key: process.env.CLOUDINARY_API_KEY,
         cloudinary_api_secret: process.env.CLOUDINARY_API_SECRET
-    }
+    },
+    frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173", // Cambia esto según tu entorno
 };

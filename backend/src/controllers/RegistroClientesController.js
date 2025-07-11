@@ -76,8 +76,8 @@ registerClientesController.register = async (req, res) => {
         const mailOptions = {
             from: config.emailUser.user_email,
             to: correo,
-            subject: "Verificación de cuenta - Empleado",
-            text: `Hola ${nombre} ${apellido}, para verificar tu cuenta de empleado utiliza este código: ${verificationCode}. El código expira en dos horas.`
+            subject: "Verificación de cuenta - Cliente",
+            text: `Hola ${nombre} ${apellido}, para verificar tu cuenta de cliente utiliza este código: ${verificationCode}. El código expira en dos horas.`
         };
 
         // Enviar email de verificación
@@ -125,7 +125,7 @@ registerClientesController.verifyCodeEmail = async (req, res) => {
 
         // Marcar el empleado como verificado
         cliente.isVerified = true;
-        await empleado.save();
+        await cliente.save(); // Corrected from 'empleado' to 'cliente'
 
         // Eliminar la cookie del token de verificación
         res.clearCookie("verificationTokenEmpleado");

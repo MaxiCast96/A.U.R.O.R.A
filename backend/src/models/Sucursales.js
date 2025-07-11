@@ -1,32 +1,14 @@
 import { Schema, model } from 'mongoose';
 
 const sucursalSchema = new Schema({
-    nombre: {
-        type: String,
-        required: true,
-    },
+    nombre: { type: String, required: [true, 'El nombre de la sucursal es obligatorio'] },
     direccion: {
-        calle: {
-            type: String,
-            required: true
-        },
-        ciudad: {
-            type: String,
-            required: true
-        },
-        departamento: {
-            type: String,
-            required: true
-        }
+        calle: { type: String, required: [true, 'La calle es obligatoria'] },
+        ciudad: { type: String, required: [true, 'La ciudad es obligatoria'] },
+        departamento: { type: String, required: [true, 'El departamento es obligatorio'] }
     },
-    telefono: {
-        type: String,
-        required: true,
-    },
-    correo: {
-        type: String,
-        required: true,
-    },
+    telefono: { type: String, required: [true, 'El teléfono es obligatorio'] },
+    correo: { type: String, required: [true, 'El correo es obligatorio'] },
     horariosAtencion: [
         {
             dia: {
@@ -40,10 +22,7 @@ const sucursalSchema = new Schema({
             }
         }
     ],
-    activo: {
-        type: Boolean,
-        required: true
-    }
+    activo: { type: Boolean, required: [true, 'El estado activo es obligatorio'] },
 }, {
     timestamps: true,
     strict: true

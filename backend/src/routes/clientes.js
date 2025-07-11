@@ -13,5 +13,8 @@ router.route("/:id")
 .delete(clientesController.deleteClientes);
 
 router.post('/login', clientesController.loginUnificado);
+// Recuperación de contraseña
+router.post('/forgot-password', clientesController.forgotPassword);
+router.post('/reset-password', clientesController.resetPassword);
 
 export default router;

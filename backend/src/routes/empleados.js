@@ -9,6 +9,9 @@ router.route("/")
     .get(empleadosController.getEmpleados)
     .post(empleadosController.createEmpleados);
 
+router.post('/forgot-password', empleadosController.forgotPassword);
+router.post('/reset-password', empleadosController.resetPassword);
+
 router.route("/:id")
     .get(empleadosController.getEmpleadoById)
     .put(empleadosController.updateEmpleados)

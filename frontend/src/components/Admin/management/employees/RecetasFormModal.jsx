@@ -14,13 +14,26 @@ const RecetasFormModal = ({
     optometristas,
 }) => {
 
-    const historialOptions = (historialesMedicos || []).map(historial => ({
-        value: historial._id,
-        // Se asume que el objeto historial tiene el clienteId populado con nombre y apellido.
-        label: historial.clienteId
-            ? `${historial.clienteId.nombre} ${historial.clienteId.apellido}`
-            : `Historial ${historial._id}`
-    }));
+    const historialOptions = (historialesMedicos || []).map(historial => {
+        let label = '';
+        if (historial.clienteId) {
+            const nombre = historial.clienteId.nombre || '';
+            const apellido = historial.clienteId.apellido || '';
+            const fecha = historial.historialVisual?.fecha ? new Date(historial.historialVisual.fecha).toLocaleDateString() : '';
+            const diagnostico = historial.historialVisual?.diagnostico || '';
+            label = `${nombre} ${apellido}`;
+            if (fecha || diagnostico) {
+                label += ` - ${fecha}`;
+                if (diagnostico) label += ` - ${diagnostico}`;
+            }
+        } else {
+            label = `Historial ${historial._id}`;
+        }
+        return {
+            value: historial._id,
+            label
+        };
+    });
 
     const optometristaOptions = (optometristas || []).map(optometrista => ({
         value: optometrista._id,
@@ -61,16 +74,16 @@ const RecetasFormModal = ({
         },
 
         // --- Sección de Graduación Ojo Derecho (OD) ---
-        { name: 'ojoDerecho.esfera', label: 'OD Esfera', type: 'number', placeholder: '-1.25', step: "0.01" },
-        { name: 'ojoDerecho.cilindro', label: 'OD Cilindro', type: 'number', placeholder: '-0.75', step: "0.01" },
-        { name: 'ojoDerecho.eje', label: 'OD Eje', type: 'number', placeholder: '180', step: "1" },
-        { name: 'ojoDerecho.adicion', label: 'OD Adición', type: 'number', placeholder: '+2.00', step: "0.01" },
+        { name: 'ojoDerecho.esfera', label: 'OD Esfera', type: 'number', placeholder: '-1.25', step: "0.01", nested: true },
+        { name: 'ojoDerecho.cilindro', label: 'OD Cilindro', type: 'number', placeholder: '-0.75', step: "0.01", nested: true },
+        { name: 'ojoDerecho.eje', label: 'OD Eje', type: 'number', placeholder: '180', step: "1", nested: true },
+        { name: 'ojoDerecho.adicion', label: 'OD Adición', type: 'number', placeholder: '+2.00', step: "0.01", nested: true },
 
         // --- Sección de Graduación Ojo Izquierdo (OI) ---
-        { name: 'ojoIzquierdo.esfera', label: 'OI Esfera', type: 'number', placeholder: '-1.50', step: "0.01" },
-        { name: 'ojoIzquierdo.cilindro', label: 'OI Cilindro', type: 'number', placeholder: '-0.50', step: "0.01" },
-        { name: 'ojoIzquierdo.eje', label: 'OI Eje', type: 'number', placeholder: '175', step: "1" },
-        { name: 'ojoIzquierdo.adicion', label: 'OI Adición', type: 'number', placeholder: '+2.00', step: "0.01" },
+        { name: 'ojoIzquierdo.esfera', label: 'OI Esfera', type: 'number', placeholder: '-1.50', step: "0.01", nested: true },
+        { name: 'ojoIzquierdo.cilindro', label: 'OI Cilindro', type: 'number', placeholder: '-0.50', step: "0.01", nested: true },
+        { name: 'ojoIzquierdo.eje', label: 'OI Eje', type: 'number', placeholder: '175', step: "1", nested: true },
+        { name: 'ojoIzquierdo.adicion', label: 'OI Adición', type: 'number', placeholder: '+2.00', step: "0.01", nested: true },
 
         // --- Sección Final ---
         {

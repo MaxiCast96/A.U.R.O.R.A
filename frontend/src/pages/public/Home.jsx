@@ -134,10 +134,10 @@ const Home = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6 }}
-          className="w-full relative py-6 px-4 md:px-8 overflow-hidden flex justify-center bord"
+          className="w-full relative py-4 sm:py-6 px-2 sm:px-4 md:px-8 overflow-hidden flex justify-center"
         >
           {/* Contenedor del carrusel con anchura limitada */}
-          <div className="relative max-w-7xl w-full mx-auto h-90  ">
+          <div className="relative max-w-7xl w-full mx-auto h-72 sm:h-90  ">
             {/* Fondo principal con diseño moderno */}
             <div className="absolute inset-0 bg-[#0097c2] rounded-lg"></div>
             
@@ -898,7 +898,7 @@ const Home = () => {
                     <h3 className="text-lg font-bold mb-2 text-center">{item.nombre || item.name || 'Producto Destacado'}</h3>
                     <p className="text-gray-600 text-sm mb-2 text-center">{item.descripcion || 'Sin descripción.'}</p>
                     <span className="text-[#0097c2] font-bold text-lg mb-2">${item.precioActual || item.precio || '—'}</span>
-                    <button className="mt-auto bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition">Ver detalles</button>
+                    <button className="mt-auto bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition text-xs sm:text-sm md:text-base">Ver detalles</button>
                   </div>
                 ))}
               </div>
@@ -907,10 +907,10 @@ const Home = () => {
         </motion.section>
 
         {/* Footer */}
-        <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white">
-          <div className="max-w-7xl mx-auto">
+        <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10 text-xs sm:text-sm">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4">
             {/* Top Footer with main content */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 px-0 sm:px-4 py-8 sm:py-12">
               {/* Logo and description column */}
               <div className="md:col-span-4 space-y-4">
                 <div className="flex items-center space-x-3">

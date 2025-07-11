@@ -1,5 +1,6 @@
 import "../models/Clientes.js";
 import historialMedicoModel from "../models/HistorialMedico.js";
+import clientesModel from "../models/Clientes.js";
 
 const historialMedicoController = {};
 
@@ -8,10 +9,10 @@ historialMedicoController.getHistorialesMedicos = async (req, res) => {
     try {
         const historiales = await historialMedicoModel.find()
             .populate('clienteId');
-        res.json(historiales);
+        res.status(200).json(historiales);
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo historiales médicos: " + error.message });
+        res.status(500).json({ message: "Error obteniendo historiales médicos: " + error.message });
     }
 };
 
@@ -23,7 +24,7 @@ historialMedicoController.createHistorialMedico = async (req, res) => {
         try {
             padecimientos = JSON.parse(padecimientos);
         } catch (e) {
-            return res.json({ message: "Error en el formato de padecimientos" });
+            return res.status(400).json({ message: "Error en el formato de padecimientos" });
         }
     }
 
@@ -33,13 +34,24 @@ historialMedicoController.createHistorialMedico = async (req, res) => {
         try {
             historialVisual = JSON.parse(historialVisual);
         } catch (e) {
-            return res.json({ message: "Error en el formato de historialVisual" });
+            return res.status(400).json({ message: "Error en el formato de historialVisual" });
         }
     }
 
     const { clienteId } = req.body;
 
+    // Validación básica
+    if (!clienteId) {
+        return res.status(400).json({ message: "El campo clienteId es obligatorio" });
+    }
+
     try {
+        // Validar que el cliente existe
+        const cliente = await clientesModel.findById(clienteId);
+        if (!cliente) {
+            return res.status(400).json({ message: "El cliente seleccionado no existe." });
+        }
+
         const newHistorialMedico = new historialMedicoModel({
             clienteId,
             padecimientos: padecimientos || {},
@@ -47,10 +59,10 @@ historialMedicoController.createHistorialMedico = async (req, res) => {
         });
 
         await newHistorialMedico.save();
-        res.json({ message: "Historial médico guardado" });
+        res.status(201).json({ message: "Historial médico guardado" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error creando historial médico: " + error.message });
+        res.status(500).json({ message: "Error creando historial médico: " + error.message });
     }
 };
 
@@ -59,12 +71,12 @@ historialMedicoController.deleteHistorialMedico = async (req, res) => {
     try {
         const deleteHistorial = await historialMedicoModel.findByIdAndDelete(req.params.id);
         if (!deleteHistorial) {
-            return res.json({ message: "Historial médico no encontrado" });
+            return res.status(404).json({ message: "Historial médico no encontrado" });
         }
-        res.json({ message: "Historial médico eliminado" });
+        res.status(200).json({ message: "Historial médico eliminado" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error eliminando historial médico: " + error.message });
+        res.status(500).json({ message: "Error eliminando historial médico: " + error.message });
     }
 };
 
@@ -76,7 +88,7 @@ historialMedicoController.updateHistorialMedico = async (req, res) => {
         try {
             padecimientos = JSON.parse(padecimientos);
         } catch (e) {
-            return res.json({ message: "Error en el formato de padecimientos" });
+            return res.status(400).json({ message: "Error en el formato de padecimientos" });
         }
     }
 
@@ -86,11 +98,16 @@ historialMedicoController.updateHistorialMedico = async (req, res) => {
         try {
             historialVisual = JSON.parse(historialVisual);
         } catch (e) {
-            return res.json({ message: "Error en el formato de historialVisual" });
+            return res.status(400).json({ message: "Error en el formato de historialVisual" });
         }
     }
 
     const { clienteId } = req.body;
+
+    // Validación básica
+    if (!clienteId) {
+        return res.status(400).json({ message: "El campo clienteId es obligatorio" });
+    }
 
     try {
         const updateData = {
@@ -106,13 +123,13 @@ historialMedicoController.updateHistorialMedico = async (req, res) => {
         );
 
         if (!updatedHistorial) {
-            return res.json({ message: "Historial médico no encontrado" });
+            return res.status(404).json({ message: "Historial médico no encontrado" });
         }
 
-        res.json({ message: "Historial médico actualizado" });
+        res.status(200).json({ message: "Historial médico actualizado" });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error actualizando historial médico: " + error.message });
+        res.status(500).json({ message: "Error actualizando historial médico: " + error.message });
     }
 };
 

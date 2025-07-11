@@ -124,21 +124,21 @@ const Cotizaciones = () => {
   return (
     <PageTransition>
       <Navbar />
-      <div className="container mx-auto px-4 py-8 font-['Lato']">
-        <h1 className="text-3xl font-bold mb-8 text-gray-800">Cotizaciones</h1>
+      <div className="container mx-auto px-2 sm:px-4 py-8 font-['Lato']">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-gray-800">Cotizaciones</h1>
 
         {/* Buscar Cotización */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-6 text-gray-800">Buscar Cotización</h2>
-          <form className="flex items-center space-x-4">
+          <form className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
             <input
               type="text"
               placeholder="Ingrese el número de cotización"
-              className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
+              className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all text-sm sm:text-base"
             />
             <button
               type="submit"
-              className="bg-[#0097c2] text-white px-6 py-2 rounded-lg hover:bg-[#0077a2] transition-all shadow-sm"
+              className="bg-[#0097c2] text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-[#0077a2] transition-all shadow-sm text-sm sm:text-base"
             >
               Buscar
             </button>
@@ -162,7 +162,7 @@ const Cotizaciones = () => {
         <div className="bg-white rounded-xl shadow-md overflow-hidden">
           <h2 className="text-xl font-semibold p-6 text-gray-800">Listado de Cotizaciones</h2>
           <div className="overflow-x-auto">
-            <table className="min-w-full">
+            <table className="min-w-full text-xs sm:text-sm md:text-base">
               <thead>
                 <tr className="bg-gray-50">
                   <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Número</th>
@@ -230,10 +230,10 @@ const Cotizaciones = () => {
       </div>
 
       {/* Footer */}
-      <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white">
-          <div className="max-w-7xl mx-auto">
+      <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10 text-xs sm:text-sm">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4">
             {/* Top Footer with main content */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 px-0 sm:px-4 py-8 sm:py-12">
               {/* Logo and description column */}
               <div className="md:col-span-4 space-y-4">
                 <div className="flex items-center space-x-3">

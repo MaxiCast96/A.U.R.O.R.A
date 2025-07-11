@@ -1,6 +1,7 @@
 import empleadosModel from "../models/Empleados.js";
 import bcryptjs from "bcryptjs";
 import { v2 as cloudinary } from "cloudinary";
+import { config } from "../config.js";
 
 // La configuración de Cloudinary ya debería estar en un archivo de inicialización
 cloudinary.config({
@@ -186,6 +187,64 @@ empleadosController.deleteEmpleados = async (req, res) => {
         res.status(200).json({ message: "Empleado eliminado exitosamente" });
     } catch (error) {
         res.status(500).json({ message: "Error al eliminar el empleado", error: error.message });
+    }
+};
+
+// Recuperar contraseña - Solicitud
+empleadosController.forgotPassword = async (req, res) => {
+    const { correo } = req.body;
+    if (!correo) return res.status(400).json({ message: "Correo es requerido" });
+    try {
+        const empleado = await empleadosModel.findOne({ correo });
+        if (!empleado) return res.status(404).json({ message: "No existe usuario con ese correo" });
+        // Generar código de 6 dígitos
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        // Guardar código y expiración en el usuario
+        empleado.resetPasswordToken = resetCode;
+        empleado.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutos
+        await empleado.save();
+        // Enviar email
+        const nodemailer = await import('nodemailer');
+        const transporter = nodemailer.default.createTransport({
+            service: "gmail",
+            auth: {
+                user: config.emailUser.user_email,
+                pass: config.emailUser.user_pass
+            }
+        });
+        const mailOptions = {
+            from: config.emailUser.user_email,
+            to: correo,
+            subject: "Código de recuperación de contraseña",
+            text: `Tu código de recuperación es: ${resetCode}. Válido por 30 minutos.`
+        };
+        await transporter.sendMail(mailOptions);
+        res.json({ message: "Código de recuperación enviado al correo" });
+    } catch (error) {
+        console.error("Error en forgotPassword:", error);
+        res.status(500).json({ message: "Error enviando código de recuperación", error: error.message, stack: error.stack });
+    }
+};
+
+// Recuperar contraseña - Restablecer
+empleadosController.resetPassword = async (req, res) => {
+    const { correo, code, newPassword } = req.body;
+    if (!correo || !code || !newPassword) return res.status(400).json({ message: "Correo, código y nueva contraseña requeridos" });
+    try {
+        const empleado = await empleadosModel.findOne({
+            correo,
+            resetPasswordToken: code,
+            resetPasswordExpires: { $gt: Date.now() }
+        });
+        if (!empleado) return res.status(400).json({ message: "Código inválido, expirado o correo incorrecto" });
+        empleado.password = await bcryptjs.hash(newPassword, 10);
+        empleado.resetPasswordToken = undefined;
+        empleado.resetPasswordExpires = undefined;
+        await empleado.save();
+        res.json({ message: "Contraseña actualizada correctamente" });
+    } catch (error) {
+        console.log("Error en resetPassword:", error);
+        res.status(500).json({ message: "Error al restablecer contraseña" });
     }
 };
 

@@ -57,10 +57,11 @@ const AuthModal = ({ isOpen, onClose }) => {
     if (isLogin) {
       try {
         const url = 'http://localhost:4000/api/clientes/login';
+        const correo = formData.email.trim();
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo: formData.email, password: formData.password })
+          body: JSON.stringify({ correo, password: formData.password })
         });
         const data = await res.json();
         if (!res.ok) {
