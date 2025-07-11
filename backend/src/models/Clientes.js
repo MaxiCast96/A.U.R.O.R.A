@@ -25,7 +25,9 @@ const clientesSchema = new Schema({
     correo: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        lowercase: true, // Forzar minúsculas
+        trim: true
     },
     direccion: {
         calle: {

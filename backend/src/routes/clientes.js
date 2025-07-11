@@ -12,6 +12,6 @@ router.route("/:id")
 .put(clientesController.updateClientes)
 .delete(clientesController.deleteClientes);
 
-router.post('/login', clientesController.login);
+router.post('/login', clientesController.loginUnificado);
 
 export default router;

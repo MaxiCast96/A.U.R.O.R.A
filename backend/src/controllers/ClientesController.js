@@ -1,4 +1,6 @@
 import clientesModel from "../models/Clientes.js";
+import empleadosModel from "../models/Empleados.js";
+import optometristaModel from "../models/Optometrista.js";
 import bcryptjs from "bcryptjs";
 
 const clientesController = {};
@@ -31,7 +33,7 @@ clientesController.getClienteById = async (req, res) => {
 
 // CREATE un nuevo cliente
 clientesController.createClientes = async (req, res) => {
-    const {
+    let {
         nombre,
         apellido,
         edad,
@@ -44,6 +46,7 @@ clientesController.createClientes = async (req, res) => {
         password,
         estado
     } = req.body;
+    correo = correo.trim().toLowerCase();
 
     try {
         const existsClientes = await clientesModel.findOne({ correo });
@@ -87,7 +90,7 @@ clientesController.createClientes = async (req, res) => {
 // UPDATE un cliente existente
 clientesController.updateClientes = async (req, res) => {
     const { id } = req.params;
-    const {
+    let {
         nombre,
         apellido,
         edad,
@@ -100,6 +103,7 @@ clientesController.updateClientes = async (req, res) => {
         password,
         estado
     } = req.body;
+    correo = correo.trim().toLowerCase();
 
     try {
         const existsClienteCorreo = await clientesModel.findOne({ correo, _id: { $ne: id } });
@@ -161,25 +165,56 @@ clientesController.deleteClientes = async (req, res) => {
     }
 };
 
-// LOGIN
-clientesController.login = async (req, res) => {
-    const { correo, password } = req.body;
+// LOGIN UNIFICADO
+clientesController.loginUnificado = async (req, res) => {
+    let { correo, password } = req.body;
+    correo = correo.toLowerCase();
     try {
+        // 1. Buscar en clientes (correo insensible a mayúsculas)
         const cliente = await clientesModel.findOne({ correo });
-        if (!cliente) {
-            return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
+        if (cliente) {
+            const isMatch = await bcryptjs.compare(password, cliente.password);
+            if (!isMatch) return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
+            return res.json({
+                id: cliente._id,
+                nombre: cliente.nombre,
+                apellido: cliente.apellido,
+                correo: cliente.correo,
+                telefono: cliente.telefono,
+                rol: 'Cliente'
+            });
         }
-        const isMatch = await bcryptjs.compare(password, cliente.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
+        // 2. Buscar en empleados (correo insensible a mayúsculas)
+        const empleado = await empleadosModel.findOne({ correo });
+        if (empleado) {
+            const isMatch = await bcryptjs.compare(password, empleado.password);
+            if (!isMatch) return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
+            // Si es optometrista, buscar datos extra
+            if (empleado.cargo === 'Optometrista') {
+                const optometrista = await optometristaModel.findOne({ empleadoId: empleado._id });
+                return res.json({
+                    id: empleado._id,
+                    nombre: empleado.nombre,
+                    apellido: empleado.apellido,
+                    correo: empleado.correo,
+                    telefono: empleado.telefono,
+                    rol: 'Optometrista',
+                    especialidad: optometrista?.especialidad,
+                    licencia: optometrista?.licencia
+                });
+            }
+            // Otros empleados
+            return res.json({
+                id: empleado._id,
+                nombre: empleado.nombre,
+                apellido: empleado.apellido,
+                correo: empleado.correo,
+                telefono: empleado.telefono,
+                rol: empleado.cargo
+            });
         }
-        res.json({
-            clienteId: cliente._id,
-            nombre: cliente.nombre,
-            apellido: cliente.apellido,
-            correo: cliente.correo,
-            telefono: cliente.telefono
-        });
+        // No encontrado
+        return res.status(401).json({ message: 'Correo o contraseña incorrectos' });
     } catch (error) {
         console.log('Error: ' + error);
         res.status(500).json({ message: 'Error en login: ' + error.message });

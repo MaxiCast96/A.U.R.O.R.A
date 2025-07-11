@@ -92,9 +92,4 @@ const empleadoSchema = new Schema({
     strict: true
 });
 
-// Índices para optimización
-empleadoSchema.index({ correo: 1 });
-empleadoSchema.index({ dui: 1 });
-empleadoSchema.index({ sucursalId: 1 });
-
 export default model('Empleados', empleadoSchema);

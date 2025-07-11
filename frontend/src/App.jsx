@@ -39,6 +39,7 @@ function AnimatedRoutes() {
         <Route path="/agendar" element={<AgendarCitas />} />
         <Route path="/nosotros" element={<Nosotros />} />
         <Route path="/perfil" element={<PerfilPage />} />
+        <Route path="/dashboard" element={<OpticaDashboard />} />
         
         // Rutas adicionales
         <Route path="/cotizaciones/crear" element={<CrearCotizacion />} />
@@ -57,7 +58,6 @@ function AnimatedRoutes() {
 function App() {
   return (
     <Router>
-      <OpticaDashboard />
       <AnimatedRoutes />
     </Router>
   );
