@@ -6,8 +6,20 @@ const recetasController = {};
 recetasController.getRecetas = async (req, res) => {
     try {
         const recetas = await recetasModel.find()
-            .populate('historialMedicoId', 'clienteId')
-            .populate('optometristaId', 'empleadoId especialidad');
+            .populate({
+                path: 'historialMedicoId',
+                populate: {
+                    path: 'clienteId',
+                    select: 'nombre apellido'
+                }
+            })
+            .populate({
+                path: 'optometristaId',
+                populate: {
+                    path: 'empleadoId',
+                    select: 'nombre apellido'
+                }
+            });
         res.json(recetas);
     } catch (error) {
         console.log("Error: " + error);
@@ -128,8 +140,20 @@ recetasController.getRecetaById = async (req, res) => {
     try {
         // Buscar receta por ID y popular las referencias
         const receta = await recetasModel.findById(req.params.id)
-            .populate('historialMedicoId', 'clienteId padecimientos historialVisual')
-            .populate('optometristaId', 'empleadoId especialidad licencia');
+            .populate({
+                path: 'historialMedicoId',
+                populate: {
+                    path: 'clienteId',
+                    select: 'nombre apellido'
+                }
+            })
+            .populate({
+                path: 'optometristaId',
+                populate: {
+                    path: 'empleadoId',
+                    select: 'nombre apellido'
+                }
+            });
 
         // Verificar si la receta existe
         if (!receta) {
@@ -147,7 +171,13 @@ recetasController.getRecetaById = async (req, res) => {
 recetasController.getRecetasByHistorialMedico = async (req, res) => {
     try {
         const recetas = await recetasModel.find({ historialMedicoId: req.params.historialId })
-            .populate('optometristaId', 'empleadoId especialidad')
+            .populate({
+                path: 'optometristaId',
+                populate: {
+                    path: 'empleadoId',
+                    select: 'nombre apellido'
+                }
+            })
             .sort({ fecha: -1 }); // Ordenar por fecha descendente
 
         if (recetas.length === 0) {
@@ -165,7 +195,13 @@ recetasController.getRecetasByHistorialMedico = async (req, res) => {
 recetasController.getRecetasByOptometrista = async (req, res) => {
     try {
         const recetas = await recetasModel.find({ optometristaId: req.params.optometristaId })
-            .populate('historialMedicoId', 'clienteId')
+            .populate({
+                path: 'historialMedicoId',
+                populate: {
+                    path: 'clienteId',
+                    select: 'nombre apellido'
+                }
+            })
             .sort({ fecha: -1 }); // Ordenar por fecha descendente
 
         if (recetas.length === 0) {
@@ -185,8 +221,20 @@ recetasController.getRecetasVigentes = async (req, res) => {
         const fechaActual = new Date();
         
         const recetas = await recetasModel.find()
-            .populate('historialMedicoId', 'clienteId')
-            .populate('optometristaId', 'empleadoId especialidad');
+            .populate({
+                path: 'historialMedicoId',
+                populate: {
+                    path: 'clienteId',
+                    select: 'nombre apellido'
+                }
+            })
+            .populate({
+                path: 'optometristaId',
+                populate: {
+                    path: 'empleadoId',
+                    select: 'nombre apellido'
+                }
+            });
 
         // Filtrar recetas vigentes
         const recetasVigentes = recetas.filter(receta => {

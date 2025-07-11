@@ -205,7 +205,10 @@ const FormModal = ({
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
       <form 
-        onSubmit={(e) => { e.preventDefault(); onSubmit(); }} 
+        onSubmit={(e) => { 
+          e.preventDefault(); 
+          onSubmit(e); // Pasar el evento al onSubmit
+        }} 
         className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
       >
         <div className="bg-cyan-500 text-white p-6 rounded-t-xl sticky top-0 z-10">
