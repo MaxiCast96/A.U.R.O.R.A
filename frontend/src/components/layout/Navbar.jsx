@@ -69,7 +69,11 @@ const Navbar = ({ onOpenAuth }) => {
       <nav className="bg-white py-4 px-6 shadow-md">
         <div className="container mx-auto flex items-center justify-between">
           <div className="flex items-center">
-            <img src="/logo.png" alt="Logo" className="h-10 mr-2" />
+          <img 
+              src="https://i.imgur.com/rYfBDzN.png" 
+              alt="Óptica La Inteligente" 
+              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+            />
             <span className="font-semibold text-xl text-[#0097c2]">
               Óptica La Inteligente
             </span>

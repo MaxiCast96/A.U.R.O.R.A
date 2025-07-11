@@ -8,6 +8,7 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import OpticaDashboard from "./pages/private/OpticaDashboard";
 
 // Importación de las páginas públicas
 import Home from "./pages/public/Home";
@@ -47,6 +48,7 @@ function AnimatedRoutes() {
         <Route path="/productos/personalizables" element={<Producto />} />
         <Route path="/recuperar-password" element={<RecuperarPassword />} />
       </Routes>
+      
     </AnimatePresence>
   );
 }
@@ -55,6 +57,7 @@ function AnimatedRoutes() {
 function App() {
   return (
     <Router>
+      <OpticaDashboard />
       <AnimatedRoutes />
     </Router>
   );
