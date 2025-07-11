@@ -314,7 +314,7 @@ const Empleados = () => {
                 <FilterBar
                     searchTerm={searchTerm}
                     onSearchChange={(e) => setSearchTerm(e.target.value)}
-                    searchPlaceholder="Buscar por nombre, DUI, email o cargo..."
+                    placeholder="Buscar por nombre, DUI, email o cargo..."
                     filters={[
                         { label: 'Todos', value: 'todos' }, { label: 'Activos', value: 'activos' }, 
                         { label: 'Inactivos', value: 'inactivos' }, { label: 'Principal', value: 'principal' },
