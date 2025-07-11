@@ -91,7 +91,11 @@ const RecuperarPassword = () => {
           <div className="bg-white rounded-2xl shadow-xl p-8">
             {/* Logo */}
             <div className="text-center mb-8">
-              <img src="/logo.png" alt="Logo" className="h-16 mx-auto mb-4" />
+            <img 
+              src="https://i.imgur.com/rYfBDzN.png" 
+              alt="Óptica La Inteligente" 
+              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+            />
               <h2 className="text-3xl font-bold text-gray-800">
                 {step === 1 ? 'Recuperar Contraseña' : 
                  step === 2 ? 'Verificar Código' : 'Nueva Contraseña'}

@@ -31,7 +31,11 @@ const Cotizaciones = () => {
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4 py-12">
               <div className="md:col-span-4 space-y-4">
                 <div className="flex items-center space-x-3">
-                  <img src="/logo.png" alt="Logo" className="w-10 h-10" />
+                <img 
+              src="https://i.imgur.com/rYfBDzN.png" 
+              alt="Óptica La Inteligente" 
+              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+            />
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
@@ -233,7 +237,11 @@ const Cotizaciones = () => {
               {/* Logo and description column */}
               <div className="md:col-span-4 space-y-4">
                 <div className="flex items-center space-x-3">
-                  <img src="/logo.png" alt="Logo" className="w-10 h-10" />
+                <img 
+              src="https://i.imgur.com/rYfBDzN.png" 
+              alt="Óptica La Inteligente" 
+              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+            />
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">

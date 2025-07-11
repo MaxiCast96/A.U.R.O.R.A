@@ -266,7 +266,7 @@ const Sidebar = ({
           </div>
         </div>
         
-        {/* Efectos de borde brillante con animación mejorada */}
+        {/* Efectos de borde brillante con animación*/}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
           <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-400 via-blue-500 to-cyan-400 opacity-30 animate-pulse"></div>
           {isExpanding && (
