@@ -79,7 +79,7 @@ const Servicio = () => {
         <section className="py-20 px-4">
           <div className="container mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12">
-              Beneficios de nuestro examen visual
+              Beneficios de Nuestro Examen Visual
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
               <BenefitCard
@@ -95,7 +95,7 @@ const Servicio = () => {
                 description="Nuestro examen visual completo toma aproximadamente 30 minutos, respetando tu tiempo."
               />
               <BenefitCard
-                title="Seguimiento personalizado"
+                title="Seguimiento Personalizado"
                 description="Realizamos un seguimiento de tu salud visual y te recordamos cuándo es momento de tu próximo examen."
               />
             </div>
@@ -106,12 +106,12 @@ const Servicio = () => {
         <section className="py-20 bg-white">
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">
-              Nuestro proceso
+              Nuestro Proceso
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-8">
               <div className="space-y-6">
                 <ProcessStep
-                  title="Historia clínica"
+                  title="Historia Clínica"
                   description="Recopilamos información sobre tu historial médico, antecedentes familiares y hábitos visuales."
                 />
                 <ProcessStep
@@ -127,7 +127,7 @@ const Servicio = () => {
                   description="Examinamos la salud de tus ojos para detectar posibles condiciones como cataratas, glaucoma o retinopatías."
                 />
                 <ProcessStep
-                  title="Recomendaciones personalizadas"
+                  title="Recomendaciones Personalizadas"
                   description="Te brindamos recomendaciones específicas para tu caso y te asesoramos en la elección de lentes si los necesitas."
                 />
               </div>
@@ -186,7 +186,7 @@ const Servicio = () => {
                 title="Adaptación de Lentes"
                 description="Servicio completo de adaptación y personalización de lentes, garantizando tu comodidad y satisfacción."
                 features={{
-                  title: "Servicios incluidos",
+                  title: "Servicios Incluidos",
                   items: [
                     {
                       title: "Asesoría especializada",
@@ -215,18 +215,18 @@ const Servicio = () => {
                 title="Reparaciones"
                 description="Servicio técnico especializado para el mantenimiento y reparación de tus lentes."
                 features={{
-                  title: "Servicios disponibles",
+                  title: "Servicios Disponibles",
                   items: [
                     {
-                      title: "Mantenimiento general",
+                      title: "Mantenimiento General",
                       description: "Ajustes, limpieza profunda y revisión completa"
                     },
                     {
-                      title: "Reparaciones específicas",
+                      title: "Reparaciones Específicas",
                       description: "Cambio de tornillos, plaquetas y soldadura especializada"
                     },
                     {
-                      title: "Servicios express",
+                      title: "Servicios Express",
                       description: "Reparaciones urgentes en el mismo día"
                     }
                   ]
@@ -234,9 +234,9 @@ const Servicio = () => {
                 details={{
                   title: "Ventajas",
                   items: [
-                    "Garantía en reparaciones",
-                    "Presupuesto sin compromiso",
-                    "Servicio rápido y profesional"
+                    "Garantía en Reparaciones",
+                    "Presupuesto Sin Compromiso",
+                    "Servicio Rápido y Profesional"
                   ]
                 }}
               />
@@ -248,7 +248,7 @@ const Servicio = () => {
         <section className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white py-20">
           <div className="container mx-auto px-4 text-center">
             <h2 className="text-4xl font-bold mb-6">
-              ¡Agenda tu examen visual hoy mismo!
+              ¡Agenda tu Examen Visual hoy mismo!
             </h2>
             <p className="text-xl mb-8 max-w-2xl mx-auto">
               No esperes más para cuidar de tu salud visual. Nuestro equipo está

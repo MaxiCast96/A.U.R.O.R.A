@@ -207,7 +207,7 @@ const AgendarCitas = () => {
       case 3:
         return (
           <div className="space-y-4">
-            <h3 className="font-semibold mb-4">Forma de contacto</h3>
+            <h3 className="font-semibold mb-4">Forma de Contacto</h3>
             <div className="space-y-2">
               <label className="flex items-center space-x-2">
                 <input
@@ -218,7 +218,7 @@ const AgendarCitas = () => {
                   onChange={handleInputChange}
                   className="text-[#0097c2] focus:ring-[#0097c2]"
                 />
-                <span>Número telefónico</span>
+                <span>Número Telefónico</span>
               </label>
               <label className="flex items-center space-x-2">
                 <input
@@ -351,8 +351,9 @@ const AgendarCitas = () => {
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
-                  Comprometidos con tu salud visual desde 2010. Ofrecemos servicios
-                  profesionales y productos de alta calidad para el cuidado de tus ojos.
+                  Comprometidos con tu Salud Visual desde 2010. Ofrecemos
+                  Servicios Profesionales y Productos de Alta Calidad para el
+                  Cuidado de tus Ojos.
                 </p>
                 <div className="flex space-x-4 mt-4">
                   <a

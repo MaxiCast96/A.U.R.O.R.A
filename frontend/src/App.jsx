@@ -57,7 +57,7 @@ function AnimatedRoutes() {
         
         {/* Rutas que requieren autenticación de cliente */}
         <Route path="/cotizaciones" element={
-          <PrivateRoute requiredRole="Cliente">
+          <PrivateRoute requiredRole="Cliente" noRedirect={true}>
             <Cotizaciones />
           </PrivateRoute>
         } />

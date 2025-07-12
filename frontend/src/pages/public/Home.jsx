@@ -5,7 +5,6 @@ import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
 import BrandsCarousel from "../../components/Home/BrandCarousel";
 import PopularCarousel from "../../components/Home/PopularCarousel";
-import AuthModal from "../../components/auth/AuthModal";
 import useData from '../../hooks/useData';
 
 //imagenes
@@ -27,7 +26,6 @@ import Accesorios from "../public/img/Accesorio.png";
 
 const Home = () => {
   const location = useLocation();
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [currentBrandSlide, setCurrentBrandSlide] = useState(0);
   const [currentPopularSlide, setCurrentPopularSlide] = useState(0);
@@ -99,14 +97,6 @@ const Home = () => {
     };
   }, [safeBrands.length, safePopulars.length]);
 
-  useEffect(() => {
-    if (location.state?.openAuthModal) {
-      setIsAuthModalOpen(true);
-      // Limpiar el estado después de abrir el modal
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, [location.state]);
-
   // Reemplaza las variantes de animación existentes con estas más sutiles
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
@@ -137,7 +127,7 @@ const Home = () => {
         transition={{ duration: 0.4 }}
         className="bg-white min-h-screen flex flex-col font-['Lato']"
       >
-        <Navbar onOpenAuth={() => setIsAuthModalOpen(true)} />
+        <Navbar />
 
         {/* Hero simplificado ahora es un carrusel de promociones */}
         <motion.section
@@ -439,7 +429,7 @@ const Home = () => {
                     <path d="M12 16s4-2.5 4-6a4 4 0 10-8 0c0 3.5 4 6 4 6z" />
                   </svg>
                 </motion.div>
-                <h3 className="font-semibold mb-2">Examen visual profesional</h3>
+                <h3 className="font-semibold mb-2">Examen Visual Profesional</h3>
                 <p className="text-gray-600 text-sm">
                   Realizado por optometristas certificados con equipos de última
                   generación.
@@ -552,7 +542,7 @@ const Home = () => {
               </span>
               <p className="text-center text-gray-700 mb-2">
                 Excelente servicio y atención. Me encantaron mis nuevos lentes y
-                el examen visual fue muy profesional. ¡Definitivamente
+                el Examen Visual fue muy profesional. ¡Definitivamente
                 regresaré!
               </p>
               <div className="flex space-x-1">
@@ -851,9 +841,9 @@ const Home = () => {
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
-                  Comprometidos con tu salud visual desde 2010. Ofrecemos
-                  servicios profesionales y productos de alta calidad para el
-                  cuidado de tus ojos.
+                  Comprometidos con tu Salud Visual desde 2010. Ofrecemos
+                  Servicios Profesionales y Productos de Alta Calidad para el
+                  Cuidado de tus Ojos.
                 </p>
                 <div className="flex space-x-4 mt-4">
                   <a
@@ -1024,11 +1014,6 @@ const Home = () => {
             </div>
           </div>
         </footer>
-
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
-        />
       </motion.div>
     </PageTransition>
   );

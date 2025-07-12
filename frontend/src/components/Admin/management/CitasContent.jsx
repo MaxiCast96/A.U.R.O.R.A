@@ -186,7 +186,7 @@ const CitasContent = () => {
       name: 'motivoCita',
       label: 'Motivo de la cita',
       type: 'text',
-      placeholder: 'Ej. Examen visual',
+      placeholder: 'Ej. Examen Visual',
       required: true,
       colSpan: 4
     },
