@@ -2,20 +2,21 @@ import cotizacionesModel from "../models/Cotizaciones.js";
 
 const cotizacionesController = {};
 
-// SELECT - Obtener todas las cotizaciones
+// SELECT - Obtiene todas las cotizaciones con relaciones pobladas
 cotizacionesController.getCotizaciones = async (req, res) => {
     try {
+        // Busca cotizaciones y puebla cliente, productos y categorías
         const cotizaciones = await cotizacionesModel.find()
-            .populate('clienteId', 'nombre apellido correo telefono')
-            .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')
+            .populate('clienteId', 'nombre apellido correo telefono') // Datos básicos del cliente
+            .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')  // Datos del producto
             .populate({
                 path: 'productos.productoId',
                 populate: {
                     path: 'categoriaId',
-                    select: 'nombre'
+                    select: 'nombre' // Puebla categoría dentro del producto
                 }
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 }); // Ordena por fecha de creación descendente
         
         res.json(cotizaciones);
     } catch (error) {
@@ -24,9 +25,10 @@ cotizacionesController.getCotizaciones = async (req, res) => {
     }
 };
 
-// SELECT by ID - Obtener cotización por ID
+// SELECT by ID - Obtiene cotización específica con poblaciones completas
 cotizacionesController.getCotizacionById = async (req, res) => {
     try {
+        // Busca cotización por ID con poblaciones extendidas
         const cotizacion = await cotizacionesModel.findById(req.params.id)
             .populate('clienteId', 'nombre apellido correo telefono dui direccion')
             .populate('productos.productoId', 'nombre descripcion precioActual material color tipoLente categoriaId')
