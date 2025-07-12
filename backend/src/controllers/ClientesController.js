@@ -456,6 +456,12 @@ clientesController.forgotPassword = async (req, res) => {
         return res.status(400).json({ message: "El correo es obligatorio" });
     }
 
+    // Verificar configuración de email
+    if (!config.email.user || !config.email.pass) {
+        console.error("Configuración de email no encontrada. Verifica las variables de entorno USER_EMAIL y USER_PASS");
+        return res.status(500).json({ message: "Error de configuración del servidor. Contacta al administrador." });
+    }
+
     try {
         // Buscar el cliente por correo
         const cliente = await clientesModel.findOne({ correo: correo.trim().toLowerCase() });
@@ -463,35 +469,41 @@ clientesController.forgotPassword = async (req, res) => {
             return res.status(404).json({ message: "No existe un cliente con este correo" });
         }
 
-        // Generar token de recuperación con expiración de 1 hora
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenExpiry = Date.now() + 3600000; // 1 hora
+        // Generar código de 6 dígitos
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const resetTokenExpiry = Date.now() + 1000 * 60 * 30; // 30 minutos
 
-        // Guardar token en la base de datos
-        cliente.resetPasswordToken = resetToken;
+        console.log('Código generado:', resetCode);
+        console.log('Expiración calculada:', new Date(resetTokenExpiry));
+
+        // Guardar código y expiración en la base de datos
+        cliente.resetPasswordToken = resetCode;
         cliente.resetPasswordExpires = new Date(resetTokenExpiry);
         await cliente.save();
+
+        console.log('Código guardado en BD:', cliente.resetPasswordToken);
+        console.log('Expiración guardada en BD:', cliente.resetPasswordExpires);
 
         // Configurar el transporter de nodemailer
         const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-                user: config.emailUser.user_email,
-                pass: config.emailUser.user_pass
+                user: config.email.user,
+                pass: config.email.pass
             }
         });
 
         // Configurar el email de recuperación
         const mailOptions = {
-            from: config.emailUser.user_email,
+            from: config.email.user,
             to: correo,
             subject: "Recuperación de Contraseña - Óptica Inteligente",
             html: `
                 <h2>Recuperación de Contraseña</h2>
                 <p>Hola ${cliente.nombre} ${cliente.apellido},</p>
                 <p>Has solicitado restablecer tu contraseña. Utiliza el siguiente código:</p>
-                <h3 style="background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px;">${resetToken.substring(0, 6).toUpperCase()}</h3>
-                <p>Este código expira en 1 hora.</p>
+                <h3 style="background-color: #f0f0f0; padding: 10px; text-align: center; font-size: 24px; letter-spacing: 5px;">${resetCode}</h3>
+                <p>Este código expira en 30 minutos.</p>
                 <p>Si no solicitaste este cambio, puedes ignorar este email.</p>
                 <p>Saludos,<br>Equipo de Óptica Inteligente</p>
             `
@@ -520,21 +532,32 @@ clientesController.forgotPassword = async (req, res) => {
  * @returns {Object} Mensaje de confirmación o error
  */
 clientesController.resetPassword = async (req, res) => {
-    const { token, newPassword } = req.body;
+    const { correo, code, newPassword } = req.body;
     
-    if (!token || !newPassword) {
-        return res.status(400).json({ message: "Token y nueva contraseña son obligatorios" });
+    if (!correo || !code || !newPassword) {
+        return res.status(400).json({ message: "Correo, código y nueva contraseña son obligatorios" });
     }
 
+    console.log('Reset password attempt:', { correo, code: code.substring(0, 3) + '***' });
+
     try {
-        // Buscar cliente con el token válido y no expirado
+        // Buscar cliente con el código válido y no expirado
         const cliente = await clientesModel.findOne({
-            resetPasswordToken: token,
+            correo: correo.trim().toLowerCase(),
+            resetPasswordToken: code,
             resetPasswordExpires: { $gt: Date.now() }
         });
 
+        console.log('Cliente encontrado:', cliente ? 'Sí' : 'No');
+        if (cliente) {
+            console.log('Token almacenado:', cliente.resetPasswordToken);
+            console.log('Expiración:', cliente.resetPasswordExpires);
+            console.log('Tiempo actual:', new Date());
+            console.log('¿Token expirado?:', cliente.resetPasswordExpires < Date.now());
+        }
+
         if (!cliente) {
-            return res.status(400).json({ message: "Token inválido o expirado" });
+            return res.status(400).json({ message: "Código inválido, expirado o correo incorrecto" });
         }
 
         // Encriptar la nueva contraseña
@@ -546,6 +569,7 @@ clientesController.resetPassword = async (req, res) => {
         cliente.resetPasswordExpires = undefined;
         await cliente.save();
 
+        console.log('Contraseña actualizada exitosamente para:', correo);
         res.json({ message: "Contraseña restablecida exitosamente" });
 
     } catch (error) {

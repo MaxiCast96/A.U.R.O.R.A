@@ -1,5 +1,6 @@
 import empleadosModel from "../models/Empleados.js";
 import bcryptjs from "bcryptjs";
+import nodemailer from "nodemailer";
 import { v2 as cloudinary } from "cloudinary";
 import { config } from "../config.js";
 
@@ -202,6 +203,13 @@ empleadosController.deleteEmpleados = async (req, res) => {
 empleadosController.forgotPassword = async (req, res) => {
     const { correo } = req.body;
     if (!correo) return res.status(400).json({ message: "Correo es requerido" });
+    
+    // Verificar configuración de email
+    if (!config.email.user || !config.email.pass) {
+        console.error("Configuración de email no encontrada. Verifica las variables de entorno USER_EMAIL y USER_PASS");
+        return res.status(500).json({ message: "Error de configuración del servidor. Contacta al administrador." });
+    }
+    
     try {
         // Busca empleado por correo
         const empleado = await empleadosModel.findOne({ correo });
@@ -210,22 +218,27 @@ empleadosController.forgotPassword = async (req, res) => {
         // Generar código de 6 dígitos
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
         
+        console.log('Código generado (empleado):', resetCode);
+        console.log('Expiración calculada (empleado):', new Date(Date.now() + 1000 * 60 * 30));
+        
         // Guardar código y expiración en el usuario
         empleado.resetPasswordToken = resetCode;
         empleado.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutos
         await empleado.save();
         
+        console.log('Código guardado en BD (empleado):', empleado.resetPasswordToken);
+        console.log('Expiración guardada en BD (empleado):', empleado.resetPasswordExpires);
+        
         // Enviar email con código de recuperación
-        const nodemailer = await import('nodemailer');
-        const transporter = nodemailer.default.createTransporter({
+        const transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
-                user: config.emailUser.user_email,
-                pass: config.emailUser.user_pass
+                user: config.email.user,
+                pass: config.email.pass
             }
         });
         const mailOptions = {
-            from: config.emailUser.user_email,
+            from: config.email.user,
             to: correo,
             subject: "Código de recuperación de contraseña",
             text: `Tu código de recuperación es: ${resetCode}. Válido por 30 minutos.`
@@ -242,6 +255,9 @@ empleadosController.forgotPassword = async (req, res) => {
 empleadosController.resetPassword = async (req, res) => {
     const { correo, code, newPassword } = req.body;
     if (!correo || !code || !newPassword) return res.status(400).json({ message: "Correo, código y nueva contraseña requeridos" });
+    
+    console.log('Reset password attempt (empleado):', { correo, code: code.substring(0, 3) + '***' });
+    
     try {
         // Busca empleado con token válido y no expirado
         const empleado = await empleadosModel.findOne({
@@ -249,6 +265,15 @@ empleadosController.resetPassword = async (req, res) => {
             resetPasswordToken: code,
             resetPasswordExpires: { $gt: Date.now() }
         });
+        
+        console.log('Empleado encontrado:', empleado ? 'Sí' : 'No');
+        if (empleado) {
+            console.log('Token almacenado:', empleado.resetPasswordToken);
+            console.log('Expiración:', empleado.resetPasswordExpires);
+            console.log('Tiempo actual:', new Date());
+            console.log('¿Token expirado?:', empleado.resetPasswordExpires < Date.now());
+        }
+        
         if (!empleado) return res.status(400).json({ message: "Código inválido, expirado o correo incorrecto" });
         
         // Actualizar contraseña y limpiar tokens
@@ -256,6 +281,8 @@ empleadosController.resetPassword = async (req, res) => {
         empleado.resetPasswordToken = undefined;
         empleado.resetPasswordExpires = undefined;
         await empleado.save();
+        
+        console.log('Contraseña actualizada exitosamente para empleado:', correo);
         res.json({ message: "Contraseña actualizada correctamente" });
     } catch (error) {
         console.log("Error: " + error);
