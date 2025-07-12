@@ -1,110 +1,110 @@
+// ===== MODELO LENTES =====
 import { Schema, model } from 'mongoose';
 
 const LentesSchema = new Schema({
     nombre: {
         type: String,
-        required: true,
+        required: true, // Nombre del modelo de lentes
     },
     descripcion: {
         type: String,
-        required: true,
+        required: true, // Descripción del producto
     },
     categoriaId: {
          type: Schema.Types.ObjectId,
-        ref: 'Categoria',
+        ref: 'Categoria', // Categoría del lente
         required: true,
     },
     marcaId: {
          type: Schema.Types.ObjectId,
-        ref: 'Marcas',
+        ref: 'Marcas', // Marca del lente
         required: true,
     },
     material: {
         type: String,
-        required: true,
+        required: true, // Material del armazón
         unique: true
     },
      color: {
         type: String,
-        required: true,
+        required: true, // Color del armazón
         unique: true
     },
      tipoLente: {
         type: String,
-        required: true,
+        required: true, // Tipo (graduado, sol, bifocal, etc.)
         unique: true
     },
      precioBase: {
         type: Number,
-        required: true,
+        required: true, // Precio original
         unique: true
     },
       precioActual: {
         type: Number,
-        required: true,
+        required: true, // Precio actual (con descuentos)
         unique: true
     },
       linea: {
         type: String,
-        required: true,
+        required: true, // Línea de producto (Premium, Económica)
         unique: true
     },
-    medidas: {
+    medidas: { // Dimensiones físicas del lente
         anchoPuente: {
             type: Number,
-            required: true
+            required: true // Ancho del puente nasal
         },
         altura: {
             type: Number,
-            required: true
+            required: true // Altura del lente
         },
         ancho: {
             type: Number,
-            required: true
+            required: true // Ancho total del armazón
         }
     },
     imagenes: [
         {
-            type: String
+            type: String // URLs de las imágenes del producto
         }
     ],
-    
     enPromocion: {
         type: Boolean,
-        default: false,
+        default: false, // Por defecto no está en promoción
         required: true,
     },
     promocionId: {
         type: Schema.Types.ObjectId,
-        ref: 'Promocion',
+        ref: 'Promocion', // Promoción aplicada si aplica
         required: function () {
-            return this.enPromocion;
+            return this.enPromocion; // Solo requerido si está en promoción
         },
     },
     fechaCreacion: {
         type: Date,
-        required: true
+        required: true // Fecha de creación del producto
     },
-        sucursales: [
-            {
-                sucursalId: {
-                    type: Schema.Types.ObjectId,
-                    ref: 'Sucursales',
-                    required: true,
-                },
-                nombreSucursal: {
-                    type: String,
-                    required: true,
-                },
-                stock: {
-                    type: Number,
-                    required: true,
-                    min: 0
-                }
+    sucursales: [ // Stock por sucursal
+        {
+            sucursalId: {
+                type: Schema.Types.ObjectId,
+                ref: 'Sucursales', // Referencia a la sucursal
+                required: true,
+            },
+            nombreSucursal: {
+                type: String,
+                required: true, // Nombre para referencia rápida
+            },
+            stock: {
+                type: Number,
+                required: true, // Cantidad disponible
+                min: 0
             }
-        ]
+        }
+    ]
 }, {
-    timestamps: true,
+    timestamps: true, // Agrega createdAt y updatedAt
     strict: true
 });
 

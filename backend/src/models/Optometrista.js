@@ -1,31 +1,32 @@
+// ===== MODELO OPTOMETRISTA =====
 import { Schema, model } from 'mongoose';
 
 const optometristaSchema = new Schema({
     empleadoId: {
         type: Schema.Types.ObjectId,
-        ref: 'Empleados',
+        ref: 'Empleados', // Referencia al empleado base
         required: true,
     },
     especialidad: {
         type: String,
-        required: true,
+        required: true, // Especialidad del optometrista
     },
     licencia: {
         type: String,
-        required: true,
+        required: true, // Número de licencia profesional
     },
     experiencia: {
         type: Number,
-        required: true
+        required: true // Años de experiencia
     },
-    disponibilidad: [
+    disponibilidad: [ // Horarios de trabajo
         {
-            dia: { type: String, required: true },
-            horaInicio: { type: String, required: true },
-            horaFin: { type: String, required: true }
+            dia: { type: String, required: true }, // Día de la semana
+            horaInicio: { type: String, required: true }, // Hora de inicio
+            horaFin: { type: String, required: true } // Hora de fin
         }
     ],
-    sucursalesAsignadas: [
+    sucursalesAsignadas: [ // Sucursales donde puede trabajar
         {
             type: Schema.Types.ObjectId,
             ref: 'Sucursales',
@@ -34,10 +35,10 @@ const optometristaSchema = new Schema({
     ],
     disponible: {
         type: Boolean,
-        required: true
+        required: true // Si está disponible para citas
     }
 }, {
-    timestamps: true,
+    timestamps: true, // Agrega createdAt y updatedAt
     strict: true
 });
 

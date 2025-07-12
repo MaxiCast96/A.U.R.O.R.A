@@ -1,32 +1,33 @@
+// ===== MODELO MARCAS =====
 import { Schema, model } from 'mongoose';
 
 const marcaSchema = new Schema({
     nombre: {
         type: String,
-        required: true,
-        unique: true
+        required: true, // Nombre de la marca
+        unique: true // No puede repetirse
     },
     descripcion: {
         type: String,
-        required: true,
+        required: true, // Descripción de la marca
     },
     logo: {
         type: String,
-        required: false,
+        required: false, // URL del logo de la marca
     },
     paisOrigen: {
         type: String,
-        required: true,
+        required: true, // País de origen de la marca
     },
-    lineas: [ 
+    lineas: [ // Líneas de productos que maneja
         {
             type: String,
-            enum: ['Premium', 'Económica'],
+            enum: ['Premium', 'Económica'], // Tipos de línea permitidos
             required: true
         }
     ]
 }, {
-    timestamps: true,
+    timestamps: true, // Agrega createdAt y updatedAt
     strict: true
 });
 
