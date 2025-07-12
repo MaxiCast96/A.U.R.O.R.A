@@ -32,7 +32,7 @@ const Home = () => {
   const [currentBrandSlide, setCurrentBrandSlide] = useState(0);
   const [currentPopularSlide, setCurrentPopularSlide] = useState(0);
 
-  // Reemplazo arrays locales por hooks que traen datos de la base de datos
+  // TODOS los datos se manejan en el componente padre (Home)
   const { data: promociones, loading: loadingPromos, error: errorPromos } = useData('promociones');
   const { data: brands, loading: loadingBrands, error: errorBrands } = useData('marcas');
   const { data: populars, loading: loadingPopulars, error: errorPopulars } = useData('lentes?popular=true');
@@ -44,6 +44,16 @@ const Home = () => {
   const safePromociones = promociones || [];
   const safeBrands = brands || [];
   const safePopulars = populars || [];
+
+  // Handlers para el carrusel de marcas (se pasan como props)
+  const handleBrandSlideChange = (newSlide) => {
+    setCurrentBrandSlide(newSlide);
+  };
+
+  // Handlers para el carrusel de productos populares (se pasan como props)
+  const handlePopularSlideChange = (newSlide) => {
+    setCurrentPopularSlide(newSlide);
+  };
 
   const handlePrevPromo = () => {
     if (!isAnimating) {
@@ -202,73 +212,45 @@ const Home = () => {
                             repeat: Infinity,
                             repeatType: "reverse"
                           }}
-                          className="mb-6 text-base md:text-lg text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow"
+                          className="text-lg md:text-xl text-white/90 mb-6 drop-shadow-md"
                         >
                           {safePromociones[promoIndex]?.descripcion}
                         </motion.p>
-                        <motion.div
-                          animate={{
-                            y: [0, -4, 0],
-                            rotate: [0, 1, 0]
-                          }}
-                          transition={{
-                            duration: 5,
-                            repeat: Infinity,
-                            repeatType: "reverse"
-                          }}
-                          className="flex justify-center w-full"
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="bg-white text-[#0097c2] px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
                         >
-                          {safePromociones[promoIndex]?.enlace && (
-                            <a
-                              href={safePromociones[promoIndex]?.enlace}
-                              className="bg-white text-[#0097c2] font-semibold px-6 py-3 rounded-full shadow-lg hover:shadow-2xl transition-all duration-300 text-base border-2 border-white hover:bg-transparent hover:text-white"
-                            >
-                              Ver Promoción
-                            </a>
-                          )}
-                        </motion.div>
+                          Ver Oferta
+                        </motion.button>
                       </motion.div>
 
                       <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.3 }}
+                        key={`image-${promoIndex}`}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.8 }}
+                        transition={{ duration: 0.4 }}
                         className="flex-1 flex justify-center items-center"
                       >
-                        <motion.div
-                          animate={{
-                            rotateY: [0, 4, 0],
-                            rotateX: [0, 4, 0],
-                            scale: [1, 1.03, 1]
-                          }}
-                          transition={{
-                            duration: 5,
-                            repeat: Infinity,
-                            repeatType: "reverse"
-                          }}
-                          className="relative transform-style-3d"
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent rounded-2xl blur-xl transform -rotate-1 translate-z-[-20px]"></div>
-                          <motion.img
-                            key={safePromociones[promoIndex]?.imagen}
-                            src={safePromociones[promoIndex]?.imagen}
-                            alt={safePromociones[promoIndex]?.titulo}
-                            className="rounded-2xl w-60 h-40 md:w-80 md:h-52 lg:w-96 lg:h-60 object-cover shadow-2xl relative z-10 border-2 border-white/30"
-                            style={{
-                              transformStyle: 'preserve-3d',
-                            }}
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl transform translate-z-[-10px]"></div>
-                        </motion.div>
+                        <img
+                          src={safePromociones[promoIndex]?.imagen || Lente1}
+                          alt={safePromociones[promoIndex]?.titulo}
+                          className="w-48 h-48 md:w-64 md:h-64 object-contain drop-shadow-2xl"
+                        />
                       </motion.div>
                     </>
                   ) : (
-                    <div className="flex flex-col items-center flex justify-center w-full h-full">
-
-                      <br />
-                      <br />
-                      <h2 className="text-2xl md:text-3xl font-bold mb-4 text-center text-white drop-shadow-lg">No hay promociones activas en este momento</h2>
-                      <p className="mb-6 text-base md:text-lg text-center leading-relaxed text-white/90 max-w-md mx-auto drop-shadow">Vuelve pronto para descubrir nuevas ofertas y promociones especiales.</p>
+                    <div className="text-center text-white">
+                      <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4">
+                        Bienvenido a Óptica La Inteligente
+                      </h2>
+                      <p className="text-lg md:text-xl text-white/90 mb-6">
+                        Tu visión es nuestra prioridad
+                      </p>
+                      <button className="bg-white text-[#0097c2] px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300">
+                        Explorar Productos
+                      </button>
                     </div>
                   )}
                 </div>
@@ -281,13 +263,44 @@ const Home = () => {
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                 </button>
+
+                {/* Indicadores */}
+                {safePromociones.length > 1 && (
+                  <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+                    {safePromociones.map((_, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setPromoIndex(index)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                          index === promoIndex ? 'bg-white w-6' : 'bg-white/50'
+                        }`}
+                        aria-label={`Ir a promoción ${index + 1}`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>
         </motion.section>
-        <br />
-        <br />
 
+        {/* Carrusel de Marcas - AHORA RECIBE DATOS COMO PROPS */}
+        <BrandsCarousel 
+          brands={safeBrands}
+          loading={loadingBrands}
+          error={errorBrands}
+          currentSlide={currentBrandSlide}
+          onSlideChange={handleBrandSlideChange}
+        />
+
+        {/* Sección de Productos Populares - AHORA RECIBE DATOS COMO PROPS */}
+        <PopularCarousel 
+          items={safePopulars}
+          loading={loadingPopulars}
+          error={errorPopulars}
+          currentSlide={currentPopularSlide}
+          onSlideChange={handlePopularSlideChange}
+        />
 
         {/* Categorías simplificadas */}
         <motion.section
@@ -818,89 +831,9 @@ const Home = () => {
           </motion.div>
         </motion.section>
 
-        {/* Nuestras marcas */}
-<motion.section
-  variants={fadeIn}
-  initial="initial"
-  whileInView="animate"
-  viewport={{ once: true }}
-  className="w-full"
->
-  <h2 className="text-2xl font-bold text-center mb-8">Marcas</h2>
-  {loadingBrands ? (
-    <div className="text-center py-8">Cargando marcas...</div>
-  ) : errorBrands ? (
-    <div className="text-center text-red-500 py-8">Error al cargar marcas</div>
-  ) : Array.isArray(safeBrands) && safeBrands.length === 0 ? (
-    <div className="text-center py-8 text-gray-500">No hay marcas disponibles actualmente.</div>
-  ) : (
-    <BrandsCarousel brands={Array.isArray(safeBrands) ? safeBrands : []} />
-  )}
-</motion.section>
 
-        <br /><br />
 
-        {/* Populares */}
-        <motion.section
-          variants={fadeIn}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          className="max-w-6xl mx-auto px-4 mb-12"
-        >
-          <h2 className="text-2xl font-bold text-center mb-8">Populares</h2>
-          {loadingPopulars ? (
-            <div className="text-center py-8">Cargando productos populares...</div>
-          ) : errorPopulars ? (
-            <div className="text-center text-red-500 py-8">Error al cargar productos populares</div>
-          ) : Array.isArray(safePopulars) && safePopulars.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No hay productos populares disponibles actualmente.</div>
-          ) : (
-            <PopularCarousel
-              items={Array.isArray(safePopulars) ? safePopulars : []}
-              currentSlide={currentPopularSlide}
-              onSlideChange={setCurrentPopularSlide}
-            />
-          )}
-        </motion.section>
 
-        {/* Productos Destacados */}
-        <motion.section
-          variants={fadeIn}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          className="max-w-6xl mx-auto px-4 mb-12"
-        >
-          <h2 className="text-2xl font-bold text-center mb-8">Productos Destacados</h2>
-          {loadingPopulars ? (
-            <div className="text-center py-8">Cargando productos destacados...</div>
-          ) : errorPopulars ? (
-            <div className="text-center text-red-500 py-8">Error al cargar productos destacados</div>
-          ) : !Array.isArray(safePopulars) ? (
-            <div className="text-center py-8 text-gray-500">No hay productos destacados disponibles actualmente.</div>
-          ) : (
-            safePopulars.filter(item => item.image || item.imagen).slice(0, 4).length === 0 ? (
-              <div className="text-center py-8 text-gray-500">No se encontraron productos destacados.</div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
-                {safePopulars.filter(item => item.image || item.imagen).slice(0, 4).map((item, idx) => (
-                  <div key={item.id || idx} className="bg-white rounded-xl shadow-lg p-6 flex flex-col items-center">
-                    <img
-                      src={item.image || item.imagen}
-                      alt={item.nombre || item.name || 'Producto Destacado'}
-                      className="w-32 h-32 object-contain mb-4"
-                    />
-                    <h3 className="text-lg font-bold mb-2 text-center">{item.nombre || item.name || 'Producto Destacado'}</h3>
-                    <p className="text-gray-600 text-sm mb-2 text-center">{item.descripcion || 'Sin descripción.'}</p>
-                    <span className="text-[#0097c2] font-bold text-lg mb-2">${item.precioActual || item.precio || '—'}</span>
-                    <button className="mt-auto bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition text-xs sm:text-sm md:text-base">Ver detalles</button>
-                  </div>
-                ))}
-              </div>
-            )
-          )}
-        </motion.section>
 
         {/* Footer */}
         <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10 text-xs sm:text-sm">

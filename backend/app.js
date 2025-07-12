@@ -20,22 +20,19 @@ import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.
 import ventasRoutes from "./src/routes/ventas.js";
 import recetasRoutes from "./src/routes/recetas.js";
 import registroClientesRoutes from "./src/routes/registroClientes.js";
+import dashboardRoutes from "./src/routes/dashboard.js";
+import authRoutes from "./src/routes/auth.js";
 
 const app = express();
 
 app.use(cookieParser());
-
-// Configuración de CORS
-app.use(
-    cors({
-        origin: "http://localhost:5173",
-        credentials: true
-    })
-);
-
-// Para aceptar datos en JSON
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true
+}));
 app.use(express.json());
 
+// Rutas
 app.use("/api/empleados", empleadosRoutes);
 app.use("/api/optometrista", optometristaRoutes);
 app.use("/api/clientes", clientesRoutes);
@@ -52,7 +49,9 @@ app.use("/api/promociones", promocionesRoutes);
 app.use("/api/cotizaciones", cotizacionesRoutes);
 app.use("/api/productosPersonalizados", productosPersonalizadosRoutes);
 app.use("/api/ventas", ventasRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api/recetas", recetasRoutes);
 app.use("/api/registroClientes", registroClientesRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
 export default app;

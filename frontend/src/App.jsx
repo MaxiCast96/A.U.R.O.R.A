@@ -8,6 +8,8 @@ import {
   useLocation,
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
+import { AuthProvider, useAuth } from "./components/auth/AuthContext";
+import LoadingSpinner from "./components/auth/LoadingSpinner";
 import OpticaDashboard from "./pages/private/OpticaDashboard";
 import PrivateRoute from "./components/auth/PrivateRoute";
 
@@ -30,6 +32,13 @@ import RecuperarPassword from "./pages/auth/RecuperarPassword";
 // Componente separado para las rutas con AnimatePresence
 function AnimatedRoutes() {
   const location = useLocation();
+  const { loading } = useAuth();
+
+  // Mostrar spinner mientras se verifica la autenticación
+  if (loading) {
+    return <LoadingSpinner message="Verificando autenticación..." />;
+  }
+
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -84,9 +93,11 @@ function AnimatedRoutes() {
 // Componente principal App
 function App() {
   return (
-    <Router>
-      <AnimatedRoutes />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <AnimatedRoutes />
+      </Router>
+    </AuthProvider>
   );
 }
 

@@ -2,18 +2,25 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import PageTransition from '../../components/transition/PageTransition';
 import Navbar from '../../components/layout/Navbar';
-import useData from '../../hooks/useData';
 
-const VerCotizacion = () => {
+// Componente hijo que recibe TODOS los datos como props desde el padre
+const VerCotizacion = ({ 
+  cotizacion = null, 
+  loading = false, 
+  error = null, 
+  onConvertirACompra = null 
+}) => {
   const { id } = useParams();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const { data: cotizacion, loading, error } = useData(`cotizaciones/${id}`);
 
   const handleConvertirACompra = () => {
     setShowConfirmDialog(true);
   };
 
   const confirmarCompra = () => {
+    if (onConvertirACompra) {
+      onConvertirACompra(id);
+    }
     setShowConfirmDialog(false);
   };
 
@@ -26,9 +33,39 @@ const VerCotizacion = () => {
     return estados[estado] || estados['Pendiente'];
   };
 
-  if (loading) return <div className="p-8 text-center">Cargando...</div>;
-  if (error) return <div className="p-8 text-center text-red-500">Error: {error}</div>;
-  if (!cotizacion) return <div className="p-8 text-center">No se encontró la cotización.</div>;
+  // Mostrar estados de carga y error
+  if (loading) {
+    return (
+      <PageTransition>
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 font-['Lato']">
+          <div className="p-8 text-center">Cargando cotización...</div>
+        </div>
+      </PageTransition>
+    );
+  }
+  
+  if (error) {
+    return (
+      <PageTransition>
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 font-['Lato']">
+          <div className="p-8 text-center text-red-500">Error: {error}</div>
+        </div>
+      </PageTransition>
+    );
+  }
+  
+  if (!cotizacion) {
+    return (
+      <PageTransition>
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 font-['Lato']">
+          <div className="p-8 text-center">No se encontró la cotización.</div>
+        </div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>
