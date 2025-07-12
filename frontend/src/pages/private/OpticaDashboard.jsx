@@ -116,31 +116,27 @@ const OpticaDashboard = () => {
         setActiveSection={setActiveSection}
       />
       
-      <div className={`transition-all duration-300 ml-0 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'}`}>
+      <div className={`transition-all duration-300 relative z-10 ${sidebarOpen ? 'md:ml-64' : 'md:ml-16'}`}>
         {/* Header móvil */}
-        <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 p-4 flex items-center justify-between">
-          <button
-            onClick={toggleMobileMenu}
-            className="p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Menu className="w-6 h-6" />
-          </button>
-          <h1 className="text-lg font-semibold text-cyan-600 truncate">
+        <div className="lg:hidden bg-white shadow-sm border-b border-gray-200 p-3 sm:p-4 flex items-center justify-between">
+          {/* Botón de menú hamburguesa eliminado */}
+          <div />
+          <h1 className="text-base sm:text-lg font-semibold text-cyan-600 truncate px-2">
             {activeSection === 'dashboard' 
               ? 'Panel de Administración' 
               : menuItems.find(item => item.id === activeSection)?.label
             }
           </h1>
-          <div className="w-10 h-10 bg-cyan-500 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-full flex items-center justify-center">
             
           </div>
         </div>
 
         {/* Header escritorio */}
-        <header className="hidden lg:block bg-white shadow-sm border-b border-gray-200 p-6">
+        <header className="hidden lg:block bg-white shadow-sm border-b border-gray-200 p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-cyan-600">
+              <h1 className="text-xl sm:text-2xl font-bold text-cyan-600">
                 {activeSection === 'dashboard' 
                   ? 'Panel de Administración' 
                   : menuItems.find(item => item.id === activeSection)?.label
@@ -154,7 +150,7 @@ const OpticaDashboard = () => {
         </header>
 
         {/* Main Content */}
-        <main className="p-4 lg:p-6">
+        <main className="p-3 sm:p-4 lg:p-6">
           <div key={activeSection} className="animate-fade-in">
             {renderContent()}
           </div>

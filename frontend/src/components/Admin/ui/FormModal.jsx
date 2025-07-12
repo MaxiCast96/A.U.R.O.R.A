@@ -18,19 +18,19 @@ const InputField = ({ name, label, error, formData, handleInputChange, nested, .
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">{label}</label>
       <input
         name={name}
         value={getValue()}
         onChange={handleInputChange}
-        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 text-xs sm:text-sm ${
           error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
         }`}
         {...props}
       />
       {error && (
-        <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
-          <AlertCircle className="w-4 h-4" />
+        <div className="mt-1 text-red-500 text-xs sm:text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
           <span>{error}</span>
         </div>
       )}
@@ -49,12 +49,12 @@ const SelectField = ({ name, label, error, formData, handleInputChange, options,
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">{label}</label>
       <select
         name={name}
         value={getValue()}
         onChange={handleInputChange}
-        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 text-xs sm:text-sm ${
           error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
         }`}
         {...props}
@@ -68,8 +68,8 @@ const SelectField = ({ name, label, error, formData, handleInputChange, options,
         ))}
       </select>
       {error && (
-        <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
-          <AlertCircle className="w-4 h-4" />
+        <div className="mt-1 text-red-500 text-xs sm:text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
           <span>{error}</span>
         </div>
       )}
@@ -88,20 +88,20 @@ const TextAreaField = ({ name, label, error, formData, handleInputChange, nested
 
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">{label}</label>
       <textarea
         name={name}
         value={getValue()}
         onChange={handleInputChange}
-        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none ${
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none text-xs sm:text-sm ${
           error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
         }`}
         rows="3"
         {...props}
       />
       {error && (
-        <div className="mt-1 text-red-500 text-sm flex items-center space-x-1 animate-slideInDown">
-          <AlertCircle className="w-4 h-4" />
+        <div className="mt-1 text-red-500 text-xs sm:text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
           <span>{error}</span>
         </div>
       )}
@@ -208,29 +208,29 @@ const FormModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
       <form 
         onSubmit={(e) => { 
           e.preventDefault(); 
           onSubmit(e); // Pasar el evento al onSubmit
         }} 
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-2xl md:max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
       >
-        <div className="bg-cyan-500 text-white p-6 rounded-t-xl sticky top-0 z-10">
+        <div className="bg-cyan-500 text-white p-4 sm:p-6 rounded-t-xl sticky top-0 z-10">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">{title}</h3>
+            <h3 className="text-lg sm:text-xl font-bold">{title}</h3>
             <button 
               type="button" 
               onClick={onClose} 
-              className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-2 transition-all duration-200 hover:scale-110"
+              className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-1.5 sm:p-2 transition-all duration-200 hover:scale-110"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
         
-        <div className="p-6">
-          <div className={`grid grid-cols-1 md:grid-cols-${gridCols} gap-4`}>
+        <div className="p-4 sm:p-6">
+          <div className={`grid grid-cols-1 md:grid-cols-${gridCols} gap-3 sm:gap-4`}>
             {/* Renderizar los campos personalizados (children) primero */}
             {children}
             
@@ -239,17 +239,17 @@ const FormModal = ({
           </div>
         </div>
 
-        <div className="p-6 bg-gray-50 rounded-b-xl flex justify-end space-x-3 sticky bottom-0 z-10">
+        <div className="p-4 sm:p-6 bg-gray-50 rounded-b-xl flex flex-col sm:flex-row justify-end gap-2 sm:space-x-3 sticky bottom-0 z-10">
           <button 
             type="button" 
             onClick={onClose} 
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105 text-sm sm:text-base"
           >
             Cancelar
           </button>
           <button 
             type="submit" 
-            className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+            className="w-full sm:w-auto px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
           >
             <Save className="w-4 h-4" />
             <span>{submitLabel}</span>
