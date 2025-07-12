@@ -2,12 +2,13 @@ import carritosModel from "../models/Carrito.js";
 
 const carritosController = {};
 
-// SELECT - Obtener todos los carritos
+// SELECT - Obtiene todos los carritos con información del cliente
 carritosController.getCarritos = async (req, res) => {
     try {
+        // Busca todos los carritos y puebla datos básicos del cliente
         const carritos = await carritosModel.find()
-            .populate('clienteId', 'nombre apellido correo')
-            .sort({ createdAt: -1 });
+            .populate('clienteId', 'nombre apellido correo') // Solo campos específicos
+            .sort({ createdAt: -1 }); // Ordena por fecha de creación descendente
         res.json(carritos);
     } catch (error) {
         console.log("Error: " + error);
@@ -15,9 +16,10 @@ carritosController.getCarritos = async (req, res) => {
     }
 };
 
-// SELECT by ID - Obtener carrito por ID
+// SELECT by ID - Obtiene un carrito específico por ID
 carritosController.getCarritoById = async (req, res) => {
     try {
+        // Busca carrito por ID y puebla datos del cliente
         const carrito = await carritosModel.findById(req.params.id)
             .populate('clienteId', 'nombre apellido correo');
 
@@ -32,9 +34,10 @@ carritosController.getCarritoById = async (req, res) => {
     }
 };
 
-// SELECT by Cliente ID - Obtener carritos de un cliente específico
+// SELECT by Cliente ID - Obtiene carritos de un cliente específico
 carritosController.getCarritosByCliente = async (req, res) => {
     try {
+        // Filtra carritos por ID de cliente específico
         const carritos = await carritosModel.find({ clienteId: req.params.clienteId })
             .populate('clienteId', 'nombre apellido correo')
             .sort({ createdAt: -1 });

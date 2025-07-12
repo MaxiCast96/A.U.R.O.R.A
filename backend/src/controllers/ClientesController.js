@@ -15,6 +15,8 @@ const clientesController = {};
  * @param {Object} res - Objeto de respuesta Express
  * @returns {Array} Lista de todos los clientes
  */
+
+// Busca y retorna todos los clientes sin poblaciones
 clientesController.getClientes = async (req, res) => {
     try {
         const clientes = await clientesModel.find();
@@ -64,7 +66,7 @@ clientesController.updateClientes = async (req, res) => {
         estado
     } = req.body;
 
-    // Validación de campos obligatorios
+    // Validación de todos los campos obligatorios
     if (!nombre || !apellido || !edad || !dui || !telefono || !correo || !calle || !ciudad || !departamento || !estado) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
