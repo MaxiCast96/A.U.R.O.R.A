@@ -311,7 +311,7 @@ const AuthModal = ({ isOpen, onClose }) => {
               type="submit"
               className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02]"
             >
-              {isLogin ? 'Iniciar Sesión' : 'Crear cuenta'}
+              {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
             </button>
           </form>
         ) : (

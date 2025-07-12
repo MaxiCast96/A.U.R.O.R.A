@@ -2,13 +2,18 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 
-const PrivateRoute = ({ children, requiredRole = null }) => {
+const PrivateRoute = ({ children, requiredRole = null, noRedirect = false }) => {
   const { user } = useAuth();
   const location = useLocation();
 
-  // Si no hay usuario autenticado, redirigir al login
+  // Si no hay usuario autenticado
   if (!user) {
-    return <Navigate to="/" state={{ openAuthModal: true, from: location }} replace />;
+    // Si noRedirect es true, permitir que el componente hijo maneje la lógica
+    if (noRedirect) {
+      return children;
+    }
+    // Si no, redirigir al home (el modal se maneja internamente en el Navbar)
+    return <Navigate to="/" replace />;
   }
 
   // Si no se especifica rol requerido, permitir acceso a cualquier usuario autenticado
