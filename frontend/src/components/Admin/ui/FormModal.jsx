@@ -124,7 +124,7 @@ const FormModal = ({
 }) => {
   if (!isOpen) return null;
 
-  const renderField = (field) => {
+  const renderField = (field, index) => {
     const { name, label, type, options, required, colSpan = 1, nested, ...fieldProps } = field;
     const displayLabel = required ? `${label} *` : label;
     const error = errors[name];
@@ -201,7 +201,7 @@ const FormModal = ({
     })();
 
     return (
-      <div key={name} className={`col-span-${colSpan}`}>
+      <div key={name || index} className={`col-span-${colSpan}`}>
         {fieldElement}
       </div>
     );
@@ -235,7 +235,7 @@ const FormModal = ({
             {children}
             
             {/* Luego renderizar los campos normales */}
-            {fields.map(renderField)}
+            {fields.map((field, index) => renderField(field, index))}
           </div>
         </div>
 

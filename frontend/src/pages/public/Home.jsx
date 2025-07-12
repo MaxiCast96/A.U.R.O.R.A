@@ -220,7 +220,7 @@ const Home = () => {
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           className="bg-white text-[#0097c2] px-8 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
-                        >
+                            >
                           Ver Oferta
                         </motion.button>
                       </motion.div>
@@ -235,9 +235,9 @@ const Home = () => {
                       >
                         <img
                           src={safePromociones[promoIndex]?.imagen || Lente1}
-                          alt={safePromociones[promoIndex]?.titulo}
+                            alt={safePromociones[promoIndex]?.titulo}
                           className="w-48 h-48 md:w-64 md:h-64 object-contain drop-shadow-2xl"
-                        />
+                          />
                       </motion.div>
                     </>
                   ) : (

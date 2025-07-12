@@ -135,7 +135,7 @@ const Sidebar = ({
               sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
             }`}>
                <img 
-              src="https://i.imgur.com/rYfBDzN.png" 
+              src="https://via.placeholder.com/160x64/009BBF/FFFFFF?text=Óptica+La+Inteligente" 
               alt="Óptica La Inteligente" 
               className="w-14 h-5 sm:w-16 sm:h-6 md:w-20 md:h-8 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
             />
@@ -304,7 +304,7 @@ const Sidebar = ({
       </div>
 
       {/* Estilos CSS personalizados mejorados */}
-      <style jsx>{`
+      <style>{`
         /* ... (Todas las animaciones y estilos de la sidebar van aquí) ... */
         @keyframes fadeIn {
           from { opacity: 0; }
