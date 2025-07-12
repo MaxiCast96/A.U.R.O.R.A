@@ -107,6 +107,7 @@ const Clientes = () => {
         setShowAddEditModal(true);
     };
     
+    // CAMBIO: Función handleOpenEditModal corregida
     const handleOpenEditModal = (cliente) => {
         setSelectedCliente(cliente);
         setFormData({
@@ -120,7 +121,8 @@ const Clientes = () => {
             ciudad: cliente.direccion.ciudad,
             departamento: cliente.direccion.departamento,
             estado: cliente.estado,
-            password: '' // El password se deja en blanco en la edición por seguridad
+            // CAMBIO: Establecer la contraseña actual en lugar de string vacío
+            password: cliente.password || '' // Esto permitirá que se pase al modal
         });
         setErrors({});
         setShowAddEditModal(true);
@@ -244,7 +246,8 @@ const Clientes = () => {
                   handleInputChange={handleInputChange}
                   errors={errors}
                   submitLabel={selectedCliente ? 'Actualizar Cliente' : 'Guardar Cliente'}
-                  isEditing={!!selectedCliente}
+                  setFormData={setFormData}
+                  selectedCliente={selectedCliente}
               />
             )}
 

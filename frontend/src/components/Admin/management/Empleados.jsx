@@ -18,7 +18,7 @@ import EmpleadosFormModal from '../management/employees/EmpleadosFormModal';
 import { Users, UserCheck, Building2, DollarSign, Trash2, Eye, Edit, Phone, Mail, Calendar } from 'lucide-react';
 
 // URL base de tu API
-const API_URL = 'http://localhost:4000/api'; // Asegúrate que el puerto sea el correcto
+const API_URL = 'http://localhost:4000/api'; 
 
 const Empleados = () => {
     // --- ESTADOS ---
@@ -75,12 +75,24 @@ const Empleados = () => {
         if (!data.nombre.trim()) newErrors.nombre = 'El nombre es requerido';
         if (!data.apellido.trim()) newErrors.apellido = 'El apellido es requerido';
         if (!/^\d{8}-\d$/.test(data.dui)) newErrors.dui = 'DUI inválido (formato: 12345678-9)';
-        if (!/^\+503\d{8}$/.test(data.telefono)) newErrors.telefono = 'Teléfono inválido (+503XXXXXXXX)';
+        
+        // Validar solo los 8 dígitos del teléfono (el +503 se añade al enviar)
+        if (!/^\d{8}$/.test(data.telefono)) newErrors.telefono = 'Teléfono inválido (8 dígitos requeridos)';
+        
         if (!/\S+@\S+\.\S+/.test(data.correo)) newErrors.correo = 'Email inválido';
         if (!data.cargo) newErrors.cargo = 'El cargo es requerido';
         if (!data.sucursalId) newErrors.sucursalId = 'La sucursal es requerida';
         if (!data.salario || data.salario <= 0) newErrors.salario = 'Salario inválido';
         if (!selectedEmpleado && !data.password) newErrors.password = 'La contraseña es requerida para nuevos empleados';
+
+        // Validar campos de dirección si están presentes
+        if (data.direccion.departamento && !data.direccion.municipio) {
+            newErrors['direccion.municipio'] = 'El municipio es requerido si el departamento está seleccionado';
+        }
+        if (data.direccion.municipio && !data.direccion.departamento) {
+            newErrors['direccion.departamento'] = 'El departamento es requerido si el municipio está seleccionado';
+        }
+
         return newErrors;
     });
 
@@ -149,6 +161,12 @@ const Empleados = () => {
 
     const handleOpenEditModal = (empleado) => {
         setSelectedEmpleado(empleado);
+        
+        // Extraer los 8 dígitos si el teléfono ya incluye +503
+        const telefonoSinPrefijo = empleado.telefono.startsWith('+503') 
+            ? empleado.telefono.substring(4) 
+            : empleado.telefono;
+
         setFormData({
             ...empleado,
             // FIX: Verificar que sucursalId existe antes de acceder a _id
@@ -156,7 +174,9 @@ const Empleados = () => {
             password: '', // No precargar la contraseña
             fechaContratacion: new Date(empleado.fechaContratacion).toISOString().split('T')[0],
             // FIX: Asegurar que la dirección tenga la estructura correcta
-            direccion: empleado.direccion || { departamento: '', municipio: '', direccionDetallada: '' }
+            direccion: empleado.direccion || { departamento: '', municipio: '', direccionDetallada: '' },
+            // Usar el teléfono sin el prefijo +503 para el formulario de edición
+            telefono: telefonoSinPrefijo
         });
         setErrors({});
         setShowAddEditModal(true);
@@ -185,6 +205,11 @@ const Empleados = () => {
                 dataToSend.municipio = formData.direccion.municipio;
                 dataToSend.direccionDetallada = formData.direccion.direccionDetallada;
                 delete dataToSend.direccion; // Eliminar el objeto anidado
+            }
+
+            // Asegurar que el teléfono siempre tenga el prefijo +503 antes de enviar
+            if (dataToSend.telefono && !dataToSend.telefono.startsWith('+503')) {
+                dataToSend.telefono = '+503' + dataToSend.telefono;
             }
 
             if (selectedEmpleado) {
@@ -345,6 +370,7 @@ const Empleados = () => {
                 errors={errors}
                 submitLabel={selectedEmpleado ? 'Actualizar Empleado' : 'Guardar Empleado'}
                 sucursales={sucursales}
+                selectedEmpleado={selectedEmpleado}
             />
             
             <DetailModal

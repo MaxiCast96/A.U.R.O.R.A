@@ -1,4 +1,4 @@
-// Sidebar.jsx
+// Sidebar.jsx - Versión Responsiva Definitiva
 
 import React, { useState } from 'react';
 import Alert from './ui/Alert';
@@ -25,12 +25,14 @@ const Sidebar = ({
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [logoutNotification, setLogoutNotification] = useState(false);
+  
   // Construir el perfil según el tipo de usuario autenticado
   let currentUser = {
     name: 'Usuario',
     role: 'Sin rol',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format&q=80'
   };
+  
   if (user) {
     if (user.userType === 'cliente' || user.rol === 'Cliente') {
       currentUser = {
@@ -100,10 +102,11 @@ const Sidebar = ({
           <Alert type="info" message="Sesión cerrada correctamente" onClose={() => setLogoutNotification(false)} />
         </div>
       )}
+      
       {/* Overlay para móvil */}
       {mobileMenuOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden animate-fadeIn"
+          className="fixed inset-0 bg-black/50 z-40 md:hidden animate-fadeIn"
           onClick={closeMobileMenu}
         />
       )}
@@ -111,35 +114,35 @@ const Sidebar = ({
       <div className={`
         bg-white shadow-xl min-h-screen fixed left-0 top-0 z-50 overflow-visible
         transition-all duration-700 ease-in-out transform-gpu
-        ${sidebarOpen ? 'w-64' : 'w-16'}
-        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0'}
-        sm:translate-x-0 border-r border-gray-200
+        ${sidebarOpen ? 'w-52 sm:w-56 md:w-60 lg:w-64' : 'w-12 sm:w-14 md:w-16'}
+        ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        md:translate-x-0 border-r border-gray-200
         ${isExpanding ? 'animate-expandSidebar' : ''}
         ${isContracting ? 'animate-contractSidebar' : ''}
       `}>
-        {/* Header de la sidebar con logo más compacto */}
-         <div className="p-1.5 sm:p-2 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
+        {/* Header de la sidebar con logo - Responsivo */}
+        <div className="p-1 sm:p-1.5 md:p-2 lg:p-3 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
           <div className="flex items-center">
             <button
-              onClick={() => window.innerWidth >= 640 && setSidebarOpen(!sidebarOpen)}
-              className="w-6 h-6 sm:w-8 sm:h-8 bg-white rounded-lg shadow-md flex items-center justify-center p-1 flex-shrink-0 hover:shadow-lg transition-all duration-300 sm:cursor-pointer hover:scale-110 hover:rotate-3 active:scale-95 active:rotate-0 group"
+              onClick={() => window.innerWidth >= 768 && setSidebarOpen(!sidebarOpen)}
+              className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 bg-white rounded-lg shadow-md flex items-center justify-center p-1 flex-shrink-0 hover:shadow-lg transition-all duration-300 md:cursor-pointer hover:scale-110 hover:rotate-3 active:scale-95 active:rotate-0 group"
               title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
             >
               <div className={`transform transition-all duration-700 ease-in-out group-hover:scale-125 ${
                 sidebarOpen ? 'rotate-180' : 'rotate-0'
               }`}>
-                <ChevronRight className="w-4 h-4 text-gray-600 transition-all duration-700 ease-in-out" />
+                <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 text-gray-600 transition-all duration-700 ease-in-out" />
               </div>
             </button>
-            <div className={`ml-1.5 sm:ml-2 min-w-0 transition-all duration-700 ease-in-out transform ${
+            <div className={`ml-1 sm:ml-1.5 md:ml-2 lg:ml-3 min-w-0 transition-all duration-700 ease-in-out transform ${
               sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
             }`}>
-               <img 
-              src="https://i.imgur.com/rYfBDzN.png" 
-              alt="Óptica La Inteligente" 
-              className="w-16 h-6 sm:w-20 sm:h-8 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
-            />
-              <span className="text-[8px] sm:text-[10px] text-gray-500 block truncate animate-pulse">
+              <img 
+                src="https://i.imgur.com/rYfBDzN.png" 
+                alt="Óptica La Inteligente" 
+                className="w-16 h-6 sm:w-18 sm:h-7 md:w-20 md:h-8 lg:w-27 lg:h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+              />
+              <span className="text-[8px] sm:text-[9px] md:text-[10px] lg:text-xs text-gray-500 block truncate animate-pulse">
                 Sistema de Gestión
               </span>
             </div>
@@ -148,17 +151,17 @@ const Sidebar = ({
           {/* Botón de cerrar en móvil */}
           <button
             onClick={closeMobileMenu}
-            className="absolute right-3 top-3 p-1.5 lg:hidden text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 hover:rotate-90 active:scale-90"
+            className="absolute right-3 top-3 p-1.5 md:hidden text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 hover:rotate-90 active:scale-90"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
         
-        {/* Contenedor principal con menos padding */}
-        <div className="py-1 overflow-y-auto h-[calc(100vh-100px)]">
+        {/* Contenedor principal con padding responsivo */}
+        <div className="py-1 sm:py-1.5 md:py-2 overflow-y-auto h-[calc(100vh-90px)] sm:h-[calc(100vh-95px)] md:h-[calc(100vh-100px)] lg:h-[calc(100vh-120px)]">
           {['Principal', 'Personal', 'Productos', 'Médico', 'Administración'].map((section, sectionIndex) => (
-            <div key={section} className="mb-2" style={{ animationDelay: `${sectionIndex * 100}ms` }}>
-              <h3 className={`px-2 sm:px-3 mb-1 text-[10px] sm:text-xs font-semibold text-gray-500 uppercase tracking-wider transition-all duration-700 ease-in-out transform ${
+            <div key={section} className="mb-1.5 sm:mb-2 md:mb-3 lg:mb-4" style={{ animationDelay: `${sectionIndex * 100}ms` }}>
+              <h3 className={`px-1.5 sm:px-2 md:px-3 lg:px-4 mb-1 sm:mb-1.5 md:mb-2 text-[9px] sm:text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider transition-all duration-700 ease-in-out transform ${
                 sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
               }`}>
                 {section}
@@ -172,11 +175,11 @@ const Sidebar = ({
                       setActiveSection(item.id);
                       closeMobileMenu();
                     }}
-                    className={`w-full flex items-center px-1.5 sm:px-3 py-1 sm:py-1.5 text-left bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 hover:text-cyan-700 transition-all duration-300 group relative transform hover:scale-105 hover:translate-x-1 active:scale-95 active:translate-x-0 overflow-hidden ${
+                    className={`w-full flex items-center px-1 sm:px-1.5 md:px-3 lg:px-4 py-1 sm:py-1.5 md:py-2 lg:py-2.5 text-left bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 hover:text-cyan-700 transition-all duration-300 group relative transform hover:scale-105 hover:translate-x-1 active:scale-95 active:translate-x-0 overflow-hidden ${
                       activeSection === item.id 
                         ? 'active-gradient-item text-cyan-700 border-r-4 border-cyan-500 shadow-sm' 
                         : 'text-gray-600'
-                    } ${item.id === 'dashboard' ? 'sm:hover:bg-gradient-to-r sm:hover:from-gray-50 sm:hover:to-gray-100 sm:hover:text-gray-700' : ''}`}
+                    } ${item.id === 'dashboard' ? 'md:hover:bg-gradient-to-r md:hover:from-gray-50 md:hover:to-gray-100 md:hover:text-gray-700' : ''}`}
                     style={{ 
                       animationDelay: `${(sectionIndex * 200) + (itemIndex * 50)}ms`,
                       animationFillMode: 'both'
@@ -189,18 +192,18 @@ const Sidebar = ({
                       </div>
                     )}
                     
-                    <item.icon className={`w-4 h-4 ${
+                    <item.icon className={`w-3 h-3 sm:w-4 sm:h-4 md:w-4 md:h-4 lg:w-5 lg:h-5 ${
                       activeSection === item.id ? 'text-cyan-600' : 'text-gray-400'
                     } group-hover:text-cyan-600 transition-all duration-300 flex-shrink-0 transform group-hover:scale-125 group-hover:rotate-12 group-hover:animate-bounce-soft relative z-10`} />
                     
-                    <span className={`ml-1.5 sm:ml-2 font-medium text-xs sm:text-sm truncate transform transition-all duration-700 ease-in-out group-hover:translate-x-1 relative z-10 ${
+                    <span className={`ml-1 sm:ml-1.5 md:ml-2 lg:ml-3 font-medium text-[10px] sm:text-xs md:text-sm truncate transform transition-all duration-700 ease-in-out group-hover:translate-x-1 relative z-10 ${
                       sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
                     }`}>
                       {item.label}
                     </span>
                     
                     {!sidebarOpen && (
-                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 transform scale-75 group-hover:scale-100 animate-pop-in">
+                      <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs sm:text-sm rounded opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 transform scale-75 group-hover:scale-100 animate-pop-in">
                         {item.label}
                       </div>
                     )}
@@ -209,9 +212,9 @@ const Sidebar = ({
                     
                     {activeSection === item.id && (
                       <>
-                        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 w-1 h-1 bg-cyan-400 rounded-full animate-twinkle z-30"></div>
-                        <div className="absolute right-4 top-1/3 transform -translate-y-1/2 w-0.5 h-0.5 bg-blue-400 rounded-full animate-twinkle z-30" style={{ animationDelay: '0.5s' }}></div>
-                        <div className="absolute right-3 top-2/3 transform -translate-y-1/2 w-0.5 h-0.5 bg-cyan-300 rounded-full animate-twinkle z-30" style={{ animationDelay: '1s' }}></div>
+                        <div className="absolute right-1 sm:right-1.5 md:right-2 top-1/2 transform -translate-y-1/2 w-0.5 h-0.5 sm:w-1 sm:h-1 bg-cyan-400 rounded-full animate-twinkle z-30"></div>
+                        <div className="absolute right-2 sm:right-3 md:right-4 top-1/3 transform -translate-y-1/2 w-0.5 h-0.5 bg-blue-400 rounded-full animate-twinkle z-30" style={{ animationDelay: '0.5s' }}></div>
+                        <div className="absolute right-1.5 sm:right-2 md:right-3 top-2/3 transform -translate-y-1/2 w-0.5 h-0.5 bg-cyan-300 rounded-full animate-twinkle z-30" style={{ animationDelay: '1s' }}></div>
                       </>
                     )}
                   </button>
@@ -220,8 +223,8 @@ const Sidebar = ({
           ))}
         </div>
 
-        {/* Sección de perfil del usuario */}
-        <div className="absolute bottom-0 left-0 right-0 p-1 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 bg-white">
+        {/* Sección de perfil del usuario - Responsivo */}
+        <div className="absolute bottom-0 left-0 right-0 p-0.5 sm:p-1 md:p-1.5 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 bg-white">
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => {
@@ -235,7 +238,7 @@ const Sidebar = ({
                 }
               }}
               className={`w-full flex items-center bg-white hover:bg-white rounded-lg transition-all duration-300 group hover:shadow-md transform hover:scale-105 active:scale-95 ${
-                sidebarOpen ? 'p-1' : 'p-1 justify-center'
+                sidebarOpen ? 'p-1 sm:p-1.5' : 'p-1 justify-center'
               }`}
             >
               <div className="relative flex-shrink-0">
@@ -243,27 +246,27 @@ const Sidebar = ({
                   src={currentUser.avatar}
                   alt={currentUser.name}
                   className={`rounded-full object-cover border-2 border-cyan-200 group-hover:border-cyan-400 transition-all duration-300 shadow-md group-hover:shadow-lg ${
-                    sidebarOpen ? 'w-8 h-8 sm:w-10 sm:h-10' : 'w-6 h-6'
+                    sidebarOpen ? 'w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12' : 'w-5 h-5 sm:w-6 sm:h-6 md:w-8 md:h-8'
                   }`}
                 />
                 <div className={`absolute -bottom-0.5 -right-0.5 bg-green-400 border-2 border-white rounded-full animate-pulse ${
-                  sidebarOpen ? 'w-1.5 h-1.5' : 'w-1 h-1'
+                  sidebarOpen ? 'w-1 h-1 sm:w-1.5 sm:h-1.5 md:w-2 md:h-2' : 'w-1 h-1 sm:w-1.5 sm:h-1.5'
                 }`}></div>
               </div>
 
-              <div className={`ml-1.5 flex-1 min-w-0 transition-all duration-700 ease-in-out transform ${
+              <div className={`ml-1 sm:ml-1.5 md:ml-2 flex-1 min-w-0 transition-all duration-700 ease-in-out transform ${
                 sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
               }`}>
-                <p className="text-[10px] sm:text-xs font-semibold text-gray-800 truncate group-hover:text-cyan-700 transition-colors leading-tight">
+                <p className="text-[8px] sm:text-[10px] md:text-xs lg:text-s font-semibold text-gray-800 truncate group-hover:text-cyan-700 transition-colors leading-tight">
                   {currentUser.name}
                 </p>
-                <p className="text-[8px] sm:text-[10px] text-gray-500 truncate leading-tight">
+                <p className="text-[7px] sm:text-[8px] md:text-[10px] lg:text-xs text-gray-500 truncate leading-tight">
                   {currentUser.role}
                 </p>
               </div>
 
               {sidebarOpen && (
-                <ChevronDown className={`w-3 h-3 text-gray-400 group-hover:text-cyan-600 transition-all duration-300 transform ${
+                <ChevronDown className={`w-2 h-2 sm:w-3 sm:h-3 text-gray-400 group-hover:text-cyan-600 transition-all duration-300 transform ${
                   profileMenuOpen ? 'rotate-180' : 'rotate-0'
                 }`} />
               )}
@@ -273,33 +276,33 @@ const Sidebar = ({
               <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 animate-slideUp z-60">
                 <button
                   onClick={handleViewProfile}
-                  className="w-full bg-white flex items-center px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-all duration-200 group"
+                  className="w-full bg-white flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-all duration-200 group"
                 >
-                  <User className="w-5 h-5 mr-2 text-gray-400 group-hover:text-cyan-500 transition-colors" />
+                  <User className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 sm:mr-2 text-gray-400 group-hover:text-cyan-500 transition-colors" />
                   Ver Perfil
                 </button>
                 <div className="border-t border-gray-100 my-0.5"></div>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex bg-white items-center px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group"
+                  className="w-full flex bg-white items-center px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group"
                 >
-                  <LogOut className="w-5 h-5 mr-2 text-red-500 group-hover:text-red-600 transition-colors" />
+                  <LogOut className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 sm:mr-2 text-red-500 group-hover:text-red-600 transition-colors" />
                   Cerrar Sesión
                 </button>
               </div>
             )}
 
             {!sidebarOpen && (
-              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 transform scale-75 group-hover:scale-100 animate-pop-in">
+              <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 text-white text-[10px] sm:text-xs rounded opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-50 transform scale-75 group-hover:scale-100 animate-pop-in">
                 {currentUser.name}
               </div>
             )}
           </div>
         </div>
         
-        {/* Efectos de borde brillante con animación*/}
+        {/* Efectos de borde brillante con animación */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
-          <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-cyan-400 via-blue-500 to-cyan-400 opacity-30 animate-pulse"></div>
+          <div className="absolute top-0 left-0 w-0.5 sm:w-1 h-full bg-gradient-to-b from-cyan-400 via-blue-500 to-cyan-400 opacity-30 animate-pulse"></div>
           {isExpanding && (
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-100 via-blue-100 to-transparent opacity-20 animate-expandGlow"></div>
           )}
@@ -309,9 +312,8 @@ const Sidebar = ({
         </div>
       </div>
 
-      {/* Estilos CSS personalizados mejorados */}
+      {/* Estilos CSS personalizados */}
       <style jsx>{`
-        /* ... (Todas las animaciones y estilos de la sidebar van aquí) ... */
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -532,6 +534,31 @@ const Sidebar = ({
           transform: translateZ(0);
           backface-visibility: hidden;
           perspective: 1000px;
+        }
+        
+        /* Responsive breakpoints personalizados */
+        @media (max-width: 480px) {
+          .responsive-sidebar {
+            font-size: 0.7rem;
+          }
+        }
+        
+        @media (min-width: 481px) and (max-width: 768px) {
+          .responsive-sidebar {
+            font-size: 0.75rem;
+          }
+        }
+        
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .responsive-sidebar {
+            font-size: 0.85rem;
+          }
+        }
+        
+        @media (min-width: 1025px) {
+          .responsive-sidebar {
+            font-size: 1rem;
+          }
         }
       `}</style>
     </>
