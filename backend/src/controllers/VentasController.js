@@ -5,12 +5,13 @@ const ventasController = {};
 // SELECT - Obtener todas las ventas
 ventasController.getVentas = async (req, res) => {
     try {
+        // Busca todas las ventas y puebla referencias relacionadas
         const ventas = await ventasModel.find()
-            .populate('carritoId')
-            .populate('empleadoId', 'nombre apellido correo')
-            .populate('sucursalId', 'nombre direccion')
-            .populate('facturaDatos.clienteId', 'nombre apellido correo')
-            .sort({ createdAt: -1 });
+            .populate('carritoId') // Datos del carrito asociado
+            .populate('empleadoId', 'nombre apellido correo') // Datos básicos del empleado
+            .populate('sucursalId', 'nombre direccion') // Datos de la sucursal
+            .populate('facturaDatos.clienteId', 'nombre apellido correo') // Datos del cliente en factura
+            .sort({ createdAt: -1 }); // Ordena por fecha de creación descendente
         
         res.json(ventas);
     } catch (error) {
@@ -33,7 +34,7 @@ ventasController.createVenta = async (req, res) => {
     } = req.body;
 
     try {
-        // Validar que el carrito, empleado y sucursal existan
+        // Validar que los campos obligatorios existan
         if (!carritoId || !empleadoId || !sucursalId) {
             return res.status(400).json({ 
                 message: "carritoId, empleadoId y sucursalId son requeridos" 
@@ -52,22 +53,21 @@ ventasController.createVenta = async (req, res) => {
             }
         }
 
-        // Crear nueva venta
+        // Crear nueva instancia de venta
         const newVenta = new ventasModel({
             carritoId,
             empleadoId,
             sucursalId,
-            fecha: fecha || new Date(),
-            estado: estado || 'pendiente',
+            fecha: fecha || new Date(), // Usa fecha actual si no se proporciona
+            estado: estado || 'pendiente', // Estado por defecto
             datosPago,
             facturaDatos,
             observaciones
         });
 
-        // Guardar la venta en la base de datos
         const savedVenta = await newVenta.save();
         
-        // Poblar las referencias para la respuesta
+        // Pobla las referencias para la respuesta completa
         const populatedVenta = await ventasModel.findById(savedVenta._id)
             .populate('carritoId')
             .populate('empleadoId', 'nombre apellido')
@@ -87,6 +87,7 @@ ventasController.createVenta = async (req, res) => {
 // DELETE - Eliminar venta
 ventasController.deleteVenta = async (req, res) => {
     try {
+        // Busca y elimina venta por ID
         const deletedVenta = await ventasModel.findByIdAndDelete(req.params.id);
 
         if (!deletedVenta) {
@@ -118,7 +119,7 @@ ventasController.updateVenta = async (req, res) => {
         if (facturaDatos && facturaDatos.numeroFactura) {
             const existsFactura = await ventasModel.findOne({
                 'facturaDatos.numeroFactura': facturaDatos.numeroFactura,
-                _id: { $ne: req.params.id }
+                _id: { $ne: req.params.id } // Excluye el documento actual
             });
             if (existsFactura) {
                 return res.status(400).json({ 
@@ -127,6 +128,7 @@ ventasController.updateVenta = async (req, res) => {
             }
         }
 
+        // Prepara objeto con datos a actualizar
         const updateData = {
             carritoId,
             empleadoId,
@@ -138,15 +140,16 @@ ventasController.updateVenta = async (req, res) => {
             observaciones
         };
 
-        // Remover campos undefined
+        // Remover campos undefined del objeto de actualización
         Object.keys(updateData).forEach(key => 
             updateData[key] === undefined && delete updateData[key]
         );
 
+        // Busca, actualiza y retorna venta modificada
         const updatedVenta = await ventasModel.findByIdAndUpdate(
             req.params.id,
             updateData,
-            { new: true }
+            { new: true } // Retorna documento actualizado
         ).populate('carritoId')
          .populate('empleadoId', 'nombre apellido')
          .populate('sucursalId', 'nombre')
@@ -169,6 +172,7 @@ ventasController.updateVenta = async (req, res) => {
 // GET by ID - Obtener venta por ID
 ventasController.getVentaById = async (req, res) => {
     try {
+        // Busca venta por ID y puebla todas las referencias
         const venta = await ventasModel.findById(req.params.id)
             .populate('carritoId')
             .populate('empleadoId', 'nombre apellido correo cargo')
@@ -190,6 +194,8 @@ ventasController.getVentaById = async (req, res) => {
 ventasController.getVentasByEstado = async (req, res) => {
     try {
         const { estado } = req.params;
+        
+        // Filtra ventas por estado específico
         const ventas = await ventasModel.find({ estado })
             .populate('empleadoId', 'nombre apellido')
             .populate('sucursalId', 'nombre')
@@ -207,6 +213,8 @@ ventasController.getVentasByEstado = async (req, res) => {
 ventasController.getVentasBySucursal = async (req, res) => {
     try {
         const { sucursalId } = req.params;
+        
+        // Filtra ventas por ID de sucursal específica
         const ventas = await ventasModel.find({ sucursalId })
             .populate('empleadoId', 'nombre apellido')
             .populate('facturaDatos.clienteId', 'nombre apellido')
@@ -223,6 +231,8 @@ ventasController.getVentasBySucursal = async (req, res) => {
 ventasController.getVentasByEmpleado = async (req, res) => {
     try {
         const { empleadoId } = req.params;
+        
+        // Filtra ventas por ID de empleado específico
         const ventas = await ventasModel.find({ empleadoId })
             .populate('sucursalId', 'nombre')
             .populate('facturaDatos.clienteId', 'nombre apellido')
@@ -240,6 +250,7 @@ ventasController.getVentasByFecha = async (req, res) => {
     try {
         const { fechaInicio, fechaFin } = req.query;
         
+        // Construir query dinámico para filtro por fechas
         let query = {};
         if (fechaInicio && fechaFin) {
             query.fecha = {
@@ -248,11 +259,12 @@ ventasController.getVentasByFecha = async (req, res) => {
             };
         }
 
+        // Busca ventas dentro del rango de fechas
         const ventas = await ventasModel.find(query)
             .populate('empleadoId', 'nombre apellido')
             .populate('sucursalId', 'nombre')
             .populate('facturaDatos.clienteId', 'nombre apellido')
-            .sort({ fecha: -1 });
+            .sort({ fecha: -1 }); // Ordena por fecha descendente
 
         res.json(ventas);
     } catch (error) {

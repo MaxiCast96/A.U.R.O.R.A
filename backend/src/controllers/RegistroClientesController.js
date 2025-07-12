@@ -7,6 +7,7 @@ import { config } from "../config.js";
 
 const registerClientesController = {};
 
+// INSERT - Registra un nuevo cliente con verificación por email
 registerClientesController.register = async (req, res) => {
     const {
         nombre,
@@ -20,13 +21,13 @@ registerClientesController.register = async (req, res) => {
     } = req.body;
 
     try {
-        // Verificar si ya existe un empleado con el mismo correo electrónico
+        // Verificar si ya existe un cliente con el mismo correo electrónico
         const existsCliente = await clientesModel.findOne({ correo });
         if (existsCliente) {
             return res.json({ message: "Cliente already exists" });
         }
 
-        // Verificar si ya existe un empleado con el mismo DUI
+        // Verificar si ya existe un cliente con el mismo DUI
         const existsDui = await clientesModel.findOne({ dui });
         if (existsDui) {
             return res.json({ message: "DUI already registered" });
@@ -35,7 +36,7 @@ registerClientesController.register = async (req, res) => {
         // Encriptar la contraseña usando bcrypt
         const passwordHash = await bcryptjs.hash(password, 10);
 
-        // Crear una nueva instancia del empleado con la contraseña encriptada
+        // Crear nueva instancia del cliente con la contraseña encriptada
         const newClientes = new clientesModel({
             nombre,
             apellido,
@@ -47,7 +48,6 @@ registerClientesController.register = async (req, res) => {
             password: passwordHash,
         });
 
-        // Guardar el empleado en la base de datos
         await newClientes.save();
 
         // Generar código de verificación aleatorio de 6 caracteres
@@ -57,14 +57,14 @@ registerClientesController.register = async (req, res) => {
         const tokenCode = jsonwebtoken.sign(
             { correo, verificationCode },
             config.JWT.secret,
-            { expiresIn: "2h" }
+            { expiresIn: "2h" } // Expira en 2 horas
         );
 
         // Establecer cookie con el token de verificación que expira en 2 horas
         res.cookie("verificationTokenEmpleado", tokenCode, { maxAge: 2 * 60 * 60 * 1000 });
 
         // Configurar el transporter de nodemailer para envío de emails
-        const transporter = nodemailer.createTransport({
+        const transporter = nodemailer.createTransporter({
             service: "gmail",
             auth: {
                 user: config.emailUser.user_email,
@@ -96,6 +96,7 @@ registerClientesController.register = async (req, res) => {
     }
 };
 
+// UPDATE - Verifica el código de email para activar la cuenta
 registerClientesController.verifyCodeEmail = async (req, res) => {
     const { verificationCodeRequest } = req.body;
 
@@ -117,15 +118,15 @@ registerClientesController.verifyCodeEmail = async (req, res) => {
             return res.json({ message: "Código de verificación inválido" });
         }
 
-        // Buscar el empleado en la base de datos por correo
+        // Busca cliente en la base de datos por correo
         const cliente = await clientesModel.findOne({ correo });
         if (!cliente) {
             return res.json({ message: "Cliente no encontrado" });
         }
 
-        // Marcar el empleado como verificado
+        // Marcar el cliente como verificado
         cliente.isVerified = true;
-        await cliente.save(); // Corrected from 'empleado' to 'cliente'
+        await cliente.save();
 
         // Eliminar la cookie del token de verificación
         res.clearCookie("verificationTokenEmpleado");

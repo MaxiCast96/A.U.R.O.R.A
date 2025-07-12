@@ -5,12 +5,13 @@ const recetasController = {};
 // SELECT - Obtener todas las recetas
 recetasController.getRecetas = async (req, res) => {
     try {
+        // Busca todas las recetas y puebla historial médico, cliente y optometrista
         const recetas = await recetasModel.find()
             .populate({
                 path: 'historialMedicoId',
                 populate: {
                     path: 'clienteId',
-                    select: 'nombre apellido',
+                    select: 'nombre apellido', // Solo campos específicos del cliente
                     model: 'Clientes'
                 }
             })
@@ -18,9 +19,11 @@ recetasController.getRecetas = async (req, res) => {
                 path: 'optometristaId',
                 populate: {
                     path: 'empleadoId',
-                    select: 'nombre apellido'
+                    select: 'nombre apellido' // Solo campos específicos del empleado
                 }
             });
+            
+        // Maneja casos donde el cliente podría no existir
         const recetasConCliente = recetas.map(r => {
             let cliente = r.historialMedicoId?.clienteId;
             if (!cliente) {
@@ -29,6 +32,7 @@ recetasController.getRecetas = async (req, res) => {
             }
             return r;
         });
+        
         res.status(200).json(recetasConCliente);
     } catch (error) {
         console.log("Error: " + error);
@@ -50,21 +54,22 @@ recetasController.createReceta = async (req, res) => {
         urlReceta
     } = req.body;
 
-    // Validación básica
+    // Validación de campos obligatorios
     if (!historialMedicoId || !optometristaId || !diagnostico || !ojoDerecho || !ojoIzquierdo) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
 
     try {
+        // Crear nueva instancia de receta
         const newReceta = new recetasModel({
             historialMedicoId,
             optometristaId,
-            fecha: fecha || new Date(),
+            fecha: fecha || new Date(), // Usa fecha actual si no se proporciona
             diagnostico,
             ojoDerecho,
             ojoIzquierdo,
             observaciones,
-            vigencia: vigencia || 12,
+            vigencia: vigencia || 12, // Vigencia por defecto de 12 meses
             urlReceta
         });
 
@@ -83,6 +88,7 @@ recetasController.createReceta = async (req, res) => {
 // DELETE - Eliminar receta
 recetasController.deleteReceta = async (req, res) => {
     try {
+        // Busca y elimina receta por ID
         const deletedReceta = await recetasModel.findByIdAndDelete(req.params.id);
         if (!deletedReceta) {
             return res.status(404).json({ message: "Receta no encontrada" });
@@ -108,12 +114,13 @@ recetasController.updateReceta = async (req, res) => {
         urlReceta
     } = req.body;
 
-    // Validación básica
+    // Validación de campos obligatorios
     if (!historialMedicoId || !optometristaId || !diagnostico || !ojoDerecho || !ojoIzquierdo) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
 
     try {
+        // Prepara objeto con datos a actualizar
         const updateData = {
             historialMedicoId,
             optometristaId,
@@ -126,10 +133,11 @@ recetasController.updateReceta = async (req, res) => {
             urlReceta
         };
 
+        // Busca, actualiza y retorna receta modificada
         const updatedReceta = await recetasModel.findByIdAndUpdate(
             req.params.id,
             updateData,
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
         if (!updatedReceta) {
@@ -149,6 +157,7 @@ recetasController.updateReceta = async (req, res) => {
 // GET by ID - Obtener receta por ID
 recetasController.getRecetaById = async (req, res) => {
     try {
+        // Busca receta por ID y puebla todas las referencias
         const receta = await recetasModel.findById(req.params.id)
             .populate({
                 path: 'historialMedicoId',
@@ -179,6 +188,7 @@ recetasController.getRecetaById = async (req, res) => {
 // GET by Historial Médico ID - Obtener recetas por historial médico
 recetasController.getRecetasByHistorialMedico = async (req, res) => {
     try {
+        // Filtra recetas por ID de historial médico específico
         const recetas = await recetasModel.find({ historialMedicoId: req.params.historialId })
             .populate({
                 path: 'optometristaId',
@@ -187,7 +197,7 @@ recetasController.getRecetasByHistorialMedico = async (req, res) => {
                     select: 'nombre apellido'
                 }
             })
-            .sort({ fecha: -1 }); // Ordenar por fecha descendente
+            .sort({ fecha: -1 }); // Ordena por fecha descendente
 
         if (recetas.length === 0) {
             return res.json({ message: "No se encontraron recetas para este historial médico" });
@@ -203,6 +213,7 @@ recetasController.getRecetasByHistorialMedico = async (req, res) => {
 // GET by Optometrista ID - Obtener recetas por optometrista
 recetasController.getRecetasByOptometrista = async (req, res) => {
     try {
+        // Filtra recetas por ID de optometrista específico
         const recetas = await recetasModel.find({ optometristaId: req.params.optometristaId })
             .populate({
                 path: 'historialMedicoId',
@@ -211,7 +222,7 @@ recetasController.getRecetasByOptometrista = async (req, res) => {
                     select: 'nombre apellido'
                 }
             })
-            .sort({ fecha: -1 }); // Ordenar por fecha descendente
+            .sort({ fecha: -1 }); // Ordena por fecha descendente
 
         if (recetas.length === 0) {
             return res.json({ message: "No se encontraron recetas para este optometrista" });
@@ -224,11 +235,12 @@ recetasController.getRecetasByOptometrista = async (req, res) => {
     }
 };
 
-// GET recetas vigentes
+// GET recetas vigentes - Filtra recetas que aún están dentro de su vigencia
 recetasController.getRecetasVigentes = async (req, res) => {
     try {
         const fechaActual = new Date();
         
+        // Busca todas las recetas con poblaciones
         const recetas = await recetasModel.find()
             .populate({
                 path: 'historialMedicoId',
@@ -245,7 +257,7 @@ recetasController.getRecetasVigentes = async (req, res) => {
                 }
             });
 
-        // Filtrar recetas vigentes
+        // Filtra recetas que están dentro de su vigencia
         const recetasVigentes = recetas.filter(receta => {
             const fechaReceta = new Date(receta.fecha);
             const mesesDiferencia = (fechaActual - fechaReceta) / (1000 * 60 * 60 * 24 * 30);

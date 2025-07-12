@@ -4,11 +4,7 @@ import Citas from '../models/Citas.js';
 import Lentes from '../models/Lentes.js';
 import Recetas from '../models/Recetas.js';
 
-/**
- * @description Obtiene estadísticas generales del dashboard
- * @route GET /api/dashboard/stats
- * @access Private
- */
+// SELECT - Obtiene estadísticas generales del dashboard
 const getDashboardStats = async (req, res) => {
   try {
     // Obtener fecha actual y primer día del mes
@@ -16,7 +12,7 @@ const getDashboardStats = async (req, res) => {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-    // Contar total de clientes
+    // Contar total de clientes activos
     const totalClientes = await Clientes.countDocuments({ estado: 'Activo' });
 
     // Contar citas de hoy
@@ -32,7 +28,7 @@ const getDashboardStats = async (req, res) => {
       fecha: { $gte: firstDayOfMonth }
     });
 
-    // Calcular ingresos del mes
+    // Calcular ingresos del mes usando agregación
     const ventasIngresos = await Ventas.aggregate([
       {
         $match: {
@@ -60,7 +56,7 @@ const getDashboardStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error al obtener estadísticas del dashboard:', error);
+    console.error('Error: ' + error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -68,15 +64,12 @@ const getDashboardStats = async (req, res) => {
   }
 };
 
-/**
- * @description Obtiene datos para gráfico de ventas mensuales
- * @route GET /api/dashboard/ventas-mensuales
- * @access Private
- */
+// SELECT - Obtiene datos para gráfico de ventas mensuales
 const getVentasMensuales = async (req, res) => {
   try {
     const { year = new Date().getFullYear() } = req.query;
     
+    // Busca ventas del año específico usando agregación
     const ventasMensuales = await Ventas.aggregate([
       {
         $match: {
@@ -99,7 +92,7 @@ const getVentasMensuales = async (req, res) => {
       }
     ]);
 
-    // Crear array con todos los meses
+    // Crear array con todos los meses del año
     const meses = [
       'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
       'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
@@ -119,7 +112,7 @@ const getVentasMensuales = async (req, res) => {
       data: datosCompletos
     });
   } catch (error) {
-    console.error('Error al obtener ventas mensuales:', error);
+    console.error('Error: ' + error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -127,13 +120,10 @@ const getVentasMensuales = async (req, res) => {
   }
 };
 
-/**
- * @description Obtiene estado de citas para gráfico circular
- * @route GET /api/dashboard/estado-citas
- * @access Private
- */
+// SELECT - Obtiene estado de citas para gráfico circular
 const getEstadoCitas = async (req, res) => {
   try {
+    // Busca y agrupa citas por estado
     const estadoCitas = await Citas.aggregate([
       {
         $group: {
@@ -146,7 +136,7 @@ const getEstadoCitas = async (req, res) => {
       }
     ]);
 
-    // Mapear estados a español
+    // Mapear estados a español para mejor presentación
     const estadosMap = {
       'Confirmada': 'Confirmadas',
       'Pendiente': 'Pendientes',
@@ -164,7 +154,7 @@ const getEstadoCitas = async (req, res) => {
       data: datosFormateados
     });
   } catch (error) {
-    console.error('Error al obtener estado de citas:', error);
+    console.error('Error: ' + error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -172,15 +162,12 @@ const getEstadoCitas = async (req, res) => {
   }
 };
 
-/**
- * @description Obtiene productos más populares
- * @route GET /api/dashboard/productos-populares
- * @access Private
- */
+// SELECT - Obtiene productos más populares usando agregación
 const getProductosPopulares = async (req, res) => {
   try {
     const { limit = 5 } = req.query;
 
+    // Busca productos más vendidos usando agregación
     const productosPopulares = await Ventas.aggregate([
       {
         $unwind: '$productos'
@@ -205,7 +192,7 @@ const getProductosPopulares = async (req, res) => {
       data: productosPopulares
     });
   } catch (error) {
-    console.error('Error al obtener productos populares:', error);
+    console.error('Error: ' + error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -213,14 +200,10 @@ const getProductosPopulares = async (req, res) => {
   }
 };
 
-/**
- * @description Obtiene todas las estadísticas del dashboard en una sola llamada
- * @route GET /api/dashboard/all
- * @access Private
- */
+// SELECT - Obtiene todas las estadísticas del dashboard en una sola llamada
 const getAllDashboardData = async (req, res) => {
   try {
-    // Ejecutar todas las consultas en paralelo
+    // Ejecutar todas las consultas en paralelo para optimizar rendimiento
     const [stats, ventasMensuales, estadoCitas, productosPopulares] = await Promise.all([
       // Stats básicos
       (async () => {
@@ -262,7 +245,7 @@ const getAllDashboardData = async (req, res) => {
         };
       })(),
 
-      // Ventas mensuales
+      // Ventas mensuales del año actual
       (async () => {
         const year = new Date().getFullYear();
         const ventasMensuales = await Ventas.aggregate([
@@ -296,7 +279,7 @@ const getAllDashboardData = async (req, res) => {
         });
       })(),
 
-      // Estado de citas
+      // Estado de citas agrupado
       (async () => {
         const estadoCitas = await Citas.aggregate([
           {
@@ -320,7 +303,7 @@ const getAllDashboardData = async (req, res) => {
         }));
       })(),
 
-      // Productos populares
+      // Productos más populares
       (async () => {
         const productosPopulares = await Ventas.aggregate([
           {
@@ -354,7 +337,7 @@ const getAllDashboardData = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error al obtener datos del dashboard:', error);
+    console.error('Error: ' + error);
     res.status(500).json({
       success: false,
       message: 'Error interno del servidor'
@@ -368,4 +351,4 @@ export {
   getEstadoCitas,
   getProductosPopulares,
   getAllDashboardData
-}; 
+};

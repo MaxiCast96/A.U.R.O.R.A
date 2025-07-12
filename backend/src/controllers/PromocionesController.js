@@ -5,6 +5,7 @@ const promocionesController = {};
 // SELECT - Obtener todas las promociones
 promocionesController.getPromociones = async (req, res) => {
     try {
+        // Busca todas las promociones y ordena por fecha de creación descendente
         const promociones = await promocionModel.find().sort({ createdAt: -1 });
         res.json(promociones);
     } catch (error) {
@@ -17,6 +18,8 @@ promocionesController.getPromociones = async (req, res) => {
 promocionesController.getPromocionesActivas = async (req, res) => {
     try {
         const fechaActual = new Date();
+        
+        // Filtra promociones activas y dentro del rango de fechas válidas
         const promociones = await promocionModel.find({
             activo: true,
             fechaInicio: { $lte: fechaActual },
@@ -53,7 +56,7 @@ promocionesController.createPromocion = async (req, res) => {
             return res.json({ message: "Ya existe una promoción con este código" });
         }
 
-        // Validar fechas
+        // Validar que las fechas sean lógicas
         const fechaInicioDate = new Date(fechaInicio);
         const fechaFinDate = new Date(fechaFin);
         
@@ -61,20 +64,22 @@ promocionesController.createPromocion = async (req, res) => {
             return res.json({ message: "La fecha de fin debe ser posterior a la fecha de inicio" });
         }
 
-        // Validar que se proporcionen las categorías o lentes según corresponda
+        // Validar que se proporcionen las categorías cuando aplica a categorías
         if (aplicaA === 'categoria' && (!categoriasAplicables || categoriasAplicables.length === 0)) {
             return res.json({ message: "Debe especificar al menos una categoría cuando la promoción aplica a categorías" });
         }
 
+        // Validar que se proporcionen los lentes cuando aplica a lentes específicos
         if (aplicaA === 'lente' && (!lentesAplicables || lentesAplicables.length === 0)) {
             return res.json({ message: "Debe especificar al menos un lente cuando la promoción aplica a lentes específicos" });
         }
 
-        // Validar valor de descuento
+        // Validar valor de descuento por porcentaje
         if (tipoDescuento === 'porcentaje' && valorDescuento > 100) {
             return res.json({ message: "El descuento por porcentaje no puede ser mayor a 100%" });
         }
 
+        // Validar que el valor del descuento sea positivo
         if (valorDescuento <= 0) {
             return res.json({ message: "El valor del descuento debe ser mayor a 0" });
         }
@@ -94,7 +99,6 @@ promocionesController.createPromocion = async (req, res) => {
             activo: activo !== undefined ? activo : true
         });
 
-        // Guardar la promoción en la base de datos
         await newPromocion.save();
 
         res.json({ message: "Promoción creada exitosamente", promocion: newPromocion });
@@ -107,10 +111,9 @@ promocionesController.createPromocion = async (req, res) => {
 // DELETE - Eliminar promoción
 promocionesController.deletePromocion = async (req, res) => {
     try {
-        // Buscar y eliminar la promoción por ID
+        // Busca y elimina promoción por ID
         const deletedPromocion = await promocionModel.findByIdAndDelete(req.params.id);
 
-        // Verificar si la promoción existía
         if (!deletedPromocion) {
             return res.json({ message: "Promoción no encontrada" });
         }
@@ -139,10 +142,10 @@ promocionesController.updatePromocion = async (req, res) => {
     } = req.body;
 
     try {
-        // Verificar si existe otra promoción con el mismo código
+        // Verificar que no exista otra promoción con el mismo código
         const existsPromocion = await promocionModel.findOne({
             codigoPromo: codigoPromo.toUpperCase(),
-            _id: { $ne: req.params.id }
+            _id: { $ne: req.params.id } // Excluye el documento actual
         });
         if (existsPromocion) {
             return res.json({ message: "Otra promoción con este código ya existe" });
@@ -158,24 +161,27 @@ promocionesController.updatePromocion = async (req, res) => {
             }
         }
 
-        // Validar valor de descuento
+        // Validar valor de descuento por porcentaje
         if (tipoDescuento === 'porcentaje' && valorDescuento > 100) {
             return res.json({ message: "El descuento por porcentaje no puede ser mayor a 100%" });
         }
 
+        // Validar que el valor del descuento sea positivo
         if (valorDescuento <= 0) {
             return res.json({ message: "El valor del descuento debe ser mayor a 0" });
         }
 
-        // Validar que se proporcionen las categorías o lentes según corresponda
+        // Validar que se proporcionen las categorías cuando aplica a categorías
         if (aplicaA === 'categoria' && (!categoriasAplicables || categoriasAplicables.length === 0)) {
             return res.json({ message: "Debe especificar al menos una categoría cuando la promoción aplica a categorías" });
         }
 
+        // Validar que se proporcionen los lentes cuando aplica a lentes específicos
         if (aplicaA === 'lente' && (!lentesAplicables || lentesAplicables.length === 0)) {
             return res.json({ message: "Debe especificar al menos un lente cuando la promoción aplica a lentes específicos" });
         }
 
+        // Prepara objeto con datos a actualizar
         let updateData = {
             nombre,
             descripcion,
@@ -190,19 +196,18 @@ promocionesController.updatePromocion = async (req, res) => {
             activo
         };
 
-        // Remover campos undefined
+        // Remover campos undefined del objeto de actualización
         Object.keys(updateData).forEach(key => 
             updateData[key] === undefined && delete updateData[key]
         );
 
-        // Buscar y actualizar la promoción por ID
+        // Busca, actualiza y retorna promoción modificada
         const updatedPromocion = await promocionModel.findByIdAndUpdate(
             req.params.id,
             updateData,
-            { new: true, runValidators: true }
+            { new: true, runValidators: true } // Retorna documento actualizado y ejecuta validadores
         );
 
-        // Verificar si la promoción existía
         if (!updatedPromocion) {
             return res.json({ message: "Promoción no encontrada" });
         }
@@ -217,10 +222,9 @@ promocionesController.updatePromocion = async (req, res) => {
 // GET by ID - Obtener promoción por ID
 promocionesController.getPromocionById = async (req, res) => {
     try {
-        // Buscar promoción por ID
+        // Busca promoción por ID específico
         const promocion = await promocionModel.findById(req.params.id);
 
-        // Verificar si la promoción existe
         if (!promocion) {
             return res.json({ message: "Promoción no encontrada" });
         }
@@ -237,18 +241,17 @@ promocionesController.getPromocionByCodigo = async (req, res) => {
     try {
         const { codigo } = req.params;
         
-        // Buscar promoción por código
+        // Busca promoción por código y que esté activa
         const promocion = await promocionModel.findOne({ 
             codigoPromo: codigo.toUpperCase(),
             activo: true 
         });
 
-        // Verificar si la promoción existe
         if (!promocion) {
             return res.json({ message: "Promoción no encontrada o inactiva" });
         }
 
-        // Verificar si la promoción está vigente
+        // Verificar si la promoción está dentro del período de vigencia
         const fechaActual = new Date();
         if (fechaActual < promocion.fechaInicio || fechaActual > promocion.fechaFin) {
             return res.json({ message: "Promoción no vigente" });

@@ -15,6 +15,7 @@ cloudinary.config({
 
 const registerEmpleadosController = {};
 
+// INSERT - Registra un nuevo empleado con verificación por email
 registerEmpleadosController.register = async (req, res) => {
     const {
         nombre,
@@ -30,18 +31,18 @@ registerEmpleadosController.register = async (req, res) => {
         isVerified
     } = req.body;
 
-    let fotoPerfilURL = "";
+    let fotoPerfilURL = ""; // Variable para URL de la foto de perfil
 
     try {
-        // Subir imagen a Cloudinary si se envió archivo
+        // Sube imagen a Cloudinary si se envió archivo
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "empleados",
-                allowed_formats: ["png", "jpg", "jpeg", "webp"]
+                folder: "empleados", // Carpeta específica en Cloudinary
+                allowed_formats: ["png", "jpg", "jpeg", "webp"] // Formatos permitidos
             });
-            fotoPerfilURL = result.secure_url;
+            fotoPerfilURL = result.secure_url; // Obtiene URL segura
         } else if (req.body.fotoPerfil) {
-            fotoPerfilURL = req.body.fotoPerfil;
+            fotoPerfilURL = req.body.fotoPerfil; // Usa URL proporcionada directamente
         }
 
         // Verificar si ya existe un empleado con el mismo correo electrónico
@@ -59,7 +60,7 @@ registerEmpleadosController.register = async (req, res) => {
         // Encriptar la contraseña usando bcrypt
         const passwordHash = await bcryptjs.hash(password, 10);
 
-        // Crear una nueva instancia del empleado con la contraseña encriptada
+        // Crear nueva instancia del empleado con la contraseña encriptada
         const newEmpleado = new empleadosModel({
             nombre,
             apellido,
@@ -72,10 +73,9 @@ registerEmpleadosController.register = async (req, res) => {
             fechaContratacion,
             password: passwordHash,
             isVerified: isVerified || false,
-            fotoPerfil: fotoPerfilURL // Cambiado de foto a fotoPerfil
+            fotoPerfil: fotoPerfilURL
         });
 
-        // Guardar el empleado en la base de datos
         await newEmpleado.save();
 
         // Generar código de verificación aleatorio de 6 caracteres
@@ -85,14 +85,14 @@ registerEmpleadosController.register = async (req, res) => {
         const tokenCode = jsonwebtoken.sign(
             { correo, verificationCode },
             config.JWT.secret,
-            { expiresIn: "2h" }
+            { expiresIn: "2h" } // Expira en 2 horas
         );
 
         // Establecer cookie con el token de verificación que expira en 2 horas
         res.cookie("verificationTokenEmpleado", tokenCode, { maxAge: 2 * 60 * 60 * 1000 });
 
         // Configurar el transporter de nodemailer para envío de emails
-        const transporter = nodemailer.createTransport({
+        const transporter = nodemailer.createTransporter({
             service: "gmail",
             auth: {
                 user: config.emailUser.user_email,
@@ -124,6 +124,7 @@ registerEmpleadosController.register = async (req, res) => {
     }
 };
 
+// UPDATE - Verifica el código de email para activar la cuenta
 registerEmpleadosController.verifyCodeEmail = async (req, res) => {
     const { verificationCodeRequest } = req.body;
 
@@ -145,7 +146,7 @@ registerEmpleadosController.verifyCodeEmail = async (req, res) => {
             return res.json({ message: "Código de verificación inválido" });
         }
 
-        // Buscar el empleado en la base de datos por correo
+        // Busca empleado en la base de datos por correo
         const empleado = await empleadosModel.findOne({ correo });
         if (!empleado) {
             return res.json({ message: "Empleado no encontrado" });
