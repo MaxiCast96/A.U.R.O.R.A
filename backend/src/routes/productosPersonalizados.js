@@ -1,29 +1,35 @@
+// ===== RUTAS PRODUCTOS PERSONALIZADOS =====
 import express from 'express';
-
-const router = express.Router();
 import productosPersonalizadosController from '../controllers/ProductosPersonalizadosController.js';
 
-// Rutas principales
+const router = express.Router();
+
+// Rutas principales CRUD para productos personalizados
 router.route("/")
-    .get(productosPersonalizadosController.getProductosPersonalizados)
-    .post(productosPersonalizadosController.createProductoPersonalizado);
+    .get(productosPersonalizadosController.getProductosPersonalizados) // GET - Obtener todos
+    .post(productosPersonalizadosController.createProductoPersonalizado); // POST - Crear nuevo
 
-// Rutas por ID
+// Rutas para manejo de producto personalizado específico por ID
 router.route("/:id")
-    .get(productosPersonalizadosController.getProductoPersonalizadoById)
-    .put(productosPersonalizadosController.updateProductoPersonalizado)
-    .delete(productosPersonalizadosController.deleteProductoPersonalizado);
+    .get(productosPersonalizadosController.getProductoPersonalizadoById) // GET - Obtener por ID
+    .put(productosPersonalizadosController.updateProductoPersonalizado) // PUT - Actualizar
+    .delete(productosPersonalizadosController.deleteProductoPersonalizado); // DELETE - Eliminar
 
-// Rutas específicas
+// Rutas específicas para consultas filtradas
+
+// GET /api/productosPersonalizados/cliente/:clienteId - Productos de un cliente
 router.route("/cliente/:clienteId")
     .get(productosPersonalizadosController.getProductosByCliente);
 
+// GET /api/productosPersonalizados/estado/:estado - Filtrar por estado del proceso
 router.route("/estado/:estado")
     .get(productosPersonalizadosController.getProductosByEstado);
 
+// PATCH /api/productosPersonalizados/:id/estado - Actualizar solo el estado
 router.route("/:id/estado")
     .patch(productosPersonalizadosController.updateEstado);
 
+// GET /api/productosPersonalizados/estadisticas/resumen - Estadísticas y resumen
 router.route("/estadisticas/resumen")
     .get(productosPersonalizadosController.getEstadisticas);
 

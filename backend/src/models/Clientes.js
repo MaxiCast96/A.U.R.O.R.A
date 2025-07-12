@@ -1,35 +1,36 @@
+// ===== MODELO CLIENTES =====
 import { Schema, model } from 'mongoose';
 
 const clientesSchema = new Schema({
     nombre: {
         type: String,
-        required: [true, 'El nombre es obligatorio'],
+        required: [true, 'El nombre es obligatorio'], // Nombre del cliente
     },
     apellido: {
         type: String,
-        required: [true, 'El apellido es obligatorio'],
+        required: [true, 'El apellido es obligatorio'], // Apellido del cliente
     },
     edad: {
         type: Number,
-        required: [true, 'La edad es obligatoria']
+        required: [true, 'La edad es obligatoria'] // Edad del cliente
     },
     dui: {
         type: String,
-        required: [true, 'El DUI es obligatorio'],
-        unique: true
+        required: [true, 'El DUI es obligatorio'], // Documento de identidad único
+        unique: true // No puede repetirse
     },
     telefono: {
         type: String,
-        required: [true, 'El teléfono es obligatorio'],
+        required: [true, 'El teléfono es obligatorio'], // Número de contacto
     },
     correo: {
         type: String,
-        required: [true, 'El correo es obligatorio'],
-        unique: true,
-        lowercase: true, // Forzar minúsculas
-        trim: true
+        required: [true, 'El correo es obligatorio'], // Email del cliente
+        unique: true, // No puede repetirse
+        lowercase: true, // Convierte a minúsculas automáticamente
+        trim: true // Elimina espacios en blanco
     },
-    direccion: {
+    direccion: { // Dirección completa del cliente
         calle: {
             type: String,
             required: [true, 'La calle es obligatoria']
@@ -45,22 +46,21 @@ const clientesSchema = new Schema({
     },
     password: {
         type: String,
-        required: [true, 'La contraseña es obligatoria']
+        required: [true, 'La contraseña es obligatoria'] // Contraseña para login
     },
     isVerified: {
         type: Boolean,
-        default: false
+        default: false // Por defecto no está verificado
     },
-    // --- CAMPO AÑADIDO ---
     estado: {
         type: String,
         required: [true, 'El estado es obligatorio'],
-        default: 'Activo' // Valor por defecto
+        default: 'Activo' // Estado del cliente (Activo/Inactivo)
     },
-    resetPasswordToken: { type: String },
-    resetPasswordExpires: { type: Date },
+    resetPasswordToken: { type: String }, // Token para resetear contraseña
+    resetPasswordExpires: { type: Date }, // Fecha de expiración del token
 }, {
-    timestamps: true,
+    timestamps: true, // Agrega createdAt y updatedAt
     strict: true
 });
 

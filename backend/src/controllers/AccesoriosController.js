@@ -1,6 +1,3 @@
-/*
-Lo que falta es básicamente es que haga el GET de accesorios con promociones, pero para eso necesito el CRUD de Aleman.
-*/
 import "../models/Marcas.js";
 import "../models/Sucursales.js";
 import "../models/Promociones.js";
@@ -16,16 +13,17 @@ cloudinary.config({
 
 const accesoriosController = {};
 
-// SELECT
+// SELECT - Obtiene todos los accesorios con sus relaciones pobladas
 accesoriosController.getAccesorios = async (req, res) => {
     try {
+         // Busca todos los accesorios y puebla las referencias a marcas, promociones y sucursales
         const accesorios = await accesoriosModel.find()
-            .populate('marcaId')
+            .populate('marcaId') // Obtiene datos completos de la marca
             .populate({
                 path: 'promocionId',
-                model: 'Promociones'
+                model: 'Promociones' // Obtiene datos de promoción si existe
             })
-            .populate('sucursales.sucursalId');
+            .populate('sucursales.sucursalId'); // Obtiene datos de cada sucursal asociada
         res.json(accesorios);
     } catch (error) {
         console.log("Error: " + error);
@@ -33,13 +31,13 @@ accesoriosController.getAccesorios = async (req, res) => {
     }
 };
 
-// INSERT
+// INSERT - Crea un nuevo accesorio con imágenes y datos básicos
 accesoriosController.createAccesorios = async (req, res) => {
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
     if (typeof sucursales === "string") {
         try {
-            sucursales = JSON.parse(sucursales);
+            sucursales = JSON.parse(sucursales); // Convierte string a objeto
         } catch (e) {
             return res.json({ message: "Error en el formato de sucursales" });
         }
@@ -64,17 +62,19 @@ accesoriosController.createAccesorios = async (req, res) => {
         // Subir imágenes a Cloudinary si se enviaron archivos
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
+                // Sube cada archivo a la carpeta "accesorios" en Cloudinary
                 const result = await cloudinary.uploader.upload(file.path, {
                     folder: "accesorios",
-                    allowed_formats: ["png", "jpg", "jpeg", "webp"]
+                    allowed_formats: ["png", "jpg", "jpeg", "webp"] // Formatos permitidos
                 });
-                imagenesURLs.push(result.secure_url);
+                imagenesURLs.push(result.secure_url); // Guarda la URL segura
             }
         } else if (req.body.imagenes) {
-            // Si se enviaron URLs directamente
+           // Si se enviaron URLs directamente las convierte a array
             imagenesURLs = Array.isArray(req.body.imagenes) ? req.body.imagenes : [req.body.imagenes];
         }
 
+        // Crea nueva instancia del modelo con todos los datos
         const newAccesorio = new accesoriosModel({
             nombre,
             descripcion,
@@ -98,9 +98,10 @@ accesoriosController.createAccesorios = async (req, res) => {
     }
 };
 
-// DELETE
+// DELETE - Elimina un accesorio por ID
 accesoriosController.deleteAccesorios = async (req, res) => {
     try {
+        // Busca y elimina el accesorio por ID
         const deleteAccesorio = await accesoriosModel.findByIdAndDelete(req.params.id);
         if (!deleteAccesorio) {
             return res.json({ message: "Accesorio no encontrado" });
@@ -112,12 +113,13 @@ accesoriosController.deleteAccesorios = async (req, res) => {
     }
 };
 
-// UPDATE
+// UPDATE - Actualiza un accesorio existente con nuevos datos e imágenes
 accesoriosController.updateAccesorios = async (req, res) => {
     // Parsear sucursales si viene como string (form-data)
-    let sucursales = req.body.sucursales;
+    let sucursales = req.body.sucursales; // Mantiene imágenes existentes por defecto
     if (typeof sucursales === "string") {
         try {
+            // Sube nuevas imágenes a Cloudinary si se enviaron archivos
             sucursales = JSON.parse(sucursales);
         } catch (e) {
             return res.json({ message: "Error en el formato de sucursales" });
@@ -142,7 +144,7 @@ accesoriosController.updateAccesorios = async (req, res) => {
     try {
         // Subir nuevas imágenes a Cloudinary si se enviaron archivos
         if (req.files && req.files.length > 0) {
-            imagenesURLs = [];
+            imagenesURLs = []; // Limpia array para nuevas imágenes
             for (const file of req.files) {
                 const result = await cloudinary.uploader.upload(file.path, {
                     folder: "accesorios",
@@ -152,6 +154,7 @@ accesoriosController.updateAccesorios = async (req, res) => {
             }
         }
 
+           // Prepara objeto con datos a actualizar
         const updateData = {
             nombre,
             descripcion,
@@ -166,16 +169,18 @@ accesoriosController.updateAccesorios = async (req, res) => {
             sucursales: sucursales || []
         };
 
+        // Maneja promoción: agrega o elimina según el estado
         if (enPromocion && promocionId) {
-            updateData.promocionId = promocionId;
+            updateData.promocionId = promocionId; // Asigna promoción
         } else {
-            updateData.$unset = { promocionId: "" };
+            updateData.$unset = { promocionId: "" }; // Elimina promoción
         }
 
+        // Actualiza el documento y retorna la versión nueva
         const updatedAccesorio = await accesoriosModel.findByIdAndUpdate(
             req.params.id,
             updateData,
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
         if (!updatedAccesorio) {
@@ -189,9 +194,10 @@ accesoriosController.updateAccesorios = async (req, res) => {
     }
 };
 
-// SELECT by ID
+// SELECT by ID - Obtiene un accesorio específico por ID
 accesoriosController.getAccesorioById = async (req, res) => {
     try {
+        // Busca accesorio por ID y puebla todas las referencias
         const accesorio = await accesoriosModel.findById(req.params.id)
             .populate('marcaId')
             .populate({
@@ -209,9 +215,10 @@ accesoriosController.getAccesorioById = async (req, res) => {
     }
 };
 
-// SELECT by Marca
+// SELECT by Promoción - Obtiene accesorios que están en promoción
 accesoriosController.getAccesoriosByMarca = async (req, res) => {
     try {
+        // Filtra accesorios por ID de marca específica
         const accesorios = await accesoriosModel.find({ marcaId: req.params.marcaId })
             .populate('marcaId')
             .populate({
@@ -226,9 +233,10 @@ accesoriosController.getAccesoriosByMarca = async (req, res) => {
     }
 };
 
-// SELECT by Promoción
+// SELECT by Promoción - Obtiene accesorios que están en promoción
 accesoriosController.getAccesoriosEnPromocion = async (req, res) => {
     try {
+           // Filtra solo accesorios marcados como en promoción
         const accesorios = await accesoriosModel.find({ enPromocion: true })
             .populate('marcaId')
             .populate({

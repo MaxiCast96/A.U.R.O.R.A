@@ -10,9 +10,10 @@ cloudinary.config({
 
 const categoriaController = {};
 
-// SELECT
+// SELECT - Obtiene todas las categorías
 categoriaController.getCategoria = async (req, res) => {
     try {
+        // Busca y retorna todas las categorías
         const categoria = await categoriaModel.find();
         res.json(categoria);
     } catch (error) {
@@ -21,21 +22,21 @@ categoriaController.getCategoria = async (req, res) => {
     }
 };
 
-// INSERT
+// INSERT - Crea nueva categoría con icono opcional
 categoriaController.createCategoria = async (req, res) => {
     const { nombre, descripcion } = req.body;
-    let iconoUrl = "";
+    let iconoUrl = ""; // Variable para URL del icono
 
     try {
-        // Subir imagen a Cloudinary si se envió archivo
+        // Sube imagen a Cloudinary si se envió archivo
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "categoria",
-                allowed_formats: ["png", "jpg", "jpeg", "webp"]
+                folder: "categoria", // Carpeta específica en Cloudinary
+                allowed_formats: ["png", "jpg", "jpeg", "webp"] // Formatos permitidos
             });
-            iconoUrl = result.secure_url;
+            iconoUrl = result.secure_url; // Obtiene URL segura
         } else if (req.body.logo) {
-            iconoUrl = req.body.logo;
+            iconoUrl = req.body.logo; // Usa URL proporcionada directamente
         }
 
         // Verificar si ya existe una categoria con el mismo nombre
@@ -59,10 +60,12 @@ categoriaController.createCategoria = async (req, res) => {
     }
 };
 
-// DELETE
+// DELETE - Elimina una categoría por ID
 categoriaController.deleteCategoria = async (req, res) => {
     try {
+        // Busca y elimina categoría por ID
         const deleteCategoria = await categoriaModel.findByIdAndDelete(req.params.id);
+
         if (!deleteCategoria) {
             return res.json({ message: "Categoria no encontrada" });
         }
@@ -73,30 +76,32 @@ categoriaController.deleteCategoria = async (req, res) => {
     }
 };
 
-// UPDATE
+// UPDATE - Actualiza categoría existente con nuevos datos
 categoriaController.updateCategoria = async (req, res) => {
     const { nombre, descripcion } = req.body;
-    let iconoUrl = req.body.logo;
+    let iconoUrl = req.body.logo; // Mantiene logo existente por defecto
 
     try {
-        // Subir imagen a Cloudinary si se envió archivo
+        // Sube nueva imagen a Cloudinary si se envió archivo
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "marcas",
+                folder: "marcas", // Nota: debería ser "categoria" para consistencia
                 allowed_formats: ["png", "jpg", "jpeg", "webp"]
             });
             iconoUrl = result.secure_url;
         }
 
-        // Verificar si existe otra categoria con el mismo nombre
+
+         // Verifica que no exista otra categoría con el mismo nombre
         const exitsCategoria = await categoriaModel.findOne({
             nombre,
-            _id: { $ne: req.params.id }
+            _id: { $ne: req.params.id } // Excluye el documento actual
         });
         if (exitsCategoria) {
             return res.json({ message: "Ya existe otra categoria con este nombre" });
         }
 
+        // Actualiza categoría y retorna versión nueva
         const updateCategoria = await categoriaModel.findByIdAndUpdate(
             req.params.id,
             {
@@ -104,7 +109,7 @@ categoriaController.updateCategoria = async (req, res) => {
                 descripcion,
                 icono: iconoUrl,
             },
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
         if (!updateCategoria) {
@@ -118,9 +123,10 @@ categoriaController.updateCategoria = async (req, res) => {
     }
 };
 
-// GET by ID
+// GET by ID - Obtiene una categoría específica por ID
 categoriaController.getCategoriaById = async (req, res) => {
     try {
+        // Busca categoría por ID
         const categoria = await categoriaModel.findById(req.params.id);
         if (!categoria) {
             return res.json({ message: "Categoria no encontrada" });

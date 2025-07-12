@@ -1,30 +1,32 @@
+// ===== RUTAS COTIZACIONES =====
 import express from 'express';
 import cotizacionesController from '../controllers/CotizacionesController.js';
 
 const router = express.Router();
 
-// Rutas principales CRUD
+// Rutas principales CRUD para cotizaciones
 router.route("/")
-    .get(cotizacionesController.getCotizaciones)
-    .post(cotizacionesController.createCotizacion);
+    .get(cotizacionesController.getCotizaciones) // GET /api/cotizaciones - Obtener todas las cotizaciones
+    .post(cotizacionesController.createCotizacion); // POST /api/cotizaciones - Crear nueva cotización
 
+// Rutas para manejo de cotización específica por ID
 router.route("/:id")
-    .get(cotizacionesController.getCotizacionById)
-    .put(cotizacionesController.updateCotizacion)
-    .delete(cotizacionesController.deleteCotizacion);
+    .get(cotizacionesController.getCotizacionById) // GET /api/cotizaciones/:id - Obtener por ID
+    .put(cotizacionesController.updateCotizacion) // PUT /api/cotizaciones/:id - Actualizar cotización
+    .delete(cotizacionesController.deleteCotizacion); // DELETE /api/cotizaciones/:id - Eliminar
 
-// Rutas adicionales específicas
+// Rutas específicas para consultas filtradas
 
-// Obtener cotizaciones por cliente
+// GET /api/cotizaciones/cliente/:clienteId - Cotizaciones de un cliente específico
 router.get("/cliente/:clienteId", cotizacionesController.getCotizacionesByCliente);
 
-// Obtener cotizaciones por estado
+// GET /api/cotizaciones/estado/:estado - Filtrar por estado (pendiente, aprobada, etc.)
 router.get("/estado/:estado", cotizacionesController.getCotizacionesByEstado);
 
-// Actualizar solo el estado de una cotización
+// PATCH /api/cotizaciones/:id/estado - Actualizar solo el estado de una cotización
 router.patch("/:id/estado", cotizacionesController.updateEstadoCotizacion);
 
-// Actualizar cotizaciones expiradas (tarea de mantenimiento)
+// POST /api/cotizaciones/actualizar-expiradas - Tarea de mantenimiento para expirar cotizaciones
 router.post("/actualizar-expiradas", cotizacionesController.actualizarCotizacionesExpiradas);
 
 export default router;

@@ -9,14 +9,13 @@ const Cotizaciones = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [showLoginMsg, setShowLoginMsg] = useState(false);
+  
   useEffect(() => {
     if (!user) {
       setShowLoginMsg(true);
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 1800);
     }
   }, [user]);
+  
   if (!user) {
     return (
       <PageTransition>
@@ -39,7 +38,7 @@ const Cotizaciones = () => {
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
-                  Comprometidos con tu salud visual desde 2010. Ofrecemos servicios profesionales y productos de alta calidad para el cuidado de tus ojos.
+                  Comprometidos con tu Salud Visual desde 2010. Ofrecemos Servicios Profesionales y Productos de Alta Calidad para el Cuidado de tus Ojos.
                 </p>
                 <div className="flex space-x-4 mt-4">
                   <a href="https://facebook.com" className="hover:text-gray-200 transition-colors p-2 bg-white/10 rounded-full" target="_blank" rel="noopener noreferrer"><i className="fab fa-facebook-f"></i></a>
@@ -74,7 +73,7 @@ const Cotizaciones = () => {
             </div>
             <div className="border-t border-white/10">
               <div className="px-4 py-6 text-sm text-center">
-                <p>© {new Date().getFullYear()} Óptica La Inteligente. Todos los derechos reservados.</p>
+                <p>© {new Date().getFullYear()} Óptica La Inteligente. Todos los Derechos Reservados.</p>
               </div>
             </div>
           </div>
@@ -245,8 +244,9 @@ const Cotizaciones = () => {
                   <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
-                  Comprometidos con tu salud visual desde 2010. Ofrecemos servicios
-                  profesionales y productos de alta calidad para el cuidado de tus ojos.
+                  Comprometidos con tu Salud Visual desde 2010. Ofrecemos
+                  Servicios Profesionales y Productos de Alta Calidad para el
+                  Cuidado de tus Ojos.
                 </p>
                 <div className="flex space-x-4 mt-4">
                   <a
@@ -411,7 +411,7 @@ const Cotizaciones = () => {
               <div className="px-4 py-6 text-sm text-center">
                 <p>
                   © {new Date().getFullYear()} Óptica La Inteligente. Todos los
-                  derechos reservados.
+                  Derechos Reservados.
                 </p>
               </div>
             </div>

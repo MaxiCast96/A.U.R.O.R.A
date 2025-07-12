@@ -112,7 +112,7 @@ const Sidebar = ({
       )}
       
       <div className={`
-        bg-white shadow-xl min-h-screen fixed left-0 top-0 z-50 overflow-visible
+        bg-white shadow-xl min-h-screen fixed left-0 top-0 z-30 overflow-visible
         transition-all duration-700 ease-in-out transform-gpu
         ${sidebarOpen ? 'w-52 sm:w-56 md:w-60 lg:w-64' : 'w-12 sm:w-14 md:w-16'}
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}

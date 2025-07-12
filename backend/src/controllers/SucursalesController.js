@@ -2,10 +2,10 @@ import sucursalModel from "../models/Sucursales.js";
 
 const sucursalesController = {};
 
-// SELECT
+// SELECT - Obtiene todas las sucursales
 sucursalesController.getSucursales = async (req, res) => {
     try {
-        // Buscar todas las sucursales
+        // Busca y retorna todas las sucursales
         const sucursales = await sucursalModel.find();
         res.json(sucursales);
     } catch (error) {
@@ -14,7 +14,7 @@ sucursalesController.getSucursales = async (req, res) => {
     }
 };
 
-// INSERT
+// INSERT - Crear nueva sucursal con validaciones
 sucursalesController.createSucursales = async (req, res) => {
     const {
         nombre,
@@ -45,10 +45,9 @@ sucursalesController.createSucursales = async (req, res) => {
             telefono,
             correo,
             horariosAtencion,
-            activo: activo !== undefined ? activo : true
+            activo: activo !== undefined ? activo : true // Valor por defecto true
         });
 
-        // Guardar la sucursal en la base de datos
         await newSucursal.save();
         res.json({ message: "Sucursal guardada" });
     } catch (error) {
@@ -57,13 +56,12 @@ sucursalesController.createSucursales = async (req, res) => {
     }
 };
 
-// DELETE
+// DELETE - Elimina una sucursal por ID
 sucursalesController.deleteSucursales = async (req, res) => {
     try {
-        // Buscar y eliminar la sucursal por ID
+        // Busca y elimina sucursal por ID
         const deleteSucursal = await sucursalModel.findByIdAndDelete(req.params.id);
 
-        // Verificar si la sucursal existía
         if (!deleteSucursal) {
             return res.json({ message: "Sucursal no encontrada" });
         }
@@ -75,9 +73,8 @@ sucursalesController.deleteSucursales = async (req, res) => {
     }
 };
 
-// UPDATE
+// UPDATE - Actualiza sucursal existente con nuevos datos
 sucursalesController.updateSucursales = async (req, res) => {
-    // Desestructuración de los datos a actualizar
     const {
         nombre,
         direccion,
@@ -88,25 +85,25 @@ sucursalesController.updateSucursales = async (req, res) => {
     } = req.body;
 
     try {
-        // Verificar si existe otra sucursal con el mismo nombre (excluyendo la actual)
+        // Verificar que no exista otra sucursal con el mismo nombre
         const existsSucursal = await sucursalModel.findOne({
             nombre,
-            _id: { $ne: req.params.id }
+            _id: { $ne: req.params.id } // Excluye el documento actual
         });
         if (existsSucursal) {
             return res.json({ message: "Ya existe otra sucursal con este nombre" });
         }
 
-        // Verificar si existe otra sucursal con el mismo correo (excluyendo la actual)
+        // Verificar que no exista otra sucursal con el mismo correo
         const existsCorreo = await sucursalModel.findOne({
             correo,
-            _id: { $ne: req.params.id }
+            _id: { $ne: req.params.id } // Excluye el documento actual
         });
         if (existsCorreo) {
             return res.json({ message: "Ya existe otra sucursal con este correo" });
         }
 
-        // Buscar y actualizar la sucursal por ID
+        // Actualiza sucursal y retorna versión nueva
         const updatedSucursal = await sucursalModel.findByIdAndUpdate(
             req.params.id,
             {
@@ -117,10 +114,9 @@ sucursalesController.updateSucursales = async (req, res) => {
                 horariosAtencion,
                 activo
             },
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
-        // Verificar si la sucursal existía
         if (!updatedSucursal) {
             return res.json({ message: "Sucursal no encontrada" });
         }
@@ -132,13 +128,12 @@ sucursalesController.updateSucursales = async (req, res) => {
     }
 };
 
-// SELECT BY ID
+// SELECT BY ID - Obtiene una sucursal específica por ID
 sucursalesController.getSucursalById = async (req, res) => {
     try {
-        // Buscar sucursal por ID
+        // Busca sucursal por ID
         const sucursal = await sucursalModel.findById(req.params.id);
 
-        // Verificar si la sucursal existe
         if (!sucursal) {
             return res.json({ message: "Sucursal no encontrada" });
         }
@@ -149,6 +144,5 @@ sucursalesController.getSucursalById = async (req, res) => {
         res.json({ message: "Error obteniendo sucursal: " + error.message });
     }
 };
-
 
 export default sucursalesController;

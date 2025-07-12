@@ -2,20 +2,21 @@ import cotizacionesModel from "../models/Cotizaciones.js";
 
 const cotizacionesController = {};
 
-// SELECT - Obtener todas las cotizaciones
+// SELECT - Obtiene todas las cotizaciones con relaciones pobladas
 cotizacionesController.getCotizaciones = async (req, res) => {
     try {
+        // Busca cotizaciones y puebla cliente, productos y categorías
         const cotizaciones = await cotizacionesModel.find()
-            .populate('clienteId', 'nombre apellido correo telefono')
-            .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')
+            .populate('clienteId', 'nombre apellido correo telefono') // Datos básicos del cliente
+            .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')  // Datos del producto
             .populate({
                 path: 'productos.productoId',
                 populate: {
                     path: 'categoriaId',
-                    select: 'nombre'
+                    select: 'nombre' // Puebla categoría dentro del producto
                 }
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 }); // Ordena por fecha de creación descendente
         
         res.json(cotizaciones);
     } catch (error) {
@@ -24,9 +25,10 @@ cotizacionesController.getCotizaciones = async (req, res) => {
     }
 };
 
-// SELECT by ID - Obtener cotización por ID
+// SELECT by ID - Obtiene cotización específica con poblaciones completas
 cotizacionesController.getCotizacionById = async (req, res) => {
     try {
+        // Busca cotización por ID con poblaciones extendidas
         const cotizacion = await cotizacionesModel.findById(req.params.id)
             .populate('clienteId', 'nombre apellido correo telefono dui direccion')
             .populate('productos.productoId', 'nombre descripcion precioActual material color tipoLente categoriaId')
@@ -49,9 +51,10 @@ cotizacionesController.getCotizacionById = async (req, res) => {
     }
 };
 
-// SELECT por cliente - Obtener cotizaciones de un cliente específico
+// SELECT por cliente - Obtiene cotizaciones de un cliente específico
 cotizacionesController.getCotizacionesByCliente = async (req, res) => {
     try {
+        // Filtra cotizaciones por ID de cliente específico
         const cotizaciones = await cotizacionesModel.find({ clienteId: req.params.clienteId })
             .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')
             .populate({
@@ -61,7 +64,7 @@ cotizacionesController.getCotizacionesByCliente = async (req, res) => {
                     select: 'nombre'
                 }
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 }); // Ordena por fecha de creación descendente
 
         res.json(cotizaciones);
     } catch (error) {
@@ -70,7 +73,7 @@ cotizacionesController.getCotizacionesByCliente = async (req, res) => {
     }
 };
 
-// INSERT - Crear nueva cotización
+// INSERT - Crear nueva cotización con validación de productos
 cotizacionesController.createCotizacion = async (req, res) => {
     const {
         clienteId,
@@ -98,7 +101,7 @@ cotizacionesController.createCotizacion = async (req, res) => {
             subtotal: producto.cantidad * producto.precioUnitario
         }));
 
-        // Crear nueva cotización
+        // Crear nueva instancia de cotización con todos los datos
         const nuevaCotizacion = new cotizacionesModel({
             clienteId,
             correoCliente,
@@ -115,7 +118,7 @@ cotizacionesController.createCotizacion = async (req, res) => {
 
         await nuevaCotizacion.save();
 
-        // Obtener la cotización creada con populate
+        // Obtener la cotización creada con todas las referencias pobladas
         const cotizacionCreada = await cotizacionesModel.findById(nuevaCotizacion._id)
             .populate('clienteId', 'nombre apellido correo telefono')
             .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')
@@ -137,7 +140,7 @@ cotizacionesController.createCotizacion = async (req, res) => {
     }
 };
 
-// UPDATE - Actualizar cotización
+// UPDATE - Actualiza cotización con validación de estado
 cotizacionesController.updateCotizacion = async (req, res) => {
     const {
         clienteId,
@@ -166,6 +169,7 @@ cotizacionesController.updateCotizacion = async (req, res) => {
             return res.status(400).json({ message: "No se puede modificar una cotización ya convertida" });
         }
 
+        // Prepara objeto con datos a actualizar
         let updateData = {
             clienteId,
             correoCliente,
@@ -189,10 +193,11 @@ cotizacionesController.updateCotizacion = async (req, res) => {
             updateData.productos = productosCalculados;
         }
 
+        // Actualiza el documento y retorna la versión nueva
         const cotizacionActualizada = await cotizacionesModel.findByIdAndUpdate(
             req.params.id,
             updateData,
-            { new: true }
+            { new: true } // Retorna documento actualizado
         ).populate('clienteId', 'nombre apellido correo telefono')
          .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')
          .populate({
@@ -213,20 +218,22 @@ cotizacionesController.updateCotizacion = async (req, res) => {
     }
 };
 
-// UPDATE estado - Actualizar solo el estado de la cotización
+// UPDATE estado - Actualiza solo el estado de la cotización
 cotizacionesController.updateEstadoCotizacion = async (req, res) => {
     const { estado } = req.body;
 
     try {
+        // Valida estados permitidos
         const estadosPermitidos = ['pendiente', 'aprobada', 'rechazada', 'expirada', 'convertida'];
         if (!estadosPermitidos.includes(estado)) {
             return res.status(400).json({ message: "Estado no válido" });
         }
 
+        // Actualiza cotización y retorna versión nueva
         const cotizacionActualizada = await cotizacionesModel.findByIdAndUpdate(
             req.params.id,
             { estado },
-            { new: true }
+            { new: true } // Retorna documento actualizado
         ).populate('clienteId', 'nombre apellido correo telefono');
 
         if (!cotizacionActualizada) {
@@ -243,9 +250,10 @@ cotizacionesController.updateEstadoCotizacion = async (req, res) => {
     }
 };
 
-// DELETE - Eliminar cotización
+// DELETE - Elimina una cotización por ID
 cotizacionesController.deleteCotizacion = async (req, res) => {
     try {
+        // Busca y elimina cotización por ID
         const cotizacionEliminada = await cotizacionesModel.findByIdAndDelete(req.params.id);
 
         if (!cotizacionEliminada) {
@@ -259,16 +267,18 @@ cotizacionesController.deleteCotizacion = async (req, res) => {
     }
 };
 
-// GET - Obtener cotizaciones por estado
+// SELECT by Estado - Obtiene cotizaciones filtradas por estado
 cotizacionesController.getCotizacionesByEstado = async (req, res) => {
     try {
         const { estado } = req.params;
+        // Valida estados permitidos
         const estadosPermitidos = ['pendiente', 'aprobada', 'rechazada', 'expirada', 'convertida'];
         
         if (!estadosPermitidos.includes(estado)) {
             return res.status(400).json({ message: "Estado no válido" });
         }
 
+        // Filtra cotizaciones por estado específico
         const cotizaciones = await cotizacionesModel.find({ estado })
             .populate('clienteId', 'nombre apellido correo telefono')
             .populate('productos.productoId', 'nombre descripcion precioActual categoriaId')
@@ -279,7 +289,7 @@ cotizacionesController.getCotizacionesByEstado = async (req, res) => {
                     select: 'nombre'
                 }
             })
-            .sort({ createdAt: -1 });
+            .sort({ createdAt: -1 }); // Ordena por fecha de creación descendente
 
         res.json(cotizaciones);
     } catch (error) {
@@ -288,15 +298,16 @@ cotizacionesController.getCotizacionesByEstado = async (req, res) => {
     }
 };
 
-// GET - Verificar cotizaciones expiradas y actualizar estado
+// UTILITY - Verifica cotizaciones expiradas y actualiza estado automáticamente
 cotizacionesController.actualizarCotizacionesExpiradas = async (req, res) => {
     try {
         const fechaActual = new Date();
         
+        // Actualiza masivamente cotizaciones que han expirado
         const resultado = await cotizacionesModel.updateMany(
             {
-                validaHasta: { $lt: fechaActual },
-                estado: { $in: ['pendiente', 'aprobada'] }
+                validaHasta: { $lt: fechaActual }, // Fecha límite ya pasó
+                estado: { $in: ['pendiente', 'aprobada'] } // Solo estados activos
             },
             { estado: 'expirada' }
         );

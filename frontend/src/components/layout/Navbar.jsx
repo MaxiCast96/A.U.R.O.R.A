@@ -4,7 +4,7 @@ import AuthModal from "../auth/AuthModal";
 import { useAuth } from '../auth/AuthContext';
 import { Menu, X } from 'lucide-react';
 
-const Navbar = ({ onOpenAuth }) => {
+const Navbar = () => {
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -19,6 +19,10 @@ const Navbar = ({ onOpenAuth }) => {
   const closeMobileMenu = () => {
     setIsMobileMenuOpen(false);
     setIsProductMenuOpen(false);
+  };
+
+  const openAuthModal = () => {
+    setIsAuthModalOpen(true);
   };
 
   return (
@@ -195,7 +199,7 @@ const Navbar = ({ onOpenAuth }) => {
               </>
             ) : (
               <button
-                onClick={onOpenAuth}
+                onClick={openAuthModal}
                 className="bg-[#0097c2] text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow hover:bg-[#0077a2] transition text-xs sm:text-sm"
               >
                 Iniciar Sesión
@@ -320,6 +324,19 @@ const Navbar = ({ onOpenAuth }) => {
                 >
                   Dashboard
                 </Link>
+              )}
+
+              {/* Botón de iniciar sesión para usuarios no autenticados */}
+              {!user && (
+                <button
+                  onClick={() => {
+                    closeMobileMenu();
+                    openAuthModal();
+                  }}
+                  className="w-full text-left py-2 px-3 text-[#0097c2] hover:text-[#0077a2] hover:bg-[#0097c2]/10 rounded-lg transition-colors font-semibold"
+                >
+                  Iniciar Sesión
+                </button>
               )}
             </div>
           </div>

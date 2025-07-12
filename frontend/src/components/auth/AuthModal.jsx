@@ -56,25 +56,21 @@ const AuthModal = ({ isOpen, onClose }) => {
     setRegisterMsg(null);
     if (isLogin) {
       try {
-        const url = 'http://localhost:4000/api/clientes/login';
-        const correo = formData.email.trim();
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo, password: formData.password })
+        const result = await login({
+          correo: formData.email.trim(),
+          password: formData.password
         });
-        const data = await res.json();
-        if (!res.ok) {
-          setLoginError(data.message || 'Error al iniciar sesión');
-          return;
-        }
-        login({ ...data });
-        onClose();
-        // Redirección según rol
-        if (data.rol === 'Cliente') {
-          navigate('/');
+        
+        if (result.success) {
+          onClose();
+          // Redirección según rol
+          if (result.user?.rol === 'Cliente') {
+            navigate('/');
+          } else {
+            navigate('/dashboard');
+          }
         } else {
-          navigate('/dashboard');
+          setLoginError(result.message);
         }
       } catch (err) {
         setLoginError('Error de red o del servidor');
@@ -315,7 +311,7 @@ const AuthModal = ({ isOpen, onClose }) => {
               type="submit"
               className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02]"
             >
-              {isLogin ? 'Iniciar Sesión' : 'Crear cuenta'}
+              {isLogin ? 'Iniciar Sesión' : 'Crear Cuenta'}
             </button>
           </form>
         ) : (

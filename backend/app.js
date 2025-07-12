@@ -1,58 +1,69 @@
+// ===== APP.JS - CONFIGURACIÓN PRINCIPAL DE EXPRESS =====
 import express from "express";
-import cookieParser from "cookie-parser";
-import cors from "cors";
+import cookieParser from "cookie-parser"; // Para manejar cookies HTTP
+import cors from "cors"; // Para manejar CORS (Cross-Origin Resource Sharing)
 
-import empleadosRoutes from "./src/routes/empleados.js";
-import optometristaRoutes from "./src/routes/optometrista.js";
-import clientesRoutes from "./src/routes/clientes.js";
-import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js";
-import sucursalesRoutes from "./src/routes/sucursales.js";
-import marcasRoutes from "./src/routes/marcas.js";
-import accesoriosRoutes from "./src/routes/accesorios.js";
-import lentesRoutes from "./src/routes/lentes.js";
-import categoriaRoutes from "./src/routes/categoria.js";
-import historialMedicoRoutes from "./src/routes/historialMedico.js";
-import citasRoutes from "./src/routes/citas.js";
-import CarritoRoutes from "./src/routes/carrito.js";
-import promocionesRoutes from "./src/routes/promociones.js";
-import cotizacionesRoutes from "./src/routes/cotizaciones.js";
-import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.js";
-import ventasRoutes from "./src/routes/ventas.js";
-import recetasRoutes from "./src/routes/recetas.js";
-import registroClientesRoutes from "./src/routes/registroClientes.js";
+// Importar todas las rutas del sistema
+import empleadosRoutes from "./src/routes/empleados.js"; // Gestión de empleados
+import optometristaRoutes from "./src/routes/optometrista.js"; // Gestión de optometristas
+import clientesRoutes from "./src/routes/clientes.js"; // Gestión de clientes
+import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js"; // Registro de empleados
+import sucursalesRoutes from "./src/routes/sucursales.js"; // Gestión de sucursales
+import marcasRoutes from "./src/routes/marcas.js"; // Gestión de marcas
+import accesoriosRoutes from "./src/routes/accesorios.js"; // Gestión de accesorios
+import lentesRoutes from "./src/routes/lentes.js"; // Gestión de lentes
+import categoriaRoutes from "./src/routes/categoria.js"; // Gestión de categorías
+import historialMedicoRoutes from "./src/routes/historialMedico.js"; // Historiales médicos
+import citasRoutes from "./src/routes/citas.js"; // Sistema de citas
+import CarritoRoutes from "./src/routes/carrito.js"; // Carrito de compras
+import promocionesRoutes from "./src/routes/promociones.js"; // Sistema de promociones
+import cotizacionesRoutes from "./src/routes/cotizaciones.js"; // Sistema de cotizaciones
+import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.js"; // Productos personalizados
+import ventasRoutes from "./src/routes/ventas.js"; // Sistema de ventas
+import recetasRoutes from "./src/routes/recetas.js"; // Recetas médicas
+import registroClientesRoutes from "./src/routes/registroClientes.js"; // Registro de clientes
+import dashboardRoutes from "./src/routes/dashboard.js"; // Dashboard y estadísticas
+import authRoutes from "./src/routes/auth.js"; // Sistema de autenticación
 
+// Crear instancia de Express
 const app = express();
 
+// MIDDLEWARE DE CONFIGURACIÓN GLOBAL
+
+// Middleware para parsear cookies en las peticiones
 app.use(cookieParser());
 
-// Configuración de CORS
-app.use(
-    cors({
-        origin: "http://localhost:5173",
-        credentials: true
-    })
-);
+// Configuración de CORS para permitir peticiones desde el frontend
+app.use(cors({
+    origin: "http://localhost:5173", // URL del frontend en desarrollo
+    credentials: true // Permitir envío de cookies y headers de autenticación
+}));
 
-// Para aceptar datos en JSON
+// Middleware para parsear JSON en el body de las peticiones
 app.use(express.json());
 
-app.use("/api/empleados", empleadosRoutes);
-app.use("/api/optometrista", optometristaRoutes);
-app.use("/api/clientes", clientesRoutes);
-app.use("/api/registroEmpleados", registroEmpleadosRoutes);
-app.use("/api/sucursales", sucursalesRoutes);
-app.use("/api/marcas", marcasRoutes);
-app.use("/api/accesorios", accesoriosRoutes);
-app.use("/api/lentes", lentesRoutes);
-app.use("/api/categoria", categoriaRoutes);
-app.use("/api/historialMedico", historialMedicoRoutes);
-app.use("/api/citas", citasRoutes);
-app.use("/api/carrito", CarritoRoutes);
-app.use("/api/promociones", promocionesRoutes);
-app.use("/api/cotizaciones", cotizacionesRoutes);
-app.use("/api/productosPersonalizados", productosPersonalizadosRoutes);
-app.use("/api/ventas", ventasRoutes);
-app.use("/api/recetas", recetasRoutes);
-app.use("/api/registroClientes", registroClientesRoutes);
+// CONFIGURACIÓN DE RUTAS - Cada ruta tiene su prefijo específico
 
+app.use("/api/empleados", empleadosRoutes); // /api/empleados/* - Rutas de empleados
+app.use("/api/optometrista", optometristaRoutes); // /api/optometrista/* - Rutas de optometristas
+app.use("/api/clientes", clientesRoutes); // /api/clientes/* - Rutas de clientes
+app.use("/api/registroEmpleados", registroEmpleadosRoutes); // /api/registroEmpleados/* - Registro empleados
+app.use("/api/sucursales", sucursalesRoutes); // /api/sucursales/* - Rutas de sucursales
+app.use("/api/marcas", marcasRoutes); // /api/marcas/* - Rutas de marcas
+app.use("/api/accesorios", accesoriosRoutes); // /api/accesorios/* - Rutas de accesorios
+app.use("/api/lentes", lentesRoutes); // /api/lentes/* - Rutas de lentes
+app.use("/api/categoria", categoriaRoutes); // /api/categoria/* - Rutas de categorías
+app.use("/api/historialMedico", historialMedicoRoutes); // /api/historialMedico/* - Historiales médicos
+app.use("/api/citas", citasRoutes); // /api/citas/* - Rutas de citas
+app.use("/api/carrito", CarritoRoutes); // /api/carrito/* - Rutas del carrito
+app.use("/api/promociones", promocionesRoutes); // /api/promociones/* - Rutas de promociones
+app.use("/api/cotizaciones", cotizacionesRoutes); // /api/cotizaciones/* - Rutas de cotizaciones
+app.use("/api/productosPersonalizados", productosPersonalizadosRoutes); // /api/productosPersonalizados/*
+app.use("/api/ventas", ventasRoutes); // /api/ventas/* - Rutas de ventas
+app.use("/api/auth", authRoutes); // /api/auth/* - Rutas de autenticación
+app.use("/api/recetas", recetasRoutes); // /api/recetas/* - Rutas de recetas
+app.use("/api/registroClientes", registroClientesRoutes); // /api/registroClientes/* - Registro clientes
+app.use("/api/dashboard", dashboardRoutes); // /api/dashboard/* - Rutas del dashboard
+
+// Exportar la aplicación configurada
 export default app;

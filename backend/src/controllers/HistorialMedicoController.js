@@ -7,6 +7,7 @@ const historialMedicoController = {};
 // SELECT - Obtener todos los historiales médicos
 historialMedicoController.getHistorialesMedicos = async (req, res) => {
     try {
+        // Busca todos los historiales médicos y puebla datos del cliente
         const historiales = await historialMedicoModel.find()
             .populate('clienteId');
         res.status(200).json(historiales);
@@ -22,7 +23,7 @@ historialMedicoController.createHistorialMedico = async (req, res) => {
     let padecimientos = req.body.padecimientos;
     if (typeof padecimientos === "string") {
         try {
-            padecimientos = JSON.parse(padecimientos);
+            padecimientos = JSON.parse(padecimientos); // Convierte string a objeto
         } catch (e) {
             return res.status(400).json({ message: "Error en el formato de padecimientos" });
         }
@@ -32,7 +33,7 @@ historialMedicoController.createHistorialMedico = async (req, res) => {
     let historialVisual = req.body.historialVisual;
     if (typeof historialVisual === "string") {
         try {
-            historialVisual = JSON.parse(historialVisual);
+            historialVisual = JSON.parse(historialVisual); // Convierte string a objeto
         } catch (e) {
             return res.status(400).json({ message: "Error en el formato de historialVisual" });
         }
@@ -40,18 +41,19 @@ historialMedicoController.createHistorialMedico = async (req, res) => {
 
     const { clienteId } = req.body;
 
-    // Validación básica
+    // Validación básica de campo obligatorio
     if (!clienteId) {
         return res.status(400).json({ message: "El campo clienteId es obligatorio" });
     }
 
     try {
-        // Validar que el cliente existe
+        // Verificar que el cliente existe antes de crear historial
         const cliente = await clientesModel.findById(clienteId);
         if (!cliente) {
             return res.status(400).json({ message: "El cliente seleccionado no existe." });
         }
 
+        // Crear nueva instancia del historial médico
         const newHistorialMedico = new historialMedicoModel({
             clienteId,
             padecimientos: padecimientos || {},
@@ -69,6 +71,7 @@ historialMedicoController.createHistorialMedico = async (req, res) => {
 // DELETE - Eliminar un historial médico
 historialMedicoController.deleteHistorialMedico = async (req, res) => {
     try {
+        // Busca y elimina historial médico por ID
         const deleteHistorial = await historialMedicoModel.findByIdAndDelete(req.params.id);
         if (!deleteHistorial) {
             return res.status(404).json({ message: "Historial médico no encontrado" });
@@ -86,7 +89,7 @@ historialMedicoController.updateHistorialMedico = async (req, res) => {
     let padecimientos = req.body.padecimientos;
     if (typeof padecimientos === "string") {
         try {
-            padecimientos = JSON.parse(padecimientos);
+            padecimientos = JSON.parse(padecimientos); // Convierte string a objeto
         } catch (e) {
             return res.status(400).json({ message: "Error en el formato de padecimientos" });
         }
@@ -96,7 +99,7 @@ historialMedicoController.updateHistorialMedico = async (req, res) => {
     let historialVisual = req.body.historialVisual;
     if (typeof historialVisual === "string") {
         try {
-            historialVisual = JSON.parse(historialVisual);
+            historialVisual = JSON.parse(historialVisual); // Convierte string a objeto
         } catch (e) {
             return res.status(400).json({ message: "Error en el formato de historialVisual" });
         }
@@ -104,22 +107,24 @@ historialMedicoController.updateHistorialMedico = async (req, res) => {
 
     const { clienteId } = req.body;
 
-    // Validación básica
+    // Validación básica de campo obligatorio
     if (!clienteId) {
         return res.status(400).json({ message: "El campo clienteId es obligatorio" });
     }
 
     try {
+        // Prepara objeto con datos a actualizar
         const updateData = {
             clienteId,
             padecimientos: padecimientos || {},
             historialVisual: historialVisual || {}
         };
 
+        // Busca, actualiza y retorna historial modificado
         const updatedHistorial = await historialMedicoModel.findByIdAndUpdate(
             req.params.id,
             updateData,
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
         if (!updatedHistorial) {
@@ -136,6 +141,7 @@ historialMedicoController.updateHistorialMedico = async (req, res) => {
 // SELECT by ID - Obtener un historial médico por ID
 historialMedicoController.getHistorialMedicoById = async (req, res) => {
     try {
+        // Busca historial médico por ID y puebla datos del cliente
         const historial = await historialMedicoModel.findById(req.params.id)
             .populate('clienteId');
         if (!historial) {
@@ -151,6 +157,7 @@ historialMedicoController.getHistorialMedicoById = async (req, res) => {
 // SELECT by Cliente - Obtener historial médico por ID de cliente
 historialMedicoController.getHistorialMedicoByCliente = async (req, res) => {
     try {
+        // Filtra historial médico por ID de cliente específico
         const historial = await historialMedicoModel.findOne({ clienteId: req.params.clienteId })
             .populate('clienteId');
         if (!historial) {
@@ -166,6 +173,7 @@ historialMedicoController.getHistorialMedicoByCliente = async (req, res) => {
 // SELECT by Tipo de Padecimiento - Obtener historiales por tipo de padecimiento
 historialMedicoController.getHistorialesByTipoPadecimiento = async (req, res) => {
     try {
+        // Filtra historiales por tipo de padecimiento usando regex
         const historiales = await historialMedicoModel.find({ 
             "padecimientos.tipo": { $regex: req.params.tipo, $options: 'i' } 
         })
@@ -182,6 +190,7 @@ historialMedicoController.getHistorialesByFechaDiagnostico = async (req, res) =>
     const { fechaInicio, fechaFin } = req.query;
     
     try {
+        // Construir query dinámico para filtro por fechas
         const query = {};
         if (fechaInicio || fechaFin) {
             query["historialVisual.fecha"] = {};
@@ -189,6 +198,7 @@ historialMedicoController.getHistorialesByFechaDiagnostico = async (req, res) =>
             if (fechaFin) query["historialVisual.fecha"].$lte = new Date(fechaFin);
         }
 
+        // Busca historiales dentro del rango de fechas
         const historiales = await historialMedicoModel.find(query)
             .populate('clienteId');
         res.json(historiales);
@@ -201,6 +211,7 @@ historialMedicoController.getHistorialesByFechaDiagnostico = async (req, res) =>
 // SELECT by Diagnóstico - Obtener historiales por diagnóstico
 historialMedicoController.getHistorialesByDiagnostico = async (req, res) => {
     try {
+        // Filtra historiales por diagnóstico usando regex
         const historiales = await historialMedicoModel.find({ 
             "historialVisual.diagnostico": { $regex: req.params.diagnostico, $options: 'i' } 
         })
@@ -218,17 +229,18 @@ historialMedicoController.updatePadecimientos = async (req, res) => {
     let padecimientos = req.body.padecimientos;
     if (typeof padecimientos === "string") {
         try {
-            padecimientos = JSON.parse(padecimientos);
+            padecimientos = JSON.parse(padecimientos); // Convierte string a objeto
         } catch (e) {
             return res.json({ message: "Error en el formato de padecimientos" });
         }
     }
     
     try {
+        // Actualiza solo el campo padecimientos del historial
         const updatedHistorial = await historialMedicoModel.findByIdAndUpdate(
             req.params.id,
             { padecimientos },
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
         if (!updatedHistorial) {
@@ -248,17 +260,18 @@ historialMedicoController.updateHistorialVisual = async (req, res) => {
     let historialVisual = req.body.historialVisual;
     if (typeof historialVisual === "string") {
         try {
-            historialVisual = JSON.parse(historialVisual);
+            historialVisual = JSON.parse(historialVisual); // Convierte string a objeto
         } catch (e) {
             return res.json({ message: "Error en el formato de historialVisual" });
         }
     }
     
     try {
+        // Actualiza solo el campo historialVisual del historial
         const updatedHistorial = await historialMedicoModel.findByIdAndUpdate(
             req.params.id,
             { historialVisual },
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
         if (!updatedHistorial) {

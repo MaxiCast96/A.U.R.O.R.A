@@ -2,15 +2,16 @@ import productosPersonalizadosModel from "../models/ProductosPersonalizados.js";
 
 const productosPersonalizadosController = {};
 
-// SELECT - Obtener todos los productos personalizados
+// SELECT - Obtiene todos los productos personalizados con relaciones pobladas
 productosPersonalizadosController.getProductosPersonalizados = async (req, res) => {
     try {
+        // Busca todos los productos y puebla las referencias a cliente, producto base y marca
         const productos = await productosPersonalizadosModel
             .find()
-            .populate('clienteId', 'nombre apellido correo telefono')
-            .populate('productoBaseId', 'nombre descripcion precioBase')
-            .populate('marcaId', 'nombre descripcion')
-            .sort({ fechaSolicitud: -1 });
+            .populate('clienteId', 'nombre apellido correo telefono') // Datos básicos del cliente
+            .populate('productoBaseId', 'nombre descripcion precioBase') // Datos del producto base
+            .populate('marcaId', 'nombre descripcion') // Datos de la marca
+            .sort({ fechaSolicitud: -1 }); // Ordena por fecha de solicitud descendente
             
         res.json(productos);
     } catch (error) {
@@ -19,14 +20,15 @@ productosPersonalizadosController.getProductosPersonalizados = async (req, res) 
     }
 };
 
-// SELECT by Cliente - Obtener productos personalizados por cliente
+// SELECT by Cliente - Obtiene productos personalizados de un cliente específico
 productosPersonalizadosController.getProductosByCliente = async (req, res) => {
     try {
+        // Filtra productos por ID de cliente específico
         const productos = await productosPersonalizadosModel
             .find({ clienteId: req.params.clienteId })
             .populate('productoBaseId', 'nombre descripcion precioBase')
             .populate('marcaId', 'nombre descripcion')
-            .sort({ fechaSolicitud: -1 });
+            .sort({ fechaSolicitud: -1 }); // Ordena por fecha de solicitud descendente
             
         res.json(productos);
     } catch (error) {
@@ -35,7 +37,7 @@ productosPersonalizadosController.getProductosByCliente = async (req, res) => {
     }
 };
 
-// INSERT - Crear nuevo producto personalizado
+// INSERT - Crea nuevo producto personalizado con datos completos
 productosPersonalizadosController.createProductoPersonalizado = async (req, res) => {
     const {
         clienteId,
@@ -54,7 +56,7 @@ productosPersonalizadosController.createProductoPersonalizado = async (req, res)
     } = req.body;
 
     try {
-        // Crear nueva instancia del producto personalizado
+        // Crear nueva instancia del producto personalizado con todos los datos
         const newProducto = new productosPersonalizadosModel({
             clienteId,
             productoBaseId,
@@ -91,7 +93,7 @@ productosPersonalizadosController.createProductoPersonalizado = async (req, res)
     }
 };
 
-// UPDATE - Actualizar producto personalizado
+// UPDATE - Actualiza producto personalizado existente con nuevos datos
 productosPersonalizadosController.updateProductoPersonalizado = async (req, res) => {
     const {
         nombre,
@@ -108,6 +110,7 @@ productosPersonalizadosController.updateProductoPersonalizado = async (req, res)
     } = req.body;
 
     try {
+        // Prepara objeto con datos a actualizar
         const updateData = {
             nombre,
             descripcion,
@@ -122,12 +125,12 @@ productosPersonalizadosController.updateProductoPersonalizado = async (req, res)
             cotizacion
         };
 
-        // Buscar y actualizar el producto por ID
+        // Busca y actualiza el producto por ID
         const updatedProducto = await productosPersonalizadosModel
             .findByIdAndUpdate(
                 req.params.id,
                 updateData,
-                { new: true }
+                { new: true } // Retorna documento actualizado
             )
             .populate('clienteId', 'nombre apellido correo')
             .populate('productoBaseId', 'nombre descripcion')
@@ -148,16 +151,17 @@ productosPersonalizadosController.updateProductoPersonalizado = async (req, res)
     }
 };
 
-// UPDATE Estado - Actualizar solo el estado del producto
+// UPDATE Estado - Actualiza solo el estado del producto personalizado
 productosPersonalizadosController.updateEstado = async (req, res) => {
     const { estado } = req.body;
 
     try {
+        // Actualiza producto y retorna versión nueva
         const updatedProducto = await productosPersonalizadosModel
             .findByIdAndUpdate(
                 req.params.id,
                 { estado },
-                { new: true }
+                { new: true } // Retorna documento actualizado
             )
             .populate('clienteId', 'nombre apellido correo telefono');
 
@@ -175,10 +179,10 @@ productosPersonalizadosController.updateEstado = async (req, res) => {
     }
 };
 
-// DELETE - Eliminar producto personalizado
+// DELETE - Elimina un producto personalizado por ID
 productosPersonalizadosController.deleteProductoPersonalizado = async (req, res) => {
     try {
-        // Buscar y eliminar el producto por ID
+        // Busca y elimina el producto por ID
         const deletedProducto = await productosPersonalizadosModel.findByIdAndDelete(req.params.id);
 
         // Verificar si el producto existía
@@ -193,10 +197,10 @@ productosPersonalizadosController.deleteProductoPersonalizado = async (req, res)
     }
 };
 
-// GET by ID - Obtener producto personalizado por ID
+// SELECT by ID - Obtiene un producto personalizado específico por ID
 productosPersonalizadosController.getProductoPersonalizadoById = async (req, res) => {
     try {
-        // Buscar producto por ID y popular las referencias
+        // Busca producto por ID y puebla todas las referencias
         const producto = await productosPersonalizadosModel
             .findById(req.params.id)
             .populate('clienteId', 'nombre apellido correo telefono dui direccion')
@@ -215,15 +219,16 @@ productosPersonalizadosController.getProductoPersonalizadoById = async (req, res
     }
 };
 
-// GET by Estado - Obtener productos por estado
+// SELECT by Estado - Obtiene productos filtrados por estado específico
 productosPersonalizadosController.getProductosByEstado = async (req, res) => {
     try {
+        // Filtra productos por estado específico
         const productos = await productosPersonalizadosModel
             .find({ estado: req.params.estado })
             .populate('clienteId', 'nombre apellido correo telefono')
             .populate('productoBaseId', 'nombre descripcion')
             .populate('marcaId', 'nombre')
-            .sort({ fechaSolicitud: -1 });
+            .sort({ fechaSolicitud: -1 }); // Ordena por fecha de solicitud descendente
             
         res.json(productos);
     } catch (error) {
@@ -232,19 +237,21 @@ productosPersonalizadosController.getProductosByEstado = async (req, res) => {
     }
 };
 
-// GET Estadísticas - Obtener estadísticas de productos personalizados
+// ANALYTICS - Obtiene estadísticas agregadas de productos personalizados
 productosPersonalizadosController.getEstadisticas = async (req, res) => {
     try {
+        // Agrupa productos por estado y calcula métricas
         const estadisticas = await productosPersonalizadosModel.aggregate([
             {
                 $group: {
                     _id: "$estado",
-                    count: { $sum: 1 },
-                    totalVentas: { $sum: "$cotizacion.total" }
+                    count: { $sum: 1 }, // Cuenta productos por estado
+                    totalVentas: { $sum: "$cotizacion.total" } // Suma total de ventas
                 }
             }
         ]);
 
+        // Cuenta total de productos personalizados
         const totalProductos = await productosPersonalizadosModel.countDocuments();
         
         res.json({

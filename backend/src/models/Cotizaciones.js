@@ -1,59 +1,59 @@
+// ===== MODELO COTIZACIONES =====
 import { Schema, model } from 'mongoose';
 
 const cotizacionesSchema = new Schema({
     clienteId: {
         type: Schema.Types.ObjectId,
-        ref: 'Clientes',
+        ref: 'Clientes', // Cliente que solicita la cotización
         required: true,
     },
     correoCliente: {
         type: String,
-        required: false,
+        required: false, // Email para enviar la cotización
     },
     telefonoCliente: {
         type: String,
-        required: true,
+        required: true, // Teléfono de contacto
     },
     fecha: {
         type: Date,
-        required: true,
+        required: true, // Fecha de creación de la cotización
         default: Date.now
     },
-    productos: [
+    productos: [ // Lista de productos cotizados
         {
             productoId: {
                 type: Schema.Types.ObjectId,
-                ref: 'Lentes', // Puede ser lente, aro, etc.
+                ref: 'Lentes', // Referencia al producto
                 required: true,
             },
             nombre: {
                 type: String,
-                required: true,
+                required: true, // Nombre del producto
             },
             categoria: {
                 type: String,
-                required: true, // "lente", "aro", etc.
+                required: true, // Categoría del producto
             },
             cantidad: {
                 type: Number,
-                required: true,
+                required: true, // Cantidad solicitada
                 min: 1,
                 default: 1
             },
             precioUnitario: {
                 type: Number,
-                required: true,
+                required: true, // Precio por unidad
                 min: 0
             },
             subtotal: {
                 type: Number,
-                required: true,
+                required: true, // Cantidad * precio unitario
                 min: 0
             }
         }
     ],
-    // Graduación general para toda la cotización
-    graduacion: {
+    graduacion: { // Graduación para lentes graduados
         ojoDerecho: {
             esfera: { type: Number, default: 0 },
             cilindro: { type: Number, default: 0 },
@@ -69,53 +69,53 @@ const cotizacionesSchema = new Schema({
     },
     total: {
         type: Number,
-        required: true,
+        required: true, // Total de la cotización
         min: 0
     },
     validaHasta: {
         type: Date,
-        required: true,
+        required: true, // Fecha de vencimiento de la cotización
     },
     estado: {
         type: String,
         required: true,
-        enum: ['pendiente', 'aprobada', 'rechazada', 'expirada', 'convertida'],
+        enum: ['pendiente', 'aprobada', 'rechazada', 'expirada', 'convertida'], // Estados posibles
         default: 'pendiente'
     },
     recetaUrl: {
         type: String,
-        required: false,
+        required: false, // URL de la receta médica si aplica
     },
     urlCotizacion: {
         type: String,
-        required: false,
+        required: false, // URL del documento de cotización generado
     },
     observaciones: {
         type: String,
-        required: false,
+        required: false, // Notas adicionales
     },
     descuento: {
         type: Number,
-        default: 0,
+        default: 0, // Descuento aplicado
         min: 0
     },
     impuesto: {
         type: Number,
-        default: 0,
+        default: 0, // Impuestos aplicados
         min: 0
     }
 }, {
-    timestamps: true,
+    timestamps: true, // Agrega createdAt y updatedAt
     strict: true
 });
 
-// Middleware para calcular el total antes de validar
+// Middleware para calcular totales automáticamente
 cotizacionesSchema.pre('validate', function(next) {
-    // 1. Asegurar que descuento e impuesto tengan valores numéricos
+    // Asegurar valores numéricos para descuento e impuesto
     this.descuento = this.descuento || 0;
     this.impuesto = this.impuesto || 0;
 
-    // 2. Calcular subtotales si no existen
+    // Calcular subtotales si no existen
     if (this.productos && this.productos.length > 0) {
         this.productos.forEach(producto => {
             if (!producto.subtotal) {
@@ -123,14 +123,14 @@ cotizacionesSchema.pre('validate', function(next) {
             }
         });
 
-        // 3. Calcular el total
+        // Calcular total final
         this.total = this.productos.reduce((sum, producto) => sum + producto.subtotal, 0);
         this.total = this.total - this.descuento + this.impuesto;
     } else {
-        this.total = 0; // Asegurar que siempre haya un total
+        this.total = 0;
     }
 
-    // 4. Establecer fecha de vencimiento
+    // Establecer fecha de vencimiento (30 días por defecto)
     if (!this.validaHasta) {
         this.validaHasta = new Date(this.fecha || Date.now());
         this.validaHasta.setDate(this.validaHasta.getDate() + 30);

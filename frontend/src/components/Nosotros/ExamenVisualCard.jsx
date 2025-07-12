@@ -7,11 +7,11 @@ const ExamenVisualCard = () => {
       {/* Header Section */}
       <div className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white p-12">
         <div className="max-w-3xl mx-auto">
-          <h1 className="text-4xl font-bold text-center mb-4">
+          <h2 className="text-2xl font-bold text-white mb-4">
             Examen Visual Profesional
-          </h1>
-          <p className="text-xl text-center opacity-90 leading-relaxed">
-            Nuestro examen visual completo evalúa la salud de tus ojos y determina 
+          </h2>
+          <p className="text-white/90 mb-6">
+            Nuestro Examen Visual completo evalúa la salud de tus ojos y determina
             si necesitas corrección visual utilizando tecnología de vanguardia.
           </p>
         </div>

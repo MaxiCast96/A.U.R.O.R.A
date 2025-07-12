@@ -10,9 +10,10 @@ cloudinary.config({
 
 const marcasController = {};
 
-// SELECT
+// SELECT - Obtiene todas las marcas
 marcasController.getMarcas = async (req, res) => {
     try {
+        // Busca y retorna todas las marcas
         const marcas = await marcasModel.find();
         res.json(marcas);
     } catch (error) {
@@ -21,21 +22,21 @@ marcasController.getMarcas = async (req, res) => {
     }
 };
 
-// INSERT
+// INSERT - Crear nueva marca con logo opcional
 marcasController.createMarcas = async (req, res) => {
     const { nombre, descripcion, paisOrigen, lineas } = req.body;
-    let logoURL = "";
+    let logoURL = ""; // Variable para URL del logo
 
     try {
-        // Subir imagen a Cloudinary si se envió archivo
+        // Sube imagen a Cloudinary si se envió archivo
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "marcas",
-                allowed_formats: ["png", "jpg", "jpeg", "webp"]
+                folder: "marcas", // Carpeta específica en Cloudinary
+                allowed_formats: ["png", "jpg", "jpeg", "webp"] // Formatos permitidos
             });
-            logoURL = result.secure_url;
+            logoURL = result.secure_url; // Obtiene URL segura
         } else if (req.body.logo) {
-            logoURL = req.body.logo;
+            logoURL = req.body.logo; // Usa URL proporcionada directamente
         }
 
         // Verificar si ya existe una marca con el mismo nombre
@@ -61,9 +62,10 @@ marcasController.createMarcas = async (req, res) => {
     }
 };
 
-// DELETE
+// DELETE - Elimina una marca por ID
 marcasController.deleteMarcas = async (req, res) => {
     try {
+        // Busca y elimina marca por ID
         const deleteMarca = await marcasModel.findByIdAndDelete(req.params.id);
         if (!deleteMarca) {
             return res.json({ message: "Marca no encontrada" });
@@ -75,13 +77,13 @@ marcasController.deleteMarcas = async (req, res) => {
     }
 };
 
-// UPDATE
+// UPDATE - Actualiza marca existente con nuevos datos
 marcasController.updateMarcas = async (req, res) => {
     const { nombre, descripcion, paisOrigen, lineas } = req.body;
-    let logoURL = req.body.logo;
+    let logoURL = req.body.logo; // Mantiene logo existente por defecto
 
     try {
-        // Subir imagen a Cloudinary si se envió archivo
+        // Sube nueva imagen a Cloudinary si se envió archivo
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
                 folder: "marcas",
@@ -90,15 +92,16 @@ marcasController.updateMarcas = async (req, res) => {
             logoURL = result.secure_url;
         }
 
-        // Verificar si existe otra marca con el mismo nombre
+        // Verificar que no exista otra marca con el mismo nombre
         const existsMarca = await marcasModel.findOne({
             nombre,
-            _id: { $ne: req.params.id }
+            _id: { $ne: req.params.id } // Excluye el documento actual
         });
         if (existsMarca) {
             return res.json({ message: "Ya existe otra marca con este nombre" });
         }
 
+        // Actualiza marca y retorna versión nueva
         const updatedMarca = await marcasModel.findByIdAndUpdate(
             req.params.id,
             {
@@ -108,7 +111,7 @@ marcasController.updateMarcas = async (req, res) => {
                 paisOrigen,
                 lineas
             },
-            { new: true }
+            { new: true } // Retorna documento actualizado
         );
 
         if (!updatedMarca) {
@@ -122,9 +125,10 @@ marcasController.updateMarcas = async (req, res) => {
     }
 };
 
-// GET by ID
+// GET by ID - Obtiene una marca específica por ID
 marcasController.getMarcaById = async (req, res) => {
     try {
+        // Busca marca por ID
         const marca = await marcasModel.findById(req.params.id);
         if (!marca) {
             return res.json({ message: "Marca no encontrada" });
