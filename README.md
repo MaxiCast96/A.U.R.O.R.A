@@ -228,7 +228,4 @@ npm run lint     # Linting del código
 - Jhonatan Josué Valle Gamboa
 - Kevin Josue Alvarado Hernandez
 - Fernando Ariel 
-
-## Licencia
-Este proyecto está bajo la Licencia MIT.
      
