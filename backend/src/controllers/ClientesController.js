@@ -248,10 +248,10 @@ const setJWTCookie = (res, token) => {
     const cookieOptions = {
         httpOnly: true, // Previene acceso desde JavaScript
         secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
-        sameSite: 'strict', // Previene ataques CSRF
+        sameSite: 'lax', // Permitir cross-origin seguro
         maxAge: 24 * 60 * 60 * 1000, // 24 horas en milisegundos
-        path: '/', // Cookie disponible en toda la aplicación
-        domain: process.env.NODE_ENV === 'production' ? '.aurora-optics.com' : undefined
+        path: '/' // Cookie disponible en toda la aplicación
+        // domain eliminado para compatibilidad con Render
     };
 
     res.cookie('aurora_auth_token', token, cookieOptions);
