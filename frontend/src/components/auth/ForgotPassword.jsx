@@ -24,7 +24,7 @@ const ForgotPassword = ({ onClose }) => {
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch('http://localhost:4000/api/clientes/forgot-password', {
+        let res = await fetch('https://a-u-r-o-r-a.onrender.com/api/clientes/forgot-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ correo: formData.email })
@@ -32,7 +32,7 @@ const ForgotPassword = ({ onClose }) => {
         let data = await res.json();
         if (!res.ok && data.message?.toLowerCase().includes('no existe')) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch('http://localhost:4000/api/empleados/forgot-password', {
+          res = await fetch('https://a-u-r-o-r-a.onrender.com/api/empleados/forgot-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ correo: formData.email })
@@ -54,7 +54,7 @@ const ForgotPassword = ({ onClose }) => {
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch('http://localhost:4000/api/clientes/reset-password', {
+        let res = await fetch('https://a-u-r-o-r-a.onrender.com/api/clientes/reset-password', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -66,7 +66,7 @@ const ForgotPassword = ({ onClose }) => {
         let data = await res.json();
         if (!res.ok && data.message?.toLowerCase().includes('correo')) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch('http://localhost:4000/api/empleados/reset-password', {
+          res = await fetch('https://a-u-r-o-r-a.onrender.com/api/empleados/reset-password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

@@ -78,7 +78,7 @@ const AuthModal = ({ isOpen, onClose }) => {
     } else {
       // Registro real
       try {
-        const res = await fetch('http://localhost:4000/api/registroClientes', {
+        const res = await fetch('https://a-u-r-o-r-a.onrender.com/api/registroClientes', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -319,7 +319,7 @@ const AuthModal = ({ isOpen, onClose }) => {
             e.preventDefault();
             setVerifyMsg(null);
             try {
-              const res = await fetch('http://localhost:4000/api/registroClientes/verifyCodeEmail', {
+              const res = await fetch('https://a-u-r-o-r-a.onrender.com/api/registroClientes/verifyCodeEmail', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

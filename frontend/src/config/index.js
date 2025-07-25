@@ -12,7 +12,7 @@ const env = import.meta.env;
 export const config = {
   // Configuración de la API
   api: {
-    baseUrl: env.VITE_API_URL || 'http://localhost:4000/api',
+    baseUrl: env.VITE_API_URL || 'https://a-u-r-o-r-a.onrender.com/api',
     timeout: 10000, // 10 segundos
     retries: 3,
     headers: {
@@ -248,7 +248,7 @@ export const config = {
 export const environmentConfig = {
   development: {
     api: {
-      baseUrl: 'http://localhost:4000/api',
+      baseUrl: 'https://a-u-r-o-r-a.onrender.com/api',
       timeout: 30000
     },
     logging: {
@@ -262,7 +262,7 @@ export const environmentConfig = {
   },
   production: {
     api: {
-      baseUrl: env.VITE_API_URL,
+      baseUrl: env.VITE_API_URL || 'https://a-u-r-o-r-a.onrender.com/api',
       timeout: 10000
     },
     logging: {
@@ -276,7 +276,7 @@ export const environmentConfig = {
   },
   test: {
     api: {
-      baseUrl: 'http://localhost:4000/api',
+      baseUrl: 'https://a-u-r-o-r-a.onrender.com/api',
       timeout: 5000
     },
     logging: {

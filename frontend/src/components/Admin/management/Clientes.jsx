@@ -16,7 +16,7 @@ import ClientesFormModal from './employees/ClientesFormModal';
 import { Users, UserCheck, UserX, Trash2, Eye, Edit, Phone, Mail, MapPin } from 'lucide-react';
 
 // --- CONFIGURACIÓN DE API ---
-const API_URL = 'http://localhost:4000/api/clientes'; // Asegúrate que el puerto sea el de tu backend
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/clientes'; // Asegúrate que el puerto sea el de tu backend
 
 const Clientes = () => {
     // --- ESTADOS ---

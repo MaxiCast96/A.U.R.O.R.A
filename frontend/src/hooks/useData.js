@@ -1,7 +1,7 @@
 import useFetch from './useFetch';
 
 // resource: string, params: objeto de query opcional
-const API_BASE = 'http://localhost:4000/api'; // Ahora incluye /api
+const API_BASE = 'https://a-u-r-o-r-a.onrender.com/api'; // Ahora incluye /api
 
 const buildUrl = (resource, params) => {
   let url = `${API_BASE}/${resource}`;
