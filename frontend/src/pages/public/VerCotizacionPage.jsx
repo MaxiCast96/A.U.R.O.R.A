@@ -13,7 +13,7 @@ const VerCotizacionPage = () => {
   // Handler para convertir a compra (se pasa como prop)
   const handleConvertirACompra = async (cotizacionId) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/cotizaciones/${cotizacionId}/convertir`, {
+      const res = await fetch(`https://a-u-r-o-r-a.onrender.com/api/cotizaciones/${cotizacionId}/convertir`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

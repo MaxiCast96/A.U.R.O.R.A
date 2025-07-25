@@ -12,7 +12,7 @@ import Alert from '../ui/Alert';
 import { usePagination } from '../../../hooks/admin/usePagination';
 import { Eye, Edit, Trash2, FileText, CheckCircle, Clock } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000/api'; // URL Base
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api'; // URL Base
 
 const Recetas = () => {
     const [recetas, setRecetas] = useState([]);

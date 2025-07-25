@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import DetailModal from '../ui/DetailModal';
 
-const API_URL = 'http://localhost:4000/api';
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api';
 
 const initialFormState = {
   clienteId: '',

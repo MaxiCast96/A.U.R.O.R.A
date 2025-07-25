@@ -74,7 +74,7 @@ const login = async (req, res) => {
     // Configurar cookie HTTPOnly para seguridad
     res.cookie('aurora_auth_token', token, {
       httpOnly: true, // No accesible desde JavaScript del cliente
-      secure: process.env.NODE_ENV === 'production', // HTTPS en producción
+      secure: process.env.NODE_ENV === 'production' ? true : false, // HTTPS en producción
       sameSite: 'lax', // Permitir cross-origin seguro
       maxAge: 24 * 60 * 60 * 1000 // 24 horas en milisegundos
       // domain eliminado para compatibilidad con Render

@@ -19,7 +19,7 @@ import LentesFormModal from '../management/lentes/LentesFormModal'; // Importa e
 import { Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, Image as ImageIcon } from 'lucide-react';
 
 // URL base de tu API
-const API_URL = 'http://localhost:4000/api'; // Asegúrate que el puerto sea el correcto
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api'; // Asegúrate que el puerto sea el correcto
 
 const LentesContent = () => {
   // --- ESTADOS ---

@@ -247,7 +247,7 @@ const generateJWTToken = (userData) => {
 const setJWTCookie = (res, token) => {
     const cookieOptions = {
         httpOnly: true, // Previene acceso desde JavaScript
-        secure: process.env.NODE_ENV === 'production', // Solo HTTPS en producción
+        secure: process.env.NODE_ENV === 'production' ? true : false, // Solo HTTPS en producción
         sameSite: 'lax', // Permitir cross-origin seguro
         maxAge: 24 * 60 * 60 * 1000, // 24 horas en milisegundos
         path: '/' // Cookie disponible en toda la aplicación

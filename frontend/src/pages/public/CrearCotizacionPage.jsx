@@ -32,7 +32,7 @@ const CrearCotizacionPage = () => {
     setSuccess(false);
     
     try {
-      const res = await fetch('http://localhost:4000/api/cotizaciones', {
+      const res = await fetch('https://a-u-r-o-r-a.onrender.com/api/cotizaciones', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(cotizacionData)

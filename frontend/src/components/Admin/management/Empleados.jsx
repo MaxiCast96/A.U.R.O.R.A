@@ -18,7 +18,8 @@ import EmpleadosFormModal from '../management/employees/EmpleadosFormModal';
 import { Users, UserCheck, Building2, DollarSign, Trash2, Eye, Edit, Phone, Mail, Calendar } from 'lucide-react';
 
 // URL base de tu API
-const API_URL = 'http://localhost:4000/api'; 
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/empleados';
+const SUCURSALES_URL = 'https://a-u-r-o-r-a.onrender.com/api/sucursales';
 
 const Empleados = () => {
     // --- ESTADOS ---
@@ -38,8 +39,8 @@ const Empleados = () => {
         setLoading(true);
         try {
             const [empleadosRes, sucursalesRes] = await Promise.all([
-                axios.get(`${API_URL}/empleados`),
-                axios.get(`${API_URL}/sucursales`)
+                axios.get(`${API_URL}`),
+                axios.get(`${SUCURSALES_URL}`)
             ]);
             setEmpleados(empleadosRes.data);
             setSucursales(sucursalesRes.data);
@@ -214,11 +215,11 @@ const Empleados = () => {
 
             if (selectedEmpleado) {
                 // UPDATE
-                await axios.put(`${API_URL}/empleados/${selectedEmpleado._id}`, dataToSend);
+                await axios.put(`${API_URL}/${selectedEmpleado._id}`, dataToSend);
                 showAlert('success', '¡Empleado actualizado exitosamente!');
             } else {
                 // CREATE
-                await axios.post(`${API_URL}/empleados`, dataToSend);
+                await axios.post(`${API_URL}`, dataToSend);
                 showAlert('success', '¡Empleado creado exitosamente!');
             }
             fetchData(); // Recargar datos
@@ -231,7 +232,7 @@ const Empleados = () => {
     const handleDelete = async () => {
         if (!selectedEmpleado) return;
         try {
-            await axios.delete(`${API_URL}/empleados/${selectedEmpleado._id}`);
+            await axios.delete(`${API_URL}/${selectedEmpleado._id}`);
             showAlert('success', '¡Empleado eliminado exitosamente!');
             fetchData(); // Recargar datos
             handleCloseModals();
