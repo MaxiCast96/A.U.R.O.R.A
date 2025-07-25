@@ -20,7 +20,7 @@ router.use(authenticateToken);
  * @desc Obtiene todos los datos del dashboard en una sola petición
  * @access Private - Requiere autenticación y rol de empleado
  */
-router.get('/all', authenticateToken, requireEmployee, getAllDashboardData);
+router.get('/all', authenticateToken, getAllDashboardData);
 
 /**
  * @route GET /api/dashboard/stats

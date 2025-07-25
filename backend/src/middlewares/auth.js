@@ -1,84 +1,43 @@
-import jsonwebtoken from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { config } from '../config.js';
 import clientesModel from '../models/Clientes.js';
 import empleadosModel from '../models/Empleados.js';
 
 /**
  * Middleware para verificar autenticación JWT
- * Extrae el token de las cookies y verifica su validez
+ * Extrae el token del encabezado de autorización y verifica su validez
  * @param {Object} req - Objeto de solicitud Express
  * @param {Object} res - Objeto de respuesta Express
  * @param {Function} next - Función para continuar al siguiente middleware
  */
 export const authenticateToken = async (req, res, next) => {
     try {
-        // Obtener token de las cookies
-        const token = req.cookies.aurora_auth_token;
-        
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+
         if (!token) {
             return res.status(401).json({ 
+                success: false,
                 message: 'Acceso denegado. Token de autenticación requerido.' 
             });
         }
 
-        // Verificar y decodificar el token
-        const decoded = jsonwebtoken.verify(token, config.jwt.secret);
-        
-        // Validar que el ID sea válido para MongoDB
-        if (!decoded.id || typeof decoded.id !== 'string') {
-            return res.status(401).json({ 
-                message: 'Token inválido. ID de usuario no válido.' 
-            });
-        }
-        
-        // Buscar el usuario en la base de datos
-        let user = null;
-        
-        try {
-            if (decoded.rol === 'Cliente') {
-                user = await clientesModel.findById(decoded.id).select('-password');
-            } else {
-                user = await empleadosModel.findById(decoded.id).select('-password');
+        jwt.verify(token, config.jwt.secret, (err, user) => {
+            if (err) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Token inválido o expirado'
+                });
             }
-        } catch (dbError) {
-            console.log('Error buscando usuario en BD:', dbError);
-            return res.status(401).json({ 
-                message: 'Token inválido. Usuario no encontrado.' 
-            });
-        }
 
-        if (!user) {
-            return res.status(401).json({ 
-                message: 'Usuario no encontrado. Token inválido.' 
-            });
-        }
-
-        // Agregar información del usuario a la solicitud
-        req.user = {
-            id: user._id,
-            nombre: user.nombre,
-            apellido: user.apellido,
-            correo: user.correo,
-            telefono: user.telefono,
-            rol: decoded.rol
-        };
-
-        next();
+            req.user = user;
+            next();
+        });
     } catch (error) {
-        console.log('Error en autenticación:', error);
-        
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({ 
-                message: 'Token inválido. Por favor, inicie sesión nuevamente.' 
-            });
-        } else if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({ 
-                message: 'Token expirado. Por favor, inicie sesión nuevamente.' 
-            });
-        }
-        
-        res.status(500).json({ 
-            message: 'Error en autenticación: ' + error.message 
+        console.error('Error en autenticación:', error);
+        return res.status(500).json({ 
+            success: false,
+            message: 'Error en la autenticación' 
         });
     }
 };
@@ -336,4 +295,4 @@ export const errorHandler = (err, req, res, next) => {
         message: 'Error interno del servidor',
         ...(process.env.NODE_ENV === 'development' && { error: err.message })
     });
-}; 
+};

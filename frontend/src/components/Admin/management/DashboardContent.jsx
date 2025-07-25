@@ -21,7 +21,8 @@ import {
   Tag,
   RefreshCw
 } from 'lucide-react';
-import useDashboard from '../../../hooks/useDashboard';
+import { useDashboard } from '../../../hooks/useDashboard';
+import { useAuth } from '../../../components/auth/AuthContext';
 
 const DashboardContent = () => {
   const { 
@@ -30,6 +31,7 @@ const DashboardContent = () => {
     error, 
     refreshData 
   } = useDashboard();
+  const { user } = useAuth();
 
   // Paleta de colores personalizada
   const COLORS = ['#009BBF', '#00B8E6', '#33C7E6', '#66D6E6'];
@@ -59,31 +61,9 @@ const DashboardContent = () => {
     }
   ];
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#009BBF]"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <div className="text-red-500 mb-4">
-          <p className="text-lg font-semibold">Error al cargar el dashboard</p>
-          <p className="text-sm">{error}</p>
-        </div>
-        <button
-          onClick={refreshData}
-          className="bg-[#009BBF] hover:bg-[#0088A8] text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-        >
-          <RefreshCw className="h-4 w-4" />
-          Reintentar
-        </button>
-      </div>
-    );
-  }
+  if (loading) return <div>Cargando...</div>;
+  if (error) return <div>Error: {error}</div>;
+  if (!user) return <div>Debe iniciar sesión para ver el dashboard</div>;
 
   return (
     <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6 bg-gray-50">
