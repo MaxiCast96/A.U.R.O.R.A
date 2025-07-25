@@ -7,7 +7,7 @@ import {
   getProductosPopulares,
   getAllDashboardData
 } from '../controllers/DashboardController.js';
-import { authenticateToken } from '../middlewares/auth.js'; // Middleware de autenticación
+import { authenticateToken, requireEmployee } from '../middlewares/auth.js'; // Middleware de autenticación
 
 const router = express.Router();
 
@@ -18,9 +18,9 @@ router.use(authenticateToken);
 /**
  * @route GET /api/dashboard/all
  * @desc Obtiene todos los datos del dashboard en una sola petición
- * @access Private - Requiere autenticación
+ * @access Private - Requiere autenticación y rol de empleado
  */
-router.get('/all', getAllDashboardData);
+router.get('/all', authenticateToken, requireEmployee, getAllDashboardData);
 
 /**
  * @route GET /api/dashboard/stats

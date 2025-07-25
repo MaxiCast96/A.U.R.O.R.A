@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext'; // Asegúrate de importar el contexto de autenticación
 
-const API_BASE_URL = 'https://a-u-r-o-r-a.onrender.com/api';
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api';
 
 const useDashboard = () => {
+  const { token } = useAuth(); // Obtener el token del contexto de autenticación
+
   const [dashboardData, setDashboardData] = useState({
     stats: {
       totalClientes: 0,
@@ -23,8 +26,12 @@ const useDashboard = () => {
       setLoading(true);
       setError(null);
 
-      const response = await axios.get(`${API_BASE_URL}/dashboard/all`, {
-        withCredentials: true
+      const response = await axios.get(`${API_URL}/dashboard/all`, {
+        withCredentials: true,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -42,8 +49,12 @@ const useDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/stats`, {
-        withCredentials: true
+      const response = await axios.get(`${API_URL}/dashboard/stats`, {
+        withCredentials: true,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -59,8 +70,12 @@ const useDashboard = () => {
 
   const fetchVentasMensuales = async (year = new Date().getFullYear()) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/ventas-mensuales?year=${year}`, {
-        withCredentials: true
+      const response = await axios.get(`${API_URL}/dashboard/ventas-mensuales?year=${year}`, {
+        withCredentials: true,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -76,8 +91,12 @@ const useDashboard = () => {
 
   const fetchEstadoCitas = async () => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/estado-citas`, {
-        withCredentials: true
+      const response = await axios.get(`${API_URL}/dashboard/estado-citas`, {
+        withCredentials: true,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -93,8 +112,12 @@ const useDashboard = () => {
 
   const fetchProductosPopulares = async (limit = 5) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/dashboard/productos-populares?limit=${limit}`, {
-        withCredentials: true
+      const response = await axios.get(`${API_URL}/dashboard/productos-populares?limit=${limit}`, {
+        withCredentials: true,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
 
       if (response.data.success) {
@@ -128,4 +151,4 @@ const useDashboard = () => {
   };
 };
 
-export default useDashboard; 
+export default useDashboard;

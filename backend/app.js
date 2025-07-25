@@ -52,21 +52,11 @@ const app = express();
 app.use(cookieParser());
 
 // Configuración de CORS para permitir peticiones desde el frontend
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://a-u-r-o-r-a.onrender.com"
-];
-
 app.use(cors({
-  origin: function(origin, callback) {
-    // Permitir requests sin origin (como Postman) o si está en la lista
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('No permitido por CORS'));
-    }
-  },
-  credentials: true
+    origin: ['http://localhost:5173', 'https://a-u-r-o-r-a.onrender.com'],
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Middleware para parsear JSON en el body de las peticiones
