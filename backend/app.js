@@ -25,7 +25,8 @@ import registroClientesRoutes from "./src/routes/registroClientes.js"; // Regist
 import dashboardRoutes from "./src/routes/dashboard.js"; // Dashboard y estadísticas
 import authRoutes from "./src/routes/auth.js"; // Sistema de autenticación
 
-const database = require('./database'); // Asegúrate de que este archivo maneje la conexión a la base de datos
+// Importar la conexión a la base de datos
+import database from "./database.js"; // Asegúrate de que este archivo maneje la conexión a la base de datos
 
 // Función para hacer ping a la base de datos periódicamente
 function keepDatabaseAlive() {
