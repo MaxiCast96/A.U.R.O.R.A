@@ -45,3 +45,13 @@ connection.on("disconnected", () => {
 connection.on("error", (error) => {
     console.log("Error en la conexión:", error);
 });
+
+const database = {
+    query: async (sql) => {
+        // Implementación de la consulta a la base de datos
+        console.log(`Ejecutando consulta: ${sql}`);
+        return true; // Simulación de respuesta
+    }
+};
+
+export default database;
