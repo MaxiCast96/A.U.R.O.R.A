@@ -34,12 +34,24 @@ ventasController.createVenta = async (req, res) => {
     } = req.body;
 
     try {
-        // Validar que los campos obligatorios existan
-        if (!carritoId || !empleadoId || !sucursalId) {
-            return res.status(400).json({ 
-                message: "carritoId, empleadoId y sucursalId son requeridos" 
-            });
-        }
+        // Validación de campos obligatorios
+        if (!carritoId) return res.status(400).json({ message: "El carrito es obligatorio" });
+        if (!empleadoId) return res.status(400).json({ message: "El empleado es obligatorio" });
+        if (!sucursalId) return res.status(400).json({ message: "La sucursal es obligatoria" });
+        if (!fecha) return res.status(400).json({ message: "La fecha es obligatoria" });
+        if (!estado) return res.status(400).json({ message: "El estado es obligatorio" });
+        if (!datosPago || !datosPago.metodoPago) return res.status(400).json({ message: "El método de pago es obligatorio" });
+        if (!datosPago.montoPagado && datosPago.montoPagado !== 0) return res.status(400).json({ message: "El monto pagado es obligatorio" });
+        if (!datosPago.montoTotal && datosPago.montoTotal !== 0) return res.status(400).json({ message: "El monto total es obligatorio" });
+        if (!facturaDatos || !facturaDatos.numeroFactura) return res.status(400).json({ message: "El número de factura es obligatorio" });
+        if (!facturaDatos.clienteId) return res.status(400).json({ message: "El cliente de la factura es obligatorio" });
+        if (!facturaDatos.nombreCliente) return res.status(400).json({ message: "El nombre del cliente es obligatorio" });
+        if (!facturaDatos.duiCliente) return res.status(400).json({ message: "El DUI del cliente es obligatorio" });
+        if (!facturaDatos.direccionCliente || !facturaDatos.direccionCliente.calle) return res.status(400).json({ message: "La calle de la dirección es obligatoria" });
+        if (!facturaDatos.direccionCliente.ciudad) return res.status(400).json({ message: "La ciudad de la dirección es obligatoria" });
+        if (!facturaDatos.direccionCliente.departamento) return res.status(400).json({ message: "El departamento de la dirección es obligatorio" });
+        if (!facturaDatos.subtotal && facturaDatos.subtotal !== 0) return res.status(400).json({ message: "El subtotal es obligatorio" });
+        if (!facturaDatos.total && facturaDatos.total !== 0) return res.status(400).json({ message: "El total es obligatorio" });
 
         // Verificar que el número de factura no exista (si se proporciona)
         if (facturaDatos.numeroFactura) {

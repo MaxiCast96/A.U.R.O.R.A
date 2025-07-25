@@ -16,7 +16,6 @@ router.route("/:id")
     .delete(clientesController.deleteClientes); // DELETE /api/clientes/:id - Eliminar cliente
 
 // Rutas específicas para autenticación y recuperación
-router.post('/login', clientesController.loginUnificado); // POST /api/clientes/login - Login de cliente
 router.post('/forgot-password', clientesController.forgotPassword); // POST - Solicitar recuperación
 router.post('/reset-password', clientesController.resetPassword); // POST - Resetear contraseña
 

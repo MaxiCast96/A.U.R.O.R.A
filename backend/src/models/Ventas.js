@@ -94,11 +94,6 @@ const ventasSchema = new Schema({
             required: true, // Subtotal antes de impuestos
             min: 0
         },
-        iva: {
-            type: Number,
-            required: true, // IVA aplicado
-            min: 0
-        },
         total: {
             type: Number,
             required: true, // Total final de la factura

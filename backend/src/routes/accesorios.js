@@ -1,10 +1,6 @@
 // ===== RUTAS ACCESORIOS =====
 import express from "express";
 import accesoriosController from "../controllers/AccesoriosController.js";
-import multer from "multer";
-
-// Configuración de multer para manejo de archivos de imagen
-const upload = multer({ dest: "uploads/" }); // Guarda archivos en carpeta 'uploads'
 
 const router = express.Router();
 
@@ -20,12 +16,12 @@ router.get("/marca/:marcaId", accesoriosController.getAccesoriosByMarca);
 // Rutas principales CRUD para accesorios
 router.route("/")
     .get(accesoriosController.getAccesorios) // GET /api/accesorios - Obtener todos los accesorios
-    .post(upload.array("imagenes", 5), accesoriosController.createAccesorios); // POST - Crear con hasta 5 imágenes
+    .post(accesoriosController.createAccesorios); // POST - Crear con hasta 5 imágenes
 
 // Rutas para manejo de accesorio específico por ID
 router.route("/:id")
     .get(accesoriosController.getAccesorioById) // GET /api/accesorios/:id - Obtener por ID
-    .put(upload.array("imagenes", 5), accesoriosController.updateAccesorios) // PUT - Actualizar con imágenes
+    .put(accesoriosController.updateAccesorios) // PUT - Actualizar con imágenes
     .delete(accesoriosController.deleteAccesorios); // DELETE /api/accesorios/:id - Eliminar
 
 export default router;

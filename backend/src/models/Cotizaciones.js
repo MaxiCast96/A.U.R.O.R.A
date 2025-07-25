@@ -98,11 +98,6 @@ const cotizacionesSchema = new Schema({
         type: Number,
         default: 0, // Descuento aplicado
         min: 0
-    },
-    impuesto: {
-        type: Number,
-        default: 0, // Impuestos aplicados
-        min: 0
     }
 }, {
     timestamps: true, // Agrega createdAt y updatedAt
@@ -111,9 +106,9 @@ const cotizacionesSchema = new Schema({
 
 // Middleware para calcular totales automáticamente
 cotizacionesSchema.pre('validate', function(next) {
-    // Asegurar valores numéricos para descuento e impuesto
+    // Asegurar valores numéricos para descuento
     this.descuento = this.descuento || 0;
-    this.impuesto = this.impuesto || 0;
+    // Eliminar referencia a impuesto
 
     // Calcular subtotales si no existen
     if (this.productos && this.productos.length > 0) {
@@ -125,7 +120,7 @@ cotizacionesSchema.pre('validate', function(next) {
 
         // Calcular total final
         this.total = this.productos.reduce((sum, producto) => sum + producto.subtotal, 0);
-        this.total = this.total - this.descuento + this.impuesto;
+        this.total = this.total - this.descuento;
     } else {
         this.total = 0;
     }

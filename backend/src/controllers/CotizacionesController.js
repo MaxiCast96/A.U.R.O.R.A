@@ -90,10 +90,14 @@ cotizacionesController.createCotizacion = async (req, res) => {
     } = req.body;
 
     try {
-        // Validar que existan productos
-        if (!productos || productos.length === 0) {
-            return res.status(400).json({ message: "Debe incluir al menos un producto en la cotización" });
-        }
+        // Validación de campos obligatorios
+        if (!clienteId) return res.status(400).json({ message: "El cliente es obligatorio" });
+        if (!telefonoCliente) return res.status(400).json({ message: "El teléfono del cliente es obligatorio" });
+        if (!fecha) return res.status(400).json({ message: "La fecha es obligatoria" });
+        if (!productos || productos.length === 0) return res.status(400).json({ message: "Debe agregar al menos un producto" });
+        if (!total && total !== 0) return res.status(400).json({ message: "El total es obligatorio" });
+        if (!validaHasta) return res.status(400).json({ message: "La fecha de validez es obligatoria" });
+        if (!estado) return res.status(400).json({ message: "El estado es obligatorio" });
 
         // Calcular subtotales para cada producto
         const productosCalculados = productos.map(producto => ({

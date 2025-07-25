@@ -1,10 +1,6 @@
 // ===== RUTAS LENTES =====
 import express from 'express';
-import multer from "multer";
 import lentesController from '../controllers/lentesController.js';
-
-// Configuración de multer para manejo de imágenes de lentes
-const upload = multer({ dest: "uploads/" }); // Directorio temporal
 
 const router = express.Router();
 
@@ -31,12 +27,12 @@ router.route("/")
         // Sino, usar controlador general
         return lentesController.getLentes(req, res, next);
     })
-    .post(upload.array("imagenes", 5), lentesController.createLentes); // POST - Crear con hasta 5 imágenes
+    .post(lentesController.createLentes); // POST - Crear con hasta 5 imágenes
 
 // Rutas para manejo de lente específico por ID
 router.route("/:id")
     .get(lentesController.getLentesById) // GET /api/lentes/:id - Obtener lente por ID
-    .put(upload.array("imagenes", 5), lentesController.updateLentes) // PUT - Actualizar con imágenes
+    .put(lentesController.updateLentes) // PUT - Actualizar con imágenes
     .delete(lentesController.deleteLentes); // DELETE /api/lentes/:id - Eliminar lente
 
 export default router;

@@ -67,9 +67,16 @@ clientesController.updateClientes = async (req, res) => {
     } = req.body;
 
     // Validación de todos los campos obligatorios
-    if (!nombre || !apellido || !edad || !dui || !telefono || !correo || !calle || !ciudad || !departamento || !estado) {
-        return res.status(400).json({ message: "Faltan campos obligatorios" });
-    }
+    if (!nombre) return res.status(400).json({ message: "El nombre es obligatorio" });
+    if (!apellido) return res.status(400).json({ message: "El apellido es obligatorio" });
+    if (!edad) return res.status(400).json({ message: "La edad es obligatoria" });
+    if (!dui) return res.status(400).json({ message: "El DUI es obligatorio" });
+    if (!telefono) return res.status(400).json({ message: "El teléfono es obligatorio" });
+    if (!correo) return res.status(400).json({ message: "El correo es obligatorio" });
+    if (!calle) return res.status(400).json({ message: "La calle es obligatoria" });
+    if (!ciudad) return res.status(400).json({ message: "La ciudad es obligatoria" });
+    if (!departamento) return res.status(400).json({ message: "El departamento es obligatorio" });
+    if (!estado) return res.status(400).json({ message: "El estado es obligatorio" });
 
     try {
         // Verificar si el correo ya existe en otro cliente

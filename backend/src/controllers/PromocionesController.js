@@ -50,6 +50,16 @@ promocionesController.createPromocion = async (req, res) => {
     } = req.body;
 
     try {
+        // Validar campos obligatorios
+        if (!nombre) return res.json({ message: "El nombre es obligatorio" });
+        if (!descripcion) return res.json({ message: "La descripción es obligatoria" });
+        if (!tipoDescuento) return res.json({ message: "El tipo de descuento es obligatorio" });
+        if (!valorDescuento) return res.json({ message: "El valor del descuento es obligatorio" });
+        if (!aplicaA) return res.json({ message: "El campo 'aplicaA' es obligatorio" });
+        if (!fechaInicio) return res.json({ message: "La fecha de inicio es obligatoria" });
+        if (!fechaFin) return res.json({ message: "La fecha de fin es obligatoria" });
+        if (!codigoPromo) return res.json({ message: "El código de promoción es obligatorio" });
+
         // Verificar si ya existe una promoción con el mismo código
         const existsPromocion = await promocionModel.findOne({ codigoPromo: codigoPromo.toUpperCase() });
         if (existsPromocion) {
@@ -142,6 +152,16 @@ promocionesController.updatePromocion = async (req, res) => {
     } = req.body;
 
     try {
+        // Validar campos obligatorios
+        if (!nombre) return res.json({ message: "El nombre es obligatorio" });
+        if (!descripcion) return res.json({ message: "La descripción es obligatoria" });
+        if (!tipoDescuento) return res.json({ message: "El tipo de descuento es obligatorio" });
+        if (!valorDescuento) return res.json({ message: "El valor del descuento es obligatorio" });
+        if (!aplicaA) return res.json({ message: "El campo 'aplicaA' es obligatorio" });
+        if (!fechaInicio) return res.json({ message: "La fecha de inicio es obligatoria" });
+        if (!fechaFin) return res.json({ message: "La fecha de fin es obligatoria" });
+        if (!codigoPromo) return res.json({ message: "El código de promoción es obligatorio" });
+
         // Verificar que no exista otra promoción con el mismo código
         const existsPromocion = await promocionModel.findOne({
             codigoPromo: codigoPromo.toUpperCase(),

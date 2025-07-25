@@ -60,9 +60,16 @@ empleadosController.createEmpleados = async (req, res) => {
         }
 
         // Validación de campos obligatorios
-        if (!nombre || !apellido || !dui || !telefono || !correo || !cargo || !sucursalId || !fechaContratacion || !password || !salario) {
-            return res.status(400).json({ message: "Todos los campos requeridos deben ser completados." });
-        }
+        if (!nombre) return res.status(400).json({ message: "El nombre es obligatorio" });
+        if (!apellido) return res.status(400).json({ message: "El apellido es obligatorio" });
+        if (!dui) return res.status(400).json({ message: "El DUI es obligatorio" });
+        if (!telefono) return res.status(400).json({ message: "El teléfono es obligatorio" });
+        if (!correo) return res.status(400).json({ message: "El correo es obligatorio" });
+        if (!cargo) return res.status(400).json({ message: "El cargo es obligatorio" });
+        if (!sucursalId) return res.status(400).json({ message: "La sucursal es obligatoria" });
+        if (!fechaContratacion) return res.status(400).json({ message: "La fecha de contratación es obligatoria" });
+        if (!password) return res.status(400).json({ message: "La contraseña es obligatoria" });
+        if (!salario) return res.status(400).json({ message: "El salario es obligatorio" });
 
         // Encriptar contraseña usando bcrypt
         const passwordHash = await bcryptjs.hash(password, 10);
