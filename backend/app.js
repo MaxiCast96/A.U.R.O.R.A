@@ -25,6 +25,23 @@ import registroClientesRoutes from "./src/routes/registroClientes.js"; // Regist
 import dashboardRoutes from "./src/routes/dashboard.js"; // Dashboard y estadísticas
 import authRoutes from "./src/routes/auth.js"; // Sistema de autenticación
 
+const database = require('./database'); // Asegúrate de que este archivo maneje la conexión a la base de datos
+
+// Función para hacer ping a la base de datos periódicamente
+function keepDatabaseAlive() {
+    setInterval(async () => {
+        try {
+            await database.query('SELECT 1'); // Realiza una consulta simple para mantener la conexión activa
+            console.log('Ping a la base de datos exitoso');
+        } catch (error) {
+            console.error('Error al hacer ping a la base de datos:', error);
+        }
+    }, 300000); // Intervalo de 5 minutos (300,000 ms)
+}
+
+// Llama a la función para mantener la conexión activa
+keepDatabaseAlive();
+
 // Crear instancia de Express
 const app = express();
 
