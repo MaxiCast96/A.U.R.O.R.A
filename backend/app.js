@@ -26,7 +26,7 @@ import dashboardRoutes from "./src/routes/dashboard.js"; // Dashboard y estadís
 import authRoutes from "./src/routes/auth.js"; // Sistema de autenticación
 
 // Importar la conexión a la base de datos
-import { database } from "./database.js"; // Importación nombrada
+import database from "./database.js"; // Importación por defecto
 
 // Función para hacer ping a la base de datos periódicamente
 function keepDatabaseAlive() {
