@@ -1,10 +1,7 @@
-// src/pages/LentesContent.jsx
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
-import { useForm } from '../../../hooks/admin/useForm'; // Ajusta la ruta si es necesario
-import { usePagination } from '../../../hooks/admin/usePagination'; // Ajusta la ruta si es necesario
-
-// Componentes de UI (asumiendo que estas rutas son correctas)
+import { useForm } from '../../../hooks/admin/useForm';
+import { usePagination } from '../../../hooks/admin/usePagination';
 import PageHeader from '../ui/PageHeader';
 import StatsGrid from '../ui/StatsGrid';
 import FilterBar from '../ui/FilterBar';
@@ -13,21 +10,18 @@ import Pagination from '../ui/Pagination';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
-import LentesFormModal from '../management/lentes/LentesFormModal'; // Importa el nuevo modal
+import LentesFormModal from '../management/lentes/LentesFormModal';
+import { Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign } from 'lucide-react';
 
-// Iconos
-import { Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, Image as ImageIcon } from 'lucide-react';
-
-// URL base de tu API
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api'; // Asegúrate que el puerto sea el correcto
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api';
 
 const LentesContent = () => {
-  // --- ESTADOS ---
+  // Estados
   const [lentes, setLentes] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [marcas, setMarcas] = useState([]);
   const [promociones, setPromociones] = useState([]);
-  const [sucursales, setSucursales] = useState([]); // Para gestionar el stock por sucursal
+  const [sucursales, setSucursales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLente, setSelectedLente] = useState(null);
   const [alert, setAlert] = useState(null);
@@ -36,23 +30,25 @@ const LentesContent = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todos');
+  const [imagePreviews, setImagePreviews] = useState([]);
 
-  // --- FETCH DE DATOS ---
+  // Fetch de datos inicial
   const fetchData = async () => {
     setLoading(true);
     try {
       const [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await Promise.all([
         axios.get(`${API_URL}/lentes`),
-        axios.get(`${API_URL}/categoria`), // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/marcas`),     // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/promociones`), // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/sucursales`), // Asumiendo que esta ruta existe en app.js
+        axios.get(`${API_URL}/categoria`),
+        axios.get(`${API_URL}/marcas`),
+        axios.get(`${API_URL}/promociones`),
+        axios.get(`${API_URL}/sucursales`),
       ]);
-      setLentes(lentesRes.data);
-      setCategorias(categoriasRes.data);
-      setMarcas(marcasRes.data);
-      setPromociones(promocionesRes.data);
-      setSucursales(sucursalesRes.data);
+      
+      setLentes(lentesRes.data || []);
+      setCategorias(categoriasRes.data || []);
+      setMarcas(marcasRes.data || []);
+      setPromociones(promocionesRes.data || []);
+      setSucursales(sucursalesRes.data || []);
     } catch (error) {
       showAlert('error', 'Error al cargar los datos: ' + (error.response?.data?.message || error.message));
     } finally {
@@ -64,8 +60,7 @@ const LentesContent = () => {
     fetchData();
   }, []);
 
-  // --- MANEJO DE FORMULARIO ---
-  // Datos iniciales del formulario basados en el esquema Lentes.js
+  // Formulario
   const initialFormData = {
     nombre: '',
     descripcion: '',
@@ -77,15 +72,11 @@ const LentesContent = () => {
     precioBase: '',
     precioActual: '',
     linea: '',
-    medidas: {
-      anchoPuente: '',
-      altura: '',
-      ancho: ''
-    },
+    medidas: { anchoPuente: '', altura: '', ancho: '' },
     imagenes: [],
     enPromocion: false,
     promocionId: '',
-    fechaCreacion: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+    fechaCreacion: new Date().toISOString().split('T')[0],
     sucursales: [],
   };
 
@@ -93,86 +84,75 @@ const LentesContent = () => {
     initialFormData,
     (data) => {
       const newErrors = {};
-      if (!data.nombre?.trim()) newErrors.nombre = 'El nombre es requerido.';
-      if (!data.descripcion?.trim()) newErrors.descripcion = 'La descripción es requerida.';
-      if (!data.categoriaId) newErrors.categoriaId = 'La categoría es requerida.';
-      if (!data.marcaId) newErrors.marcaId = 'La marca es requerida.';
-      if (!data.material?.trim()) newErrors.material = 'El material es requerido.';
-      if (!data.color?.trim()) newErrors.color = 'El color es requerido.';
-      if (!data.tipoLente?.trim()) newErrors.tipoLente = 'El tipo de lente es requerido.';
-      if (data.precioBase <= 0 || isNaN(data.precioBase)) newErrors.precioBase = 'El precio base debe ser un número mayor a 0.';
-      if (data.precioActual <= 0 || isNaN(data.precioActual)) newErrors.precioActual = 'El precio actual debe ser un número mayor a 0.';
-      if (data.precioActual > data.precioBase) newErrors.precioActual = 'El precio actual no puede ser mayor que el precio base.';
-      if (!data.linea?.trim()) newErrors.linea = 'La línea es requerida.';
-
-      // Validación de Medidas
-      if (data.medidas) {
-        if (data.medidas.anchoPuente <= 0 || isNaN(data.medidas.anchoPuente)) newErrors['medidas.anchoPuente'] = 'Ancho de puente inválido.';
-        if (data.medidas.altura <= 0 || isNaN(data.medidas.altura)) newErrors['medidas.altura'] = 'Altura inválida.';
-        if (data.medidas.ancho <= 0 || isNaN(data.medidas.ancho)) newErrors['medidas.ancho'] = 'Ancho inválido.';
-      } else {
-         newErrors.medidas = 'Las medidas son requeridas.'; // Should not happen if initialFormData has it
-      }
-
-
-      // Validación de Imágenes (se requiere al menos una)
-      if (!data.imagenes || data.imagenes.length === 0) newErrors.imagenes = 'Se requiere al menos una imagen.';
-
-      // Validación de Promoción
+      if (!data.nombre) newErrors.nombre = 'El nombre es requerido';
+      if (!data.categoriaId) newErrors.categoriaId = 'La categoría es requerida';
+      if (!data.marcaId) newErrors.marcaId = 'La marca es requerida';
+      if (!data.tipoLente) newErrors.tipoLente = 'El tipo de lente es requerido';
+      if (!data.precioActual || isNaN(data.precioActual)) newErrors.precioActual = 'Precio inválido';
+      
       if (data.enPromocion && !data.promocionId) {
-        newErrors.promocionId = 'Se debe seleccionar una promoción si está en promoción.';
+        newErrors.promocionId = 'Debe seleccionar una promoción cuando el lente está en promoción';
       }
-
-      // Validación de Stock por Sucursal
-      // Permitimos 0 sucursales, pero si hay, el stock debe ser >= 0
-      data.sucursales.forEach(s => {
-        if (s.stock < 0 || s.stock === null || s.stock === undefined || isNaN(s.stock)) {
-          newErrors[`sucursales[${s.sucursalId}].stock`] = 'El stock no puede ser negativo.';
-        }
-      });
-
+      
       return newErrors;
     }
   );
 
+  // Manejo de alertas
   const showAlert = (type, message) => {
     setAlert({ type, message });
     setTimeout(() => setAlert(null), 5000);
   };
 
+  // Funciones para modales
   const handleCloseModals = () => {
     setShowAddEditModal(false);
     setShowDetailModal(false);
     setShowDeleteModal(false);
     setSelectedLente(null);
     resetForm();
-    setErrors({}); // Limpiar errores al cerrar el modal
+    setErrors({});
+    setImagePreviews([]);
   };
 
   const handleOpenAddModal = () => {
     resetForm();
-    setFormData(initialFormData); // Asegurar un estado fresco al agregar
+    setFormData(initialFormData);
     setShowAddEditModal(true);
   };
 
-  const handleOpenEditModal = (lente) => {
-    setSelectedLente(lente);
-    // Pre-poblar los datos del formulario para editar
-    setFormData({
-      ...lente,
-      categoriaId: lente.categoriaId?._id || '', // Acceder al ID si está poblado
-      marcaId: lente.marcaId?._id || '',         // Acceder al ID si está poblado
-      promocionId: lente.promocionId?._id || '', // Acceder al ID si está poblado
-      fechaCreacion: lente.fechaCreacion ? new Date(lente.fechaCreacion).toISOString().split('T')[0] : '',
-      sucursales: lente.sucursales || [], // Asegurar que sea un array
-      medidas: {
-        anchoPuente: lente.medidas?.anchoPuente || '',
-        altura: lente.medidas?.altura || '',
-        ancho: lente.medidas?.ancho || '',
-      },
-      imagenes: lente.imagenes || [],
-    });
-    setShowAddEditModal(true);
+  const handleOpenEditModal = async (lente) => {
+    try {
+      const response = await axios.get(`${API_URL}/lentes/${lente._id}`);
+      const lenteCompleto = response.data;
+
+      setSelectedLente(lenteCompleto);
+      const formattedData = {
+        ...lenteCompleto,
+        categoriaId: lenteCompleto.categoriaId?._id || '',
+        marcaId: lenteCompleto.marcaId?._id || '',
+        promocionId: lenteCompleto.promocionId?._id || '',
+        fechaCreacion: lenteCompleto.fechaCreacion ? new Date(lenteCompleto.fechaCreacion).toISOString().split('T')[0] : '',
+        sucursales: lenteCompleto.sucursales?.map(s => ({
+          sucursalId: s.sucursalId?._id || s.sucursalId || '',
+          nombreSucursal: s.nombreSucursal || '',
+          stock: s.stock || 0
+        })) || [],
+        medidas: {
+          anchoPuente: lenteCompleto.medidas?.anchoPuente || '',
+          altura: lenteCompleto.medidas?.altura || '',
+          ancho: lenteCompleto.medidas?.ancho || '',
+        },
+        imagenes: lenteCompleto.imagenes || [],
+      };
+      
+      setFormData(formattedData);
+      setImagePreviews(lenteCompleto.imagenes || []);
+      setShowAddEditModal(true);
+    } catch (error) {
+      console.error('Error al cargar datos del lente:', error);
+      showAlert('error', 'Error al cargar los datos del lente para edición');
+    }
   };
 
   const handleOpenViewModal = (lente) => {
@@ -185,75 +165,137 @@ const LentesContent = () => {
     setShowDeleteModal(true);
   };
 
-  const handleSubmit = async () => {
+  // Operaciones CRUD
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
     if (!validateForm()) {
       showAlert('error', 'Por favor, corrige los errores en el formulario.');
       return;
     }
 
+    setLoading(true);
     try {
       const dataToSend = {
-        ...formData,
-        // Si tienes campos de selección con objetos completos en lugar de solo _id,
-        // asegúrate de enviar solo los _id. En este caso, useForm ya maneja esto.
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        categoriaId: formData.categoriaId,
+        marcaId: formData.marcaId,
+        material: formData.material,
+        color: formData.color,
+        tipoLente: formData.tipoLente,
+        precioBase: parseFloat(formData.precioBase),
+        precioActual: parseFloat(formData.precioActual),
+        linea: formData.linea,
+        medidas: {
+          anchoPuente: parseFloat(formData.medidas.anchoPuente),
+          altura: parseFloat(formData.medidas.altura),
+          ancho: parseFloat(formData.medidas.ancho),
+        },
+        imagenes: formData.imagenes,
+        enPromocion: formData.enPromocion,
+        promocionId: formData.enPromocion ? formData.promocionId : null,
+        fechaCreacion: formData.fechaCreacion,
+        sucursales: formData.sucursales.map(s => ({
+          sucursalId: s.sucursalId,
+          nombreSucursal: s.nombreSucursal,
+          stock: parseInt(s.stock) || 0
+        }))
       };
 
       if (selectedLente) {
-        // Actualizar
         await axios.put(`${API_URL}/lentes/${selectedLente._id}`, dataToSend);
         showAlert('success', 'Lente actualizado exitosamente.');
       } else {
-        // Crear
         await axios.post(`${API_URL}/lentes`, dataToSend);
         showAlert('success', 'Lente creado exitosamente.');
       }
-      fetchData(); // Recargar datos después de la operación exitosa
+      
+      fetchData();
       handleCloseModals();
     } catch (error) {
-      showAlert('error', 'Error al guardar el lente: ' + (error.response?.data?.message || error.message));
-      console.error('Error saving lente:', error.response?.data || error.message);
+      console.error('Error al guardar:', error);
+      const errorMessage = error.response?.data?.message || error.message;
+      showAlert('error', `Error al ${selectedLente ? 'actualizar' : 'crear'} el lente: ${errorMessage}`);
+      
+      if (error.response?.data?.errors) {
+        setErrors(error.response.data.errors);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async () => {
+    if (!selectedLente) return;
+    
+    setLoading(true);
     try {
       await axios.delete(`${API_URL}/lentes/${selectedLente._id}`);
       showAlert('success', 'Lente eliminado exitosamente.');
-      fetchData(); // Recargar datos después de la eliminación
+      fetchData();
       handleCloseModals();
     } catch (error) {
       showAlert('error', 'Error al eliminar el lente: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
     }
   };
 
-  // --- FILTRADO Y PAGINACIÓN ---
+  // Manejo de imágenes
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const newImagePreviews = [...imagePreviews];
+    
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        newImagePreviews.push(event.target.result);
+        setImagePreviews([...newImagePreviews]);
+        setFormData(prev => ({
+          ...prev,
+          imagenes: [...prev.imagenes, event.target.result]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index) => {
+    const newImages = [...formData.imagenes];
+    newImages.splice(index, 1);
+    setFormData(prev => ({ ...prev, imagenes: newImages }));
+    
+    const newPreviews = [...imagePreviews];
+    newPreviews.splice(index, 1);
+    setImagePreviews(newPreviews);
+  };
+
+  // Filtrado y paginación
   const filteredLentes = useMemo(() => {
     let currentLentes = lentes;
 
-    // Filtro por término de búsqueda
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       currentLentes = currentLentes.filter(
         (lente) =>
-          lente.nombre?.toLowerCase().includes(searchLower) ||
-          lente.descripcion?.toLowerCase().includes(searchLower) ||
-          lente.material?.toLowerCase().includes(searchLower) ||
-          lente.color?.toLowerCase().includes(searchLower) ||
-          lente.tipoLente?.toLowerCase().includes(searchLower) ||
-          lente.linea?.toLowerCase().includes(searchLower) ||
-          lente.categoriaId?.nombre?.toLowerCase().includes(searchLower) ||
-          lente.marcaId?.nombre?.toLowerCase().includes(searchLower)
+          (lente.nombre?.toLowerCase().includes(searchLower)) ||
+          (lente.descripcion?.toLowerCase().includes(searchLower)) ||
+          (lente.material?.toLowerCase().includes(searchLower)) ||
+          (lente.color?.toLowerCase().includes(searchLower)) ||
+          (lente.tipoLente?.toLowerCase().includes(searchLower)) ||
+          (lente.linea?.toLowerCase().includes(searchLower)) ||
+          (lente.categoriaId?.nombre && lente.categoriaId.nombre.toLowerCase().includes(searchLower)) ||
+          (lente.marcaId?.nombre && lente.marcaId.nombre.toLowerCase().includes(searchLower))
       );
     }
 
-    // Filtro por selección
     if (selectedFilter !== 'todos') {
       if (selectedFilter === 'enPromocion') {
         currentLentes = currentLentes.filter((lente) => lente.enPromocion);
       } else {
-        // Filtrar por tipoLente
         currentLentes = currentLentes.filter((lente) =>
-          lente.tipoLente?.toLowerCase() === selectedFilter
+          lente.tipoLente?.toLowerCase() === selectedFilter.toLowerCase()
         );
       }
     }
@@ -261,13 +303,15 @@ const LentesContent = () => {
     return currentLentes;
   }, [lentes, searchTerm, selectedFilter]);
 
-  const { currentPage, pageSize, paginatedData, totalPages, goToNextPage, goToPreviousPage, goToFirstPage, goToLastPage, setPageSize } = usePagination(filteredLentes);
+  const { currentPage, pageSize, paginatedData, totalPages, goToNextPage, goToPreviousPage, goToFirstPage, goToLastPage, setPageSize } = usePagination(filteredLentes, 10);
 
-  // --- DATOS PARA ESTADÍSTICAS RÁPIDAS ---
+  // Funciones auxiliares
   const getTotalStock = (lente) => {
-    return lente.sucursales ? lente.sucursales.reduce((sum, s) => sum + s.stock, 0) : 0;
+    if (!lente.sucursales) return 0;
+    return lente.sucursales.reduce((sum, s) => sum + (s.stock || 0), 0);
   };
 
+  // Estadísticas
   const stats = [
     { id: 1, name: 'Total de Lentes', value: lentes.length, Icon: Glasses, color: 'text-blue-500' },
     { id: 2, name: 'Lentes en Promoción', value: lentes.filter(l => l.enPromocion).length, Icon: TrendingUp, color: 'text-purple-500' },
@@ -275,15 +319,53 @@ const LentesContent = () => {
     { id: 4, name: 'Valor Inventario', value: lentes.reduce((sum, l) => sum + (l.precioActual * getTotalStock(l)), 0).toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), Icon: DollarSign, color: 'text-yellow-500' },
   ];
 
-  // --- COLUMNAS DE LA TABLA ---
+  // Columnas de la tabla
   const columns = [
-    { header: 'Nombre', accessor: 'nombre' },
-    { header: 'Línea', accessor: 'linea' },
-    { header: 'Tipo Lente', accessor: 'tipoLente' },
-    { header: 'Marca', accessor: 'marcaId.nombre' }, // Accede al nombre si está poblado
-    { header: 'Categoría', accessor: 'categoriaId.nombre' }, // Accede al nombre si está poblado
-    { header: 'Precio Actual', accessor: 'precioActual', render: (lente) => lente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) },
-    { header: 'Stock Total', accessor: 'stockTotal', render: (lente) => getTotalStock(lente) },
+    { 
+      header: 'Nombre', 
+      accessor: 'nombre',
+      render: (lente) => lente.nombre || '-' 
+    },
+    { 
+      header: 'Línea', 
+      accessor: 'linea',
+      render: (lente) => lente.linea || '-' 
+    },
+    { 
+      header: 'Tipo Lente', 
+      accessor: 'tipoLente',
+      render: (lente) => lente.tipoLente || '-' 
+    },
+    { 
+      header: 'Marca', 
+      accessor: 'marcaId',
+      render: (lente) => {
+        if (!lente.marcaId) return '-';
+        if (typeof lente.marcaId === 'object') return lente.marcaId.nombre || '-';
+        const marca = marcas.find(m => m._id === lente.marcaId);
+        return marca?.nombre || '-';
+      }
+    },
+    { 
+      header: 'Categoría', 
+      accessor: 'categoriaId',
+      render: (lente) => {
+        if (!lente.categoriaId) return '-';
+        if (typeof lente.categoriaId === 'object') return lente.categoriaId.nombre || '-';
+        const categoria = categorias.find(c => c._id === lente.categoriaId);
+        return categoria?.nombre || '-';
+      }
+    },
+    { 
+      header: 'Precio Actual', 
+      accessor: 'precioActual', 
+      render: (lente) => lente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) || '-' 
+    },
+    { 
+      header: 'Stock Total', 
+      accessor: 'stockTotal', 
+      render: (lente) => getTotalStock(lente) 
+    },
     {
       header: 'Promoción',
       accessor: 'enPromocion',
@@ -298,13 +380,25 @@ const LentesContent = () => {
       accessor: 'actions',
       render: (lente) => (
         <div className="flex space-x-2">
-          <button onClick={() => handleOpenViewModal(lente)} className="text-blue-600 hover:text-blue-800">
+          <button 
+            onClick={() => handleOpenViewModal(lente)} 
+            className="text-blue-600 hover:text-blue-800"
+            title="Ver detalles"
+          >
             <Eye className="w-5 h-5" />
           </button>
-          <button onClick={() => handleOpenEditModal(lente)} className="text-yellow-600 hover:text-yellow-800">
+          <button 
+            onClick={() => handleOpenEditModal(lente)} 
+            className="text-yellow-600 hover:text-yellow-800"
+            title="Editar"
+          >
             <Edit className="w-5 h-5" />
           </button>
-          <button onClick={() => handleOpenDeleteModal(lente)} className="text-red-600 hover:text-red-800">
+          <button 
+            onClick={() => handleOpenDeleteModal(lente)} 
+            className="text-red-600 hover:text-red-800"
+            title="Eliminar"
+          >
             <Trash2 className="w-5 h-5" />
           </button>
         </div>
@@ -312,31 +406,36 @@ const LentesContent = () => {
     },
   ];
 
-  // --- CAMPOS PARA EL MODAL DE DETALLES ---
+  // Campos para el modal de detalles
   const detailFields = selectedLente ? [
     { label: 'ID', value: selectedLente._id },
-    { label: 'Nombre', value: selectedLente.nombre },
-    { label: 'Descripción', value: selectedLente.descripcion },
+    { label: 'Nombre', value: selectedLente.nombre || 'N/A' },
+    { label: 'Descripción', value: selectedLente.descripcion || 'N/A' },
     { label: 'Categoría', value: selectedLente.categoriaId?.nombre || 'N/A' },
     { label: 'Marca', value: selectedLente.marcaId?.nombre || 'N/A' },
-    { label: 'Material', value: selectedLente.material },
-    { label: 'Color', value: selectedLente.color },
-    { label: 'Tipo de Lente', value: selectedLente.tipoLente },
-    { label: 'Precio Base', value: selectedLente.precioBase?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) },
-    { label: 'Precio Actual', value: selectedLente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) },
-    { label: 'Línea', value: selectedLente.linea },
+    { label: 'Material', value: selectedLente.material || 'N/A' },
+    { label: 'Color', value: selectedLente.color || 'N/A' },
+    { label: 'Tipo de Lente', value: selectedLente.tipoLente || 'N/A' },
+    { label: 'Precio Base', value: selectedLente.precioBase?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) || 'N/A' },
+    { label: 'Precio Actual', value: selectedLente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) || 'N/A' },
+    { label: 'Línea', value: selectedLente.linea || 'N/A' },
     { label: 'Ancho Puente', value: `${selectedLente.medidas?.anchoPuente || 'N/A'} mm` },
     { label: 'Altura', value: `${selectedLente.medidas?.altura || 'N/A'} mm` },
     { label: 'Ancho', value: `${selectedLente.medidas?.ancho || 'N/A'} mm` },
     {
       label: 'Imágenes',
-      value: selectedLente.imagenes && selectedLente.imagenes.length > 0 ? (
+      value: selectedLente.imagenes?.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {selectedLente.imagenes.map((img, index) => (
-            <img key={index} src={img} alt={`Lente ${index + 1}`} className="w-24 h-24 object-cover rounded-md" />
+            <img 
+              key={index} 
+              src={img} 
+              alt={`Lente ${index + 1}`} 
+              className="w-24 h-24 object-cover rounded-md border border-gray-200"
+            />
           ))}
         </div>
-      ) : 'No images',
+      ) : 'No hay imágenes',
     },
     {
       label: 'En Promoción',
@@ -347,13 +446,15 @@ const LentesContent = () => {
     { label: 'Fecha de Creación', value: selectedLente.fechaCreacion ? new Date(selectedLente.fechaCreacion).toLocaleDateString() : 'N/A' },
     {
       label: 'Stock por Sucursal',
-      value: selectedLente.sucursales && selectedLente.sucursales.length > 0 ? (
+      value: selectedLente.sucursales?.length > 0 ? (
         <ul className="list-disc list-inside">
           {selectedLente.sucursales.map((s, index) => (
-            <li key={index}>{s.nombreSucursal}: {s.stock} unidades</li>
+            <li key={index}>
+              {s.nombreSucursal || s.sucursalId?.nombre || 'Sucursal'}: {s.stock || 0} unidades
+            </li>
           ))}
         </ul>
-      ) : 'No stock info',
+      ) : 'No hay información de stock',
     },
   ] : [];
 
@@ -389,7 +490,6 @@ const LentesContent = () => {
           { label: 'Bifocal', value: 'bifocal' },
           { label: 'Progresivo', value: 'progresivo' },
           { label: 'Ocupacional', value: 'ocupacional' },
-          // Agrega más filtros según sea necesario (por ejemplo, por material, color, etc.)
         ]}
         placeholder="Buscar lentes por nombre, descripción, material, etc."
       />
@@ -399,7 +499,11 @@ const LentesContent = () => {
           <div className="text-center py-10">Cargando lentes...</div>
         ) : paginatedData.length > 0 ? (
           <>
-            <DataTable columns={columns} data={paginatedData} />
+            <DataTable 
+              columns={columns} 
+              data={paginatedData} 
+              emptyMessage="No se encontraron lentes"
+            />
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -409,6 +513,7 @@ const LentesContent = () => {
               goToLastPage={goToLastPage}
               pageSize={pageSize}
               setPageSize={setPageSize}
+              totalItems={filteredLentes.length}
             />
           </>
         ) : (
@@ -431,7 +536,11 @@ const LentesContent = () => {
         marcas={marcas}
         promociones={promociones}
         sucursales={sucursales}
-        setFormData={setFormData} // Se pasa setFormData para permitir actualizaciones directas en arrays anidados
+        setFormData={setFormData}
+        loading={loading}
+        imagePreviews={imagePreviews}
+        handleImageUpload={handleImageUpload}
+        removeImage={removeImage}
       />
 
       <DetailModal
@@ -447,6 +556,9 @@ const LentesContent = () => {
         onConfirm={handleDelete}
         title="Confirmar Eliminación"
         message={`¿Estás seguro de que deseas eliminar el lente "${selectedLente?.nombre}"? Esta acción no se puede deshacer.`}
+        confirmText="Eliminar"
+        cancelText="Cancelar"
+        loading={loading}
       />
     </div>
   );

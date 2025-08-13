@@ -69,17 +69,24 @@ const LentesSchema = new Schema({
             type: String // URLs de las imágenes del producto
         }
     ],
-    enPromocion: {
+     enPromocion: {
         type: Boolean,
-        default: false, // Por defecto no está en promoción
+        default: false,
         required: true,
     },
     promocionId: {
         type: Schema.Types.ObjectId,
-        ref: 'Promocion', // Promoción aplicada si aplica
-        required: function () {
-            return this.enPromocion; // Solo requerido si está en promoción
-        },
+        ref: 'Promocion',
+        required: function() { return this.enPromocion; },
+        validate: {
+            validator: async function(value) {
+                if (this.enPromocion && !value) {
+                    return false;
+                }
+                return true;
+            },
+            message: 'Promoción es requerida cuando el lente está en promoción'
+        }
     },
     fechaCreacion: {
         type: Date,
