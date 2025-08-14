@@ -298,7 +298,7 @@ const Optometristas = () => {
                 <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
                         <Award className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium">{optometrista.experiencia} años</span>
+                        <span className="font-medium">{optometrista.experiencia || 0} años</span>
                     </div>
                 </td>
                 <td className="px-6 py-4 text-gray-600">
@@ -432,7 +432,7 @@ const Optometristas = () => {
                 isOpen={isDetailModalOpen}
                 onClose={handleCloseModals}
                 title="Detalles del Optometrista"
-                item={selectedOptometrista}
+                item={selectedOptometrista?.empleadoId || {}}
                 data={selectedOptometrista ? [
                     { 
                         label: "Nombre Completo", 
@@ -454,7 +454,7 @@ const Optometristas = () => {
                         color: getEspecialidadColor(selectedOptometrista.especialidad) 
                     },
                     { label: "Licencia", value: selectedOptometrista.licencia },
-                    { label: "Experiencia", value: `${selectedOptometrista.experiencia} años` },
+                    { label: "Experiencia", value: `${selectedOptometrista.experiencia || 0} años` },
                     { 
                         label: "Disponibilidad", 
                         value: formatDisponibilidad(selectedOptometrista.disponibilidad) 

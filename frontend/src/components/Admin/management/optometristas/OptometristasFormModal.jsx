@@ -1,6 +1,7 @@
 // src/components/management/optometristas/OptometristasFormModal.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import FormModal from '../../ui/FormModal';
+import { Plus, Trash2, Clock } from 'lucide-react';
 
 const OptometristasFormModal = ({ 
     isOpen, 
@@ -36,58 +37,148 @@ const OptometristasFormModal = ({
         label: suc.nombre
     })) || [];
 
-    // Opciones para disponibilidad (días de la semana)
-    const diasSemanaOptions = [
-        { value: 'lunes', label: 'Lunes' },
-        { value: 'martes', label: 'Martes' },
-        { value: 'miércoles', label: 'Miércoles' },
-        { value: 'jueves', label: 'Jueves' },
-        { value: 'viernes', label: 'Viernes' },
-        { value: 'sábado', label: 'Sábado' },
-        { value: 'domingo', label: 'Domingo' }
+    // Días de la semana
+    const diasSemana = [
+        { key: 'lunes', label: 'Lunes' },
+        { key: 'martes', label: 'Martes' },
+        { key: 'miercoles', label: 'Miércoles' },
+        { key: 'jueves', label: 'Jueves' },
+        { key: 'viernes', label: 'Viernes' },
+        { key: 'sabado', label: 'Sábado' },
+        { key: 'domingo', label: 'Domingo' }
     ];
 
-    // Función para manejar cambios en campos de disponibilidad
-    const handleDisponibilidadChange = (dayIndex, field, value) => {
-        const newDisponibilidad = [...(formData.disponibilidad || [])];
+    // Horas disponibles (8:00 AM a 4:00 PM)
+    const horasDisponibles = [
+        '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'
+    ];
+
+    // Función para verificar si una hora está seleccionada para un día
+    const isHoraSelected = (dia, hora) => {
+        if (!Array.isArray(formData.disponibilidad)) return false;
+        return formData.disponibilidad.some(d => 
+            d.dia === dia && d.horaInicio <= hora && d.horaFin > hora
+        );
+    };
+
+    // Función para manejar selección de horas
+    const handleHoraToggle = (dia, hora) => {
+        const currentDisponibilidad = Array.isArray(formData.disponibilidad) ? [...formData.disponibilidad] : [];
         
-        if (!newDisponibilidad[dayIndex]) {
-            newDisponibilidad[dayIndex] = {};
+        // Buscar si ya existe disponibilidad para este día
+        const existingIndex = currentDisponibilidad.findIndex(item => item.dia === dia);
+        
+        if (existingIndex >= 0) {
+            // Si la hora ya está seleccionada, la removemos del rango
+            const existing = currentDisponibilidad[existingIndex];
+            const horaIndex = horasDisponibles.indexOf(hora);
+            const inicioIndex = horasDisponibles.indexOf(existing.horaInicio);
+            const finIndex = horasDisponibles.indexOf(existing.horaFin) - 1;
+            
+            if (horaIndex >= inicioIndex && horaIndex <= finIndex) {
+                // Remover esta hora del rango
+                if (inicioIndex === finIndex && inicioIndex === horaIndex) {
+                    // Solo había una hora seleccionada, remover todo el día
+                    currentDisponibilidad.splice(existingIndex, 1);
+                } else if (horaIndex === inicioIndex) {
+                    // Remover desde el inicio
+                    existing.horaInicio = horasDisponibles[horaIndex + 1];
+                } else if (horaIndex === finIndex) {
+                    // Remover desde el final
+                    existing.horaFin = horasDisponibles[horaIndex];
+                } else {
+                    // Dividir el rango (solo mantenemos la primera parte por simplicidad)
+                    existing.horaFin = horasDisponibles[horaIndex];
+                }
+            } else {
+                // Extender el rango para incluir esta hora
+                const newInicio = Math.min(inicioIndex, horaIndex);
+                const newFin = Math.max(finIndex + 1, horaIndex + 1);
+                existing.horaInicio = horasDisponibles[newInicio];
+                existing.horaFin = horasDisponibles[newFin];
+            }
+        } else {
+            // Crear nueva disponibilidad para este día
+            currentDisponibilidad.push({
+                dia,
+                horaInicio: hora,
+                horaFin: horasDisponibles[horasDisponibles.indexOf(hora) + 1]
+            });
         }
         
-        newDisponibilidad[dayIndex][field] = value;
-        
         setFormData(prev => ({
             ...prev,
-            disponibilidad: newDisponibilidad
+            disponibilidad: currentDisponibilidad
         }));
     };
 
-    // Función para agregar un día de disponibilidad
-    const addDisponibilidadDay = () => {
-        const newDisponibilidad = [...(formData.disponibilidad || [])];
-        newDisponibilidad.push({
-            dia: '',
-            horaInicio: '',
-            horaFin: ''
-        });
-        
+    // Manejar cambios en multi-select de sucursales
+    const handleSucursalesChange = (e) => {
+        const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
         setFormData(prev => ({
             ...prev,
-            disponibilidad: newDisponibilidad
+            sucursalesAsignadas: selectedOptions
         }));
     };
 
-    // Función para remover un día de disponibilidad
-    const removeDisponibilidadDay = (index) => {
-        const newDisponibilidad = [...(formData.disponibilidad || [])];
-        newDisponibilidad.splice(index, 1);
-        
-        setFormData(prev => ({
-            ...prev,
-            disponibilidad: newDisponibilidad
-        }));
-    };
+    // Campo personalizado para horarios de disponibilidad
+    const HorariosDisponibilidadField = () => (
+        <div className="space-y-4">
+            <div className="text-center">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">Disponibilidad:</h3>
+            </div>
+            
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                {/* Header con días */}
+                <div className="bg-cyan-50 border-b border-gray-200">
+                    <div className="grid grid-cols-7 text-center">
+                        {diasSemana.map((dia) => (
+                            <div key={dia.key} className="py-3 px-2 font-medium text-sm text-gray-700 border-r border-gray-200 last:border-r-0">
+                                {dia.label}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                
+                {/* Grid de horas */}
+                <div className="p-4">
+                    {horasDisponibles.map((hora) => (
+                        <div key={hora} className="grid grid-cols-7 mb-2">
+                            {diasSemana.map((dia) => (
+                                <div key={`${dia.key}-${hora}`} className="px-1">
+                                    <button
+                                        type="button"
+                                        onClick={() => handleHoraToggle(dia.key, hora)}
+                                        className={`w-full py-2 px-2 text-sm font-medium rounded transition-all duration-200 ${
+                                            isHoraSelected(dia.key, hora)
+                                                ? 'bg-cyan-500 text-white shadow-md hover:bg-cyan-600'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        }`}
+                                    >
+                                        {hora}
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+                
+                {/* Leyenda */}
+                <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
+                    <div className="flex items-center justify-center space-x-6 text-sm">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-cyan-500 rounded"></div>
+                            <span className="text-gray-600">Disponible</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
+                            <span className="text-gray-600">No disponible</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 
     const fields = [
         {
@@ -123,76 +214,44 @@ const OptometristasFormModal = ({
             required: true
         },
         {
-            name: 'sucursalesAsignadas',
-            label: 'Sucursales Asignadas',
-            type: 'multi-select',
-            options: sucursalesOptions,
-            placeholder: 'Seleccione sucursales asignadas',
-            required: true
-        },
-        {
             name: 'disponible',
             label: 'Estado de Disponibilidad',
-            type: 'boolean',
+            type: 'select',
+            options: [
+                { value: true, label: 'Disponible' },
+                { value: false, label: 'No Disponible' }
+            ],
             required: true
         }
     ];
 
-    // Campo personalizado para disponibilidad
-    const DisponibilidadField = () => (
-        <div className="space-y-4">
+    // Campo personalizado para sucursales (multi-select)
+    const SucursalesField = () => (
+        <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-                Horarios de Disponibilidad
+                Sucursales Asignadas *
             </label>
-            
-            {(formData.disponibilidad || []).map((horario, index) => (
-                <div key={index} className="flex items-center space-x-2 p-4 border border-gray-200 rounded-lg">
-                    <select
-                        value={horario.dia || ''}
-                        onChange={(e) => handleDisponibilidadChange(index, 'dia', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                        <option value="">Seleccione día</option>
-                        {diasSemanaOptions.map(dia => (
-                            <option key={dia.value} value={dia.value}>
-                                {dia.label}
-                            </option>
-                        ))}
-                    </select>
-                    
-                    <input
-                        type="time"
-                        value={horario.horaInicio || ''}
-                        onChange={(e) => handleDisponibilidadChange(index, 'horaInicio', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Hora inicio"
-                    />
-                    
-                    <input
-                        type="time"
-                        value={horario.horaFin || ''}
-                        onChange={(e) => handleDisponibilidadChange(index, 'horaFin', e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Hora fin"
-                    />
-                    
-                    <button
-                        type="button"
-                        onClick={() => removeDisponibilidadDay(index)}
-                        className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                    >
-                        ✕
-                    </button>
-                </div>
-            ))}
-            
-            <button
-                type="button"
-                onClick={addDisponibilidadDay}
-                className="w-full px-4 py-2 text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+            <select
+                multiple
+                value={Array.isArray(formData.sucursalesAsignadas) ? formData.sucursalesAsignadas : []}
+                onChange={handleSucursalesChange}
+                className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm ${
+                    errors.sucursalesAsignadas ? 'border-red-500' : 'border-gray-300'
+                }`}
+                size="4"
             >
-                + Agregar Horario
-            </button>
+                {sucursalesOptions.map(option => (
+                    <option key={option.value} value={option.value}>
+                        {option.label}
+                    </option>
+                ))}
+            </select>
+            {errors.sucursalesAsignadas && (
+                <p className="text-red-500 text-sm">{errors.sucursalesAsignadas}</p>
+            )}
+            <p className="text-xs text-gray-500">
+                Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples sucursales
+            </p>
         </div>
     );
 
@@ -207,10 +266,13 @@ const OptometristasFormModal = ({
             errors={errors}
             submitLabel={submitLabel}
             fields={fields}
-            customFields={{
-                disponibilidad: <DisponibilidadField />
-            }}
-        />
+            gridCols={2}
+        >
+            <div className="md:col-span-2 space-y-6">
+                <SucursalesField />
+                <HorariosDisponibilidadField />
+            </div>
+        </FormModal>
     );
 };
 
