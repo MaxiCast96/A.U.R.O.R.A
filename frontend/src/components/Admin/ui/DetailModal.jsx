@@ -1,12 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const DetailModal = ({ isOpen, onClose, title, item, data = [], actions = [] }) => {
+const DetailModal = ({ isOpen, onClose, title, item, data = [], actions = [], children }) => {
   if (!isOpen || !item) return null;
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 animate-slideInScale">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col transform transition-all duration-300 animate-slideInScale">
         
         {/* Encabezado */}
         <div className="bg-cyan-500 text-white p-5 rounded-t-xl flex justify-between items-center flex-shrink-0">
@@ -46,6 +46,13 @@ const DetailModal = ({ isOpen, onClose, title, item, data = [], actions = [] }) 
               </div>
             ))}
           </div>
+
+          {/* Contenido adicional (children) */}
+          {children && (
+            <div className="space-y-4">
+              {children}
+            </div>
+          )}
         </div>
 
         {/* Pie de página */}
