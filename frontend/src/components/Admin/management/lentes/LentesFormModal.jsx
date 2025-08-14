@@ -1,207 +1,80 @@
 // src/components/management/lentes/LentesFormModal.jsx
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import FormModal from '../../ui/FormModal';
-import { Plus, X, Image as ImageIcon, Package, Save, Trash2 } from 'lucide-react';
-
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api'; // Ajusta según tu API
+import FormModal from '../../ui/FormModal'; // Asegúrate que la ruta sea correcta
+import { Plus, X, Image as ImageIcon, Package } from 'lucide-react';
 
 const LentesFormModal = ({
   isOpen,
   onClose,
+  onSubmit,
   title,
-  submitLabel = 'Guardar',
-  lenteId, // Para edición
-  categorias,
-  marcas,
-  promociones,
-  sucursales,
-  refreshLentes, // Función para actualizar la lista después de operaciones
+  formData,
+  handleInputChange,
+  errors,
+  submitLabel,
+  categorias, // Se pasan como props desde LentesContent
+  marcas,     // Se pasan como props desde LentesContent
+  promociones, // Se pasan como props desde LentesContent
+  sucursales, // Se pasan como props desde LentesContent
+  setFormData, // Necesario para actualizar arrays anidados como 'imagenes' y 'sucursales'
 }) => {
-  // Estado inicial del formulario
-  const initialFormState = {
-    nombre: '',
-    descripcion: '',
-    categoriaId: '',
-    marcaId: '',
-    material: '',
-    color: '',
-    tipoLente: 'Monofocal',
-    precioBase: 0,
-    precioActual: 0,
-    linea: '',
-    medidas: {
-      anchoPuente: '',
-      altura: '',
-      ancho: '',
-    },
-    enPromocion: false,
-    promocionId: '',
-    imagenes: [],
-    sucursales: [],
-    fechaCreacion: new Date().toISOString().split('T')[0],
-  };
-
-  const [formData, setFormData] = useState(initialFormState);
-  const [errors, setErrors] = useState({});
-  const [loading, setLoading] = useState(false);
   const [newImageUrl, setNewImageUrl] = useState('');
-  const [alert, setAlert] = useState(null);
 
-  // Cargar datos del lente si estamos editando
+  // Sincronizar el estado local de newImageUrl cuando el formulario se resetea o se abre con datos existentes
   useEffect(() => {
-    if (isOpen && lenteId) {
-      const fetchLente = async () => {
-        setLoading(true);
-        try {
-          const response = await axios.get(`${API_URL}/lentes/${lenteId}`);
-          setFormData(response.data);
-        } catch (err) {
-          setAlert({ type: 'error', message: 'Error al cargar el lente' });
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchLente();
-    } else if (isOpen && !lenteId) {
-      // Resetear formulario para nuevo lente
-      setFormData(initialFormState);
+    if (!isOpen) { // Reset when modal closes
+      setNewImageUrl('');
     }
-  }, [isOpen, lenteId]);
-
-  // Manejar cambios en los campos del formulario
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    
-    if (name.startsWith('medidas.')) {
-      const field = name.split('.')[1];
-      setFormData(prev => ({
-        ...prev,
-        medidas: {
-          ...prev.medidas,
-          [field]: type === 'number' ? parseFloat(value) || 0 : value
-        }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : 
-                type === 'number' ? parseFloat(value) || 0 : 
-                value
-      }));
-    }
-  };
-
-  // Manejar envío del formulario
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setErrors({});
-    
-    try {
-      // Validación básica
-      const newErrors = {};
-      if (!formData.nombre) newErrors.nombre = 'Nombre es requerido';
-      if (!formData.categoriaId) newErrors.categoriaId = 'Categoría es requerida';
-      if (!formData.marcaId) newErrors.marcaId = 'Marca es requerida';
-      if (formData.precioBase <= 0) newErrors.precioBase = 'Precio debe ser mayor a 0';
-      if (formData.enPromocion && !formData.promocionId) newErrors.promocionId = 'Selecciona una promoción';
-
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        return;
-      }
-
-      if (lenteId) {
-        // Actualizar lente existente
-        await axios.put(`${API_URL}/lentes/${lenteId}`, formData);
-        setAlert({ type: 'success', message: 'Lente actualizado exitosamente' });
-      } else {
-        // Crear nuevo lente
-        await axios.post(`${API_URL}/lentes`, formData);
-        setAlert({ type: 'success', message: 'Lente creado exitosamente' });
-      }
-
-      // Cerrar modal después de 1.5 segundos y refrescar lista
-      setTimeout(() => {
-        onClose();
-        if (refreshLentes) refreshLentes();
-      }, 1500);
-    } catch (err) {
-      console.error('Error al guardar lente:', err);
-      setAlert({ type: 'error', message: err.response?.data?.message || 'Error al guardar lente' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Manejar eliminación del lente
-  const handleDelete = async () => {
-    if (!lenteId) return;
-    
-    if (!window.confirm('¿Estás seguro de eliminar este lente?')) return;
-    
-    setLoading(true);
-    try {
-      await axios.delete(`${API_URL}/lentes/${lenteId}`);
-      setAlert({ type: 'success', message: 'Lente eliminado exitosamente' });
-      setTimeout(() => {
-        onClose();
-        if (refreshLentes) refreshLentes();
-      }, 1500);
-    } catch (err) {
-      console.error('Error al eliminar lente:', err);
-      setAlert({ type: 'error', message: err.response?.data?.message || 'Error al eliminar lente' });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isOpen]);
 
   // Manejar la adición de una nueva URL de imagen
   const handleAddImageUrl = () => {
     if (newImageUrl.trim() && !formData.imagenes.includes(newImageUrl.trim())) {
-      setFormData(prev => ({
-        ...prev,
-        imagenes: [...prev.imagenes, newImageUrl.trim()]
-      }));
+      handleInputChange({
+        target: {
+          name: 'imagenes',
+          value: [...formData.imagenes, newImageUrl.trim()],
+        },
+      });
       setNewImageUrl('');
     }
   };
 
   // Manejar la eliminación de una URL de imagen
   const handleRemoveImageUrl = (urlToRemove) => {
-    setFormData(prev => ({
-      ...prev,
-      imagenes: prev.imagenes.filter(url => url !== urlToRemove)
-    }));
+    handleInputChange({
+      target: {
+        name: 'imagenes',
+        value: formData.imagenes.filter((url) => url !== urlToRemove),
+      },
+    });
   };
 
   // Manejar el cambio de stock para una sucursal específica
   const handleStockChange = (sucursalId, value) => {
-    const stockValue = Number(value) || 0;
-    const updatedSucursales = [...formData.sucursales];
-    const existingIndex = updatedSucursales.findIndex(s => String(s.sucursalId) === String(sucursalId));
+    const stockValue = Number(value);
+    const updatedSucursales = formData.sucursales.map(s =>
+      s.sucursalId === sucursalId ? { ...s, stock: stockValue } : s
+    );
 
-    if (existingIndex >= 0) {
-      updatedSucursales[existingIndex].stock = stockValue;
-    } else {
-      const sucursal = sucursales.find(s => String(s._id) === String(sucursalId));
-      if (sucursal) {
+    // Si la sucursal no está en la lista de formData, añadirla (útil para lentes nuevos)
+    if (!updatedSucursales.some(s => s.sucursalId === sucursalId)) {
+        const sucursalName = sucursales.find(s => s._id === sucursalId)?.nombre;
         updatedSucursales.push({
-          sucursalId: sucursal._id,
-          nombreSucursal: sucursal.nombre,
-          stock: stockValue
+            sucursalId,
+            nombreSucursal: sucursalName,
+            stock: stockValue
         });
-      }
     }
 
-    setFormData(prev => ({
-      ...prev,
-      sucursales: updatedSucursales
-    }));
+    handleInputChange({
+      target: {
+        name: 'sucursales',
+        value: updatedSucursales,
+      },
+    });
   };
 
-  // Campos del formulario
   const fields = [
     { name: 'nombre', label: 'Nombre del Lente', type: 'text', required: true, colSpan: 1 },
     { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
@@ -213,9 +86,13 @@ const LentesFormModal = ({
     { name: 'precioBase', label: 'Precio Base', type: 'number', required: true, colSpan: 1, step: '0.01' },
     { name: 'precioActual', label: 'Precio Actual', type: 'number', required: true, colSpan: 1, step: '0.01' },
     { name: 'linea', label: 'Línea', type: 'text', required: true, colSpan: 1 },
-    { name: 'medidas.anchoPuente', label: 'Ancho Puente (mm)', type: 'number', required: false, colSpan: 1, nested: true, step: '0.01' },
-    { name: 'medidas.altura', label: 'Altura (mm)', type: 'number', required: false, colSpan: 1, nested: true, step: '0.01' },
-    { name: 'medidas.ancho', label: 'Ancho (mm)', type: 'number', required: false, colSpan: 1, nested: true, step: '0.01' },
+
+    // Medidas (campos anidados)
+    { name: 'medidas.anchoPuente', label: 'Ancho Puente (mm)', type: 'text', required: false, colSpan: 1, nested: true, step: '0.01' },
+    { name: 'medidas.altura', label: 'Altura (mm)', type: 'text', required: false, colSpan: 1, nested: true, step: '0.01' },
+    { name: 'medidas.ancho', label: 'Ancho (mm)', type: 'text', required: false, colSpan: 1, nested: true, step: '0.01' },
+
+    // Promoción
     { name: 'enPromocion', label: '¿En Promoción?', type: 'checkbox', required: false, colSpan: 2 },
     {
       name: 'promocionId',
@@ -224,12 +101,12 @@ const LentesFormModal = ({
       options: promociones.map(p => ({ value: p._id, label: p.nombre })),
       required: formData.enPromocion,
       colSpan: 2,
-      hidden: !formData.enPromocion,
+      hidden: !formData.enPromocion, // Se oculta si no está en promoción
     },
     { name: 'fechaCreacion', label: 'Fecha de Creación', type: 'date', required: true, colSpan: 2 },
   ];
 
-  // Secciones personalizadas para imágenes y stock de sucursales
+  // Secciones personalizadas para imágenes y stock de sucursales dentro del modal
   const customSections = (
     <>
       {/* Sección de Imágenes */}
@@ -244,13 +121,17 @@ const LentesFormModal = ({
             placeholder="Añadir URL de imagen..."
             value={newImageUrl}
             onChange={(e) => setNewImageUrl(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleAddImageUrl()}
+            onKeyPress={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault(); // Evita el envío del formulario al presionar Enter
+                handleAddImageUrl();
+              }
+            }}
           />
           <button
             type="button"
             onClick={handleAddImageUrl}
             className="p-2 bg-cyan-500 text-white rounded-md hover:bg-cyan-600 transition-colors flex items-center"
-            disabled={!newImageUrl.trim()}
           >
             <Plus className="w-5 h-5" />
           </button>
@@ -258,12 +139,7 @@ const LentesFormModal = ({
         <div className="flex flex-wrap gap-2">
           {formData.imagenes.map((url, index) => (
             <div key={index} className="relative group">
-              <img 
-                src={url} 
-                alt={`Imagen ${index + 1}`} 
-                className="w-20 h-20 object-cover rounded-md border border-gray-200"
-                onError={(e) => e.target.src = 'https://via.placeholder.com/80?text=Imagen+no+disponible'}
-              />
+              <img src={url} alt={`Imagen ${index + 1}`} className="w-20 h-20 object-cover rounded-md border border-gray-200" />
               <button
                 type="button"
                 onClick={() => handleRemoveImageUrl(url)}
@@ -285,14 +161,12 @@ const LentesFormModal = ({
         {sucursales.length > 0 ? (
           <div className="space-y-3">
             {sucursales.map((sucursal) => {
-              const stockEntry = formData.sucursales.find(s => String(s.sucursalId) === String(sucursal._id));
-              const currentStock = stockEntry ? stockEntry.stock : 0;
-              
+              // Encuentra el stock actual para esta sucursal o 0 si no existe
+              const currentStockEntry = formData.sucursales.find(s => String(s.sucursalId) === String(sucursal._id));
+              const currentStock = currentStockEntry ? currentStockEntry.stock : 0;
               return (
                 <div key={sucursal._id} className="flex items-center gap-3">
-                  <label className="block text-gray-700 font-medium w-40 truncate" title={sucursal.nombre}>
-                    {sucursal.nombre}:
-                  </label>
+                  <label className="block text-gray-700 font-medium w-40 truncate" title={sucursal.nombre}>{sucursal.nombre}:</label>
                   <input
                     type="number"
                     min="0"
@@ -300,6 +174,9 @@ const LentesFormModal = ({
                     value={currentStock}
                     onChange={(e) => handleStockChange(sucursal._id, e.target.value)}
                   />
+                  {errors[`sucursales[${sucursal._id}].stock`] && (
+                    <p className="text-red-500 text-sm mt-1">{errors[`sucursales[${sucursal._id}].stock`]}</p>
+                  )}
                 </div>
               );
             })}
@@ -315,7 +192,7 @@ const LentesFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={handleSubmit}
+      onSubmit={onSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -323,31 +200,8 @@ const LentesFormModal = ({
       submitLabel={submitLabel}
       fields={fields}
       gridCols={2}
-      loading={loading}
     >
-      {alert && (
-        <div className={`col-span-2 p-3 rounded-md mb-4 ${
-          alert.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-        }`}>
-          {alert.message}
-        </div>
-      )}
-      
       {customSections}
-      
-      {lenteId && (
-        <div className="col-span-2 flex justify-end mt-4">
-          <button
-            type="button"
-            onClick={handleDelete}
-            className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-            disabled={loading}
-          >
-            <Trash2 className="w-5 h-5" />
-            Eliminar Lente
-          </button>
-        </div>
-      )}
     </FormModal>
   );
 };

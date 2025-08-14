@@ -1,105 +1,138 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const BrandsCarousel = () => {
-  const [promotions, setPromotions] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const visibleItems = 5; // Mostrar 5 promociones a la vez
+// Componente hijo que recibe TODOS los datos como props desde el padre
+const BrandsCarousel = ({ 
+  brands = [], 
+  loading = false, 
+  error = null, 
+  currentSlide = 0, 
+  onSlideChange 
+}) => {
+  const [currentSlideInternal, setCurrentSlideInternal] = useState(currentSlide);
+  
+  // Usar el estado interno solo si no se proporciona onSlideChange
+  const isControlled = !!onSlideChange;
+  const slideState = isControlled ? currentSlide : currentSlideInternal;
+  const setSlideState = isControlled ? onSlideChange : setCurrentSlideInternal;
+  
+  const safeBrands = Array.isArray(brands) ? brands.filter(brand => brand.image || brand.logo) : [];
+  const itemsPerSlide = 5;
+  const totalSlides = Math.ceil(safeBrands.length / itemsPerSlide);
 
-  // Fetch desde tu API
+  // Auto-play del carrusel (solo si no es controlado externamente)
   useEffect(() => {
-    const fetchPromotions = async () => {
-      try {
-        const response = await fetch('https://a-u-r-o-r-a.onrender.com/api/marcas');
-        if (!response.ok) throw new Error('Error al cargar promociones');
-        const data = await response.json();
-        setPromotions(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (!isControlled && totalSlides > 1) {
+      const interval = setInterval(() => {
+        setSlideState((prev) => (prev + 1) % totalSlides);
+      }, 5000);
 
-    fetchPromotions();
-  }, []);
-
-  // Lógica del carrusel 3D
-  const getVisiblePromotions = () => {
-    return promotions
-      .slice(currentIndex, currentIndex + visibleItems)
-      .map((promo, idx) => {
-        const distanceFromCenter = Math.abs(idx - Math.floor(visibleItems / 2));
-        return {
-          ...promo,
-          scale: 1 - distanceFromCenter * 0.2, // Escala: 100%, 80%, 60%
-          zIndex: visibleItems - distanceFromCenter,
-          opacity: 1 - distanceFromCenter * 0.2,
-        };
-      });
-  };
+      return () => clearInterval(interval);
+    }
+  }, [totalSlides, isControlled, setSlideState]);
 
   const nextSlide = () => {
-    if (currentIndex < promotions.length - visibleItems) {
-      setCurrentIndex(currentIndex + 1);
-    }
+    setSlideState((prev) => (prev + 1) % totalSlides);
   };
 
   const prevSlide = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
+    setSlideState((prev) => (prev - 1 + totalSlides) % totalSlides);
   };
 
-  // Estados de carga/error
-  if (loading) return <div className="text-center py-12">Cargando promociones...</div>;
-  if (error) return <div className="text-center py-12 text-red-500">Error: {error}</div>;
-  if (promotions.length === 0) return <div className="text-center py-12">No hay promociones disponibles</div>;
+  const goToSlide = (slideIndex) => {
+    setSlideState(slideIndex);
+  };
+
+  const getCurrentSlideItems = () => {
+    const startIndex = slideState * itemsPerSlide;
+    const endIndex = startIndex + itemsPerSlide;
+    return safeBrands.slice(startIndex, endIndex);
+  };
+
+  // Mostrar estados de carga y error DESPUÉS de todos los hooks
+  if (loading) {
+    return (
+      <section className="w-full bg-white-50 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center py-8">Cargando marcas...</div>
+        </div>
+      </section>
+    );
+  }
+  
+  if (error) {
+    return (
+      <section className="w-full bg-white-50 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center py-8 text-red-500">Error al cargar marcas: {error}</div>
+        </div>
+      </section>
+    );
+  }
+  
+  if (safeBrands.length === 0) {
+    return (
+      <section className="w-full bg-white-50 py-12">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="text-center py-8">No se encontraron marcas.</div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="w-full bg-white-50 py-12">
       <div className="max-w-7xl mx-auto px-4">
         <div className="relative">
-          {/* Carrusel */}
-          <div className="overflow-hidden" style={{ position: 'relative', width: '100%' }}>
-            <div className="flex justify-center min-h-[250px] items-center relative">
-              {getVisiblePromotions().map((promo, idx) => (
-                <div
-                  key={promo._id || idx}
-                  className="absolute transition-all duration-500 ease-out cursor-pointer"
-                  style={{
-                    transform: `scale(${promo.scale})`,
-                    opacity: promo.opacity,
-                    zIndex: promo.zIndex,
-                    left: `${(idx / (visibleItems - 1)) * 80 + 10}%`, // Distribución horizontal
-                  }}
+          {/* Contenedor del carrusel */}
+          <div className="overflow-hidden">
+            <div 
+              className="flex transition-transform duration-700 ease-in-out min-h-[120px]"
+              style={{ 
+                transform: `translateX(-${slideState * (100 / totalSlides)}%)`,
+                width: `${totalSlides * 100}%`
+              }}
+            >
+              {Array.from({ length: totalSlides }).map((_, slideIndex) => (
+                <div 
+                  key={slideIndex}
+                  className="flex items-center justify-center gap-8"
+                  style={{ width: `${100 / totalSlides}%` }}
                 >
-                  <img
-                    src={promo.imagen} // Asegúrate de que coincida con el campo de tu API
-                    alt={promo.nombre || 'Promoción'}
-                    className="h-20 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300 hover:scale-110"
-                  />
+                  {safeBrands
+                    .slice(slideIndex * itemsPerSlide, (slideIndex + 1) * itemsPerSlide)
+                    .map((brand, idx) => (
+                      <div 
+                        key={brand.id || idx}
+                        className="flex items-center justify-center p-6 transition-transform duration-300 hover:scale-110 cursor-pointer"
+                      >
+                        <img
+                          src={brand.image || brand.logo}
+                          alt={brand.name || 'Marca'}
+                          className="h-35 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
+                        />
+                      </div>
+                    ))}
                 </div>
               ))}
             </div>
           </div>
 
           {/* Botones de navegación */}
-          {promotions.length > visibleItems && (
+          {totalSlides > 1 && (
             <>
               <button
                 onClick={prevSlide}
-                disabled={currentIndex === 0}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-10 disabled:opacity-50"
+                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl z-10"
+                aria-label="Anterior"
               >
                 <ChevronLeft className="w-6 h-6 text-gray-700" />
               </button>
+              
               <button
                 onClick={nextSlide}
-                disabled={currentIndex >= promotions.length - visibleItems}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 z-10 disabled:opacity-50"
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl z-10"
+                aria-label="Siguiente"
               >
                 <ChevronRight className="w-6 h-6 text-gray-700" />
               </button>
@@ -107,16 +140,19 @@ const BrandsCarousel = () => {
           )}
         </div>
 
-        {/* Indicadores (opcional) */}
-        {promotions.length > visibleItems && (
+        {/* Indicadores de página */}
+        {totalSlides > 1 && (
           <div className="flex justify-center mt-8 space-x-2">
-            {Array.from({ length: promotions.length - visibleItems + 1 }).map((_, index) => (
+            {Array.from({ length: totalSlides }).map((_, index) => (
               <button
                 key={index}
-                onClick={() => setCurrentIndex(index)}
+                onClick={() => goToSlide(index)}
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  currentIndex === index ? 'bg-blue-600 w-8' : 'bg-gray-300 hover:bg-gray-400'
+                  slideState === index 
+                    ? 'bg-blue-600 w-8' 
+                    : 'bg-gray-300 hover:bg-gray-400'
                 }`}
+                aria-label={`Ir a la página ${index + 1}`}
               />
             ))}
           </div>
