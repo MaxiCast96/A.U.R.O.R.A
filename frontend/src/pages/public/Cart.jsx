@@ -15,6 +15,7 @@ const Cart = () => {
   const [success, setSuccess] = useState(null);
   const [sucursales, setSucursales] = useState([]);
 
+  const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     sucursalId: '',
     empleadoId: '',
@@ -23,7 +24,9 @@ const Cart = () => {
     nombreCliente: '',
     duiCliente: '',
     direccion: { calle: '', ciudad: '', departamento: '' },
-    observaciones: ''
+    observaciones: '',
+    fecha: today, // YYYY-MM-DD
+    estado: 'pendiente'
   });
 
   const montoTotal = useMemo(() => Number(total || 0), [total]);
@@ -108,6 +111,8 @@ const Cart = () => {
       carritoId: cart._id,
       empleadoId: form.empleadoId,
       sucursalId: form.sucursalId,
+      fecha: form.fecha ? new Date(form.fecha).toISOString() : new Date().toISOString(),
+      estado: form.estado || 'pendiente',
       datosPago: {
         metodoPago: form.metodoPago,
         montoPagado: Number(form.montoPagado),
@@ -116,7 +121,8 @@ const Cart = () => {
         numeroTransaccion: form.metodoPago === 'efectivo' ? undefined : `TX-${Date.now()}`
       },
       facturaDatos: {
-        // numeroFactura omitido: lo genera el backend (ventasSchema.pre('save'))
+        // El backend valida numeroFactura como obligatorio; generamos uno temporal
+        numeroFactura: `FAC-${Date.now()}`,
         clienteId: user.id,
         nombreCliente: form.nombreCliente,
         duiCliente: form.duiCliente,

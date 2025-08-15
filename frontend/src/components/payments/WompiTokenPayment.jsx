@@ -29,10 +29,13 @@ const WompiTokenPayment = ({
   const [telefonosNotificacion, setTelefonosNotificacion] = useState('');
   const [urlWebhook, setUrlWebhook] = useState('');
   const [notificarTransaccionCliente, setNotificarTransaccionCliente] = useState(true);
+  const today = new Date().toISOString().slice(0, 10);
+  const [fecha, setFecha] = useState(today); // formato YYYY-MM-DD
   const [additionalProp1, setAdditionalProp1] = useState('string');
   const [additionalProp2, setAdditionalProp2] = useState('string');
   const [additionalProp3, setAdditionalProp3] = useState('string');
 
+  const [enCentavos, setEnCentavos] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -50,11 +53,15 @@ const WompiTokenPayment = ({
       return;
     }
 
+    const montoNumerico = Number(amount);
+    const montoParaEnviar = enCentavos ? Math.round(montoNumerico * 100) : montoNumerico;
+
     const payload = {
-      monto: Number(amount),
+      monto: montoParaEnviar,
       emailCliente,
       nombreCliente,
       tokenTarjeta,
+      fecha, // algunas integraciones requieren fecha de la transacción
       configuracion: {
         emailsNotificacion: emailsNotificacion || undefined,
         urlWebhook: urlWebhook || undefined,
@@ -74,6 +81,7 @@ const WompiTokenPayment = ({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
           ...headers,
         },
         body: JSON.stringify(payload),
@@ -106,6 +114,10 @@ const WompiTokenPayment = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
+          <label className="block text-sm text-gray-600">Fecha (obligatoria)</label>
+          <input type="date" className="w-full border rounded px-3 py-2" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+        </div>
+        <div>
           <label className="block text-sm text-gray-600">Email del cliente</label>
           <input className="w-full border rounded px-3 py-2" value={emailCliente} onChange={(e) => setEmailCliente(e.target.value)} />
         </div>
@@ -132,6 +144,10 @@ const WompiTokenPayment = ({
         <div className="flex items-center gap-2 md:col-span-2">
           <input id="notif-client" type="checkbox" checked={notificarTransaccionCliente} onChange={(e) => setNotificarTransaccionCliente(e.target.checked)} />
           <label htmlFor="notif-client" className="text-sm text-gray-700">Notificar transacción al cliente</label>
+        </div>
+        <div className="flex items-center gap-2 md:col-span-2">
+          <input id="centavos" type="checkbox" checked={enCentavos} onChange={(e) => setEnCentavos(e.target.checked)} />
+          <label htmlFor="centavos" className="text-sm text-gray-700">Enviar monto en centavos (monto x 100)</label>
         </div>
         <div className="md:col-span-2 border-t pt-3">
           <h4 className="font-medium mb-2">Datos adicionales</h4>
