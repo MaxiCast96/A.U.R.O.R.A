@@ -1,28 +1,38 @@
 import nodemailer from 'nodemailer';
+import { config } from '../config.js';
 
-// Configure transporter from environment variables
-// For Gmail, use an App Password and: SMTP_HOST=smtp.gmail.com, SMTP_PORT=465, SMTP_SECURE=true
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: Number(process.env.SMTP_PORT || 587),
-  secure: String(process.env.SMTP_SECURE || 'false') === 'true',
-  auth: process.env.SMTP_USER && process.env.SMTP_PASS ? {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  } : undefined
-});
+// Build SMTP configuration with fallbacks
+const smtpUser = process.env.SMTP_USER || process.env.USER_EMAIL || config?.email?.user;
+const smtpPass = process.env.SMTP_PASS || process.env.USER_PASS || config?.email?.pass;
+const inferredGmail = smtpUser && /@gmail\./i.test(String(smtpUser));
+const smtpHost = process.env.SMTP_HOST || (inferredGmail ? 'smtp.gmail.com' : undefined);
+const smtpPort = Number(process.env.SMTP_PORT || (inferredGmail ? 465 : 587));
+const smtpSecure = String(process.env.SMTP_SECURE || (inferredGmail ? 'true' : 'false')) === 'true';
+const smtpFrom = process.env.SMTP_FROM || smtpUser;
+
+let transporter;
+try {
+  if (!smtpHost || !smtpUser || !smtpPass) {
+    console.warn('Mailer disabled: missing SMTP config', { smtpHost: !!smtpHost, smtpUser: !!smtpUser });
+  } else {
+    transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: smtpPort,
+      secure: smtpSecure,
+      auth: { user: smtpUser, pass: smtpPass }
+    });
+  }
+} catch (e) {
+  console.warn('Mailer initialization failed:', e?.message);
+}
 
 export async function sendMail({ to, subject, text, html }) {
-  if (!process.env.SMTP_HOST) {
-    console.warn('Mailer disabled: SMTP_HOST not set');
+  if (!transporter) {
     return { success: false, skipped: true, reason: 'SMTP not configured' };
   }
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER;
-  if (!from) {
-    console.warn('Mailer disabled: SMTP_FROM/SMTP_USER not set');
+  if (!smtpFrom) {
     return { success: false, skipped: true, reason: 'FROM not configured' };
   }
-
-  const info = await transporter.sendMail({ from, to, subject, text, html });
+  const info = await transporter.sendMail({ from: smtpFrom, to, subject, text, html });
   return { success: true, messageId: info.messageId };
 }

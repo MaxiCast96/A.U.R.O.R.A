@@ -42,7 +42,7 @@ pagosController.wompiTokenizadaSin3DS = async (req, res) => {
         const email = body?.emailCliente;
         const name = body?.nombreCliente || '';
 
-        await sendMail({
+        const mailResult = await sendMail({
           to: email,
           subject: `Confirmación de pago - Referencia ${reference}`,
           text: `Hola ${name},\n\nTu transacción fue procesada exitosamente.\n\nReferencia: ${reference}\nMonto: $${amount}\n\nGracias por tu compra.`,
@@ -59,6 +59,7 @@ pagosController.wompiTokenizadaSin3DS = async (req, res) => {
             </div>
           `
         });
+        console.log('Email confirmación pago ->', mailResult);
       }
     } catch (mailErr) {
       console.warn('No se pudo enviar correo de confirmación:', mailErr?.message);
@@ -72,3 +73,21 @@ pagosController.wompiTokenizadaSin3DS = async (req, res) => {
 };
 
 export default pagosController;
+
+// GET /pagos/test-email?to=correo@dominio.com
+pagosController.sendTestEmail = async (req, res) => {
+  try {
+    const to = String(req.query.to || '').trim();
+    if (!to) return res.status(400).json({ success: false, message: 'Parámetro to es requerido' });
+    const result = await sendMail({
+      to,
+      subject: 'Prueba de correo - A.U.R.O.R.A',
+      text: 'Correo de prueba enviado desde el backend de A.U.R.O.R.A',
+      html: '<p>Correo de <strong>prueba</strong> enviado desde el backend de A.U.R.O.R.A</p>'
+    });
+    return res.status(200).json({ success: true, result });
+  } catch (e) {
+    console.error('sendTestEmail error', e);
+    return res.status(500).json({ success: false, message: e?.message });
+  }
+};
