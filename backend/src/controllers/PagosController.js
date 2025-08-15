@@ -42,23 +42,35 @@ pagosController.wompiTokenizadaSin3DS = async (req, res) => {
         const email = body?.emailCliente;
         const name = body?.nombreCliente || '';
 
-        const mailResult = await sendMail({
-          to: email,
-          subject: `Confirmación de pago - Referencia ${reference}`,
-          text: `Hola ${name},\n\nTu transacción fue procesada exitosamente.\n\nReferencia: ${reference}\nMonto: $${amount}\n\nGracias por tu compra.`,
-          html: `
-            <div style="font-family:Arial,sans-serif;line-height:1.5">
-              <h2>Confirmación de pago</h2>
-              <p>Hola <strong>${name || 'cliente'}</strong>,</p>
-              <p>Tu transacción fue procesada exitosamente.</p>
-              <ul>
-                <li><strong>Referencia:</strong> ${reference}</li>
-                <li><strong>Monto:</strong> $${amount}</li>
-              </ul>
-              <p>Gracias por tu compra.</p>
-            </div>
-          `
-        });
+        // Build recipients: emailCliente + configuracion.emailsNotificacion (split by , ;)
+        const extra = String(body?.configuracion?.emailsNotificacion || '')
+          .split(/[;,]/)
+          .map(s => s.trim())
+          .filter(Boolean);
+        const recipients = Array.from(new Set([email, ...extra].filter(Boolean)));
+
+        // Send to each recipient
+        const mailResult = [];
+        for (const to of recipients) {
+          const r = await sendMail({
+            to,
+            subject: `Confirmación de pago - Referencia ${reference}`,
+            text: `Hola ${name},\n\nTu transacción fue procesada exitosamente.\n\nReferencia: ${reference}\nMonto: $${amount}\n\nGracias por tu compra.`,
+            html: `
+              <div style="font-family:Arial,sans-serif;line-height:1.5">
+                <h2>Confirmación de pago</h2>
+                <p>Hola <strong>${name || 'cliente'}</strong>,</p>
+                <p>Tu transacción fue procesada exitosamente.</p>
+                <ul>
+                  <li><strong>Referencia:</strong> ${reference}</li>
+                  <li><strong>Monto:</strong> $${amount}</li>
+                </ul>
+                <p>Gracias por tu compra.</p>
+              </div>
+            `
+          });
+          mailResult.push({ to, ...r });
+        }
         console.log('Email confirmación pago ->', mailResult);
       }
     } catch (mailErr) {
