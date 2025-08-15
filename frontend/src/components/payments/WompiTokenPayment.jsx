@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API_CONFIG } from '../../config/api';
 
 // Frontend-only Wompi Tokenized payment (no backend). Calls public API directly.
 // Docs: https://api.wompi.sv
@@ -77,28 +78,45 @@ const WompiTokenPayment = ({
 
     setLoading(true);
     try {
-      const res = await fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
+      // 1) Obtener token OAuth desde el backend
+      const tokenRes = await fetch(`${API_CONFIG.BASE_URL}/wompi/token`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          ...headers,
-        },
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
       });
-      const text = await res.text();
-      let data = {};
-      try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-      if (!res.ok) {
-        const msg = data?.message || data?.detalle || data?.error || `HTTP ${res.status}`;
-        console.error('Wompi error', { status: res.status, data });
-        setError(`${msg}`);
-        onResult?.({ ok: false, status: res.status, error: data });
+      const tokenText = await tokenRes.text();
+      let tokenData = {};
+      try { tokenData = tokenText ? JSON.parse(tokenText) : {}; } catch { tokenData = { raw: tokenText }; }
+      if (!tokenRes.ok || !tokenData?.access_token) {
+        const msg = tokenData?.error || `Error obteniendo token (HTTP ${tokenRes.status})`;
+        console.error('Token error', { status: tokenRes.status, tokenData });
+        setError(msg);
+        onResult?.({ ok: false, step: 'token', error: tokenData });
         return;
       }
-      console.log('Wompi OK', data);
+
+      const accessToken = tokenData.access_token;
+
+      // 2) Enviar pago tokenizado via backend proxy
+      const payRes = await fetch(`${API_CONFIG.BASE_URL}/wompi/testPayment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ token: accessToken, formData: payload }),
+      });
+      const payText = await payRes.text();
+      let payData = {};
+      try { payData = payText ? JSON.parse(payText) : {}; } catch { payData = { raw: payText }; }
+      if (!payRes.ok || payData?.success === false) {
+        const msg = payData?.error || `HTTP ${payRes.status}`;
+        console.error('Wompi proxy error', { status: payRes.status, payData });
+        setError(`${msg}`);
+        onResult?.({ ok: false, step: 'payment', status: payRes.status, error: payData });
+        return;
+      }
+      console.log('Wompi proxy OK', payData);
       setSuccess('Pago procesado correctamente.');
-      onResult?.({ ok: true, data });
+      onResult?.({ ok: true, data: payData });
     } catch (e) {
       setError(e.message || 'Error procesando el pago.');
       onResult?.({ ok: false, error: e });

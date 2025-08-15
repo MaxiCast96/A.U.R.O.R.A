@@ -2,9 +2,13 @@
 import express from "express";
 import cookieParser from "cookie-parser"; // Para manejar cookies HTTP
 import cors from "cors"; // Para manejar CORS (Cross-Origin Resource Sharing)
+import dotenv from "dotenv"; // Variables de entorno
 
 // Importar la conexión a la base de datos PRIMERO para registrar todos los modelos
 import database from "./database.js"; // Importación por defecto
+
+// Cargar variables de entorno
+dotenv.config();
 
 // Importar todas las rutas del sistema (después de registrar modelos)
 import empleadosRoutes from "./src/routes/empleados.js"; // Gestión de empleados
@@ -84,6 +88,98 @@ app.use("/api/auth", authRoutes); // /api/auth/* - Rutas de autenticación
 app.use("/api/recetas", recetasRoutes); // /api/recetas/* - Rutas de recetas
 app.use("/api/registroClientes", registroClientesRoutes); // /api/registroClientes/* - Registro clientes
 app.use("/api/dashboard", dashboardRoutes); // /api/dashboard/* - Rutas del dashboard
+
+// ================= Wompi Proxy Endpoints =================
+// Nota: Evita CORS y manejo de secretos en el frontend.
+
+// Helper para obtener fetch en entornos Node < 18
+const getFetch = async () => {
+    if (global.fetch) return global.fetch;
+    const mod = await import('node-fetch');
+    return mod.default;
+};
+
+// Obtener token OAuth de Wompi
+app.post('/api/wompi/token', async (req, res) => {
+    try {
+        const _fetch = await getFetch();
+        const resp = await _fetch('https://id.wompi.sv/connect/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                grant_type: process.env.GRANT_TYPE || 'client_credentials',
+                client_id: process.env.CLIENT_ID || '',
+                client_secret: process.env.CLIENT_SECRET || '',
+                audience: process.env.AUDIENCE || 'https://api.wompi.sv/',
+            })
+        });
+        if (!resp.ok) {
+            const error = await resp.text();
+            return res.status(resp.status).json({ success: false, error });
+        }
+        const data = await resp.json();
+        res.json({ success: true, ...data });
+    } catch (err) {
+        console.error('Wompi token error:', err);
+        res.status(500).json({ success: false, error: 'Error al obtener token' });
+    }
+});
+
+// Pago tokenizado sin 3DS (pruebas)
+app.post('/api/wompi/testPayment', async (req, res) => {
+    try {
+        const { token, formData } = req.body;
+        if (!token) return res.status(400).json({ success: false, error: 'Token de acceso requerido' });
+        if (!formData) return res.status(400).json({ success: false, error: 'Datos de pago requeridos' });
+
+        const _fetch = await getFetch();
+        const resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(formData)
+        });
+        if (!resp.ok) {
+            const error = await resp.text();
+            return res.status(resp.status).json({ success: false, error });
+        }
+        const data = await resp.json();
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('Wompi testPayment error:', err);
+        res.status(500).json({ success: false, error: 'Error al procesar el pago' });
+    }
+});
+
+// Pago 3DS real
+app.post('/api/wompi/payment3ds', async (req, res) => {
+    try {
+        const { token, formData } = req.body;
+        if (!token) return res.status(400).json({ success: false, error: 'Token de acceso requerido' });
+        if (!formData) return res.status(400).json({ success: false, error: 'Datos de pago requeridos' });
+
+        const _fetch = await getFetch();
+        const resp = await _fetch('https://api.wompi.sv/TransaccionCompra/3Ds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(formData)
+        });
+        if (!resp.ok) {
+            const error = await resp.text();
+            return res.status(resp.status).json({ success: false, error });
+        }
+        const data = await resp.json();
+        res.json({ success: true, data });
+    } catch (err) {
+        console.error('Wompi payment3ds error:', err);
+        res.status(500).json({ success: false, error: 'Error al procesar el pago' });
+    }
+});
 
 // MIDDLEWARE DE MANEJO DE ERRORES GLOBAL
 app.use((err, req, res, next) => {
