@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { useForm } from '../../../hooks/admin/useForm';
 import { usePagination } from '../../../hooks/admin/usePagination';
+import HorariosVisualizacion from './optometristas/HorariosVisualizacion';
 
 // Componentes de UI
 import PageHeader from '../ui/PageHeader';
@@ -428,71 +429,59 @@ const Optometristas = () => {
                 selectedOptometrista={selectedOptometrista}
             />
 
-            <DetailModal
-                isOpen={isDetailModalOpen}
-                onClose={handleCloseModals}
-                title="Detalles del Optometrista"
-                item={selectedOptometrista}
-                data={selectedOptometrista ? [
-                    { 
-                        label: "Foto de Perfil", 
-                        value: selectedOptometrista.empleadoId?.fotoPerfil ? 
-                            <img 
-                                src={selectedOptometrista.empleadoId.fotoPerfil} 
-                                alt={`${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}`}
-                                className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                            /> : 
-                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-200 to-blue-200 flex items-center justify-center border-2 border-gray-200">
-                                <span className="text-cyan-800 font-bold text-lg">
-                                    {selectedOptometrista.empleadoId ? 
-                                        `${selectedOptometrista.empleadoId.nombre?.charAt(0) || ''}${selectedOptometrista.empleadoId.apellido?.charAt(0) || ''}` : 
-                                        'N/A'
-                                    }
-                                </span>
-                            </div>
-                    },
-                    { 
-                        label: "Nombre Completo", 
-                        value: selectedOptometrista.empleadoId ? 
-                            `${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}` : 
-                            'N/A' 
-                    },
-                    { 
-                        label: "Email", 
-                        value: selectedOptometrista.empleadoId?.correo || 'N/A' 
-                    },
-                    { 
-                        label: "Teléfono", 
-                        value: selectedOptometrista.empleadoId?.telefono || 'N/A' 
-                    },
-                    { 
-                        label: "Especialidad", 
-                        value: selectedOptometrista.especialidad, 
-                        color: getEspecialidadColor(selectedOptometrista.especialidad) 
-                    },
-                    { label: "Licencia", value: selectedOptometrista.licencia },
-                    { label: "Experiencia", value: `${selectedOptometrista.experiencia || 0} años` },
-                    { 
-                        label: "Disponibilidad", 
-                        value: formatDisponibilidad(selectedOptometrista.disponibilidad) 
-                    },
-                    { 
-                        label: "Sucursales Asignadas", 
-                        value: formatSucursales(selectedOptometrista.sucursalesAsignadas) 
-                    },
-                    { 
-                        label: "Estado", 
-                        value: getDisponibilidadColor(selectedOptometrista.disponible).text, 
-                        color: getDisponibilidadColor(selectedOptometrista.disponible).color 
-                    },
-                    { 
-                        label: "Fecha de Registro", 
-                        value: selectedOptometrista.createdAt ? 
-                            new Date(selectedOptometrista.createdAt).toLocaleDateString('es-ES') : 
-                            'N/A' 
-                    },
-                ] : []}
+<DetailModal
+    isOpen={isDetailModalOpen}
+    onClose={handleCloseModals}
+    title="Detalles del Optometrista"
+    item={selectedOptometrista?.empleadoId || {}}
+    data={selectedOptometrista ? [
+        { 
+            label: "Nombre Completo", 
+            value: selectedOptometrista.empleadoId ? 
+                `${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}` : 
+                'N/A' 
+        },
+        { 
+            label: "Email", 
+            value: selectedOptometrista.empleadoId?.correo || 'N/A' 
+        },
+        { 
+            label: "Teléfono", 
+            value: selectedOptometrista.empleadoId?.telefono || 'N/A' 
+        },
+        { 
+            label: "Especialidad", 
+            value: selectedOptometrista.especialidad, 
+            color: getEspecialidadColor(selectedOptometrista.especialidad) 
+        },
+        { label: "Licencia", value: selectedOptometrista.licencia },
+        { label: "Experiencia", value: `${selectedOptometrista.experiencia || 0} años` },
+        { 
+            label: "Sucursales Asignadas", 
+            value: formatSucursales(selectedOptometrista.sucursalesAsignadas) 
+        },
+        { 
+            label: "Estado", 
+            value: getDisponibilidadColor(selectedOptometrista.disponible).text, 
+            color: getDisponibilidadColor(selectedOptometrista.disponible).color 
+        },
+        { 
+            label: "Fecha de Registro", 
+            value: selectedOptometrista.createdAt ? 
+                new Date(selectedOptometrista.createdAt).toLocaleDateString('es-ES') : 
+                'N/A' 
+        },
+    ] : []}
+>
+    {/* Visualización gráfica de horarios */}
+    {selectedOptometrista && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+            <HorariosVisualizacion 
+                disponibilidad={selectedOptometrista.disponibilidad || []} 
             />
+        </div>
+    )}
+</DetailModal>
 
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
