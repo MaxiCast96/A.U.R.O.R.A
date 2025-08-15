@@ -1,7 +1,11 @@
 // Configuración de la API
 export const API_CONFIG = {
   // URL base de la API
-  BASE_URL: 'https://a-u-r-o-r-a.onrender.com/api',
+  BASE_URL: (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
+    ? import.meta.env.VITE_API_BASE_URL
+    : (typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost'
+      ? 'http://localhost:4000/api'
+      : 'https://a-u-r-o-r-a.onrender.com/api'),
   
   // Endpoints disponibles
   ENDPOINTS: {
@@ -22,9 +26,10 @@ export const API_CONFIG = {
     OPTOMETRISTAS: '/optometrista',
     AUTH: '/auth',
     DASHBOARD: '/dashboard',
-    CARRILLO: '/carrito',
+    CARRITO: '/carrito',
     REGISTRO_CLIENTES: '/registroClientes',
-    REGISTRO_EMPLEADOS: '/registroEmpleados'
+    REGISTRO_EMPLEADOS: '/registroEmpleados',
+    PAGOS: '/pagos'
   },
   
   // Configuración de fetch

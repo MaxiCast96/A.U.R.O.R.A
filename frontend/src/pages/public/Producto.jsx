@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../components/auth/AuthContext';
 import PageTransition from "../../components/transition/PageTransition.jsx";
 import Navbar from "../../components/layout/Navbar";
 import EmptyProducts from "../../components/EmptyProducts.jsx";
@@ -16,13 +18,16 @@ const Producto = () => {
   const [selectedColor, setSelectedColor] = useState('todos');
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [sortBy, setSortBy] = useState('nombre');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
-  
+
   const location = useLocation();
   const navigate = useNavigate();
+  const { addItem } = useCart() || {};
+  const { user } = useAuth();
 
   // Datos del backend usando useApiData
   const { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes } = useApiData('lentes');
@@ -30,6 +35,26 @@ const Producto = () => {
   const { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, success: successPersonalizables } = useApiData('productosPersonalizados');
   const { data: marcas, loading: loadingMarcas, error: errorMarcas, success: successMarcas } = useApiData('marcas');
   const { data: categorias, loading: loadingCategorias, error: errorCategorias, success: successCategorias } = useApiData('categoria');
+
+  // Handler: agregar al carrito
+  const handleAddToCart = async (product, qty = 1) => {
+    if (!user) {
+      // Evitar navegar fuera; mostrar aviso y permanecer en la página
+      alert('Inicia sesión para agregar productos al carrito.');
+      return;
+    }
+    try {
+      await addItem?.(product, qty);
+    } catch (e) {
+      console.error('handleAddToCart', e);
+    }
+  };
+
+  // Debounce updates from searchInput -> searchTerm to prevent input losing focus
+  useEffect(() => {
+    const id = setTimeout(() => setSearchTerm(searchInput), 250);
+    return () => clearTimeout(id);
+  }, [searchInput]);
 
   // Datos mock para el sistema
   const mockData = {
@@ -563,6 +588,7 @@ const Producto = () => {
   // Función para limpiar filtros
   const clearFilters = () => {
     setSearchTerm('');
+    setSearchInput('');
     setSelectedCategory('todos');
     setSelectedMarca('todos');
     setSelectedMaterial('todos');
@@ -649,6 +675,7 @@ const Producto = () => {
   // Función para usar búsqueda del historial
   const useSearchFromHistory = (search) => {
     setSearchTerm(search);
+    setSearchInput(search);
     setCurrentPage(1);
   };
 
@@ -762,7 +789,7 @@ const Producto = () => {
     
     const suggestions = [...allNames, ...allCategories, ...allBrands];
     return [...new Set(suggestions)].filter(s => 
-      s.toLowerCase().includes(searchTerm.toLowerCase())
+      s.toLowerCase().includes(searchInput.toLowerCase())
     ).slice(0, 5);
   };
 
@@ -900,6 +927,7 @@ const Producto = () => {
   const saveFiltersToStorage = () => {
     const filters = {
       searchTerm,
+      searchInput,
       selectedCategory,
       selectedMarca,
       selectedMaterial,
@@ -917,7 +945,9 @@ const Producto = () => {
       const savedFilters = localStorage.getItem('aurora-product-filters');
       if (savedFilters) {
         const filters = JSON.parse(savedFilters);
-        setSearchTerm(filters.searchTerm || '');
+        const initialSearch = filters.searchTerm || '';
+        setSearchTerm(initialSearch);
+        setSearchInput(initialSearch);
         setSelectedCategory(filters.selectedCategory || 'todos');
         setSelectedMarca(filters.selectedMarca || 'todos');
         setSelectedMaterial(filters.selectedMaterial || 'todos');
@@ -927,7 +957,7 @@ const Producto = () => {
         setViewMode(filters.viewMode || 'grid');
       }
     } catch (error) {
-      console.error('Error loading filters from storage:', error);
+      console.error('Error loading filters:', error);
     }
   };
 
@@ -2367,8 +2397,13 @@ const Producto = () => {
 
   // Función para obtener imagen del producto
   const getProductImage = (product) => {
-    if (product.imagenes && product.imagenes.length > 0) {
-      return product.imagenes[0];
+    if (product && product.imagenes && product.imagenes.length > 0) {
+      const first = product.imagenes[0];
+      // Evitar retornar cadena vacía que causa warning en <img src>
+      if (first && typeof first === 'string' && first.trim() !== '') {
+        return first;
+      }
+      return null;
     }
     // Imágenes por defecto según el tipo
     switch (getCurrentProducts().type) {
@@ -2381,8 +2416,8 @@ const Producto = () => {
     }
   };
 
-  // Componente de filtros mejorado
-  const FilterSection = () => (
+  // Sección de filtros (JSX constante para evitar remount y pérdida de foco)
+  const filterSection = (
     <div className="bg-white p-4 rounded-lg shadow-md mb-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">Filtros</h3>
@@ -2401,13 +2436,13 @@ const Producto = () => {
           <input
             type="text"
             placeholder="Buscar por nombre, descripción, material..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full p-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
           />
-          {searchTerm && (
+          {searchInput && (
             <button
-              onClick={() => setSearchTerm('')}
+              onClick={() => setSearchInput('')}
               className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
             >
               ×
@@ -2415,7 +2450,7 @@ const Producto = () => {
           )}
         </div>
         {/* Sugerencias de búsqueda */}
-        {searchTerm && searchTerm.length > 1 && (
+        {searchInput && searchInput.length > 1 && (
           <div className="mt-2 text-xs text-gray-500">
             Sugerencias: {getSearchSuggestions().slice(0, 3).join(', ')}
           </div>
@@ -2446,60 +2481,6 @@ const Producto = () => {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Filtros rápidos */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Filtros rápidos</label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => applyPresetFilter('ofertas')}
-            className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
-          >
-            Ofertas
-          </button>
-          <button
-            onClick={() => applyPresetFilter('premium')}
-            className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 transition-colors"
-          >
-            Premium
-          </button>
-          <button
-            onClick={() => applyPresetFilter('deportivos')}
-            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
-          >
-            Deportivos
-          </button>
-          <button
-            onClick={() => applyPresetFilter('lujo')}
-            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors"
-          >
-            Lujo
-          </button>
-          <button
-            onClick={() => applyPresetFilter('economico')}
-            className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
-          >
-            Económico
-          </button>
-        </div>
-      </div>
-
-      {/* Categoría */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Categoría</label>
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
-        >
-          <option value="todos">Todas las categorías</option>
-          {getBackendFilterOptions().categories.map(cat => (
-            <option key={cat} value={cat}>
-              {cat} ({getBackendFilterOptionCount('category', cat)})
-            </option>
-          ))}
-        </select>
       </div>
 
       {/* Marca */}
@@ -2722,18 +2703,24 @@ const Producto = () => {
   const ProductGridItem = ({ product }) => (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <div className="relative">
-        <img 
-          src={getProductImage(product)} 
-          alt={product.nombre} 
-          className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
-        />
+        {(() => { const src = getProductImage(product); return src ? (
+          <img 
+            src={src} 
+            alt={product.nombre} 
+            className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+          />
+        ) : (
+          <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+            Sin imagen
+          </div>
+        ); })()}
         {product.enPromocion && (
           <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
             ¡OFERTA!
           </div>
         )}
       </div>
-                    <div className="p-4">
+      <div className="p-4">
         <h3 className="text-lg font-bold mb-2 text-gray-800">{product.nombre}</h3>
         <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.descripcion}</p>
         
@@ -2760,28 +2747,40 @@ const Producto = () => {
             <div className="text-lg font-bold text-[#0097c2]">
               {formatPrice(product.precioActual || product.precioBase || 0)}
             </div>
-                    </div>
-                  </div>
-
-        <button 
-          onClick={() => showProductDetails(product)}
-          className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
-        >
-          Ver detalles
-        </button>
-            </div>
           </div>
-        );
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <button 
+            onClick={() => handleAddToCart(product, 1)}
+            className="w-full bg-emerald-600 text-white py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
+          >
+            Agregar
+          </button>
+          <button 
+            onClick={() => showProductDetails(product)}
+            className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
+          >
+            Ver detalles
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // Componente de producto en vista lista
   const ProductListItem = ({ product }) => (
     <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
       <div className="flex items-center space-x-4">
-        <img 
-          src={getProductImage(product)} 
-          alt={product.nombre} 
-          className="w-24 h-24 object-cover rounded-lg"
-        />
+        {(() => { const src = getProductImage(product); return src ? (
+          <img 
+            src={src} 
+            alt={product.nombre} 
+            className="w-24 h-24 object-cover rounded-lg"
+          />
+        ) : (
+          <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs">Sin imagen</div>
+        ); })()}
         <div className="flex-1">
           <h3 className="text-lg font-bold text-gray-800">{product.nombre}</h3>
           <p className="text-gray-600 text-sm mb-2">{product.descripcion}</p>
@@ -2810,17 +2809,25 @@ const Producto = () => {
                 {formatPrice(product.precioActual || product.precioBase || 0)}
               </span>
             </div>
-            <button 
-              onClick={() => showProductDetails(product)}
-              className="bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
-            >
-              Ver detalles
-            </button>
-                    </div>
-                  </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleAddToCart(product, 1)}
+                className="bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
+              >
+                Agregar
+              </button>
+              <button 
+                onClick={() => showProductDetails(product)}
+                className="bg-[#0097c2] text-white px-4 py-2 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
+              >
+                Ver detalles
+              </button>
             </div>
           </div>
-        );
+        </div>
+      </div>
+    </div>
+  );
 
   // Modal de detalles del producto
   const ProductDetailModal = () => {
@@ -2843,11 +2850,15 @@ const Producto = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Imágenes */}
               <div>
-                <img 
-                  src={getProductImage(selectedProduct)} 
-                  alt={selectedProduct.nombre} 
-                  className="w-full h-64 object-cover rounded-lg"
-                />
+                {(() => { const src = getProductImage(selectedProduct); return src ? (
+                  <img 
+                    src={src} 
+                    alt={selectedProduct.nombre} 
+                    className="w-full h-64 object-cover rounded-lg"
+                  />
+                ) : (
+                  <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">Sin imagen</div>
+                ); })()}
               </div>
 
               {/* Información del producto */}
@@ -2907,7 +2918,13 @@ const Producto = () => {
 
                 {/* Botones de acción */}
                 <div className="flex space-x-3">
-                  <button className="flex-1 bg-[#0097c2] text-white py-3 rounded-full hover:bg-[#0077a2] transition-colors duration-300">
+                  <button 
+                    onClick={() => {
+                      handleAddToCart(selectedProduct, 1);
+                      setShowProductModal(false);
+                    }}
+                    className="flex-1 bg-[#0097c2] text-white py-3 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
+                  >
                     Agregar al carrito
                   </button>
                   <button className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full hover:bg-gray-300 transition-colors duration-300">
@@ -2959,7 +2976,7 @@ const Producto = () => {
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filtros */}
           <div className="lg:w-1/4">
-            <FilterSection />
+            {filterSection}
           </div>
 
           {/* Productos */}

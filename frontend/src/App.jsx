@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./components/auth/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import LoadingSpinner from "./components/auth/LoadingSpinner";
 import OpticaDashboard from "./pages/private/OpticaDashboard";
 import PrivateRoute from "./components/auth/PrivateRoute";
@@ -21,6 +22,7 @@ import Servicio from "./pages/public/Servicio";
 import AgendarCitas from "./pages/public/AgendarCitas";
 import Nosotros from "./pages/public/Nosotros";
 import PerfilPage from './pages/private/PerfilPage';
+import Cart from "./pages/public/Cart";
 
 //Importacion de paginas extra de publicas
 import CrearCotizacion from "./components/Cotizaciones/CrearCotizacion";
@@ -61,6 +63,11 @@ function AnimatedRoutes() {
             <Cotizaciones />
           </PrivateRoute>
         } />
+        <Route path="/carrito" element={
+          <PrivateRoute requiredRole="Cliente" noRedirect={true}>
+            <Cart />
+          </PrivateRoute>
+        } />
         <Route path="/cotizaciones/crear" element={
           <PrivateRoute requiredRole="Cliente">
             <CrearCotizacion />
@@ -94,9 +101,11 @@ function AnimatedRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AnimatedRoutes />
-      </Router>
+      <CartProvider>
+        <Router>
+          <AnimatedRoutes />
+        </Router>
+      </CartProvider>
     </AuthProvider>
   );
 }

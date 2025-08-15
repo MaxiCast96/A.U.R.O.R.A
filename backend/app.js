@@ -27,6 +27,7 @@ import recetasRoutes from "./src/routes/recetas.js"; // Recetas médicas
 import registroClientesRoutes from "./src/routes/registroClientes.js"; // Registro de clientes
 import dashboardRoutes from "./src/routes/dashboard.js"; // Dashboard y estadísticas
 import authRoutes from "./src/routes/auth.js"; // Sistema de autenticación
+import pagosRoutes from "./src/routes/pagos.js"; // Pagos (Wompi)
 
 // Función para hacer ping a la base de datos periódicamente
 function keepDatabaseAlive() {
@@ -84,6 +85,7 @@ app.use("/api/auth", authRoutes); // /api/auth/* - Rutas de autenticación
 app.use("/api/recetas", recetasRoutes); // /api/recetas/* - Rutas de recetas
 app.use("/api/registroClientes", registroClientesRoutes); // /api/registroClientes/* - Registro clientes
 app.use("/api/dashboard", dashboardRoutes); // /api/dashboard/* - Rutas del dashboard
+app.use("/api/pagos", pagosRoutes); // /api/pagos/* - Rutas de pagos (Wompi)
 
 // MIDDLEWARE DE MANEJO DE ERRORES GLOBAL
 app.use((err, req, res, next) => {

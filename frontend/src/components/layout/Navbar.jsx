@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AuthModal from "../auth/AuthModal";
 import { useAuth } from '../auth/AuthContext';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ShoppingCart } from 'lucide-react';
+import { useCart } from '../../context/CartContext';
 
 const Navbar = () => {
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
@@ -11,6 +12,7 @@ const Navbar = () => {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const { user } = useAuth();
+  const { itemCount } = useCart() || {};
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -176,6 +178,15 @@ const Navbar = () => {
 
           {/* Botón de sesión/perfil */}
           <div className="flex items-center space-x-2">
+            {/* Carrito */}
+            <Link to="/carrito" className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors hidden sm:inline-flex">
+              <ShoppingCart className="w-5 h-5 text-gray-700" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
             {user ? (
               <>
                 {/* Mostrar enlace al dashboard para cualquier rol que NO sea Cliente */}
