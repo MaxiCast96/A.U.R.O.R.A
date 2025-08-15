@@ -121,7 +121,7 @@ app.use((err, req, res, next) => {
 });
 
 // MIDDLEWARE PARA RUTAS NO ENCONTRADAS
-app.use('*', (req, res) => {
+app.use((req, res) => {
     res.status(404).json({
         success: false,
         message: 'Ruta no encontrada'
