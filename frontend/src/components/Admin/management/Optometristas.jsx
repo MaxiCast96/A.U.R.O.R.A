@@ -298,7 +298,7 @@ const Optometristas = () => {
                 <td className="px-6 py-4">
                     <div className="flex items-center space-x-2">
                         <Award className="w-4 h-4 text-gray-400" />
-                        <span className="font-medium">{optometrista.experiencia} años</span>
+                        <span className="font-medium">{optometrista.experiencia || 0} años</span>
                     </div>
                 </td>
                 <td className="px-6 py-4 text-gray-600">
@@ -435,6 +435,23 @@ const Optometristas = () => {
                 item={selectedOptometrista}
                 data={selectedOptometrista ? [
                     { 
+                        label: "Foto de Perfil", 
+                        value: selectedOptometrista.empleadoId?.fotoPerfil ? 
+                            <img 
+                                src={selectedOptometrista.empleadoId.fotoPerfil} 
+                                alt={`${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}`}
+                                className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                            /> : 
+                            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-cyan-200 to-blue-200 flex items-center justify-center border-2 border-gray-200">
+                                <span className="text-cyan-800 font-bold text-lg">
+                                    {selectedOptometrista.empleadoId ? 
+                                        `${selectedOptometrista.empleadoId.nombre?.charAt(0) || ''}${selectedOptometrista.empleadoId.apellido?.charAt(0) || ''}` : 
+                                        'N/A'
+                                    }
+                                </span>
+                            </div>
+                    },
+                    { 
                         label: "Nombre Completo", 
                         value: selectedOptometrista.empleadoId ? 
                             `${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}` : 
@@ -454,7 +471,7 @@ const Optometristas = () => {
                         color: getEspecialidadColor(selectedOptometrista.especialidad) 
                     },
                     { label: "Licencia", value: selectedOptometrista.licencia },
-                    { label: "Experiencia", value: `${selectedOptometrista.experiencia} años` },
+                    { label: "Experiencia", value: `${selectedOptometrista.experiencia || 0} años` },
                     { 
                         label: "Disponibilidad", 
                         value: formatDisponibilidad(selectedOptometrista.disponibilidad) 
