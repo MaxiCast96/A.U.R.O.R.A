@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { Link } from 'react-router-dom';
 import API_CONFIG from '../../config/api';
 import { useAuth } from '../../components/auth/AuthContext';
+import WompiTokenButton from '../../components/payments/WompiTokenButton';
 
 const Cart = () => {
   const { cart, itemCount, total, removeItem, updateQty, clearCart, loading } = useCart();
@@ -35,8 +36,9 @@ const Cart = () => {
       ...f,
       montoPagado: montoTotal,
       nombreCliente: f.nombreCliente || user?.nombre || '',
+      emailCliente: f.emailCliente || user?.correo || user?.email || '',
     }));
-  }, [montoTotal, user?.nombre]);
+  }, [montoTotal, user?.nombre, user?.correo, user?.email]);
 
   useEffect(() => {
     // Fetch sucursales for selection
@@ -273,6 +275,15 @@ const Cart = () => {
                     <label className="block text-sm text-gray-600">Token de tarjeta (Wompi)</label>
                     <input type="text" name="tokenTarjeta" value={form.tokenTarjeta} onChange={handleChange} className="w-full border rounded px-3 py-2" placeholder="tok_xxx obtenido desde Wompi" />
                     <div className="text-xs text-gray-500 mt-1">Ingresa el token generado por el SDK/Widget de Wompi. Este formulario no captura datos sensibles directamente.</div>
+                    <div className="mt-3">
+                      <WompiTokenButton
+                        amount={Number(montoTotal)}
+                        email={form.emailCliente}
+                        name={form.nombreCliente}
+                        disabled={!form.emailCliente || montoTotal <= 0}
+                        onToken={(tok) => setForm((f) => ({ ...f, tokenTarjeta: tok }))}
+                      />
+                    </div>
                   </div>
                 </div>
               )}
