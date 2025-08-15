@@ -24,7 +24,16 @@ import "./src/models/Promociones.js"; // Modelo de promociones
 import "./src/models/Carrito.js"; // Modelo del carrito de compras
 
 // Establecer conexión con MongoDB usando la URI de configuración
-mongoose.connect(config.database.uri);
+mongoose.connect(config.database.uri, {
+    serverSelectionTimeoutMS: 30000, // Timeout de 30 segundos para selección de servidor
+    socketTimeoutMS: 45000, // Timeout de 45 segundos para operaciones de socket
+    connectTimeoutMS: 30000, // Timeout de 30 segundos para conexión inicial
+    maxPoolSize: 10, // Máximo número de conexiones en el pool
+    minPoolSize: 1, // Mínimo número de conexiones en el pool
+    maxIdleTimeMS: 30000, // Tiempo máximo que una conexión puede estar inactiva
+    retryWrites: true, // Reintentar escrituras fallidas
+    w: 'majority' // Confirmar escrituras en la mayoría de réplicas
+});
 
 // Obtener referencia a la conexión
 const connection = mongoose.connection;

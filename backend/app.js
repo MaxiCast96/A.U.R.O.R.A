@@ -67,7 +67,7 @@ app.use(express.json());
 app.use("/api/empleados", empleadosRoutes); // /api/empleados/* - Rutas de empleados
 app.use("/api/optometrista", optometristaRoutes); // /api/optometrista/* - Rutas de optometristas
 app.use("/api/clientes", clientesRoutes); // /api/clientes/* - Rutas de clientes
-app.use("/api/registroEmpleados", registroEmpleadosRoutes); // /api/registroEmpleados/* - Registro empleados
+app.use("/api/registroEmpleados", registroEmpleadosRoutes); // /api/registroClientes/* - Registro empleados
 app.use("/api/sucursales", sucursalesRoutes); // /api/sucursales/* - Rutas de sucursales
 app.use("/api/marcas", marcasRoutes); // /api/marcas/* - Rutas de marcas
 app.use("/api/accesorios", accesoriosRoutes); // /api/accesorios/* - Rutas de accesorios
@@ -84,6 +84,49 @@ app.use("/api/auth", authRoutes); // /api/auth/* - Rutas de autenticación
 app.use("/api/recetas", recetasRoutes); // /api/recetas/* - Rutas de recetas
 app.use("/api/registroClientes", registroClientesRoutes); // /api/registroClientes/* - Registro clientes
 app.use("/api/dashboard", dashboardRoutes); // /api/dashboard/* - Rutas del dashboard
+
+// MIDDLEWARE DE MANEJO DE ERRORES GLOBAL
+app.use((err, req, res, next) => {
+    console.error('Error global:', err);
+    
+    // Si es un error de timeout o conexión
+    if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
+        return res.status(504).json({
+            success: false,
+            message: 'Timeout de conexión. Por favor, intenta nuevamente.'
+        });
+    }
+    
+    // Si es un error de validación de Mongoose
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({
+            success: false,
+            message: 'Error de validación: ' + err.message
+        });
+    }
+    
+    // Si es un error de cast de ObjectId
+    if (err.name === 'CastError') {
+        return res.status(400).json({
+            success: false,
+            message: 'ID inválido proporcionado'
+        });
+    }
+    
+    // Error genérico del servidor
+    res.status(500).json({
+        success: false,
+        message: 'Error interno del servidor: ' + err.message
+    });
+});
+
+// MIDDLEWARE PARA RUTAS NO ENCONTRADAS
+app.use('*', (req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Ruta no encontrada'
+    });
+});
 
 // Exportar la aplicación configurada
 export default app;

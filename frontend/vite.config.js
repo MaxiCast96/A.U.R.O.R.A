@@ -9,7 +9,7 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/api': 'http://localhost:4000',
+      '/api': 'https://a-u-r-o-r-a.onrender.com',
     },
   },
 })

@@ -6,17 +6,46 @@ const productosPersonalizadosController = {};
 productosPersonalizadosController.getProductosPersonalizados = async (req, res) => {
     try {
         // Busca todos los productos y puebla las referencias a cliente, producto base y marca
+        // Usar lean() para mejorar el rendimiento y evitar problemas de referencia
         const productos = await productosPersonalizadosModel
             .find()
             .populate('clienteId', 'nombre apellido correo telefono') // Datos básicos del cliente
             .populate('productoBaseId', 'nombre descripcion precioBase') // Datos del producto base
             .populate('marcaId', 'nombre descripcion') // Datos de la marca
-            .sort({ fechaSolicitud: -1 }); // Ordena por fecha de solicitud descendente
+            .sort({ fechaSolicitud: -1 }) // Ordena por fecha de solicitud descendente
+            .lean() // Convierte a objeto JavaScript plano para mejor rendimiento
+            .exec(); // Ejecuta la consulta de forma explícita
+        
+        console.log(`Productos personalizados encontrados: ${productos.length}`);
+        
+        // Si no hay productos, retornar array vacío en lugar de error
+        if (!productos || productos.length === 0) {
+            console.log('No se encontraron productos personalizados');
+            return res.json([]);
+        }
+        
+        // Limpiar y validar los datos antes de enviar
+        const productosLimpios = productos.map(producto => {
+            // Asegurar que las referencias pobladas existan
+            if (!producto.clienteId) {
+                producto.clienteId = { nombre: 'Cliente no encontrado', apellido: '', correo: '', telefono: '' };
+            }
+            if (!producto.productoBaseId) {
+                producto.productoBaseId = { nombre: 'Producto no encontrado', descripcion: '', precioBase: 0 };
+            }
+            if (!producto.marcaId) {
+                producto.marcaId = { nombre: 'Marca no encontrada', descripcion: '' };
+            }
+            return producto;
+        });
             
-        res.json(productos);
+        res.json(productosLimpios);
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error obteniendo productos personalizados: " + error.message });
+        console.log("Error obteniendo productos personalizados:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error obteniendo productos personalizados: " + error.message 
+        });
     }
 };
 
@@ -28,12 +57,17 @@ productosPersonalizadosController.getProductosByCliente = async (req, res) => {
             .find({ clienteId: req.params.clienteId })
             .populate('productoBaseId', 'nombre descripcion precioBase')
             .populate('marcaId', 'nombre descripcion')
-            .sort({ fechaSolicitud: -1 }); // Ordena por fecha de solicitud descendente
+            .sort({ fechaSolicitud: -1 }) // Ordena por fecha de solicitud descendente
+            .lean() // Convierte a objeto JavaScript plano para mejor rendimiento
+            .exec(); // Ejecuta la consulta de forma explícita
             
         res.json(productos);
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error obteniendo productos del cliente: " + error.message });
+        console.log("Error obteniendo productos del cliente:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error obteniendo productos del cliente: " + error.message 
+        });
     }
 };
 
@@ -81,15 +115,20 @@ productosPersonalizadosController.createProductoPersonalizado = async (req, res)
             .findById(newProducto._id)
             .populate('clienteId', 'nombre apellido correo')
             .populate('productoBaseId', 'nombre descripcion')
-            .populate('marcaId', 'nombre');
+            .populate('marcaId', 'nombre')
+            .lean() // Convierte a objeto JavaScript plano para mejor rendimiento
+            .exec(); // Ejecuta la consulta de forma explícita
 
         res.json({ 
             message: "Producto personalizado creado exitosamente",
             producto: productoCreado
         });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error creando producto personalizado: " + error.message });
+        console.log("Error creando producto personalizado:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error creando producto personalizado: " + error.message 
+        });
     }
 };
 
@@ -134,7 +173,9 @@ productosPersonalizadosController.updateProductoPersonalizado = async (req, res)
             )
             .populate('clienteId', 'nombre apellido correo')
             .populate('productoBaseId', 'nombre descripcion')
-            .populate('marcaId', 'nombre');
+            .populate('marcaId', 'nombre')
+            .lean() // Convierte a objeto JavaScript plano para mejor rendimiento
+            .exec(); // Ejecuta la consulta de forma explícita
 
         // Verificar si el producto existía
         if (!updatedProducto) {
@@ -146,8 +187,11 @@ productosPersonalizadosController.updateProductoPersonalizado = async (req, res)
             producto: updatedProducto
         });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error actualizando producto personalizado: " + error.message });
+        console.log("Error actualizando producto personalizado:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error actualizando producto personalizado: " + error.message 
+        });
     }
 };
 
@@ -163,7 +207,9 @@ productosPersonalizadosController.updateEstado = async (req, res) => {
                 { estado },
                 { new: true } // Retorna documento actualizado
             )
-            .populate('clienteId', 'nombre apellido correo telefono');
+            .populate('clienteId', 'nombre apellido correo telefono')
+            .lean() // Convierte a objeto JavaScript plano para mejor rendimiento
+            .exec(); // Ejecuta la consulta de forma explícita
 
         if (!updatedProducto) {
             return res.json({ message: "Producto personalizado no encontrado" });
@@ -174,8 +220,11 @@ productosPersonalizadosController.updateEstado = async (req, res) => {
             producto: updatedProducto
         });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error actualizando estado: " + error.message });
+        console.log("Error actualizando estado:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error actualizando estado: " + error.message 
+        });
     }
 };
 
@@ -192,8 +241,11 @@ productosPersonalizadosController.deleteProductoPersonalizado = async (req, res)
 
         res.json({ message: "Producto personalizado eliminado exitosamente" });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error eliminando producto personalizado: " + error.message });
+        console.log("Error eliminando producto personalizado:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error eliminando producto personalizado: " + error.message 
+        });
     }
 };
 
@@ -205,7 +257,9 @@ productosPersonalizadosController.getProductoPersonalizadoById = async (req, res
             .findById(req.params.id)
             .populate('clienteId', 'nombre apellido correo telefono dui direccion')
             .populate('productoBaseId', 'nombre descripcion precioBase material color tipoLente medidas')
-            .populate('marcaId', 'nombre descripcion logo paisOrigen');
+            .populate('marcaId', 'nombre descripcion logo paisOrigen')
+            .lean() // Convierte a objeto JavaScript plano para mejor rendimiento
+            .exec(); // Ejecuta la consulta de forma explícita
 
         // Verificar si el producto existe
         if (!producto) {
@@ -214,8 +268,11 @@ productosPersonalizadosController.getProductoPersonalizadoById = async (req, res
 
         res.json(producto);
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error obteniendo producto personalizado: " + error.message });
+        console.log("Error obteniendo producto personalizado:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error obteniendo producto personalizado: " + error.message 
+        });
     }
 };
 
@@ -228,12 +285,17 @@ productosPersonalizadosController.getProductosByEstado = async (req, res) => {
             .populate('clienteId', 'nombre apellido correo telefono')
             .populate('productoBaseId', 'nombre descripcion')
             .populate('marcaId', 'nombre')
-            .sort({ fechaSolicitud: -1 }); // Ordena por fecha de solicitud descendente
+            .sort({ fechaSolicitud: -1 }) // Ordena por fecha de solicitud descendente
+            .lean() // Convierte a objeto JavaScript plano para mejor rendimiento
+            .exec(); // Ejecuta la consulta de forma explícita
             
         res.json(productos);
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error obteniendo productos por estado: " + error.message });
+        console.log("Error obteniendo productos por estado:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error obteniendo productos por estado: " + error.message 
+        });
     }
 };
 
@@ -249,18 +311,21 @@ productosPersonalizadosController.getEstadisticas = async (req, res) => {
                     totalVentas: { $sum: "$cotizacion.total" } // Suma total de ventas
                 }
             }
-        ]);
+        ]).exec(); // Ejecuta la consulta de forma explícita
 
         // Cuenta total de productos personalizados
-        const totalProductos = await productosPersonalizadosModel.countDocuments();
+        const totalProductos = await productosPersonalizadosModel.countDocuments().exec();
         
         res.json({
             totalProductos,
             estadisticas
         });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error obteniendo estadísticas: " + error.message });
+        console.log("Error obteniendo estadísticas:", error);
+        res.status(500).json({ 
+            success: false,
+            message: "Error obteniendo estadísticas: " + error.message 
+        });
     }
 };
 

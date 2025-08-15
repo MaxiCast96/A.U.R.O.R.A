@@ -64,11 +64,9 @@ const AuthModal = ({ isOpen, onClose }) => {
         if (result.success) {
           onClose();
           // Redirección según rol
-          if (result.user?.rol === 'Cliente') {
-            navigate('/');
-          } else {
-            navigate('/dashboard');
-          }
+          const role = result.user?.rol;
+          if (role === 'Cliente') navigate('/');
+          else navigate('/dashboard');
         } else {
           setLoginError(result.message);
         }

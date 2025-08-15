@@ -27,8 +27,8 @@ import Accesorios from "../public/img/Accesorio.png";
 const Home = () => {
   const location = useLocation();
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
-  const [currentBrandSlide, setCurrentBrandSlide] = useState(0);
   const [currentPopularSlide, setCurrentPopularSlide] = useState(0);
+  const brandsVisibleItems = 5;
 
   // TODOS los datos se manejan en el componente padre (Home)
   const {
@@ -54,11 +54,6 @@ const Home = () => {
   const safePromociones = promociones || [];
   const safeBrands = brands || [];
   const safePopulars = populars || [];
-
-  // Handlers para el carrusel de marcas (se pasan como props)
-  const handleBrandSlideChange = (newSlide) => {
-    setCurrentBrandSlide(newSlide);
-  };
 
   // Handlers para el carrusel de productos populares (se pasan como props)
   const handlePopularSlideChange = (newSlide) => {
@@ -97,12 +92,6 @@ const Home = () => {
   }, [isAnimating]);
 
   useEffect(() => {
-    const brandTimer = setInterval(() => {
-      setCurrentBrandSlide(
-        (prev) => (prev + 1) % Math.ceil(safeBrands.length / 3)
-      );
-    }, 3000);
-
     const popularTimer = setInterval(() => {
       setCurrentPopularSlide(
         (prev) => (prev + 1) % Math.ceil(safePopulars.length / 3)
@@ -110,10 +99,9 @@ const Home = () => {
     }, 4000);
 
     return () => {
-      clearInterval(brandTimer);
       clearInterval(popularTimer);
     };
-  }, [safeBrands.length, safePopulars.length]);
+  }, [safePopulars.length]);
 
   // Reemplaza las variantes de animación existentes con estas más sutiles
   const fadeInUp = {
@@ -450,101 +438,9 @@ const Home = () => {
           brands={safeBrands}
           loading={loadingBrands}
           error={errorBrands}
-          currentSlide={currentBrandSlide}
-          onSlideChange={handleBrandSlideChange}
+          visibleItems={brandsVisibleItems}
         />
 
-        {/* Categorías simplificadas */}
-        <motion.section
-          variants={fadeIn}
-          initial="initial"
-          whileInView="animate"
-          viewport={{ once: true }}
-          className="max-w-6xl mx-auto px-4 mb-16"
-        >
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Nuestras Categorías
-          </h2>
-          <motion.div
-            variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4"
-          >
-            {/* Cada categoría como motion.div */}
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
-            >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                src={Hombre}
-                alt="Hombres"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Hombres
-              </span>
-            </motion.div>
-
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
-            >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                src={Mujer}
-                alt="Mujeres"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Mujeres
-              </span>
-            </motion.div>
-
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
-            >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                src={Nino}
-                alt="Niños"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Niños
-              </span>
-            </motion.div>
-
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
-            >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                src={Accesorios}
-                alt="Accesorios"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Accesorios
-              </span>
-            </motion.div>
-          </motion.div>
-        </motion.section>
-
-        {/* Sección de Productos Populares - AHORA RECIBE DATOS COMO PROPS */}
         <PopularCarousel
           items={safePopulars}
           loading={loadingPopulars}
@@ -552,8 +448,10 @@ const Home = () => {
           currentSlide={currentPopularSlide}
           onSlideChange={handlePopularSlideChange}
         />
+
         <br />
-        <br />    
+        <br />
+        <br />
         <br />
 
         {/* Categorías simplificadas */}
@@ -645,6 +543,10 @@ const Home = () => {
             </motion.div>
           </motion.div>
         </motion.section>
+
+        <br />
+        <br />
+        <br />
         <br />
         <br />
 
@@ -844,6 +746,11 @@ const Home = () => {
           </motion.div>
         </motion.section>
 
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
 
                 {/* Testimonios más sutiles */}
         <motion.section
@@ -892,6 +799,8 @@ const Home = () => {
                 ))}
               </div>
             </motion.div>
+
+            
             <motion.div
               variants={fadeInUp}
               whileHover={{ y: -5 }}
@@ -959,6 +868,11 @@ const Home = () => {
           </motion.div>
         </motion.section>
 
+        <br />
+        <br />
+        <br />
+        <br />
+        <br />
         {/* Footer */}
         <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10 text-xs sm:text-sm">
           <div className="max-w-7xl mx-auto px-2 sm:px-4">

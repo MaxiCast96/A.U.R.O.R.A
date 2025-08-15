@@ -10,17 +10,59 @@ export const AuthProvider = ({ children }) => {
         // Intentar recuperar el token del localStorage al iniciar
         return localStorage.getItem('aurora_token');
     });
+    const [loading, setLoading] = useState(false);
+
+    // Decodificar JWT sin validar (solo para recuperar datos básicos)
+    const decodeJwt = (jwtToken) => {
+        try {
+            const payload = jwtToken.split('.')[1];
+            const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+            return JSON.parse(json);
+        } catch (e) {
+            return null;
+        }
+    };
+
+    // Inicializar estado desde localStorage / token
+    useEffect(() => {
+        try {
+            const storedUser = localStorage.getItem('aurora_user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            } else if (token) {
+                const decoded = decodeJwt(token);
+                if (decoded && decoded.id && decoded.rol) {
+                    setUser({ id: decoded.id, correo: decoded.correo, rol: decoded.rol });
+                }
+            }
+            if (token) {
+                // Adjuntar token a axios por defecto
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                axios.defaults.withCredentials = true;
+            }
+        } catch (_) {
+            // noop
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const login = async (credentials) => {
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials);
+            const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials, {
+                withCredentials: true,
+            });
             
             if (response.data.success) {
-                const { token, user } = response.data;
-                setToken(token);
-                setUser(user);
-                localStorage.setItem('aurora_token', token);
-                return { success: true };
+                const { token: authToken, user: authUser } = response.data;
+                setToken(authToken);
+                setUser(authUser);
+                // Persistir
+                localStorage.setItem('aurora_token', authToken);
+                localStorage.setItem('aurora_user', JSON.stringify(authUser));
+                // Configurar axios
+                axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                axios.defaults.withCredentials = true;
+                return { success: true, user: authUser, token: authToken };
             }
             return { success: false, message: response.data.message };
         } catch (error) {
@@ -36,13 +78,18 @@ export const AuthProvider = ({ children }) => {
         setToken(null);
         setUser(null);
         localStorage.removeItem('aurora_token');
+        localStorage.removeItem('aurora_user');
+        delete axios.defaults.headers.common['Authorization'];
     };
 
     const value = {
         user,
         token,
+        loading,
         login,
-        logout
+        logout,
+        setUser,
+        setToken,
     };
 
     return (
