@@ -143,6 +143,37 @@ app.post('/api/wompi/token', async (req, res) => {
     }
 });
 
+// Tokenless: reenviar payload tal cual SIN Authorization (según esquema provisto)
+app.post('/api/wompi/tokenless', async (req, res) => {
+    try {
+        const formData = req.body;
+        if (!formData) {
+            return res.status(400).json({ success: false, error: 'Datos de pago requeridos' });
+        }
+
+        const _fetch = await getFetch();
+        const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+        if (process.env.WOMPI_PUBLIC_API_KEY) {
+            headers['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY; // opcional
+        }
+        const resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(formData)
+        });
+        const text = await resp.text();
+        let data = {};
+        try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+        if (!resp.ok) {
+            return res.status(resp.status).json({ success: false, error: data });
+        }
+        return res.json({ success: true, data });
+    } catch (err) {
+        console.error('Wompi tokenless error:', err);
+        res.status(500).json({ success: false, error: 'Error al procesar el pago' });
+    }
+});
+
 // Pago tokenizado sin 3DS (pruebas)
 app.post('/api/wompi/testPayment', async (req, res) => {
     try {

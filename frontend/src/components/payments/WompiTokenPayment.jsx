@@ -31,7 +31,7 @@ const WompiTokenPayment = ({
   const [urlWebhook, setUrlWebhook] = useState('');
   const [notificarTransaccionCliente, setNotificarTransaccionCliente] = useState(true);
   const today = new Date().toISOString().slice(0, 10);
-  const [fecha, setFecha] = useState(today); // formato YYYY-MM-DD
+  const [fecha, setFecha] = useState(today); // formato YYYY-MM-DD (no se enviará en tokenless)
   const [additionalProp1, setAdditionalProp1] = useState('string');
   const [additionalProp2, setAdditionalProp2] = useState('string');
   const [additionalProp3, setAdditionalProp3] = useState('string');
@@ -57,12 +57,12 @@ const WompiTokenPayment = ({
     const montoNumerico = Number(amount);
     const montoParaEnviar = enCentavos ? Math.round(montoNumerico * 100) : montoNumerico;
 
+    // Enviar exactamente el esquema solicitado por el backend/Wompi (sin campos extra)
     const payload = {
       monto: montoParaEnviar,
       emailCliente,
       nombreCliente,
       tokenTarjeta,
-      fecha, // algunas integraciones requieren fecha de la transacción
       configuracion: {
         emailsNotificacion: emailsNotificacion || undefined,
         urlWebhook: urlWebhook || undefined,
@@ -78,31 +78,12 @@ const WompiTokenPayment = ({
 
     setLoading(true);
     try {
-      // 1) Obtener token OAuth desde el backend
-      const tokenRes = await fetch(`${API_CONFIG.BASE_URL}/wompi/token`, {
+      // Enviar pago directamente al endpoint tokenless del backend
+      const payRes = await fetch(`${API_CONFIG.BASE_URL}/wompi/tokenless`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-      });
-      const tokenText = await tokenRes.text();
-      let tokenData = {};
-      try { tokenData = tokenText ? JSON.parse(tokenText) : {}; } catch { tokenData = { raw: tokenText }; }
-      if (!tokenRes.ok || !tokenData?.access_token) {
-        const msg = tokenData?.error || `Error obteniendo token (HTTP ${tokenRes.status})`;
-        console.error('Token error', { status: tokenRes.status, tokenData });
-        setError(msg);
-        onResult?.({ ok: false, step: 'token', error: tokenData });
-        return;
-      }
-
-      const accessToken = tokenData.access_token;
-
-      // 2) Enviar pago tokenizado via backend proxy
-      const payRes = await fetch(`${API_CONFIG.BASE_URL}/wompi/testPayment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ token: accessToken, formData: payload }),
+        body: JSON.stringify(payload),
       });
       const payText = await payRes.text();
       let payData = {};
