@@ -49,7 +49,7 @@ const accesorioSchema = new Schema({
     },
     promocionId: {
         type: Schema.Types.ObjectId,
-        ref: 'Promocion', // Referencia a la promoción aplicada
+        ref: 'Promociones', // Referencia a la promoción aplicada
         required: function () {
             return this.enPromocion; // Solo requerido si está en promoción
         },

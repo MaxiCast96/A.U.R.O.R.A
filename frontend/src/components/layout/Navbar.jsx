@@ -91,9 +91,6 @@ const Navbar = () => {
               alt="Óptica La Inteligente" 
               className="w-20 h-8 sm:w-24 sm:h-10 lg:w-27 lg:h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
             />
-            <span className="font-semibold text-sm sm:text-lg lg:text-xl text-[#0097c2] ml-1 sm:ml-2 hidden sm:block">
-              Óptica La Inteligente
-            </span>
           </div>
 
           {/* Menú de escritorio */}

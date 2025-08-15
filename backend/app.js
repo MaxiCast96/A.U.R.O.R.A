@@ -3,7 +3,10 @@ import express from "express";
 import cookieParser from "cookie-parser"; // Para manejar cookies HTTP
 import cors from "cors"; // Para manejar CORS (Cross-Origin Resource Sharing)
 
-// Importar todas las rutas del sistema
+// Importar la conexión a la base de datos PRIMERO para registrar todos los modelos
+import database from "./database.js"; // Importación por defecto
+
+// Importar todas las rutas del sistema (después de registrar modelos)
 import empleadosRoutes from "./src/routes/empleados.js"; // Gestión de empleados
 import optometristaRoutes from "./src/routes/optometrista.js"; // Gestión de optometristas
 import clientesRoutes from "./src/routes/clientes.js"; // Gestión de clientes
@@ -24,9 +27,6 @@ import recetasRoutes from "./src/routes/recetas.js"; // Recetas médicas
 import registroClientesRoutes from "./src/routes/registroClientes.js"; // Registro de clientes
 import dashboardRoutes from "./src/routes/dashboard.js"; // Dashboard y estadísticas
 import authRoutes from "./src/routes/auth.js"; // Sistema de autenticación
-
-// Importar la conexión a la base de datos
-import database from "./database.js"; // Importación por defecto
 
 // Función para hacer ping a la base de datos periódicamente
 function keepDatabaseAlive() {

@@ -2,14 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import PageTransition from "../../components/transition/PageTransition.jsx";
 import Navbar from "../../components/layout/Navbar";
-import ProductNavigation from "../../components/ProductNavigation.jsx";
-import ProductStats from "../../components/ProductStats.jsx";
-import FeaturedProducts from "../../components/FeaturedProducts.jsx";
-import ProductTypeInfo from "../../components/ProductTypeInfo.jsx";
 import EmptyProducts from "../../components/EmptyProducts.jsx";
 import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import ErrorMessage from "../../components/ErrorMessage.jsx";
-import ContactHelp from "../../components/ContactHelp.jsx";
 import ErrorBoundary from "../../components/ErrorBoundary.jsx";
 import useApiData from '../../hooks/useApiData';
 
@@ -17,6 +12,8 @@ const Producto = () => {
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('todos');
   const [selectedMarca, setSelectedMarca] = useState('todos');
+  const [selectedMaterial, setSelectedMaterial] = useState('todos');
+  const [selectedColor, setSelectedColor] = useState('todos');
   const [priceRange, setPriceRange] = useState({ min: 0, max: 10000 });
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('nombre');
@@ -27,16 +24,274 @@ const Producto = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hooks para traer datos reales usando el nuevo hook
+  // Datos del backend usando useApiData
   const { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes } = useApiData('lentes');
   const { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, success: successAccesorios } = useApiData('accesorios');
   const { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, success: successPersonalizables } = useApiData('productosPersonalizados');
   const { data: marcas, loading: loadingMarcas, error: errorMarcas, success: successMarcas } = useApiData('marcas');
   const { data: categorias, loading: loadingCategorias, error: errorCategorias, success: successCategorias } = useApiData('categoria');
 
-  // Debug: Log de los datos recibidos
+  // Datos mock para el sistema
+  const mockData = {
+    marcas: [
+      { _id: '1', nombre: 'Ray-Ban', descripcion: 'Marca premium de lentes de sol' },
+      { _id: '2', nombre: 'Oakley', descripcion: 'Lentes deportivos de alta calidad' },
+      { _id: '3', nombre: 'Gucci', descripcion: 'Lentes de lujo y moda' },
+      { _id: '4', nombre: 'Prada', descripcion: 'Diseño italiano elegante' },
+      { _id: '5', nombre: 'Tom Ford', descripcion: 'Lentes sofisticados' },
+      { _id: '6', nombre: 'Persol', descripcion: 'Lentes italianos de alta calidad' },
+      { _id: '7', nombre: 'Maui Jim', descripcion: 'Lentes de sol polarizados' },
+      { _id: '8', nombre: 'Costa', descripcion: 'Lentes para pesca y deportes acuáticos' }
+    ],
+    categorias: [
+      { _id: '1', nombre: 'Lentes de Sol' },
+      { _id: '2', nombre: 'Lentes Graduados' },
+      { _id: '3', nombre: 'Lentes de Contacto' },
+      { _id: '4', nombre: 'Accesorios' },
+      { _id: '5', nombre: 'Armazones' },
+      { _id: '6', nombre: 'Lentes Deportivos' },
+      { _id: '7', nombre: 'Lentes de Lujo' },
+      { _id: '8', nombre: 'Lentes Infantiles' },
+      { _id: '9', nombre: 'Lentes para Computadora' },
+      { _id: '10', nombre: 'Lentes Bifocales' }
+    ],
+    lentes: [
+      {
+        _id: '1',
+        nombre: 'Ray-Ban Aviator',
+        descripcion: 'Lentes de sol clásicos con protección UV',
+        precioBase: 150,
+        precioActual: 120,
+        categoriaId: { nombre: 'Lentes de Sol' },
+        marcaId: { nombre: 'Ray-Ban' },
+        material: 'Metal',
+        color: 'Dorado',
+        tipoLente: 'Graduado',
+        imagenes: ['/src/pages/public/img/Lente1.png']
+      },
+      {
+        _id: '2',
+        nombre: 'Oakley Sport',
+        descripcion: 'Lentes deportivos resistentes',
+        precioBase: 200,
+        precioActual: 180,
+        categoriaId: { nombre: 'Lentes Deportivos' },
+        marcaId: { nombre: 'Oakley' },
+        material: 'Plástico',
+        color: 'Negro',
+        tipoLente: 'Polarizado',
+        imagenes: ['/src/pages/public/img/Lente2.png']
+      },
+      {
+        _id: '3',
+        nombre: 'Gucci Elegance',
+        descripcion: 'Lentes de lujo para ocasiones especiales',
+        precioBase: 300,
+        precioActual: 250,
+        categoriaId: { nombre: 'Lentes de Lujo' },
+        marcaId: { nombre: 'Gucci' },
+        material: 'Metal',
+        color: 'Plateado',
+        tipoLente: 'Graduado',
+        imagenes: ['/src/pages/public/img/Lente3.png']
+      },
+      {
+        _id: '4',
+        nombre: 'Prada Linea Rossa',
+        descripcion: 'Lentes deportivos de alta gama',
+        precioBase: 280,
+        precioActual: 240,
+        categoriaId: { nombre: 'Lentes Deportivos' },
+        marcaId: { nombre: 'Prada' },
+        material: 'Plástico',
+        color: 'Rojo',
+        tipoLente: 'Polarizado',
+        imagenes: ['/src/pages/public/img/Lente5.png']
+      },
+      {
+        _id: '5',
+        nombre: 'Tom Ford Signature',
+        descripcion: 'Lentes elegantes para ejecutivos',
+        precioBase: 350,
+        precioActual: 320,
+        categoriaId: { nombre: 'Lentes de Lujo' },
+        marcaId: { nombre: 'Tom Ford' },
+        material: 'Metal',
+        color: 'Negro',
+        tipoLente: 'Graduado',
+        imagenes: ['/src/pages/public/img/Lente6.png']
+      },
+      {
+        _id: '6',
+        nombre: 'Persol PO3040',
+        descripcion: 'Lentes italianos clásicos',
+        precioBase: 320,
+        precioActual: 290,
+        categoriaId: { nombre: 'Lentes de Sol' },
+        marcaId: { nombre: 'Persol' },
+        material: 'Plástico',
+        color: 'Verde',
+        tipoLente: 'Polarizado',
+        imagenes: ['/src/pages/public/img/Lente1.png']
+      },
+      {
+        _id: '7',
+        nombre: 'Maui Jim Red Sands',
+        descripcion: 'Lentes polarizados para playa',
+        precioBase: 280,
+        precioActual: 250,
+        categoriaId: { nombre: 'Lentes de Sol' },
+        marcaId: { nombre: 'Maui Jim' },
+        material: 'Plástico',
+        color: 'Marrón',
+        tipoLente: 'Polarizado',
+        imagenes: ['/src/pages/public/img/Lente2.png']
+      },
+      {
+        _id: '8',
+        nombre: 'Costa Del Mar',
+        descripcion: 'Lentes para pesca profesional',
+        precioBase: 220,
+        precioActual: 200,
+        categoriaId: { nombre: 'Lentes Deportivos' },
+        marcaId: { nombre: 'Costa' },
+        material: 'Plástico',
+        color: 'Azul',
+        tipoLente: 'Polarizado',
+        imagenes: ['/src/pages/public/img/Lente3.png']
+      }
+    ],
+    accesorios: [
+      {
+        _id: '1',
+        nombre: 'Estuche Protector',
+        descripcion: 'Estuche rígido para proteger tus lentes',
+        precioBase: 25,
+        precioActual: 20,
+        categoriaId: { nombre: 'Accesorios' },
+        marcaId: { nombre: 'Genérico' },
+        imagenes: ['/src/pages/public/img/Accesorio.png']
+      },
+      {
+        _id: '2',
+        nombre: 'Paño de Limpieza',
+        descripcion: 'Paño suave para limpiar lentes',
+        precioBase: 15,
+        precioActual: 12,
+        categoriaId: { nombre: 'Accesorios' },
+        marcaId: { nombre: 'Genérico' },
+        imagenes: ['/src/pages/public/img/Accesorio.png']
+      },
+      {
+        _id: '3',
+        nombre: 'Cordón para Lentes',
+        descripcion: 'Cordón deportivo para mantener lentes seguros',
+        precioBase: 18,
+        precioActual: 15,
+        categoriaId: { nombre: 'Accesorios' },
+        marcaId: { nombre: 'Genérico' },
+        imagenes: ['/src/pages/public/img/Accesorio.png']
+      },
+      {
+        _id: '4',
+        nombre: 'Spray Limpiador',
+        descripcion: 'Líquido limpiador profesional para lentes',
+        precioBase: 22,
+        precioActual: 18,
+        categoriaId: { nombre: 'Accesorios' },
+        marcaId: { nombre: 'Genérico' },
+        imagenes: ['/src/pages/public/img/Accesorio.png']
+      },
+      {
+        _id: '5',
+        nombre: 'Reposador de Lentes',
+        descripcion: 'Soporte elegante para tu escritorio',
+        precioBase: 35,
+        precioActual: 30,
+        categoriaId: { nombre: 'Accesorios' },
+        marcaId: { nombre: 'Genérico' },
+        imagenes: ['/src/pages/public/img/Accesorio.png']
+      },
+      {
+        _id: '6',
+        nombre: 'Kit de Reparación',
+        descripcion: 'Kit completo para ajustes menores',
+        precioBase: 45,
+        precioActual: 40,
+        categoriaId: { nombre: 'Accesorios' },
+        marcaId: { nombre: 'Genérico' },
+        imagenes: ['/src/pages/public/img/Accesorio.png']
+      }
+    ],
+    personalizables: [
+      {
+        _id: '1',
+        nombre: 'Lente Personalizado Premium',
+        descripcion: 'Lente hecho a medida con tus especificaciones',
+        precioCalculado: 400,
+        categoria: 'Personalizado',
+        clienteId: { nombre: 'Cliente', apellido: 'Ejemplo' },
+        productoBaseId: { nombre: 'Base Premium', descripcion: 'Producto base de alta calidad' },
+        marcaId: { nombre: 'Personalizado' },
+        estado: 'pendiente',
+        imagenes: ['/src/pages/public/img/Lente4.png']
+      },
+      {
+        _id: '2',
+        nombre: 'Lente Deportivo Personalizado',
+        descripcion: 'Lente deportivo adaptado a tu actividad',
+        precioCalculado: 350,
+        categoria: 'Personalizado',
+        clienteId: { nombre: 'Cliente', apellido: 'Deportivo' },
+        productoBaseId: { nombre: 'Base Deportivo', descripcion: 'Base para actividades deportivas' },
+        marcaId: { nombre: 'Personalizado' },
+        estado: 'en_proceso',
+        imagenes: ['/src/pages/public/img/Lente5.png']
+      },
+      {
+        _id: '3',
+        nombre: 'Lente de Lujo Personalizado',
+        descripcion: 'Lente de alta gama con materiales premium',
+        precioCalculado: 600,
+        categoria: 'Personalizado',
+        clienteId: { nombre: 'Cliente', apellido: 'Premium' },
+        productoBaseId: { nombre: 'Base Lujo', descripcion: 'Base de materiales premium' },
+        marcaId: { nombre: 'Personalizado' },
+        estado: 'completado',
+        imagenes: ['/src/pages/public/img/Lente6.png']
+      },
+      {
+        _id: '4',
+        nombre: 'Lente Infantil Personalizado',
+        descripcion: 'Lente adaptado para niños con materiales seguros',
+        precioCalculado: 280,
+        categoria: 'Personalizado',
+        clienteId: { nombre: 'Cliente', apellido: 'Infantil' },
+        productoBaseId: { nombre: 'Base Infantil', descripcion: 'Base segura para niños' },
+        marcaId: { nombre: 'Personalizado' },
+        estado: 'pendiente',
+        imagenes: ['/src/pages/public/img/Lente1.png']
+      },
+      {
+        _id: '5',
+        nombre: 'Lente para Computadora',
+        descripcion: 'Lente con filtro azul para uso prolongado en pantallas',
+        precioCalculado: 320,
+        categoria: 'Personalizado',
+        clienteId: { nombre: 'Cliente', apellido: 'Tecnología' },
+        productoBaseId: { nombre: 'Base Digital', descripcion: 'Base con filtro azul' },
+        marcaId: { nombre: 'Personalizado' },
+        estado: 'en_proceso',
+        imagenes: ['/src/pages/public/img/Lente2.png']
+      }
+    ]
+  };
+
+  // Los datos ahora se cargan automáticamente desde el backend a través de useApiData
+
+  // Debug: Log de los datos recibidos del backend
   useEffect(() => {
-    console.log('Debug - Datos recibidos:', {
+    console.log('Debug - Datos del backend cargados:', {
       lentes: { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes },
       accesorios: { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, success: successAccesorios },
       personalizables: { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, success: successPersonalizables },
@@ -62,10 +317,14 @@ const Producto = () => {
         return false;
       }
 
-      // Filtro por búsqueda
+      // Filtro por búsqueda (más inteligente)
+      const searchLower = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm || 
-                           (product.nombre && product.nombre.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                           (product.descripcion && product.descripcion.toLowerCase().includes(searchTerm.toLowerCase()));
+                           (product.nombre && product.nombre.toLowerCase().includes(searchLower)) ||
+                           (product.descripcion && product.descripcion.toLowerCase().includes(searchLower)) ||
+                           (product.material && product.material.toLowerCase().includes(searchLower)) ||
+                           (product.color && product.color.toLowerCase().includes(searchLower)) ||
+                           (product.tipoLente && product.tipoLente.toLowerCase().includes(searchLower));
       
       // Filtro por categoría
       const matchesCategory = selectedCategory === 'todos' || 
@@ -76,11 +335,19 @@ const Producto = () => {
       const matchesMarca = selectedMarca === 'todos' || 
                            (product.marcaId && product.marcaId.nombre === selectedMarca);
       
+      // Filtro por material
+      const matchesMaterial = selectedMaterial === 'todos' || 
+                              (product.material && product.material === selectedMaterial);
+      
+      // Filtro por color
+      const matchesColor = selectedColor === 'todos' || 
+                           (product.color && product.color === selectedColor);
+      
       // Filtro por precio
-      const price = product.precioActual || product.precioBase || 0;
+      const price = product.precioActual || product.precioBase || product.precioCalculado || 0;
       const matchesPrice = price >= priceRange.min && price <= priceRange.max;
       
-      return matchesSearch && matchesCategory && matchesMarca && matchesPrice;
+      return matchesSearch && matchesCategory && matchesMarca && matchesMaterial && matchesColor && matchesPrice;
     });
   };
 
@@ -142,17 +409,1953 @@ const Producto = () => {
     }
   };
 
+
+
+  // Función para manejar el estado de carga y errores
+  const getLoadingState = () => {
+    const currentProducts = getCurrentProducts();
+    const filteredProducts = filterProducts(currentProducts.data);
+    return {
+      isLoading: currentProducts.loading,
+      hasError: currentProducts.error,
+      isEmpty: currentProducts.data.length === 0,
+      isFiltered: filteredProducts.length < currentProducts.data.length
+    };
+  };
+
+  // Función para obtener mensajes de estado
+  const getStatusMessage = () => {
+    const currentProducts = getCurrentProducts();
+    const filteredProducts = filterProducts(currentProducts.data);
+    const loadingState = getLoadingState();
+    
+    if (loadingState.isLoading) {
+      return 'Cargando productos...';
+    }
+    
+    if (loadingState.hasError) {
+      return 'Error al cargar productos. Por favor, intenta nuevamente.';
+    }
+    
+    if (loadingState.isEmpty) {
+      return 'No se encontraron productos.';
+    }
+    
+    if (loadingState.isFiltered) {
+      return `Mostrando ${filteredProducts.length} de ${currentProducts.data.length} productos`;
+    }
+    
+    return `Mostrando ${currentProducts.data.length} productos`;
+  };
+
+  // Estado para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [productsPerPage] = useState(12);
+
+  // Función para obtener productos paginados
+  const getPaginatedProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const filteredProducts = filterProducts(currentProducts.data);
+    const sortedProducts = sortProducts(filteredProducts);
+    
+    const indexOfLastProduct = currentPage * productsPerPage;
+    const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
+    const currentProductsPage = sortedProducts.slice(indexOfFirstProduct, indexOfLastProduct);
+    
+    return {
+      products: currentProductsPage,
+      totalPages: Math.ceil(sortedProducts.length / productsPerPage),
+      currentPage,
+      totalProducts: sortedProducts.length
+    };
+  };
+
+  // Función para cambiar de página
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    // Scroll al inicio de la lista de productos
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Resetear página cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategory, selectedMarca, selectedMaterial, selectedColor, priceRange, sortBy]);
+
+  // Función para exportar datos de productos
+  const exportProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const filteredProducts = filterProducts(currentProducts.data);
+    const sortedProducts = sortProducts(filteredProducts);
+    
+    const exportData = sortedProducts.map(product => ({
+      ID: product._id,
+      Nombre: product.nombre,
+      Descripción: product.descripcion,
+      Categoría: product.categoriaId?.nombre || product.categoria || 'N/A',
+      Marca: product.marcaId?.nombre || 'N/A',
+      Material: product.material || 'N/A',
+      Color: product.color || 'N/A',
+      Tipo: product.tipoLente || 'N/A',
+      Precio_Base: product.precioBase || 'N/A',
+      Precio_Actual: product.precioActual || 'N/A',
+      Precio_Calculado: product.precioCalculado || 'N/A',
+      Estado: product.estado || 'N/A'
+    }));
+    
+    const csvContent = [
+      Object.keys(exportData[0]).join(','),
+      ...exportData.map(row => Object.values(row).map(value => `"${value}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `productos_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Función para exportar solo los productos filtrados
+  const exportFilteredProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const filteredProducts = filterProducts(currentProducts.data);
+    
+    if (filteredProducts.length === 0) {
+      alert('No hay productos para exportar con los filtros actuales');
+      return;
+    }
+    
+    const exportData = filteredProducts.map(product => ({
+      ID: product._id,
+      Nombre: product.nombre,
+      Descripción: product.descripcion,
+      Categoría: product.categoriaId?.nombre || product.categoria || 'N/A',
+      Marca: product.marcaId?.nombre || 'N/A',
+      Material: product.material || 'N/A',
+      Color: product.color || 'N/A',
+      Tipo: product.tipoLente || 'N/A',
+      Precio_Base: product.precioBase || 'N/A',
+      Precio_Actual: product.precioActual || 'N/A',
+      Precio_Calculado: product.precioCalculado || 'N/A',
+      Estado: product.estado || 'N/A'
+    }));
+    
+    const csvContent = [
+      Object.keys(exportData[0]).join(','),
+      ...exportData.map(row => Object.values(row).map(value => `"${value}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `productos_filtrados_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Función para limpiar filtros
+  const clearFilters = () => {
+    setSearchTerm('');
+    setSelectedCategory('todos');
+    setSelectedMarca('todos');
+    setSelectedMaterial('todos');
+    setSelectedColor('todos');
+    setPriceRange({ min: 0, max: 10000 });
+    setSortBy('nombre');
+    setCurrentPage(1);
+  };
+
+  // Función para obtener filtros activos
+  const getActiveFilters = () => {
+    const filters = [];
+    
+    if (searchTerm) filters.push(`Búsqueda: "${searchTerm}"`);
+    if (selectedCategory !== 'todos') filters.push(`Categoría: ${selectedCategory}`);
+    if (selectedMarca !== 'todos') filters.push(`Marca: ${selectedMarca}`);
+    if (selectedMaterial !== 'todos') filters.push(`Material: ${selectedMaterial}`);
+    if (selectedColor !== 'todos') filters.push(`Color: ${selectedColor}`);
+    if (priceRange.min > 0 || priceRange.max < 10000) filters.push(`Precio: $${priceRange.min} - $${priceRange.max}`);
+    if (sortBy !== 'nombre') filters.push(`Orden: ${sortBy}`);
+    
+    return filters;
+  };
+
+  // Función para aplicar filtros predefinidos
+  const applyPresetFilter = (preset) => {
+    switch (preset) {
+      case 'ofertas':
+        setPriceRange({ min: 0, max: 200 });
+        setSortBy('precio-asc');
+        break;
+      case 'premium':
+        setPriceRange({ min: 300, max: 10000 });
+        setSortBy('precio-desc');
+        break;
+      case 'deportivos':
+        setSelectedCategory('Lentes Deportivos');
+        break;
+      case 'lujo':
+        setSelectedCategory('Lentes de Lujo');
+        break;
+      case 'economico':
+        setPriceRange({ min: 0, max: 100 });
+        setSortBy('precio-asc');
+        break;
+      default:
+        break;
+    }
+    setCurrentPage(1);
+  };
+
+  // Estado para historial de búsquedas
+  const [searchHistory, setSearchHistory] = useState([]);
+
+  // Función para agregar búsqueda al historial
+  const addToSearchHistory = (search) => {
+    if (search && !searchHistory.includes(search)) {
+      const newHistory = [search, ...searchHistory.filter(item => item !== search)].slice(0, 10);
+      setSearchHistory(newHistory);
+    }
+  };
+
+  // Función para guardar historial en localStorage
+  const saveSearchHistory = () => {
+    try {
+      localStorage.setItem('aurora-search-history', JSON.stringify(searchHistory));
+    } catch (error) {
+      console.error('Error saving search history:', error);
+    }
+  };
+
+  // Función para cargar historial desde localStorage
+  const loadSearchHistory = () => {
+    try {
+      const savedHistory = localStorage.getItem('aurora-search-history');
+      if (savedHistory) {
+        setSearchHistory(JSON.parse(savedHistory));
+      }
+    } catch (error) {
+      console.error('Error loading search history:', error);
+    }
+  };
+
+  // Función para usar búsqueda del historial
+  const useSearchFromHistory = (search) => {
+    setSearchTerm(search);
+    setCurrentPage(1);
+  };
+
+  // Función para limpiar historial
+  const clearSearchHistory = () => {
+    setSearchHistory([]);
+  };
+
+  // Agregar búsqueda al historial cuando se realice
+  useEffect(() => {
+    if (searchTerm && searchTerm.length > 2) {
+      addToSearchHistory(searchTerm);
+    }
+  }, [searchTerm]);
+
+  // Estado para favoritos
+  const [favorites, setFavorites] = useState([]);
+
+  // Función para agregar/quitar de favoritos
+  const toggleFavorite = (productId) => {
+    setFavorites(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
+    );
+  };
+
+  // Función para verificar si un producto es favorito
+  const isFavorite = (productId) => favorites.includes(productId);
+
+  // Función para obtener solo favoritos
+  const getFavoritesOnly = () => {
+    const currentProducts = getCurrentProducts();
+    return currentProducts.data.filter(product => favorites.includes(product._id));
+  };
+
+  // Función para limpiar favoritos
+  const clearFavorites = () => {
+    setFavorites([]);
+  };
+
+  // Estado para comparación de productos
+  const [compareList, setCompareList] = useState([]);
+  const maxCompareItems = 4;
+
+  // Función para agregar/quitar producto de comparación
+  const toggleCompare = (productId) => {
+    setCompareList(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else if (prev.length < maxCompareItems) {
+        return [...prev, productId];
+      } else {
+        // Reemplazar el último elemento si ya hay máximo
+        return [...prev.slice(1), productId];
+      }
+    });
+  };
+
+  // Función para verificar si un producto está en comparación
+  const isInCompare = (productId) => compareList.includes(productId);
+
+  // Función para obtener productos para comparar
+  const getCompareProducts = () => {
+    const currentProducts = getCurrentProducts();
+    return currentProducts.data.filter(product => compareList.includes(product._id));
+  };
+
+  // Función para limpiar comparación
+  const clearCompare = () => {
+    setCompareList([]);
+  };
+
+  // Función para comparar productos
+  const compareProducts = () => {
+    const productsToCompare = getCompareProducts();
+    if (productsToCompare.length < 2) {
+      alert('Necesitas al menos 2 productos para comparar');
+      return;
+    }
+    
+    // Aquí podrías abrir un modal de comparación o navegar a una página de comparación
+    console.log('Productos para comparar:', productsToCompare);
+  };
+
+  // Función para cambiar modo de vista
+  const toggleViewMode = () => {
+    setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
+  };
+
+  // Función para obtener productos ordenados y filtrados
+  const getDisplayProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const filteredProducts = filterProducts(currentProducts.data);
+    const sortedProducts = sortProducts(filteredProducts);
+    
+    return {
+      all: sortedProducts,
+      paginated: getPaginatedProducts().products,
+      loading: currentProducts.loading,
+      error: currentProducts.error
+    };
+  };
+
+  // Función para obtener sugerencias de búsqueda
+  const getSearchSuggestions = () => {
+    const currentProducts = getCurrentProducts();
+    const allNames = currentProducts.data.map(p => p.nombre).filter(Boolean);
+    const allCategories = currentProducts.data.map(p => p.categoriaId?.nombre || p.categoria).filter(Boolean);
+    const allBrands = currentProducts.data.map(p => p.marcaId?.nombre).filter(Boolean);
+    
+    const suggestions = [...allNames, ...allCategories, ...allBrands];
+    return [...new Set(suggestions)].filter(s => 
+      s.toLowerCase().includes(searchTerm.toLowerCase())
+    ).slice(0, 5);
+  };
+
+  // Función para obtener filtros disponibles basados en productos actuales
+  const getAvailableFilters = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    const availableCategories = [...new Set(products.map(p => p.categoriaId?.nombre || p.categoria).filter(Boolean))];
+    const availableBrands = [...new Set(products.map(p => p.marcaId?.nombre).filter(Boolean))];
+    const availableMaterials = [...new Set(products.map(p => p.material).filter(Boolean))];
+    const availableColors = [...new Set(products.map(p => p.color).filter(Boolean))];
+    const availableTypes = [...new Set(products.map(p => p.tipoLente).filter(Boolean))];
+    
+    const priceRange = {
+      min: Math.min(...products.map(p => p.precioActual || p.precioBase || p.precioCalculado || 0)),
+      max: Math.max(...products.map(p => p.precioActual || p.precioBase || p.precioCalculado || 0))
+    };
+    
+    return {
+      categories: availableCategories,
+      brands: availableBrands,
+      materials: availableMaterials,
+      colors: availableColors,
+      types: availableTypes,
+      priceRange
+    };
+  };
+
+  // Función para obtener filtros disponibles desde el backend
+  const getBackendAvailableFilters = () => {
+    // Usar directamente los datos del backend para categorías y marcas
+    const availableCategories = categorias?.map(cat => cat.nombre) || [];
+    const availableBrands = marcas?.map(marca => marca.nombre) || [];
+    
+    // Para materiales, colores y tipos, extraer de los productos
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    const availableMaterials = [...new Set(products.map(p => p.material).filter(Boolean))];
+    const availableColors = [...new Set(products.map(p => p.color).filter(Boolean))];
+    const availableTypes = [...new Set(products.map(p => p.tipoLente).filter(Boolean))];
+    
+    const priceRange = {
+      min: Math.min(...products.map(p => p.precioActual || p.precioBase || p.precioCalculado || 0)),
+      max: Math.max(...products.map(p => p.precioActual || p.precioBase || p.precioCalculado || 0))
+    };
+    
+    return {
+      categories: availableCategories,
+      brands: availableBrands,
+      materials: availableMaterials,
+      colors: availableColors,
+      types: availableTypes,
+      priceRange
+    };
+  };
+
+  // Función para obtener opciones de filtros dinámicas
+  const getFilterOptions = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Obtener opciones únicas de cada filtro
+    const categories = [...new Set(products.map(p => p.categoriaId?.nombre || p.categoria).filter(Boolean))];
+    const brands = [...new Set(products.map(p => p.marcaId?.nombre).filter(Boolean))];
+    const materials = [...new Set(products.map(p => p.material).filter(Boolean))];
+    const colors = [...new Set(products.map(p => p.color).filter(Boolean))];
+    
+    return { categories, brands, materials, colors };
+  };
+
+  // Función para obtener opciones de filtros desde el backend
+  const getBackendFilterOptions = () => {
+    // Usar directamente los datos del backend
+    const categories = categorias?.map(cat => cat.nombre) || [];
+    const brands = marcas?.map(marca => marca.nombre) || [];
+    
+    // Para materiales y colores, extraer de los productos
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    const materials = [...new Set(products.map(p => p.material).filter(Boolean))];
+    const colors = [...new Set(products.map(p => p.color).filter(Boolean))];
+    
+    return { categories, brands, materials, colors };
+  };
+
+  // Función para obtener el conteo de productos por opción de filtro
+  const getFilterOptionCount = (filterType, optionValue) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (filterType) {
+      case 'category':
+        return products.filter(p => (p.categoriaId?.nombre || p.categoria) === optionValue).length;
+      case 'brand':
+        return products.filter(p => p.marcaId?.nombre === optionValue).length;
+      case 'material':
+        return products.filter(p => p.material === optionValue).length;
+      case 'color':
+        return products.filter(p => p.color === optionValue).length;
+      default:
+        return 0;
+    }
+  };
+
+  // Función para obtener el conteo de productos por opción de filtro del backend
+  const getBackendFilterOptionCount = (filterType, optionValue) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (filterType) {
+      case 'category':
+        return products.filter(p => (p.categoriaId?.nombre || p.categoria) === optionValue).length;
+      case 'brand':
+        return products.filter(p => p.marcaId?.nombre === optionValue).length;
+      case 'material':
+        return products.filter(p => p.material === optionValue).length;
+      case 'color':
+        return products.filter(p => p.color === optionValue).length;
+      default:
+        return 0;
+    }
+  };
+
+  // Función para aplicar filtros múltiples
+  const applyMultipleFilters = (filters) => {
+    if (filters.categories) setSelectedCategory(filters.categories);
+    if (filters.brands) setSelectedMarca(filters.brands);
+    if (filters.priceRange) setPriceRange(filters.priceRange);
+    if (filters.sortBy) setSortBy(filters.sortBy);
+    setCurrentPage(1);
+  };
+
+  // Función para guardar filtros en localStorage
+  const saveFiltersToStorage = () => {
+    const filters = {
+      searchTerm,
+      selectedCategory,
+      selectedMarca,
+      selectedMaterial,
+      selectedColor,
+      priceRange,
+      sortBy,
+      viewMode
+    };
+    localStorage.setItem('aurora-product-filters', JSON.stringify(filters));
+  };
+
+  // Función para cargar filtros desde localStorage
+  const loadFiltersFromStorage = () => {
+    try {
+      const savedFilters = localStorage.getItem('aurora-product-filters');
+      if (savedFilters) {
+        const filters = JSON.parse(savedFilters);
+        setSearchTerm(filters.searchTerm || '');
+        setSelectedCategory(filters.selectedCategory || 'todos');
+        setSelectedMarca(filters.selectedMarca || 'todos');
+        setSelectedMaterial(filters.selectedMaterial || 'todos');
+        setSelectedColor(filters.selectedColor || 'todos');
+        setPriceRange(filters.priceRange || { min: 0, max: 10000 });
+        setSortBy(filters.sortBy || 'nombre');
+        setViewMode(filters.viewMode || 'grid');
+      }
+    } catch (error) {
+      console.error('Error loading filters from storage:', error);
+    }
+  };
+
+  // Cargar filtros guardados al montar el componente
+  useEffect(() => {
+    loadFiltersFromStorage();
+    loadSearchHistory();
+  }, []);
+
+  // Guardar filtros cuando cambien
+  useEffect(() => {
+    saveFiltersToStorage();
+  }, [searchTerm, selectedCategory, selectedMarca, selectedMaterial, selectedColor, priceRange, sortBy, viewMode]);
+
+  // Guardar historial de búsqueda cuando cambie
+  useEffect(() => {
+    saveSearchHistory();
+  }, [searchHistory]);
+
+  // Función para obtener estadísticas de filtros
+  const getFilterStats = () => {
+    const currentProducts = getCurrentProducts();
+    const totalProducts = currentProducts.data.length;
+    const filteredProducts = filterProducts(currentProducts.data);
+    const filteredCount = filteredProducts.length;
+    
+    return {
+      total: totalProducts,
+      filtered: filteredCount,
+      percentage: totalProducts > 0 ? Math.round((filteredCount / totalProducts) * 100) : 0,
+      hasFilters: searchTerm || selectedCategory !== 'todos' || selectedMarca !== 'todos' || 
+                 selectedMaterial !== 'todos' || selectedColor !== 'todos' ||
+                 priceRange.min > 0 || priceRange.max < 10000
+    };
+  };
+
+  // Función para obtener estadísticas detalladas de filtros
+  const getDetailedFilterStats = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    const stats = {
+      categories: {},
+      brands: {},
+      materials: {},
+      colors: {},
+      priceRanges: {
+        '0-100': 0,
+        '101-300': 0,
+        '301-500': 0,
+        '500+': 0
+      }
+    };
+    
+    products.forEach(product => {
+      const category = product.categoriaId?.nombre || product.categoria;
+      const brand = product.marcaId?.nombre;
+      const material = product.material;
+      const color = product.color;
+      const price = product.precioActual || product.precioBase || product.precioCalculado || 0;
+      
+      if (category) stats.categories[category] = (stats.categories[category] || 0) + 1;
+      if (brand) stats.brands[brand] = (stats.brands[brand] || 0) + 1;
+      if (material) stats.materials[material] = (stats.materials[material] || 0) + 1;
+      if (color) stats.colors[color] = (stats.colors[color] || 0) + 1;
+      
+      if (price <= 100) stats.priceRanges['0-100']++;
+      else if (price <= 300) stats.priceRanges['101-300']++;
+      else if (price <= 500) stats.priceRanges['301-500']++;
+      else stats.priceRanges['500+']++;
+    });
+    
+    return stats;
+  };
+
+  // Función para obtener estadísticas detalladas de filtros desde el backend
+  const getBackendDetailedFilterStats = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    const stats = {
+      categories: {},
+      brands: {},
+      materials: {},
+      colors: {},
+      priceRanges: {
+        '0-100': 0,
+        '101-300': 0,
+        '301-500': 0,
+        '500+': 0
+      }
+    };
+    
+    // Usar datos del backend para categorías y marcas
+    categorias?.forEach(cat => {
+      stats.categories[cat.nombre] = 0;
+    });
+    
+    marcas?.forEach(marca => {
+      stats.brands[marca.nombre] = 0;
+    });
+    
+    // Contar productos en cada categoría y marca
+    products.forEach(product => {
+      const category = product.categoriaId?.nombre || product.categoria;
+      const brand = product.marcaId?.nombre;
+      const material = product.material;
+      const color = product.color;
+      const price = product.precioActual || product.precioBase || product.precioCalculado || 0;
+      
+      if (category && stats.categories[category] !== undefined) {
+        stats.categories[category]++;
+      }
+      if (brand && stats.brands[brand] !== undefined) {
+        stats.brands[brand]++;
+      }
+      if (material) stats.materials[material] = (stats.materials[material] || 0) + 1;
+      if (color) stats.colors[color] = (stats.colors[color] || 0) + 1;
+      
+      if (price <= 100) stats.priceRanges['0-100']++;
+      else if (price <= 300) stats.priceRanges['101-300']++;
+      else if (price <= 500) stats.priceRanges['301-500']++;
+      else stats.priceRanges['500+']++;
+    });
+    
+    return stats;
+  };
+
+  // Función para obtener filtros avanzados
+  const getAdvancedFilters = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    const advancedFilters = {
+      priceRanges: [
+        { label: 'Económico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
+        { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
+        { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }
+      ],
+      discountRanges: [
+        { label: 'Sin descuento', min: 0, max: 0, count: 0 },
+        { label: 'Descuento bajo (1-20%)', min: 1, max: 20, count: 0 },
+        { label: 'Descuento medio (21-40%)', min: 21, max: 40, count: 0 },
+        { label: 'Descuento alto (40%+)', min: 41, max: 100, count: 0 }
+      ]
+    };
+    
+    // Calcular conteos para rangos de precio
+    advancedFilters.priceRanges.forEach(range => {
+      range.count = products.filter(p => {
+        const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+        return price >= range.min && price <= range.max;
+      }).length;
+    });
+    
+    // Calcular conteos para rangos de descuento
+    advancedFilters.discountRanges.forEach(range => {
+      range.count = products.filter(p => {
+        if (!p.precioActual || !p.precioBase) return range.min === 0;
+        const discount = ((p.precioBase - p.precioActual) / p.precioBase) * 100;
+        return discount >= range.min && discount <= range.max;
+      }).length;
+    });
+    
+    return advancedFilters;
+  };
+
+  // Función para obtener filtros avanzados desde el backend
+  const getBackendAdvancedFilters = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    const advancedFilters = {
+      priceRanges: [
+        { label: 'Económico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
+        { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
+        { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }
+      ],
+      discountRanges: [
+        { label: 'Sin descuento', min: 0, max: 0, count: 0 },
+        { label: 'Descuento bajo (1-20%)', min: 1, max: 20, count: 0 },
+        { label: 'Descuento medio (21-40%)', min: 21, max: 40, count: 0 },
+        { label: 'Descuento alto (40%+)', min: 41, max: 100, count: 0 }
+      ]
+    };
+    
+    // Calcular conteos para rangos de precio
+    advancedFilters.priceRanges.forEach(range => {
+      range.count = products.filter(p => {
+        const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+        return price >= range.min && price <= range.max;
+      }).length;
+    });
+    
+    // Calcular conteos para rangos de descuento
+    advancedFilters.discountRanges.forEach(range => {
+      range.count = products.filter(p => {
+        if (!p.precioActual || !p.precioBase) return range.min === 0;
+        const discount = ((p.precioBase - p.precioActual) / p.precioBase) * 100;
+        return discount >= range.min && discount <= range.max;
+      }).length;
+    });
+    
+    return advancedFilters;
+  };
+
+  // Función para aplicar filtros avanzados
+  const applyAdvancedFilter = (filterType, filterValue) => {
+    switch (filterType) {
+      case 'priceRange':
+        setPriceRange({ min: filterValue.min, max: filterValue.max });
+        break;
+      case 'discountRange':
+        // Aplicar filtro de descuento
+        break;
+      default:
+        break;
+    }
+    setCurrentPage(1);
+  };
+
+  // Función para obtener consejos de filtrado
+  const getFilterTips = () => {
+    const tips = [
+      '💡 Usa múltiples filtros para encontrar exactamente lo que buscas',
+      '🔍 La búsqueda funciona con nombre, descripción y características',
+      '💰 Los filtros de precio te ayudan a encontrar opciones en tu presupuesto',
+      '🎨 Combina colores y materiales para un look personalizado',
+      '⭐ Los filtros rápidos te dan acceso a categorías populares',
+      '📱 Los filtros se guardan automáticamente para tu próxima visita'
+    ];
+    
+    return tips[Math.floor(Math.random() * tips.length)];
+  };
+
+
+
+  // Función para obtener recomendaciones personalizadas
+  const getPersonalizedRecommendations = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Basado en favoritos
+    const favoriteBrands = favorites.length > 0 ? 
+      [...new Set(favorites.map(id => 
+        products.find(p => p._id === id)?.marcaId?.nombre
+      ).filter(Boolean))] : [];
+    
+    const favoriteCategories = favorites.length > 0 ? 
+      [...new Set(favorites.map(id => 
+        products.find(p => p._id === id)?.categoriaId?.nombre || 
+        products.find(p => p._id === id)?.categoria
+      ).filter(Boolean))] : [];
+    
+    // Productos similares a favoritos
+    const similarProducts = products.filter(p => 
+      !favorites.includes(p._id) && (
+        favoriteBrands.includes(p.marcaId?.nombre) ||
+        favoriteCategories.includes(p.categoriaId?.nombre) ||
+        favoriteCategories.includes(p.categoria)
+      )
+    ).slice(0, 6);
+    
+    return similarProducts;
+  };
+
+  // Función para obtener productos recientemente vistos
+  const getRecentlyViewed = () => {
+    const recentlyViewedIds = JSON.parse(localStorage.getItem('aurora-recently-viewed') || '[]');
+    const currentProducts = getCurrentProducts();
+    return currentProducts.data.filter(p => recentlyViewedIds.includes(p._id)).slice(0, 4);
+  };
+
+  // Función para agregar producto a recientemente vistos
+  const addToRecentlyViewed = (productId) => {
+    try {
+      const recentlyViewed = JSON.parse(localStorage.getItem('aurora-recently-viewed') || '[]');
+      const updated = [productId, ...recentlyViewed.filter(id => id !== productId)].slice(0, 10);
+      localStorage.setItem('aurora-recently-viewed', JSON.stringify(updated));
+    } catch (error) {
+      console.error('Error saving recently viewed:', error);
+    }
+  };
+
+  // Función para limpiar recientemente vistos
+  const clearRecentlyViewed = () => {
+    localStorage.removeItem('aurora-recently-viewed');
+  };
+
+  // Función para obtener productos más populares
+  const getPopularProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Simular popularidad basada en precio y descuentos
+    const popularProducts = products.map(p => {
+      const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+      const discount = p.precioActual && p.precioBase ? 
+        ((p.precioBase - p.precioActual) / p.precioBase) * 100 : 0;
+      
+      return {
+        ...p,
+        popularityScore: (discount * 2) + (price > 200 ? 1 : 0) + (p.marcaId?.nombre === 'Ray-Ban' ? 2 : 0)
+      };
+    }).sort((a, b) => b.popularityScore - a.popularityScore).slice(0, 6);
+    
+    return popularProducts.map(p => {
+      const { popularityScore, ...product } = p;
+      return product;
+    });
+  };
+
+  // Función para obtener productos relacionados
+  const getRelatedProducts = (currentProduct) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    if (!currentProduct) return [];
+    
+    const related = products.filter(p => 
+      p._id !== currentProduct._id && (
+        p.marcaId?.nombre === currentProduct.marcaId?.nombre ||
+        p.categoriaId?.nombre === currentProduct.categoriaId?.nombre ||
+        p.categoria === currentProduct.categoria ||
+        p.material === currentProduct.material ||
+        p.color === currentProduct.color
+      )
+    ).slice(0, 4);
+    
+    return related;
+  };
+
+  // Función para obtener productos por temporada
+  const getSeasonalProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    const currentMonth = new Date().getMonth();
+    const isSummer = currentMonth >= 5 && currentMonth <= 8; // Junio a Septiembre
+    const isWinter = currentMonth === 11 || currentMonth <= 2; // Diciembre a Febrero
+    
+    if (isSummer) {
+      return products.filter(p => 
+        p.categoriaId?.nombre === 'Lentes de Sol' ||
+        p.categoria === 'Lentes de Sol' ||
+        p.tipoLente === 'Polarizado'
+      ).slice(0, 4);
+    } else if (isWinter) {
+      return products.filter(p => 
+        p.categoriaId?.nombre === 'Lentes Graduados' ||
+        p.categoria === 'Lentes Graduados' ||
+        p.material === 'Metal'
+      ).slice(0, 4);
+    }
+    
+    return products.slice(0, 4); // Productos generales para otras temporadas
+  };
+
+  // Función para obtener productos por ocasión
+  const getProductsByOccasion = (occasion) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (occasion) {
+      case 'deportes':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Costa'
+        ).slice(0, 4);
+      case 'formal':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford'
+        ).slice(0, 4);
+      case 'casual':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Persol'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por presupuesto
+  const getProductsByBudget = (budget) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (budget) {
+      case 'economico':
+        return products.filter(p => 
+          (p.precioActual || p.precioBase || p.precioCalculado) <= 100
+        ).slice(0, 6);
+      case 'medio':
+        return products.filter(p => 
+          (p.precioActual || p.precioBase || p.precioCalculado) > 100 && 
+          (p.precioActual || p.precioBase || p.precioCalculado) <= 300
+        ).slice(0, 6);
+      case 'premium':
+        return products.filter(p => 
+          (p.precioActual || p.precioBase || p.precioCalculado) > 300
+        ).slice(0, 6);
+      default:
+        return products.slice(0, 6);
+    }
+  };
+
+  // Función para obtener productos por edad
+  const getProductsByAge = (ageGroup) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (ageGroup) {
+      case 'ninos':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Infantiles' ||
+          p.categoria === 'Lentes Infantiles' ||
+          p.material === 'Plástico' ||
+          p.color === 'Azul' ||
+          p.color === 'Rosa'
+        ).slice(0, 4);
+      case 'jovenes':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Ray-Ban'
+        ).slice(0, 4);
+      case 'adultos':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por estilo
+  const getProductsByStyle = (style) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (style) {
+      case 'clasico':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Persol' ||
+          p.material === 'Metal' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'moderno':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.material === 'Plástico' ||
+          p.color === 'Negro' ||
+          p.color === 'Azul'
+        ).slice(0, 4);
+      case 'elegante':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por actividad
+  const getProductsByActivity = (activity) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (activity) {
+      case 'conduccion':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.color === 'Marrón' ||
+          p.color === 'Verde'
+        ).slice(0, 4);
+      case 'deportes':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Costa'
+        ).slice(0, 4);
+      case 'trabajo':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes para Computadora' ||
+          p.categoria === 'Lentes para Computadora' ||
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por clima
+  const getProductsByWeather = (weather) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (weather) {
+      case 'soleado':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.color === 'Marrón' ||
+          p.color === 'Verde'
+        ).slice(0, 4);
+      case 'nublado':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.categoriaId?.nombre === 'Lentes para Computadora' ||
+          p.categoria === 'Lentes para Computadora'
+        ).slice(0, 4);
+      case 'lluvioso':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.material === 'Plástico'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por ocasión especial
+  const getProductsBySpecialOccasion = (occasion) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (occasion) {
+      case 'boda':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.material === 'Metal' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'graduacion':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.marcaId?.nombre === 'Persol'
+        ).slice(0, 4);
+      case 'cumpleanos':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Oakley'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por temporada
+  const getProductsBySeason = (season) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (season) {
+      case 'primavera':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.color === 'Verde' ||
+          p.color === 'Azul' ||
+          p.marcaId?.nombre === 'Ray-Ban'
+        ).slice(0, 4);
+      case 'verano':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Maui Jim'
+        ).slice(0, 4);
+      case 'otoño':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.color === 'Marrón' ||
+          p.color === 'Negro' ||
+          p.marcaId?.nombre === 'Persol'
+        ).slice(0, 4);
+      case 'invierno':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.material === 'Metal' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tendencia
+  const getProductsByTrend = (trend) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (trend) {
+      case 'retro':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Persol' ||
+          p.material === 'Metal' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'futurista':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.material === 'Plástico' ||
+          p.color === 'Negro' ||
+          p.color === 'Azul'
+        ).slice(0, 4);
+      case 'minimalista':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Prada' ||
+          p.marcaId?.nombre === 'Persol' ||
+          p.material === 'Metal' ||
+          p.color === 'Negro' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por color
+  const getProductsByColor = (color) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    return products.filter(p => 
+      p.color && p.color.toLowerCase() === color.toLowerCase()
+    ).slice(0, 6);
+  };
+
+  // Función para obtener productos por material
+  const getProductsByMaterial = (material) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    return products.filter(p => 
+      p.material && p.material.toLowerCase() === material.toLowerCase()
+    ).slice(0, 6);
+  };
+
+  // Función para obtener productos por tipo de lente
+  const getProductsByLensType = (lensType) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    return products.filter(p => 
+      p.tipoLente && p.tipoLente.toLowerCase() === lensType.toLowerCase()
+    ).slice(0, 6);
+  };
+
+  // Función para obtener productos por rango de precio
+  const getProductsByPriceRange = (minPrice, maxPrice) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    return products.filter(p => {
+      const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+      return price >= minPrice && price <= maxPrice;
+    }).slice(0, 6);
+  };
+
+  // Función para obtener productos por marca específica
+  const getProductsByBrand = (brand) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    return products.filter(p => 
+      p.marcaId?.nombre && p.marcaId.nombre.toLowerCase() === brand.toLowerCase()
+    ).slice(0, 6);
+  };
+
+  // Función para obtener productos por categoría específica
+  const getProductsByCategory = (category) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    return products.filter(p => 
+      (p.categoriaId?.nombre && p.categoriaId.nombre.toLowerCase() === category.toLowerCase()) ||
+      (p.categoria && p.categoria.toLowerCase() === category.toLowerCase())
+    ).slice(0, 6);
+  };
+
+  // Función para obtener productos con descuento
+  const getDiscountedProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    return products.filter(p => 
+      p.precioActual && p.precioBase && p.precioActual < p.precioBase
+    ).sort((a, b) => {
+      const discountA = ((a.precioBase - a.precioActual) / a.precioBase) * 100;
+      const discountB = ((b.precioBase - b.precioActual) / b.precioBase) * 100;
+      return discountB - discountA;
+    }).slice(0, 6);
+  };
+
+  // Función para obtener productos nuevos
+  const getNewProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Simular productos nuevos (los primeros 6)
+    return products.slice(0, 6);
+  };
+
+  // Función para obtener productos más vendidos
+  const getBestSellers = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Simular productos más vendidos basado en popularidad
+    const bestSellers = products.map(p => {
+      const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+      const discount = p.precioActual && p.precioBase ? 
+        ((p.precioBase - p.precioActual) / p.precioBase) * 100 : 0;
+      
+      return {
+        ...p,
+        salesScore: (discount * 3) + (price > 150 ? 2 : 0) + 
+                   (p.marcaId?.nombre === 'Ray-Ban' ? 3 : 0) +
+                   (p.marcaId?.nombre === 'Oakley' ? 2 : 0)
+      };
+    }).sort((a, b) => b.salesScore - a.salesScore).slice(0, 6);
+    
+    return bestSellers.map(p => {
+      const { salesScore, ...product } = p;
+      return product;
+    });
+  };
+
+  // Función para obtener productos recomendados
+  const getRecommendedProducts = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Simular recomendaciones basadas en múltiples factores
+    const recommended = products.map(p => {
+      const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+      const discount = p.precioActual && p.precioBase ? 
+        ((p.precioBase - p.precioActual) / p.precioBase) * 100 : 0;
+      
+      return {
+        ...p,
+        recommendationScore: (discount * 2) + (price > 200 ? 1 : 0) + 
+                           (p.marcaId?.nombre === 'Gucci' ? 2 : 0) +
+                           (p.marcaId?.nombre === 'Tom Ford' ? 2 : 0) +
+                           (p.categoriaId?.nombre === 'Lentes de Lujo' ? 1 : 0)
+      };
+    }).sort((a, b) => b.recommendationScore - a.recommendationScore).slice(0, 6);
+    
+    return recommended.map(p => {
+      const { recommendationScore, ...product } = p;
+      return product;
+    });
+  };
+
+  // Función para obtener productos por ubicación
+  const getProductsByLocation = (location) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (location) {
+      case 'playa':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Maui Jim' ||
+          p.marcaId?.nombre === 'Costa'
+        ).slice(0, 4);
+      case 'montaña':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Ray-Ban'
+        ).slice(0, 4);
+      case 'ciudad':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por profesión
+  const getProductsByProfession = (profession) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (profession) {
+      case 'medico':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.material === 'Metal' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford'
+        ).slice(0, 4);
+      case 'abogado':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.material === 'Metal' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.marcaId?.nombre === 'Persol'
+        ).slice(0, 4);
+      case 'ingeniero':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes para Computadora' ||
+          p.categoria === 'Lentes para Computadora' ||
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por hobby
+  const getProductsByHobby = (hobby) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (hobby) {
+      case 'pesca':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Costa' ||
+          p.marcaId?.nombre === 'Maui Jim'
+        ).slice(0, 4);
+      case 'golf':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Ray-Ban'
+        ).slice(0, 4);
+      case 'ciclismo':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.material === 'Plástico'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por estilo de vida
+  const getProductsByLifestyle = (lifestyle) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (lifestyle) {
+      case 'activo':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Costa' ||
+          p.material === 'Plástico'
+        ).slice(0, 4);
+      case 'elegante':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.material === 'Metal'
+        ).slice(0, 4);
+      case 'casual':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Persol'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por ocasión de regalo
+  const getProductsByGiftOccasion = (giftOccasion) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (giftOccasion) {
+      case 'san_valentin':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.color === 'Rojo' ||
+          p.color === 'Rosa'
+        ).slice(0, 4);
+      case 'dia_padre':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.color === 'Negro' ||
+          p.color === 'Azul'
+        ).slice(0, 4);
+      case 'dia_madre':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.marcaId?.nombre === 'Persol' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por temporada de moda
+  const getProductsByFashionSeason = (fashionSeason) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (fashionSeason) {
+      case 'primavera_verano':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.color === 'Verde' ||
+          p.color === 'Azul' ||
+          p.color === 'Amarillo'
+        ).slice(0, 4);
+      case 'otoño_invierno':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.color === 'Marrón' ||
+          p.color === 'Negro' ||
+          p.color === 'Gris'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de rostro
+  const getProductsByFaceShape = (faceShape) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (faceShape) {
+      case 'redondo':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.material === 'Plástico' ||
+          p.color === 'Negro' ||
+          p.color === 'Azul'
+        ).slice(0, 4);
+      case 'cuadrado':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Persol' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.material === 'Metal' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'ovalado':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de piel
+  const getProductsBySkinTone = (skinTone) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (skinTone) {
+      case 'clara':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Persol' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado' ||
+          p.material === 'Metal'
+        ).slice(0, 4);
+      case 'media':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.color === 'Marrón' ||
+          p.color === 'Verde' ||
+          p.material === 'Plástico'
+        ).slice(0, 4);
+      case 'oscura':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.color === 'Negro' ||
+          p.color === 'Azul' ||
+          p.material === 'Metal'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de cabello
+  const getProductsByHairColor = (hairColor) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (hairColor) {
+      case 'rubio':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Persol' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado' ||
+          p.material === 'Metal'
+        ).slice(0, 4);
+      case 'castaño':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.color === 'Marrón' ||
+          p.color === 'Verde' ||
+          p.material === 'Plástico'
+        ).slice(0, 4);
+      case 'negro':
+        return products.filter(p => 
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.color === 'Negro' ||
+          p.color === 'Azul' ||
+          p.material === 'Metal'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de vestimenta
+  const getProductsByClothingStyle = (clothingStyle) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (clothingStyle) {
+      case 'formal':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.material === 'Metal' ||
+          p.color === 'Negro' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'casual':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.material === 'Plástico' ||
+          p.color === 'Azul' ||
+          p.color === 'Verde'
+        ).slice(0, 4);
+      case 'deportivo':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Costa' ||
+          p.material === 'Plástico' ||
+          p.color === 'Negro' ||
+          p.color === 'Rojo'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de evento
+  const getProductsByEventType = (eventType) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (eventType) {
+      case 'boda':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.material === 'Metal' ||
+          p.color === 'Dorado' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'graduacion':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Prada' ||
+          p.marcaId?.nombre === 'Persol' ||
+          p.material === 'Metal' ||
+          p.color === 'Negro' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'cumpleanos':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.material === 'Plástico' ||
+          p.color === 'Azul' ||
+          p.color === 'Verde'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de viaje
+  const getProductsByTravelType = (travelType) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (travelType) {
+      case 'playa':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Maui Jim' ||
+          p.marcaId?.nombre === 'Costa' ||
+          p.color === 'Azul' ||
+          p.color === 'Verde'
+        ).slice(0, 4);
+      case 'montaña':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.color === 'Marrón' ||
+          p.color === 'Negro'
+        ).slice(0, 4);
+      case 'ciudad':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.categoriaId?.nombre === 'Lentes de Lujo' ||
+          p.categoria === 'Lentes de Lujo' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de clima
+  const getProductsByClimateType = (climateType) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (climateType) {
+      case 'tropical':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Maui Jim' ||
+          p.marcaId?.nombre === 'Costa' ||
+          p.color === 'Azul' ||
+          p.color === 'Verde'
+        ).slice(0, 4);
+      case 'frio':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Graduados' ||
+          p.categoria === 'Lentes Graduados' ||
+          p.material === 'Metal' ||
+          p.marcaId?.nombre === 'Gucci' ||
+          p.marcaId?.nombre === 'Tom Ford' ||
+          p.color === 'Negro' ||
+          p.color === 'Plateado'
+        ).slice(0, 4);
+      case 'templado':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes de Sol' ||
+          p.categoria === 'Lentes de Sol' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.marcaId?.nombre === 'Persol' ||
+          p.color === 'Marrón' ||
+          p.color === 'Verde'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
+  // Función para obtener productos por tipo de deporte
+  const getProductsBySportType = (sportType) => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    switch (sportType) {
+      case 'acuatico':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.tipoLente === 'Polarizado' ||
+          p.marcaId?.nombre === 'Costa' ||
+          p.marcaId?.nombre === 'Maui Jim' ||
+          p.material === 'Plástico' ||
+          p.color === 'Azul'
+        ).slice(0, 4);
+      case 'terrestre':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.marcaId?.nombre === 'Ray-Ban' ||
+          p.material === 'Plástico' ||
+          p.color === 'Negro' ||
+          p.color === 'Rojo'
+        ).slice(0, 4);
+      case 'aereo':
+        return products.filter(p => 
+          p.categoriaId?.nombre === 'Lentes Deportivos' ||
+          p.categoria === 'Lentes Deportivos' ||
+          p.marcaId?.nombre === 'Oakley' ||
+          p.material === 'Plástico' ||
+          p.color === 'Negro' ||
+          p.color === 'Azul'
+        ).slice(0, 4);
+      default:
+        return products.slice(0, 4);
+    }
+  };
+
   // Función para mostrar modal de producto
   const showProductDetails = (product) => {
     setSelectedProduct(product);
     setShowProductModal(true);
+    // Agregar a recientemente vistos
+    addToRecentlyViewed(product._id);
   };
 
-  // Función para cerrar modal
+  // Función para cerrar modal de producto
   const closeProductModal = () => {
     setShowProductModal(false);
     setSelectedProduct(null);
   };
+
+  // Función para obtener productos similares al seleccionado
+  const getSimilarProducts = (product) => {
+    if (!product) return [];
+    
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    const similar = products.filter(p => 
+      p._id !== product._id && (
+        p.marcaId?.nombre === product.marcaId?.nombre ||
+        p.categoriaId?.nombre === product.categoriaId?.nombre ||
+        p.categoria === product.categoria ||
+        p.material === product.material ||
+        p.color === product.color ||
+        p.tipoLente === product.tipoLente
+      )
+    ).slice(0, 4);
+    
+    return similar;
+  };
+
+  // Función para obtener productos complementarios
+  const getComplementaryProducts = (product) => {
+    if (!product) return [];
+    
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Si es un lente, mostrar accesorios complementarios
+    if (product.categoriaId?.nombre === 'Lentes de Sol' || product.categoria === 'Lentes de Sol') {
+      return products.filter(p => 
+        p.categoriaId?.nombre === 'Accesorios' || p.categoria === 'Accesorios'
+      ).slice(0, 3);
+    }
+    
+    // Si es un accesorio, mostrar lentes complementarios
+    if (product.categoriaId?.nombre === 'Accesorios' || product.categoria === 'Accesorios') {
+      return products.filter(p => 
+        p.categoriaId?.nombre === 'Lentes de Sol' || p.categoria === 'Lentes de Sol'
+      ).slice(0, 3);
+    }
+    
+    return [];
+  };
+
+  // Función para obtener productos por popularidad
+  const getProductsByPopularity = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Simular popularidad basada en múltiples factores
+    const popularProducts = products.map(p => {
+      const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+      const discount = p.precioActual && p.precioBase ? 
+        ((p.precioBase - p.precioActual) / p.precioBase) * 100 : 0;
+      
+      return {
+        ...p,
+        popularityScore: (discount * 3) + (price > 150 ? 2 : 0) + 
+                       (p.marcaId?.nombre === 'Ray-Ban' ? 3 : 0) +
+                       (p.marcaId?.nombre === 'Oakley' ? 2 : 0) +
+                       (p.marcaId?.nombre === 'Gucci' ? 2 : 0)
+      };
+    }).sort((a, b) => b.popularityScore - a.popularityScore).slice(0, 8);
+    
+    return popularProducts.map(p => {
+      const { popularityScore, ...product } = p;
+      return product;
+    });
+  };
+
+  // Función para obtener productos por novedad
+  const getProductsByNewness = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Simular productos nuevos (los primeros 8)
+    return products.slice(0, 8);
+  };
+
+  // Función para obtener productos por tendencia
+  const getProductsByTrending = () => {
+    const currentProducts = getCurrentProducts();
+    const products = currentProducts.data;
+    
+    // Simular tendencias basadas en popularidad y descuentos
+    const trendingProducts = products.map(p => {
+      const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
+      const discount = p.precioActual && p.precioBase ? 
+        ((p.precioBase - p.precioActual) / p.precioBase) * 100 : 0;
+      
+      return {
+        ...p,
+        trendingScore: (discount * 2) + (price > 200 ? 1 : 0) + 
+                      (p.marcaId?.nombre === 'Tom Ford' ? 3 : 0) +
+                      (p.marcaId?.nombre === 'Prada' ? 2 : 0) +
+                      (p.categoriaId?.nombre === 'Lentes de Lujo' ? 2 : 0)
+      };
+    }).sort((a, b) => b.trendingScore - a.trendingScore).slice(0, 6);
+    
+    return trendingProducts.map(p => {
+      const { trendingScore, ...product } = p;
+      return product;
+    });
+  };
+
+  // Función para cerrar modal (ya definida arriba)
 
   // Función para formatear precio
   const formatPrice = (price) => {
@@ -178,20 +2381,108 @@ const Producto = () => {
     }
   };
 
-  // Componente de filtros
+  // Componente de filtros mejorado
   const FilterSection = () => (
     <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-      <h3 className="text-lg font-semibold mb-4">Filtros</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Filtros</h3>
+        <button
+          onClick={clearFilters}
+          className="text-sm text-[#0097c2] hover:text-[#0077a2] font-medium"
+        >
+          Limpiar filtros
+        </button>
+      </div>
       
-      {/* Búsqueda */}
+      {/* Búsqueda con sugerencias */}
       <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Buscar productos..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
-        />
+        <label className="block text-sm font-medium text-gray-700 mb-2">Buscar productos</label>
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar por nombre, descripción, material..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {/* Sugerencias de búsqueda */}
+        {searchTerm && searchTerm.length > 1 && (
+          <div className="mt-2 text-xs text-gray-500">
+            Sugerencias: {getSearchSuggestions().slice(0, 3).join(', ')}
+          </div>
+        )}
+
+        {/* Historial de búsquedas */}
+        {searchHistory.length > 0 && (
+          <div className="mt-2">
+            <div className="text-xs text-gray-500 mb-1">Búsquedas recientes:</div>
+            <div className="flex flex-wrap gap-1">
+              {searchHistory.slice(0, 5).map((search, index) => (
+                <button
+                  key={index}
+                  onClick={() => useSearchFromHistory(search)}
+                  className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded hover:bg-gray-200 transition-colors"
+                >
+                  {search}
+                </button>
+              ))}
+              {searchHistory.length > 5 && (
+                <button
+                  onClick={clearSearchHistory}
+                  className="px-2 py-1 text-xs bg-red-100 text-red-600 rounded hover:bg-red-200 transition-colors"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Filtros rápidos */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Filtros rápidos</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => applyPresetFilter('ofertas')}
+            className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition-colors"
+          >
+            Ofertas
+          </button>
+          <button
+            onClick={() => applyPresetFilter('premium')}
+            className="px-3 py-1 text-xs bg-yellow-100 text-yellow-700 rounded-full hover:bg-yellow-200 transition-colors"
+          >
+            Premium
+          </button>
+          <button
+            onClick={() => applyPresetFilter('deportivos')}
+            className="px-3 py-1 text-xs bg-blue-100 text-blue-700 rounded-full hover:bg-blue-200 transition-colors"
+          >
+            Deportivos
+          </button>
+          <button
+            onClick={() => applyPresetFilter('lujo')}
+            className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded-full hover:bg-purple-200 transition-colors"
+          >
+            Lujo
+          </button>
+          <button
+            onClick={() => applyPresetFilter('economico')}
+            className="px-3 py-1 text-xs bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors"
+          >
+            Económico
+          </button>
+        </div>
       </div>
 
       {/* Categoría */}
@@ -203,8 +2494,10 @@ const Producto = () => {
           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
         >
           <option value="todos">Todas las categorías</option>
-          {categorias?.map(cat => (
-            <option key={cat._id} value={cat.nombre}>{cat.nombre}</option>
+          {getBackendFilterOptions().categories.map(cat => (
+            <option key={cat} value={cat}>
+              {cat} ({getBackendFilterOptionCount('category', cat)})
+            </option>
           ))}
         </select>
       </div>
@@ -218,16 +2511,75 @@ const Producto = () => {
           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
         >
           <option value="todos">Todas las marcas</option>
-          {marcas?.map(marca => (
-            <option key={marca._id} value={marca.nombre}>{marca.nombre}</option>
+          {getBackendFilterOptions().brands.map(brand => (
+            <option key={brand} value={brand}>
+              {brand} ({getBackendFilterOptionCount('brand', brand)})
+            </option>
           ))}
         </select>
       </div>
 
-      {/* Rango de precio */}
+      {/* Material */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Rango de precio</label>
-        <div className="flex space-x-2">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Material</label>
+        <select
+          value={selectedMaterial || 'todos'}
+          onChange={(e) => setSelectedMaterial(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
+        >
+          <option value="todos">Todos los materiales</option>
+          {getBackendFilterOptions().materials.map(material => (
+            <option key={material} value={material}>
+              {material} ({getBackendFilterOptionCount('material', material)})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Color */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+        <select
+          value={selectedColor || 'todos'}
+          onChange={(e) => setSelectedColor(e.target.value)}
+          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
+        >
+          <option value="todos">Todos los colores</option>
+          {getBackendFilterOptions().colors.map(color => (
+            <option key={color} value={color}>
+              {color} ({getFilterOptionCount('color', color)})
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Filtros avanzados */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Rangos de precio</label>
+        <div className="space-y-2">
+          {getBackendAdvancedFilters().priceRanges.map((range, index) => (
+            <button
+              key={index}
+              onClick={() => applyAdvancedFilter('priceRange', range)}
+              className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded border transition-colors"
+            >
+              <div className="flex justify-between items-center">
+                <span>{range.label}</span>
+                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  {range.count}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Rango de precio con slider visual */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Rango de precio: ${priceRange.min} - ${priceRange.max}
+        </label>
+        <div className="flex space-x-2 mb-2">
           <input
             type="number"
             placeholder="Min"
@@ -242,8 +2594,20 @@ const Producto = () => {
             onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value)})}
             className="w-1/2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
           />
-                    </div>
-                  </div>
+        </div>
+        {/* Slider visual del rango de precio */}
+        <div className="relative">
+          <div className="w-full h-2 bg-gray-200 rounded-full">
+            <div 
+              className="h-2 bg-[#0097c2] rounded-full"
+              style={{
+                width: `${((priceRange.max - priceRange.min) / 10000) * 100}%`,
+                marginLeft: `${(priceRange.min / 10000) * 100}%`
+              }}
+            ></div>
+          </div>
+        </div>
+      </div>
 
       {/* Ordenar por */}
       <div className="mb-4">
@@ -253,10 +2617,10 @@ const Producto = () => {
           onChange={(e) => setSortBy(e.target.value)}
           className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
         >
-          <option value="nombre">Nombre</option>
+          <option value="nombre">Nombre A-Z</option>
           <option value="precio-asc">Precio: Menor a Mayor</option>
           <option value="precio-desc">Precio: Mayor a Menor</option>
-          <option value="marca">Marca</option>
+          <option value="marca">Marca A-Z</option>
         </select>
       </div>
 
@@ -266,7 +2630,8 @@ const Producto = () => {
         <div className="flex space-x-2">
           <button
             onClick={() => setViewMode('grid')}
-            className={`p-2 rounded ${viewMode === 'grid' ? 'bg-[#0097c2] text-white' : 'bg-gray-200'}`}
+            className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-[#0097c2] text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            title="Vista de cuadrícula"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -274,16 +2639,84 @@ const Producto = () => {
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded ${viewMode === 'list' ? 'bg-[#0097c2] text-white' : 'bg-gray-200'}`}
+            className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-[#0097c2] text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+            title="Vista de lista"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
             </svg>
           </button>
         </div>
-            </div>
+      </div>
+
+      {/* Filtros activos */}
+      {getActiveFilters().length > 0 && (
+        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
+          <h4 className="text-sm font-medium text-blue-800 mb-2">Filtros activos:</h4>
+          <div className="flex flex-wrap gap-2">
+            {getActiveFilters().map((filter, index) => (
+              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                {filter}
+              </span>
+            ))}
           </div>
-        );
+        </div>
+      )}
+
+      {/* Estadísticas de filtros */}
+      <div className="text-xs text-gray-500 text-center p-2 bg-gray-50 rounded">
+        {getFilterStats().filtered} de {getFilterStats().total} productos
+      </div>
+
+      {/* Resumen de filtros */}
+      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+        <h4 className="text-sm font-medium text-blue-800 mb-2">Resumen de productos</h4>
+        <div className="space-y-2 text-xs text-blue-700">
+          <div className="flex justify-between">
+            <span>Por categoría:</span>
+            <span>{Object.keys(getBackendDetailedFilterStats().categories).length} opciones</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Por marca:</span>
+            <span>{Object.keys(getBackendDetailedFilterStats().brands).length} opciones</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Por material:</span>
+            <span>{Object.keys(getBackendDetailedFilterStats().materials).length} opciones</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Por color:</span>
+            <span>{Object.keys(getBackendDetailedFilterStats().colors).length} opciones</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Botones de exportación */}
+      <div className="mt-4 space-y-2">
+        <button
+          onClick={exportFilteredProducts}
+          className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
+          title="Exportar productos filtrados a CSV"
+        >
+          📊 Exportar Filtrados
+        </button>
+        <button
+          onClick={exportProducts}
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
+          title="Exportar todos los productos a CSV"
+        >
+          📋 Exportar Todos
+        </button>
+      </div>
+
+      {/* Consejo de filtrado */}
+      <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+        <div className="text-xs text-yellow-800 text-center">
+          {getFilterTips()}
+        </div>
+      </div>
+    </div>
+  );
 
   // Componente de producto en vista grid
   const ProductGridItem = ({ product }) => (
@@ -540,14 +2973,11 @@ const Producto = () => {
               </div>
             </div>
 
-            {/* Estadísticas de productos */}
-            <ProductStats products={products} type={type} />
 
-            {/* Productos destacados */}
-            <FeaturedProducts products={products} type={type} />
 
-            {/* Información del tipo de producto */}
-            <ProductTypeInfo type={type} />
+
+
+
 
             {loading ? (
               <LoadingSpinner message={`Cargando ${getTitle().toLowerCase()}...`} />
@@ -592,34 +3022,12 @@ const Producto = () => {
     <ErrorBoundary>
     <PageTransition>
       <Navbar />
-        <ProductNavigation />
         
-        {/* Anuncio de producto destacado */}
-        <div className="container mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg mx-4">
-          <h1 className="text-3xl font-bold text-[#0097c2] mb-4">
-            Producto Destacado
-          </h1>
-          <img
-            src="/src/pages/public/img/Lente1.png"
-            alt="Producto Destacado"
-            className="w-full h-64 object-cover rounded-lg mb-4"
-          />
-          <p className="text-gray-700 mb-4">
-            Descubre nuestra colección premium de lentes con la mejor tecnología y diseño. 
-            Ofrecemos una amplia variedad de estilos, materiales y graduaciones para satisfacer 
-            todas tus necesidades visuales.
-          </p>
-          <button className="bg-[#0097c2] text-white px-6 py-2 rounded-full hover:bg-[#0077a2] transition">
-            Ver Colección Completa
-          </button>
-      </div>
+
 
       {renderContent()}
 
-        {/* Información de contacto y ayuda */}
-        <div className="container mx-auto px-4">
-          <ContactHelp />
-        </div>
+
 
         {/* Modal de detalles del producto */}
         {showProductModal && <ProductDetailModal />}

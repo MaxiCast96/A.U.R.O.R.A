@@ -19,10 +19,7 @@ accesoriosController.getAccesorios = async (req, res) => {
          // Busca todos los accesorios y puebla las referencias a marcas, promociones y sucursales
         const accesorios = await accesoriosModel.find()
             .populate('marcaId') // Obtiene datos completos de la marca
-            .populate({
-                path: 'promocionId',
-                model: 'Promociones' // Obtiene datos de promoción si existe
-            })
+            .populate('promocionId') // Obtiene datos de promoción si existe
             .populate('sucursales.sucursalId'); // Obtiene datos de cada sucursal asociada
         res.json(accesorios);
     } catch (error) {

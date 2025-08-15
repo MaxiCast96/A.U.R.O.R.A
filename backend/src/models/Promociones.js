@@ -74,4 +74,4 @@ promocionSchema.pre('save', function(next) {
     next();
 });
 
-export default model('Promocion', promocionSchema);
+export default model('Promociones', promocionSchema);
