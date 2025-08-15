@@ -14,6 +14,7 @@ const Cart = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [sucursales, setSucursales] = useState([]);
+  const [empleados, setEmpleados] = useState([]);
 
   const [form, setForm] = useState({
     sucursalId: '',
@@ -55,7 +56,21 @@ const Cart = () => {
         console.error('Error cargando sucursales', e);
       }
     };
+    const fetchEmpleados = async () => {
+      try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EMPLEADOS}`, { headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : (data?.data ?? []);
+        setEmpleados(list);
+        if (!form.empleadoId && list[0]?._id) {
+          setForm((f) => ({ ...f, empleadoId: list[0]._id }));
+        }
+      } catch (e) {
+        console.error('Error cargando empleados', e);
+      }
+    };
     fetchSucursales();
+    fetchEmpleados();
   }, []);
 
   const authHeaders = useMemo(() => ({
@@ -324,7 +339,13 @@ const Cart = () => {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600">Empleado (requerido)</label>
-                  <input type="text" name="empleadoId" value={form.empleadoId} onChange={handleChange} placeholder="ID del empleado que procesa la venta" className="w-full border rounded px-3 py-2" />
+                  <select name="empleadoId" value={form.empleadoId} onChange={handleChange} className="w-full border rounded px-3 py-2">
+                    {empleados.map(e => (
+                      <option key={e._id} value={e._id}>
+                        {`${e.nombre || ''} ${e.apellido || ''}`.trim() || e._id}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

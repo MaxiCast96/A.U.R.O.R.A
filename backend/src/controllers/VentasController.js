@@ -1,4 +1,5 @@
 import ventasModel from "../models/Ventas.js";
+import mongoose from "mongoose";
 
 const ventasController = {};
 
@@ -38,15 +39,25 @@ ventasController.createVenta = async (req, res) => {
         if (!carritoId) return res.status(400).json({ message: "El carrito es obligatorio" });
         if (!empleadoId) return res.status(400).json({ message: "El empleado es obligatorio" });
         if (!sucursalId) return res.status(400).json({ message: "La sucursal es obligatoria" });
+        // Validar ObjectIds para evitar CastError (500)
+        const { ObjectId } = mongoose.Types;
+        if (!ObjectId.isValid(String(carritoId))) return res.status(400).json({ message: "carritoId inválido" });
+        if (!ObjectId.isValid(String(empleadoId))) return res.status(400).json({ message: "empleadoId inválido" });
+        if (!ObjectId.isValid(String(sucursalId))) return res.status(400).json({ message: "sucursalId inválido" });
         // fecha y estado pueden omitirse: se aplican valores por defecto más abajo
 
         if (!datosPago || !datosPago.metodoPago) return res.status(400).json({ message: "El método de pago es obligatorio" });
         if (!datosPago.montoPagado && datosPago.montoPagado !== 0) return res.status(400).json({ message: "El monto pagado es obligatorio" });
         if (!datosPago.montoTotal && datosPago.montoTotal !== 0) return res.status(400).json({ message: "El monto total es obligatorio" });
+        // Para métodos no efectivos, requerir numeroTransaccion desde el controller
+        if (datosPago.metodoPago !== 'efectivo' && !datosPago.numeroTransaccion) {
+            return res.status(400).json({ message: "El número de transacción es obligatorio para pagos electrónicos" });
+        }
         // numeroFactura puede omitirse; si viene, se valida unicidad
         if (!facturaDatos) return res.status(400).json({ message: "Los datos de factura son obligatorios" });
 
         if (!facturaDatos.clienteId) return res.status(400).json({ message: "El cliente de la factura es obligatorio" });
+        if (!ObjectId.isValid(String(facturaDatos.clienteId))) return res.status(400).json({ message: "clienteId inválido" });
         if (!facturaDatos.nombreCliente) return res.status(400).json({ message: "El nombre del cliente es obligatorio" });
         if (!facturaDatos.duiCliente) return res.status(400).json({ message: "El DUI del cliente es obligatorio" });
         if (!facturaDatos.direccionCliente || !facturaDatos.direccionCliente.calle) return res.status(400).json({ message: "La calle de la dirección es obligatoria" });
