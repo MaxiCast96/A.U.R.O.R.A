@@ -422,8 +422,6 @@ const Home = () => {
                     </div>
                   </>
                 )}
-
-               
               </div>
             )}
           </div>
@@ -431,7 +429,7 @@ const Home = () => {
         <br />
         <br />
         <br />
-        <br />
+
 
         {/* Carrusel de Marcas - AHORA RECIBE DATOS COMO PROPS */}
         <BrandsCarousel
@@ -454,92 +452,244 @@ const Home = () => {
         <br />
         <br />
 
-        {/* Categorías simplificadas */}
+        {/* Servici os con animaciones más sutiles */}
         <motion.section
           variants={fadeIn}
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
-          className="max-w-6xl mx-auto px-4 mb-16"
+          className="relative w-full py-16"
         >
-          <h2 className="text-2xl font-bold text-center mb-8">
-            Nuestras Categorías
-          </h2>
+          {/* Fondo curvo */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#f8f9fa] to-white">
+            {/* Curva superior */}
+            <div className="absolute -top-16 left-0 w-full h-32 bg-[#f8f9fa] rounded-t-[100px]"></div>
+            {/* Curva inferior */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[100%] h-32 bg-[#f8f9fa] rounded-b-[200px]"></div>
+          </div>
+
+          {/* Contenido */}
+          <div className="relative max-w-7xl mx-auto px-4 pt-8">
+            <motion.div
+              variants={staggerContainer}
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6"
+            >
+              {/* Mejora las cards con animaciones al hacer hover */}
+              <motion.div
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <motion.div
+                  whileHover={{ rotate: 360 }}
+                  transition={{ duration: 0.6 }}
+                  className="bg-[#0097c2] text-white rounded-full p-3 mb-3"
+                >
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16s4-2.5 4-6a4 4 0 10-8 0c0 3.5 4 6 4 6z" />
+                  </svg>
+                </motion.div>
+                <h3 className="font-semibold mb-2">
+                  Examen Visual Profesional
+                </h3>
+                <p className="text-gray-600 text-sm">
+                  Realizado por optometristas certificados con equipos de última
+                  generación.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="4" y="4" width="16" height="16" rx="2" />
+                    <path d="M8 12l2 2 4-4" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold mb-2">Garantía de calidad</h3>
+                <p className="text-gray-600 text-sm">
+                  Todos nuestros productos cuentan con garantía contra defectos
+                  de fabricación.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M3 12h18M9 6l-6 6 6 6" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold mb-2">Entrega rápida</h3>
+                <p className="text-gray-600 text-sm">
+                  Recibe tus lentes en tiempo récord, con la graduación exacta
+                  que necesitas.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={fadeInUp}
+                whileHover={{ y: -5 }}
+                className="bg-white rounded-2xl p-6 flex flex-col items-center text-center shadow-md hover:shadow-xl transition-all duration-300"
+              >
+                <div className="bg-[#0097c2] text-white rounded-full p-3 mb-3">
+                  <svg
+                    className="w-8 h-8"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                  >
+                    <path d="M12 8v4l3 3" />
+                    <circle cx="12" cy="12" r="10" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold mb-2">Envío gratuito</h3>
+                <p className="text-gray-600 text-sm">
+                  En compras mayores a $1000, el envío va por nuestra cuenta.
+                </p>
+              </motion.div>
+            </motion.div>
+          </div>
+        </motion.section>
+        <br />
+        <br />
+
+        {/* Testimonios más sutiles */}
+        <motion.section
+          variants={fadeIn}
+          initial="initial"
+          whileInView="animate"
+          viewport={{ once: true }}
+          className="max-w-6xl mx-auto px-4 mb-12"
+        >
           <motion.div
             variants={staggerContainer}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4"
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            {/* Cada categoría como motion.div */}
+            {/* Convertir cada testimonio en un motion.div */}
             <motion.div
               variants={fadeInUp}
               whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
+              className="bg-white rounded-2xl shadow-md p-6"
             >
               <motion.img
-                whileHover={{ scale: 1.05 }}
+                whileHover={{ scale: 1.1, rotate: 10 }}
                 transition={{ duration: 0.3 }}
-                src={Hombre}
-                alt="Hombres"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+                src="/img/cliente1.jpg"
+                alt="Cliente 1"
+                className="w-14 h-14 rounded-full mb-2 object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Hombres
+              <h3 className="font-semibold">María González</h3>
+              <span className="text-xs text-gray-500 mb-2">
+                Cliente desde 2020
               </span>
+              <p className="text-center text-gray-700 mb-2">
+                Excelente servicio y atención. Me encantaron mis nuevos lentes y
+                el Examen Visual fue muy profesional. ¡Definitivamente
+                regresaré!
+              </p>
+              <div className="flex space-x-1">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className="w-4 h-4 text-yellow-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.286 3.966c.3.922-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.176 0l-3.385 2.46c-.784.57-1.838-.196-1.54-1.118l1.286-3.966a1 1 0 00-.364-1.118L2.045 9.394c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.967z" />
+                  </svg>
+                ))}
+              </div>
             </motion.div>
-
             <motion.div
               variants={fadeInUp}
               whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
+              className="bg-white rounded-2xl shadow-md p-6"
             >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                src={Mujer}
-                alt="Mujeres"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+              <img
+                src="/img/cliente2.jpg"
+                alt="Cliente 2"
+                className="w-14 h-14 rounded-full mb-2 object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Mujeres
+              <h3 className="font-semibold">Carlos Ramírez</h3>
+              <span className="text-xs text-gray-500 mb-2">
+                Cliente desde 2019
               </span>
+              <p className="text-center text-gray-700 mb-2">
+                Encontré exactamente lo que buscaba a un precio accesible. El
+                personal es muy amable y me ayudaron a elegir el armazón
+                perfecto para mi rostro.
+              </p>
+              <div className="flex space-x-1">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className="w-4 h-4 text-yellow-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.286 3.966c.3.922-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.176 0l-3.385 2.46c-.784.57-1.838-.196-1.54-1.118l1.286-3.966a1 1 0 00-.364-1.118L2.045 9.394c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.967z" />
+                  </svg>
+                ))}
+              </div>
             </motion.div>
-
             <motion.div
               variants={fadeInUp}
               whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
+              className="bg-white rounded-2xl shadow-md p-6"
             >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                src={Nino}
-                alt="Niños"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
+              <img
+                src="/img/cliente3.jpg"
+                alt="Cliente 3"
+                className="w-14 h-14 rounded-full mb-2 object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Niños
+              <h3 className="font-semibold">Laura Sánchez</h3>
+              <span className="text-xs text-gray-500 mb-2">
+                Cliente desde 2021
               </span>
-            </motion.div>
-
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="rounded-xl overflow-hidden shadow-lg relative cursor-pointer group"
-            >
-              <motion.img
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.3 }}
-                src={Accesorios}
-                alt="Accesorios"
-                className="w-full h-72 object-cover transition-transform duration-300 group-hover:scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <span className="absolute bottom-4 left-4 text-white text-xl font-semibold z-10">
-                Accesorios
-              </span>
+              <p className="text-center text-gray-700 mb-2">
+                La calidad de los lentes es excelente. El proceso de adaptación
+                fue muy rápido y el seguimiento post-venta es de calidad
+                realmente valiosa.
+              </p>
+              <div className="flex space-x-1">
+                {[...Array(5)].map((_, i) => (
+                  <svg
+                    key={i}
+                    className="w-4 h-4 text-yellow-400"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.385 2.46a1 1 0 00-.364 1.118l1.286 3.966c.3.922-.755 1.688-1.54 1.118l-3.385-2.46a1 1 0 00-1.176 0l-3.385 2.46c-.784.57-1.838-.196-1.54-1.118l1.286-3.966a1 1 0 00-.364-1.118L2.045 9.394c-.783-.57-.38-1.81.588-1.81h4.178a1 1 0 00.95-.69l1.286-3.967z" />
+                  </svg>
+                ))}
+              </div>
             </motion.div>
           </motion.div>
         </motion.section>

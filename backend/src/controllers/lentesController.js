@@ -1,7 +1,9 @@
 import "../models/Marcas.js";
 import "../models/Categoria.js";
+//import "../models/Promocion.js";
 import lentesModel from "../models/Lentes.js";
 import { v2 as cloudinary } from "cloudinary";
+import Lentes from '../models/Lentes.js';
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -10,102 +12,150 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Obtener todos los lentes
+// SELECT - Obtiene todos los lentes con sus relaciones pobladas
 async function getLentes(req, res) {
     try {
+        // Busca todos los lentes y puebla las referencias a categorías, marcas, promociones y sucursales
         const lentes = await lentesModel.find()
-            .populate('categoriaId')
-            .populate('marcaId')
-            .populate('promocionId')
-            .populate('sucursales.sucursalId');
-        res.status(200).json({
-            success: true,
-            data: lentes
-        });
+            .populate('categoriaId') // Obtiene datos completos de la categoría
+            .populate('marcaId') // Obtiene datos completos de la marca
+            .populate('promocionId') // Obtiene datos de promoción si existe
+            .populate('sucursales.sucursalId'); // Obtiene datos de cada sucursal asociada
+        res.json(lentes);
     } catch (error) {
-        console.error("Error obteniendo lentes:", error);
-        res.status(500).json({ 
-            success: false,
-            message: "Error obteniendo lentes",
-            error: error.message 
-        });
+        console.log("Error: " + error);
+        res.json({ message: "Error obteniendo lentes: " + error.message });
     }
 }
 
-// Crear nuevos lentes
+// INSERT - Crea nuevos lentes con imágenes y datos básicos
 async function createLentes(req, res) {
-    try {
-        let sucursales = req.body.sucursales;
-        if (typeof sucursales === "string") {
-            sucursales = JSON.parse(sucursales);
+    // Parsear sucursales si viene como string (form-data)
+    let sucursales = req.body.sucursales;
+    if (typeof sucursales === "string") {
+        try {
+            sucursales = JSON.parse(sucursales); // Convierte string a objeto
+        } catch (e) {
+            return res.json({ message: "Error en el formato de sucursales" });
         }
+    }
 
-        let imagenesURLs = [];
-        
+    const {
+        nombre,
+        descripcion,
+        categoriaId,
+        marcaId,
+        material,
+        color,
+        tipoLente,
+        precioBase,
+        precioActual,
+        linea,
+        medidas,
+        enPromocion,
+        promocionId,
+        fechaCreacion,
+    } = req.body;
+
+    let imagenesURLs = [];
+
+    try {
+        // Subir imágenes a Cloudinary si se enviaron archivos
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
+                // Sube cada archivo a la carpeta "lentes" en Cloudinary
                 const result = await cloudinary.uploader.upload(file.path, {
                     folder: "lentes",
-                    allowed_formats: ["png", "jpg", "jpeg", "webp"]
+                    allowed_formats: ["png", "jpg", "jpeg", "webp"] // Formatos permitidos
                 });
-                imagenesURLs.push(result.secure_url);
+                imagenesURLs.push(result.secure_url); // Guarda la URL segura
             }
         } else if (req.body.imagenes) {
+            // Si se enviaron URLs directamente las convierte a array
             imagenesURLs = Array.isArray(req.body.imagenes) ? req.body.imagenes : [req.body.imagenes];
         }
 
+        // Crea nueva instancia del modelo con todos los datos
         const newLentes = new lentesModel({
-            ...req.body,
+            nombre,
+            descripcion,
+            categoriaId,
+            marcaId,
+            material,
+            color,
+            tipoLente,
+            precioBase,
+            precioActual,
+            linea,
+            medidas,
             imagenes: imagenesURLs,
-            sucursales: sucursales || [],
-            promocionId: req.body.enPromocion ? req.body.promocionId : null
+            enPromocion: enPromocion || false,
+            promocionId: enPromocion ? promocionId : undefined,
+            fechaCreacion,
+            sucursales: sucursales || []
         });
 
         await newLentes.save();
-        
-        const populatedLente = await lentesModel.findById(newLentes._id)
-            .populate('categoriaId')
-            .populate('marcaId')
-            .populate('promocionId')
-            .populate('sucursales.sucursalId');
-
-        res.status(201).json({
-            success: true,
-            data: populatedLente,
-            message: "Lente creado exitosamente"
-        });
+        res.json({ message: "Lentes guardado" });
     } catch (error) {
-        console.error("Error creando lentes:", error);
-        res.status(500).json({ 
-            success: false,
-            message: "Error creando lentes",
-            error: error.message 
-        });
+        console.log("Error: " + error);
+        res.json({ message: "Error creando lentes: " + error.message });
     }
 }
 
-// Actualizar lentes existentes
-async function updateLentes(req, res) {
+// DELETE - Elimina unos lentes por ID
+async function deleteLentes(req, res) {
     try {
-        const { id } = req.params;
-        let updateData = req.body;
+        // Busca y elimina los lentes por ID
+        const deleteLentes = await lentesModel.findByIdAndDelete(req.params.id);
 
-        // Convertir datos si vienen como strings
-        if (typeof updateData.sucursales === "string") {
-            updateData.sucursales = JSON.parse(updateData.sucursales);
-        }
-        if (typeof updateData.medidas === "string") {
-            updateData.medidas = JSON.parse(updateData.medidas);
+        // Verificar si los lentes existían
+        if (!deleteLentes) {
+            return res.json({ message: "Lentes no encontrado" });
         }
 
-        // Manejar promoción
-        if (!updateData.enPromocion) {
-            updateData.promocionId = null;
-        }
+        res.json({ message: "Lentes eliminado" });
+    } catch (error) {
+        console.log("Error: " + error);
+        res.json({ message: "Error eliminando lentes: " + error.message });
+    }
+}
 
-        // Subir nuevas imágenes si existen
+// UPDATE - Actualiza lentes existentes con nuevos datos e imágenes
+async function updateLentes(req, res) {
+    // Parsear sucursales si viene como string (form-data)
+    let sucursales = req.body.sucursales;
+    if (typeof sucursales === "string") {
+        try {
+            sucursales = JSON.parse(sucursales);
+        } catch (e) {
+            return res.json({ message: "Error en el formato de sucursales" });
+        }
+    }
+
+    const {
+        nombre,
+        descripcion,
+        categoriaId,
+        marcaId,
+        material,
+        color,
+        tipoLente,
+        precioBase,
+        precioActual,
+        linea,
+        medidas,
+        enPromocion,
+        promocionId,
+        fechaCreacion,
+    } = req.body;
+
+    let imagenesURLs = req.body.imagenes || []; // Mantiene imágenes existentes por defecto
+
+    try {
+        // Sube nuevas imágenes a Cloudinary si se enviaron archivos
         if (req.files && req.files.length > 0) {
-            const imagenesURLs = [];
+            imagenesURLs = []; // Limpia array para nuevas imágenes
             for (const file of req.files) {
                 const result = await cloudinary.uploader.upload(file.path, {
                     folder: "lentes",
@@ -113,167 +163,118 @@ async function updateLentes(req, res) {
                 });
                 imagenesURLs.push(result.secure_url);
             }
-            updateData.imagenes = imagenesURLs;
         }
 
-        // Actualizar el documento
+        // Prepara objeto con datos a actualizar
+        const updateData = {
+            nombre,
+            descripcion,
+            categoriaId,
+            marcaId,
+            material,
+            color,
+            tipoLente,
+            precioBase,
+            precioActual,
+            linea,
+            medidas,
+            imagenes: imagenesURLs,
+            enPromocion: enPromocion || false,
+            fechaCreacion,
+            sucursales: sucursales || []
+        };
+
+        // Maneja promoción: agrega o elimina según el estado
+        if (enPromocion && promocionId) {
+            updateData.promocionId = promocionId; // Asigna promoción
+        } else {
+            updateData.$unset = { promocionId: "" }; // Elimina promoción
+        }
+
+        // Actualiza el documento y retorna la versión nueva
         const updatedLentes = await lentesModel.findByIdAndUpdate(
-            id,
+            req.params.id,
             updateData,
-            { 
-                new: true,
-                runValidators: true 
-            }
-        )
-        .populate('categoriaId')
-        .populate('marcaId')
-        .populate('promocionId')
-        .populate('sucursales.sucursalId');
+            { new: true } // Retorna documento actualizado
+        );
 
         if (!updatedLentes) {
-            return res.status(404).json({ 
-                success: false,
-                message: 'Lente no encontrado' 
-            });
+            return res.json({ message: "Lentes no encontrados" });
         }
 
-        res.status(200).json({
-            success: true,
-            data: updatedLentes,
-            message: "Lente actualizado exitosamente"
-        });
+        res.json({ message: "Lentes actualizado" });
     } catch (error) {
-        console.error('Error actualizando lente:', error);
-        res.status(500).json({ 
-            success: false,
-            message: 'Error actualizando lente',
-            error: error.message 
-        });
+        console.log("Error: " + error);
+        res.json({ message: "Error actualizando lentes: " + error.message });
     }
 }
 
-// Eliminar lentes
-async function deleteLentes(req, res) {
-    try {
-        const deleteLentes = await lentesModel.findByIdAndDelete(req.params.id);
-
-        if (!deleteLentes) {
-            return res.status(404).json({ 
-                success: false,
-                message: "Lente no encontrado" 
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: "Lente eliminado exitosamente"
-        });
-    } catch (error) {
-        console.error("Error eliminando lentes:", error);
-        res.status(500).json({ 
-            success: false,
-            message: "Error eliminando lentes",
-            error: error.message 
-        });
-    }
-}
-
-// Obtener lente por ID
+// SELECT by ID - Obtiene lentes específicos por ID
 async function getLentesById(req, res) {
     try {
+        // Busca lentes por ID y puebla todas las referencias
         const lentes = await lentesModel.findById(req.params.id)
             .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
-            
         if (!lentes) {
-            return res.status(404).json({ 
-                success: false,
-                message: "Lente no encontrado" 
-            });
+            return res.json({ message: "Lentes no encontrado" });
         }
-        
-        res.status(200).json({
-            success: true,
-            data: lentes
-        });
+        res.json(lentes);
     } catch (error) {
-        console.error("Error obteniendo lente:", error);
-        res.status(500).json({ 
-            success: false,
-            message: "Error obteniendo lente",
-            error: error.message 
-        });
+        console.log("Error: " + error);
+        res.json({ message: "Error obteniendo lentes: " + error.message });
     }
 }
 
-// Obtener lentes por marca
+// SELECT by Marca - Obtiene lentes filtrados por marca específica
 async function getLentesByIdMarca(req, res) {
     try {
+        // Filtra lentes por ID de marca específica
         const lentes = await lentesModel.find({ marcaId: req.params.marcaId })
             .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
-            
-        res.status(200).json({
-            success: true,
-            data: lentes
-        });
+        res.json(lentes);
     } catch (error) {
-        console.error("Error obteniendo lentes por marca:", error);
-        res.status(500).json({ 
-            success: false,
-            message: "Error obteniendo lentes por marca",
-            error: error.message 
-        });
+        console.log("Error: " + error);
+        res.json({ message: "Error obteniendo lentes por marca: " + error.message });
     }
 }
 
-// Obtener lentes en promoción
+// SELECT by Promoción - Obtiene lentes que están en promoción
 async function getLentesByPromocion(req, res) {
     try {
+        // Filtra solo lentes marcados como en promoción
         const lentes = await lentesModel.find({ enPromocion: true })
             .populate('categoriaId')
             .populate('marcaId')
             .populate('promocionId')
             .populate('sucursales.sucursalId');
-            
-        res.status(200).json({
-            success: true,
-            data: lentes
-        });
+        res.json(lentes);
     } catch (error) {
-        console.error("Error obteniendo lentes en promoción:", error);
-        res.status(500).json({ 
-            success: false,
-            message: "Error obteniendo lentes en promoción",
-            error: error.message 
-        });
+        console.log("Error: " + error);
+        res.json({ message: "Error obteniendo lentes en promoción: " + error.message });
     }
 }
 
-// Obtener lentes populares
+// SELECT Populares - Obtiene lentes marcados como populares o los primeros registros
 async function getLentesPopulares(req, res) {
     try {
-        let populares = await lentesModel.find().limit(5)
-            .populate('categoriaId')
-            .populate('marcaId')
-            .populate('promocionId')
-            .populate('sucursales.sucursalId');
-            
-        res.status(200).json({
-            success: true,
-            data: populares
-        });
+        // Si el campo popular no existe, devuelve los primeros 5
+        let populares;
+        if (Lentes.schema.obj.popular) {
+            // Filtra lentes marcados como populares
+            populares = await Lentes.find({ popular: true });
+        } else {
+            // Fallback: obtiene los primeros 5 lentes como populares
+            populares = await Lentes.find().limit(5);
+        }
+        res.json(populares);
     } catch (error) {
-        console.error("Error obteniendo lentes populares:", error);
-        res.status(500).json({ 
-            success: false,
-            message: "Error obteniendo lentes populares",
-            error: error.message 
-        });
+        res.status(500).json({ message: 'Error obteniendo lentes populares: ' + error.message });
     }
 }
 
