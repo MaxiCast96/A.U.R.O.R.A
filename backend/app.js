@@ -153,8 +153,18 @@ app.post('/api/wompi/tokenless', async (req, res) => {
 
         const _fetch = await getFetch();
         const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+        // Opción 1: API key pública
         if (process.env.WOMPI_PUBLIC_API_KEY) {
-            headers['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY; // opcional
+            headers['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY;
+        }
+        // Opción 2: Basic Auth (habilitar con WOMPI_USE_BASIC_AUTH=true)
+        if (process.env.WOMPI_USE_BASIC_AUTH === 'true') {
+            const appId = process.env.APP_ID || '';
+            const apiSecret = process.env.API_SECRET || '';
+            if (appId && apiSecret) {
+                const basic = Buffer.from(`${appId}:${apiSecret}`).toString('base64');
+                headers['Authorization'] = `Basic ${basic}`;
+            }
         }
         const resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
             method: 'POST',
@@ -165,7 +175,7 @@ app.post('/api/wompi/tokenless', async (req, res) => {
         let data = {};
         try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
         if (!resp.ok) {
-            return res.status(resp.status).json({ success: false, error: data });
+            return res.status(resp.status).json({ success: false, error: data, upstreamStatus: resp.status });
         }
         return res.json({ success: true, data });
     } catch (err) {
