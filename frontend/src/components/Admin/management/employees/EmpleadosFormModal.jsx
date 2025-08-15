@@ -602,9 +602,11 @@ const EmpleadosFormModal = ({
     errors, 
     submitLabel, 
     sucursales,
-    setFormData,
-    selectedEmpleado = null
+    onReturnToOptometristaEdit, // New prop
+    selectedEmpleado 
 }) => {
+    const isNewOptometrista = formData.cargo === 'Optometrista' && !selectedEmpleado;
+    const isEditingFromOptometrista = formData.fromOptometristaPage;
     const [uploading, setUploading] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
     const isEditing = !!selectedEmpleado;
@@ -645,6 +647,22 @@ const EmpleadosFormModal = ({
             ]
         },
         {
+          title: "💼 Información Laboral",
+          fields: [
+              { 
+                  name: 'sucursalId', 
+                  label: 'Sucursal de Trabajo', 
+                  type: 'select', 
+                  options: sucursales ? sucursales.map(s => ({ value: s._id, label: s.nombre })) : [], 
+                  required: true 
+              },
+              { name: 'cargo', label: 'Puesto de Trabajo', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
+              { name: 'salario', label: 'Salario Mensual (USD)', type: 'number', placeholder: '500.00', required: true },
+              { name: 'fechaContratacion', label: 'Fecha de Contratación', type: 'date', required: true },
+              { name: 'estado', label: 'Estado del Empleado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
+          ]
+      },
+        {
             title: "🏠 Información de Residencia",
             fields: [
                 { 
@@ -668,22 +686,7 @@ const EmpleadosFormModal = ({
                 { name: 'direccion.direccionDetallada', label: 'Dirección Completa', type: 'textarea', placeholder: 'Colonia Las Flores, Calle Principal #123, Casa azul con portón blanco', nested: true },
             ]
         },
-        {
-            title: "💼 Información Laboral",
-            fields: [
-                { 
-                    name: 'sucursalId', 
-                    label: 'Sucursal de Trabajo', 
-                    type: 'select', 
-                    options: sucursales ? sucursales.map(s => ({ value: s._id, label: s.nombre })) : [], 
-                    required: true 
-                },
-                { name: 'cargo', label: 'Puesto de Trabajo', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
-                { name: 'salario', label: 'Salario Mensual (USD)', type: 'number', placeholder: '500.00', required: true },
-                { name: 'fechaContratacion', label: 'Fecha de Contratación', type: 'date', required: true },
-                { name: 'estado', label: 'Estado del Empleado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
-            ]
-        }
+        
     ];
 
     const customContent = (
@@ -749,17 +752,31 @@ const EmpleadosFormModal = ({
         <FormModal
             isOpen={isOpen}
             onClose={onClose}
-            onSubmit={handleFormSubmit}
+            onSubmit={onSubmit}
             title={title}
             formData={formData}
             handleInputChange={handleInputChange}
             errors={errors}
-            submitLabel={submitLabel}
+            submitLabel={isNewOptometrista ? 'Siguiente' : (selectedEmpleado ? 'Actualizar Empleado' : 'Guardar Empleado')}
             fields={[]}
             gridCols={1}
             size="xl"
         >
             {customContent}
+
+             {/* --- ADD THIS IN THE FOOTER OF THE MODAL --- */}
+             {isEditingFromOptometrista && (
+                 <div className="p-4 sm:p-6 bg-gray-50 rounded-b-xl flex justify-end gap-3 sticky bottom-0 z-10">
+                    {/* ... existing Cancel and Submit buttons */}
+                    <button 
+                        type="button" 
+                        onClick={onReturnToOptometristaEdit} 
+                        className="w-full sm:w-auto px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all"
+                    >
+                        Editar Información de Optometrista
+                    </button>
+                 </div>
+            )}
         </FormModal>
     );
 };

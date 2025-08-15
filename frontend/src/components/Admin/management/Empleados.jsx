@@ -12,7 +12,9 @@ import Pagination from '../ui/Pagination';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
+import { useLocation, useNavigate } from 'react-router-dom';
 import EmpleadosFormModal from '../management/employees/EmpleadosFormModal';
+import OptometristasFormModal from '../management/optometristas/OptometristasFormModal';
 
 // Iconos (sin cambios)
 import { Users, UserCheck, Building2, DollarSign, Trash2, Eye, Edit, Phone, Mail, Calendar } from 'lucide-react';
@@ -33,6 +35,12 @@ const Empleados = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('todos');
+    const [isOptometristaFlow, setIsOptometristaFlow] = useState(false);
+    const [tempEmployeeData, setTempEmployeeData] = useState(null);
+    const [showOptometristaModal, setShowOptometristaModal] = useState(false);
+
+    const location = useLocation();
+    const navigate = useNavigate();
 
     // --- FETCH DE DATOS ---
     const fetchData = async () => {
@@ -97,6 +105,34 @@ const Empleados = () => {
         return newErrors;
     });
 
+    // --- FORMULARIO PARA OPTOMETRISTA (Paso 2) ---
+const { 
+    formData: optometristaFormData, 
+    setFormData: setOptometristaFormData, 
+    handleInputChange: handleOptometristaInputChange, 
+    resetForm: resetOptometristaForm, 
+    validateForm: validateOptometristaForm, 
+    errors: optometristaErrors,
+    setErrors: setOptometristaErrors
+} = useForm({
+    // Valores iniciales para un nuevo optometrista
+    especialidad: '',
+    licencia: '',
+    experiencia: '',
+    disponibilidad: [],
+    sucursalesAsignadas: [],
+    disponible: true,
+    empleadoId: '' // Se llenará después
+}, (data) => {
+    // Reglas de validación para el optometrista
+    const newErrors = {};
+    if (!data.especialidad) newErrors.especialidad = 'La especialidad es requerida';
+    if (!data.licencia) newErrors.licencia = 'La licencia es requerida';
+    if (!data.experiencia || data.experiencia < 0) newErrors.experiencia = 'La experiencia debe ser un número positivo';
+    if (!data.sucursalesAsignadas || data.sucursalesAsignadas.length === 0) newErrors.sucursalesAsignadas = 'Debe asignar al menos una sucursal';
+    return newErrors;
+});
+
     // --- FILTRADO Y PAGINACIÓN ---
     const filteredEmpleados = useMemo(() => empleados.filter(empleado => {
         const search = searchTerm.toLowerCase();
@@ -134,6 +170,68 @@ const Empleados = () => {
         { title: 'Nómina Total (Activos)', value: formatSalario(nominaTotal), Icon: DollarSign }
     ];
 
+    // --- EFFECT TO HANDLE REDIRECT FOR EDITING ---
+    useEffect(() => {
+        if (location.state?.editEmployeeId) {
+            const employeeToEdit = empleados.find(e => e._id === location.state.editEmployeeId);
+            if (employeeToEdit) {
+                // Pass a flag to indicate the origin of the edit
+                handleOpenEditModal(employeeToEdit, true); 
+            }
+            // Clear state to prevent re-triggering
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, empleados, navigate]);
+
+
+    // --- HANDLERS FOR THE NEW FLOW ---
+
+    // Step 1: Called from EmpleadosFormModal when "Siguiente" is clicked
+    const handleProceedToOptometristaForm = () => {
+        if (!validateForm()) return; // First, validate employee data
+        setTempEmployeeData(formData);
+        setShowAddEditModal(false);
+        setShowOptometristaModal(true); // Trigger the optometrista modal
+    };
+    
+    // Step 2: Called from OptometristasFormModal to finalize creation
+const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
+    // Primero, valida el formulario del optometrista
+    if (!validateOptometristaForm()) return;
+
+    try {
+        setLoading(true);
+        // 1. Create the Employee
+        const employeeResponse = await axios.post(API_URL, tempEmployeeData);
+        const newEmployeeId = employeeResponse.data._id;
+
+        // 2. Create the Optometrista with the new employee's ID
+        const finalOptometristaData = {
+            ...optometristaFormData, // Usa el estado del nuevo formulario
+            empleadoId: newEmployeeId,
+        };
+        await axios.post('http://localhost:4000/api/optometrista', finalOptometristaData);
+
+        showAlert('success', '¡Empleado y Optometrista creados exitosamente!');
+        handleCloseModals(); // Asegúrate que esta función también resetee el form de optometrista
+        navigate('/optometristas');
+
+    } catch (error) {
+        showAlert('error', 'Error en la creación: ' + (error.response?.data?.message || error.message));
+    } finally {
+        setLoading(false);
+    }
+};
+    
+    // Handler to navigate back to optometrista editing
+    const handleReturnToOptometristaEdit = (empleadoId) => {
+         const optometrista = optometristas.find(o => o.empleadoId._id === empleadoId);
+         if (optometrista) {
+            handleCloseModals();
+            navigate('/optometristas', { state: { editOptometristaId: optometrista._id } });
+         }
+    };
+
     // --- HANDLERS ---
     const showAlert = (type, message) => {
         setAlert({ type, message });
@@ -146,10 +244,12 @@ const Empleados = () => {
         setShowDeleteModal(false);
         setSelectedEmpleado(null);
         resetForm();
+        resetOptometristaForm(); // Añade esta línea
     };
     
     const handleOpenAddModal = () => {
-        resetForm();
+        resetForm(); // Resetea el form de empleado
+        resetOptometristaForm(); // Resetea el form de optometrista
         setFormData({ // Valores por defecto
             nombre: '', apellido: '', dui: '', telefono: '', correo: '', cargo: '', sucursalId: '',
             fechaContratacion: new Date().toISOString().split('T')[0], // Fecha actual
@@ -160,7 +260,7 @@ const Empleados = () => {
         setShowAddEditModal(true);
     };
 
-    const handleOpenEditModal = (empleado) => {
+    const handleOpenEditModal = (empleado, fromOptometristaPage = false) => {
         setSelectedEmpleado(empleado);
         
         // Extraer los 8 dígitos si el teléfono ya incluye +503
@@ -180,6 +280,7 @@ const Empleados = () => {
             telefono: telefonoSinPrefijo
         });
         setErrors({});
+        setFormData(prev => ({ ...prev, fromOptometristaPage }));
         setShowAddEditModal(true);
     };
     
@@ -363,7 +464,7 @@ const Empleados = () => {
             <EmpleadosFormModal
                 isOpen={showAddEditModal}
                 onClose={handleCloseModals}
-                onSubmit={handleSubmit}
+                onSubmit={formData.cargo === 'Optometrista' && !selectedEmpleado ? handleProceedToOptometristaForm : handleSubmit}
                 title={selectedEmpleado ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}
                 formData={formData}
                 setFormData={setFormData}
@@ -371,8 +472,30 @@ const Empleados = () => {
                 errors={errors}
                 submitLabel={selectedEmpleado ? 'Actualizar Empleado' : 'Guardar Empleado'}
                 sucursales={sucursales}
-                selectedEmpleado={selectedEmpleado}
+                selectedEmpleado={selectedEmpleado}onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
             />
+
+            {/* The Optometrista modal is now rendered here, conditionally */}
+            {showOptometristaModal && (
+    <OptometristasFormModal
+        isOpen={showOptometristaModal}
+        onClose={() => setShowOptometristaModal(false)}
+        onSubmit={handleFinalizeCreation} // onSubmit ya no pasa argumentos
+        title="Añadir Detalles del Optometrista (Paso 2 de 2)"
+        submitLabel="Finalizar y Guardar"
+        isCreationFlow={true}
+        preloadedEmployeeData={tempEmployeeData}
+        sucursales={sucursales}
+        
+        // --- PROPS FALTANTES (LA SOLUCIÓN PRINCIPAL) ---
+        formData={optometristaFormData}
+        setFormData={setOptometristaFormData}
+        handleInputChange={handleOptometristaInputChange}
+        errors={optometristaErrors}
+        empleados={[]} // No se necesitan empleados existentes para la creación
+        selectedOptometrista={null} // No hay un optometrista seleccionado
+    />
+)}
             
             <DetailModal
                 isOpen={showDetailModal}

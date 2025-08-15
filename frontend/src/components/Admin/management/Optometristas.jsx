@@ -14,6 +14,7 @@ import ConfirmationModal from '../ui/ConfirmationModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
 import OptometristasFormModal from './optometristas/OptometristasFormModal';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Iconos
 import { Eye, Plus, Edit, Trash2, UserCheck, UserX, Search, Award, Clock, MapPin, Phone, Mail, Building2 } from 'lucide-react';
@@ -38,6 +39,28 @@ const Optometristas = () => {
     const [filterEspecialidad, setFilterEspecialidad] = useState('todos');
     const [filterDisponible, setFilterDisponible] = useState('todos');
     const [filterSucursal, setFilterSucursal] = useState('todos');
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // --- EFFECT TO HANDLE RETURN REDIRECT FOR EDITING ---
+    useEffect(() => {
+        if (location.state?.editOptometristaId) {
+            const optometristaToEdit = optometristas.find(o => o._id === location.state.editOptometristaId);
+            if (optometristaToEdit) {
+                handleEdit(optometristaToEdit);
+            }
+            // Clear state
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, optometristas, navigate]);
+
+    // New handler to navigate to the employee edit page
+    const handleEditEmployeeRequest = (empleadoId) => {
+        handleCloseModals();
+        navigate('/empleados', { state: { editEmployeeId: empleadoId } });
+    };
+
+
 
     // --- FORMULARIO ---
     const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm({
@@ -351,11 +374,11 @@ const Optometristas = () => {
             ]} />
 
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <PageHeader 
-                    title="Gestión de Optometristas" 
-                    buttonLabel="Añadir Optometrista" 
-                    onButtonClick={handleAdd} 
-                />
+            <PageHeader 
+                title="Gestión de Optometristas" 
+                // REMOVED: buttonLabel="Añadir Optometrista" 
+                // REMOVED: onButtonClick={handleAdd} 
+            />
                 
                 <FilterBar
                     searchTerm={searchTerm}
@@ -424,6 +447,7 @@ const Optometristas = () => {
                 empleados={empleados}
                 sucursales={sucursales}
                 selectedOptometrista={selectedOptometrista}
+                onEditEmployeeRequest={handleEditEmployeeRequest}
             />
 
 <DetailModal

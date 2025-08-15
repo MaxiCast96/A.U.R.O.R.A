@@ -16,7 +16,10 @@ const OptometristasFormModal = ({
     submitLabel,
     empleados,
     sucursales,
-    selectedOptometrista
+    selectedOptometrista,
+    isCreationFlow = false,       // New prop to identify the creation flow
+    preloadedEmployeeData = null, // New prop for displaying new employee data
+    onEditEmployeeRequest,        // New prop for handling the edit navigatio
 }) => {
     // Estado para la alerta de límite de horas
     const [showLimitAlert, setShowLimitAlert] = useState(false);
@@ -293,10 +296,37 @@ const OptometristasFormModal = ({
         return createPortal(alertContent, document.body);
     };
 
+     // Determine which employee data to show
+     const employeeToShow = isCreationFlow ? preloadedEmployeeData : selectedOptometrista?.empleadoId;
+    // Si estamos en el flujo de creación, mostramos los datos del nuevo empleado
+    const selectedEmpleado = getSelectedEmpleado(); // Usa tu función existente
     // Campo personalizado para selección de empleado con tarjetas
     const EmpleadoSelectorField = () => {
-        const selectedEmpleado = getSelectedEmpleado();
-
+        // El 'employeeToShow' ya está definido correctamente arriba
+        // const employeeToShow = isCreationFlow ? preloadedEmployeeData : selectedOptometrista?.empleadoId;
+    
+        if (isCreationFlow) {
+            // --- VISTA PARA EL FLUJO DE CREACIÓN ---
+            // Muestra una tarjeta estática con los datos del empleado que se está creando
+            if (!preloadedEmployeeData) return <p>Cargando datos del empleado...</p>;
+            
+            return (
+                <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">Empleado *</label>
+                    <div className="w-full p-4 border rounded-lg bg-gray-50 flex items-center space-x-3">
+                        <img 
+                            src={preloadedEmployeeData.fotoPerfil || `https://ui-avatars.com/api/?name=${preloadedEmployeeData.nombre}+${preloadedEmployeeData.apellido}`} 
+                            alt={preloadedEmployeeData.nombre} 
+                            className="w-12 h-12 rounded-full object-cover border-2 border-cyan-200" 
+                        />
+                        <div>
+                            <div className="font-medium text-gray-900">{preloadedEmployeeData.nombre} {preloadedEmployeeData.apellido}</div>
+                            <div className="text-sm text-gray-500">{preloadedEmployeeData.correo}</div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
         return (
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
