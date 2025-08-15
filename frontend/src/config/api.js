@@ -28,8 +28,7 @@ export const API_CONFIG = {
     DASHBOARD: '/dashboard',
     CARRITO: '/carrito',
     REGISTRO_CLIENTES: '/registroClientes',
-    REGISTRO_EMPLEADOS: '/registroEmpleados',
-    PAGOS: '/pagos'
+    REGISTRO_EMPLEADOS: '/registroEmpleados'
   },
   
   // Configuración de fetch

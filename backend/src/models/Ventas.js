@@ -59,8 +59,7 @@ const ventasSchema = new Schema({
     facturaDatos: { // Datos para la factura
         numeroFactura: {
             type: String,
-            // Se genera automáticamente si no se provee
-            required: false,
+            required: true, // Número único de factura
             unique: true
         },
         clienteId: {
@@ -110,11 +109,11 @@ const ventasSchema = new Schema({
     strict: true
 });
 
-// Middleware para generar número de factura automáticamente antes de validar
-ventasSchema.pre('validate', async function(next) {
-    if (this.isNew && this.facturaDatos && !this.facturaDatos.numeroFactura) {
-        const count = await this.constructor.countDocuments();
-        this.facturaDatos.numeroFactura = `FAC-${Date.now()}-${count + 1}`;
+// Middleware para generar número de factura automáticamente
+ventasSchema.pre('save', async function(next) {
+    if (this.isNew && !this.facturaDatos.numeroFactura) {
+        const count = await this.constructor.countDocuments(); // Contar documentos existentes
+        this.facturaDatos.numeroFactura = `FAC-${Date.now()}-${count + 1}`; // Generar número único
     }
     next();
 });

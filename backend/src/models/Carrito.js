@@ -51,4 +51,4 @@ carritosSchema.pre('save', function(next) {
     next();
 });
 
-export default model('Carrito', carritosSchema);
+export default model('carrito', carritosSchema);

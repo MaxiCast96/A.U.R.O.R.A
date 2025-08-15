@@ -4,7 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { Link } from 'react-router-dom';
 import API_CONFIG from '../../config/api';
 import { useAuth } from '../../components/auth/AuthContext';
-import WompiTokenButton from '../../components/payments/WompiTokenButton';
+import WompiTokenPayment from '../../components/payments/WompiTokenPayment';
 
 const Cart = () => {
   const { cart, itemCount, total, removeItem, updateQty, clearCart, loading } = useCart();
@@ -14,15 +14,12 @@ const Cart = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [sucursales, setSucursales] = useState([]);
-  const [empleados, setEmpleados] = useState([]);
 
   const [form, setForm] = useState({
     sucursalId: '',
     empleadoId: '',
     metodoPago: 'efectivo',
     montoPagado: 0,
-    emailCliente: '',
-    tokenTarjeta: '',
     nombreCliente: '',
     duiCliente: '',
     direccion: { calle: '', ciudad: '', departamento: '' },
@@ -37,9 +34,8 @@ const Cart = () => {
       ...f,
       montoPagado: montoTotal,
       nombreCliente: f.nombreCliente || user?.nombre || '',
-      emailCliente: f.emailCliente || user?.correo || user?.email || '',
     }));
-  }, [montoTotal, user?.nombre, user?.correo, user?.email]);
+  }, [montoTotal, user?.nombre]);
 
   useEffect(() => {
     // Fetch sucursales for selection
@@ -56,21 +52,7 @@ const Cart = () => {
         console.error('Error cargando sucursales', e);
       }
     };
-    const fetchEmpleados = async () => {
-      try {
-        const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.EMPLEADOS}`, { headers: { 'Content-Type': 'application/json' }, credentials: 'include' });
-        const data = await res.json();
-        const list = Array.isArray(data) ? data : (data?.data ?? []);
-        setEmpleados(list);
-        if (!form.empleadoId && list[0]?._id) {
-          setForm((f) => ({ ...f, empleadoId: list[0]._id }));
-        }
-      } catch (e) {
-        console.error('Error cargando empleados', e);
-      }
-    };
     fetchSucursales();
-    fetchEmpleados();
   }, []);
 
   const authHeaders = useMemo(() => ({
@@ -121,50 +103,6 @@ const Cart = () => {
       return;
     }
 
-    // Si el método es tarjeta, procesar pago con Wompi antes de crear la venta
-    let numeroTransaccion;
-    if (form.metodoPago === 'tarjeta_credito' || form.metodoPago === 'tarjeta_debito') {
-      if (!form.emailCliente) {
-        setError('Ingresa el email del titular para el cargo con tarjeta.');
-        return;
-      }
-      if (!form.tokenTarjeta) {
-        setError('Falta el token de la tarjeta.');
-        return;
-      }
-
-      try {
-        const wompiRes = await fetch(
-          `${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PAGOS}/wompi/tokenizada-sin-3ds`,
-          {
-            method: 'POST',
-            headers: authHeaders,
-            credentials: 'include',
-            body: JSON.stringify({
-              monto: Number(montoTotal),
-              emailCliente: form.emailCliente,
-              nombreCliente: form.nombreCliente,
-              tokenTarjeta: form.tokenTarjeta,
-              configuracion: { notificarTransaccionCliente: true },
-              datosAdicionales: { carritoId: cart._id }
-            })
-          }
-        );
-        const wompiData = await wompiRes.json();
-        if (!wompiRes.ok) {
-          setError(wompiData?.message || 'Error procesando el pago con Wompi.');
-          return;
-        }
-        // Tomar algún identificador de transacción del payload de Wompi
-        const d = wompiData?.data || wompiData;
-        numeroTransaccion = d?.numeroTransaccion || d?.reference || d?.id || `WOMPI-${Date.now()}`;
-      } catch (err) {
-        console.error('Error Wompi', err);
-        setError('Error de red con el servicio de pagos.');
-        return;
-      }
-    }
-
     const cambio = Math.max(0, Number(form.montoPagado) - montoTotal);
     const payload = {
       carritoId: cart._id,
@@ -175,7 +113,7 @@ const Cart = () => {
         montoPagado: Number(form.montoPagado),
         montoTotal: montoTotal,
         cambio,
-        numeroTransaccion: form.metodoPago === 'efectivo' ? undefined : (numeroTransaccion || `TX-${Date.now()}`)
+        numeroTransaccion: form.metodoPago === 'efectivo' ? undefined : `TX-${Date.now()}`
       },
       facturaDatos: {
         // numeroFactura omitido: lo genera el backend (ventasSchema.pre('save'))
@@ -280,29 +218,6 @@ const Cart = () => {
                 <div className="self-end text-right text-sm text-gray-700">Total a pagar: <span className="font-semibold">${montoTotal.toFixed(2)}</span></div>
               </div>
 
-              {(form.metodoPago === 'tarjeta_credito' || form.metodoPago === 'tarjeta_debito') && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-sm text-gray-600">Email del titular</label>
-                    <input type="email" name="emailCliente" value={form.emailCliente} onChange={handleChange} className="w-full border rounded px-3 py-2" />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm text-gray-600">Token de tarjeta (Wompi)</label>
-                    <input type="text" name="tokenTarjeta" value={form.tokenTarjeta} onChange={handleChange} className="w-full border rounded px-3 py-2" placeholder="tok_xxx obtenido desde Wompi" />
-                    <div className="text-xs text-gray-500 mt-1">Ingresa el token generado por el SDK/Widget de Wompi. Este formulario no captura datos sensibles directamente.</div>
-                    <div className="mt-3">
-                      <WompiTokenButton
-                        amount={Number(montoTotal)}
-                        email={form.emailCliente}
-                        name={form.nombreCliente}
-                        disabled={!form.emailCliente || montoTotal <= 0}
-                        onToken={(tok) => setForm((f) => ({ ...f, tokenTarjeta: tok }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
               <h2 className="text-lg font-semibold">Datos de facturación</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
@@ -339,13 +254,7 @@ const Cart = () => {
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600">Empleado (requerido)</label>
-                  <select name="empleadoId" value={form.empleadoId} onChange={handleChange} className="w-full border rounded px-3 py-2">
-                    {empleados.map(e => (
-                      <option key={e._id} value={e._id}>
-                        {`${e.nombre || ''} ${e.apellido || ''}`.trim() || e._id}
-                      </option>
-                    ))}
-                  </select>
+                  <input type="text" name="empleadoId" value={form.empleadoId} onChange={handleChange} placeholder="ID del empleado que procesa la venta" className="w-full border rounded px-3 py-2" />
                 </div>
               </div>
 
@@ -354,15 +263,46 @@ const Cart = () => {
                 <textarea name="observaciones" value={form.observaciones} onChange={handleChange} className="w-full border rounded px-3 py-2" rows={3} />
               </div>
 
-              <div className="text-right">
-                <button
-                  className="bg-[#0097c2] disabled:opacity-60 text-white px-6 py-3 rounded-full hover:bg-[#0077a2]"
-                  onClick={handleCreateVenta}
-                  disabled={creating}
-                >
-                  {creating ? 'Procesando...' : 'Proceder al pago'}
-                </button>
-              </div>
+              {/* If paying with card/transfer, show Wompi client-only payment */}
+              {(form.metodoPago === 'tarjeta_credito' || form.metodoPago === 'tarjeta_debito' || form.metodoPago === 'transferencia') ? (
+                <div className="space-y-4">
+                  <div className="border-t pt-4">
+                    <h3 className="font-semibold mb-2">Pago con Wompi</h3>
+                    <WompiTokenPayment
+                      amount={montoTotal}
+                      email={user?.email}
+                      name={form.nombreCliente}
+                      headers={{}}
+                      onResult={(res) => {
+                        if (res.ok) {
+                          setSuccess('Pago Wompi aprobado. Puedes confirmar la venta.');
+                        } else {
+                          setError('Pago Wompi fallido.');
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="text-right">
+                    <button
+                      className="bg-[#0097c2] disabled:opacity-60 text-white px-6 py-3 rounded-full hover:bg-[#0077a2]"
+                      onClick={handleCreateVenta}
+                      disabled={creating}
+                    >
+                      {creating ? 'Procesando...' : 'Confirmar venta'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-right">
+                  <button
+                    className="bg-[#0097c2] disabled:opacity-60 text-white px-6 py-3 rounded-full hover:bg-[#0077a2]"
+                    onClick={handleCreateVenta}
+                    disabled={creating}
+                  >
+                    {creating ? 'Procesando...' : 'Proceder al pago'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
