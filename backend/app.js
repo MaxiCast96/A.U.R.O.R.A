@@ -104,8 +104,8 @@ app.post('/api/wompi/token', async (req, res) => {
     try {
         const _fetch = await getFetch();
         const grantType = process.env.GRANT_TYPE || 'client_credentials';
-        const clientId = process.env.CLIENT_ID || '';
-        const clientSecret = process.env.CLIENT_SECRET || '';
+        const clientId = process.env.APP_ID || '';
+        const clientSecret = process.env.API_SECRET || '';
         const audience = process.env.AUDIENCE || 'https://api.wompi.sv/';
 
         if (!clientId || !clientSecret) {
@@ -117,7 +117,7 @@ app.post('/api/wompi/token', async (req, res) => {
             });
             return res.status(400).json({
                 success: false,
-                error: 'Configuración Wompi incompleta: CLIENT_ID/CLIENT_SECRET faltantes.'
+                error: 'Configuración Wompi incompleta: APP_ID/API_SECRET faltantes.'
             });
         }
 

@@ -89,9 +89,10 @@ const WompiTokenPayment = ({
       let payData = {};
       try { payData = payText ? JSON.parse(payText) : {}; } catch { payData = { raw: payText }; }
       if (!payRes.ok || payData?.success === false) {
-        const msg = payData?.error || `HTTP ${payRes.status}`;
+        const rawErr = payData?.error ?? payData ?? null;
+        const msg = typeof rawErr === 'string' ? rawErr : JSON.stringify(rawErr, null, 2);
         console.error('Wompi proxy error', { status: payRes.status, payData });
-        setError(`${msg}`);
+        setError(msg || `HTTP ${payRes.status}`);
         onResult?.({ ok: false, step: 'payment', status: payRes.status, error: payData });
         return;
       }
