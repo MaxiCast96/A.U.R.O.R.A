@@ -103,14 +103,32 @@ const getFetch = async () => {
 app.post('/api/wompi/token', async (req, res) => {
     try {
         const _fetch = await getFetch();
+        const grantType = process.env.GRANT_TYPE || 'client_credentials';
+        const clientId = process.env.CLIENT_ID || '';
+        const clientSecret = process.env.CLIENT_SECRET || '';
+        const audience = process.env.AUDIENCE || 'https://api.wompi.sv/';
+
+        if (!clientId || !clientSecret) {
+            console.warn('Wompi token env missing:', {
+                hasClientId: !!clientId,
+                hasClientSecret: !!clientSecret,
+                grantType,
+                audience
+            });
+            return res.status(400).json({
+                success: false,
+                error: 'Configuración Wompi incompleta: CLIENT_ID/CLIENT_SECRET faltantes.'
+            });
+        }
+
         const resp = await _fetch('https://id.wompi.sv/connect/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: new URLSearchParams({
-                grant_type: process.env.GRANT_TYPE || 'client_credentials',
-                client_id: process.env.CLIENT_ID || '',
-                client_secret: process.env.CLIENT_SECRET || '',
-                audience: process.env.AUDIENCE || 'https://api.wompi.sv/',
+                grant_type: grantType,
+                client_id: clientId,
+                client_secret: clientSecret,
+                audience,
             })
         });
         if (!resp.ok) {
