@@ -106,32 +106,32 @@ const Empleados = () => {
     });
 
     // --- FORMULARIO PARA OPTOMETRISTA (Paso 2) ---
-const { 
-    formData: optometristaFormData, 
-    setFormData: setOptometristaFormData, 
-    handleInputChange: handleOptometristaInputChange, 
-    resetForm: resetOptometristaForm, 
-    validateForm: validateOptometristaForm, 
-    errors: optometristaErrors,
-    setErrors: setOptometristaErrors
-} = useForm({
-    // Valores iniciales para un nuevo optometrista
-    especialidad: '',
-    licencia: '',
-    experiencia: '',
-    disponibilidad: [],
-    sucursalesAsignadas: [],
-    disponible: true,
-    empleadoId: '' // Se llenará después
-}, (data) => {
-    // Reglas de validación para el optometrista
-    const newErrors = {};
-    if (!data.especialidad) newErrors.especialidad = 'La especialidad es requerida';
-    if (!data.licencia) newErrors.licencia = 'La licencia es requerida';
-    if (!data.experiencia || data.experiencia < 0) newErrors.experiencia = 'La experiencia debe ser un número positivo';
-    if (!data.sucursalesAsignadas || data.sucursalesAsignadas.length === 0) newErrors.sucursalesAsignadas = 'Debe asignar al menos una sucursal';
-    return newErrors;
-});
+    const { 
+        formData: optometristaFormData, 
+        setFormData: setOptometristaFormData, 
+        handleInputChange: handleOptometristaInputChange, 
+        resetForm: resetOptometristaForm, 
+        validateForm: validateOptometristaForm, 
+        errors: optometristaErrors,
+        setErrors: setOptometristaErrors
+    } = useForm({
+        // Valores iniciales para un nuevo optometrista
+        especialidad: '',
+        licencia: '',
+        experiencia: '',
+        disponibilidad: [],
+        sucursalesAsignadas: [],
+        disponible: true,
+        empleadoId: '' // Se llenará después
+    }, (data) => {
+        // Reglas de validación para el optometrista
+        const newErrors = {};
+        if (!data.especialidad) newErrors.especialidad = 'La especialidad es requerida';
+        if (!data.licencia) newErrors.licencia = 'La licencia es requerida';
+        if (!data.experiencia || data.experiencia < 0) newErrors.experiencia = 'La experiencia debe ser un número positivo';
+        if (!data.sucursalesAsignadas || data.sucursalesAsignadas.length === 0) newErrors.sucursalesAsignadas = 'Debe asignar al menos una sucursal';
+        return newErrors;
+    });
 
     // --- FILTRADO Y PAGINACIÓN ---
     const filteredEmpleados = useMemo(() => empleados.filter(empleado => {
@@ -175,61 +175,84 @@ const {
         if (location.state?.editEmployeeId) {
             const employeeToEdit = empleados.find(e => e._id === location.state.editEmployeeId);
             if (employeeToEdit) {
-                // Pass a flag to indicate the origin of the edit
                 handleOpenEditModal(employeeToEdit, true); 
             }
-            // Clear state to prevent re-triggering
             navigate(location.pathname, { replace: true, state: {} });
         }
     }, [location.state, empleados, navigate]);
-
 
     // --- HANDLERS FOR THE NEW FLOW ---
 
     // Step 1: Called from EmpleadosFormModal when "Siguiente" is clicked
     const handleProceedToOptometristaForm = () => {
-        if (!validateForm()) return; // First, validate employee data
-        setTempEmployeeData(formData);
+        if (!validateForm()) return;
+        
+        // IMPORTANTE: Asegurar que la foto se preserve en tempEmployeeData
+        const completeEmployeeData = {
+            ...formData,
+            fotoPerfil: formData.fotoPerfil || '',
+            departamento: formData.direccion?.departamento || '',
+            municipio: formData.direccion?.municipio || '',
+            direccionDetallada: formData.direccion?.direccionDetallada || '',
+            telefono: formData.telefono?.startsWith('+503') ? formData.telefono : '+503' + formData.telefono
+        };
+        
+        delete completeEmployeeData.direccion;
+        delete completeEmployeeData.fromOptometristaPage;
+        
+        console.log('Datos del empleado para optometrista:', completeEmployeeData);
+        
+        setTempEmployeeData(completeEmployeeData);
         setShowAddEditModal(false);
-        setShowOptometristaModal(true); // Trigger the optometrista modal
+        setShowOptometristaModal(true);
     };
     
     // Step 2: Called from OptometristasFormModal to finalize creation
-const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
-    // Primero, valida el formulario del optometrista
-    if (!validateOptometristaForm()) return;
+    const handleFinalizeCreation = async () => {
+        if (!validateOptometristaForm()) return;
 
-    try {
-        setLoading(true);
-        // 1. Create the Employee
-        const employeeResponse = await axios.post(API_URL, tempEmployeeData);
-        const newEmployeeId = employeeResponse.data._id;
+        try {
+            setLoading(true);
+            
+            console.log('Creando empleado con datos:', tempEmployeeData);
+            console.log('Foto en tempEmployeeData:', tempEmployeeData.fotoPerfil);
+            
+            // 1. Create the Employee
+            const employeeResponse = await axios.post(API_URL, tempEmployeeData);
+            const newEmployeeId = employeeResponse.data._id;
 
-        // 2. Create the Optometrista with the new employee's ID
-        const finalOptometristaData = {
-            ...optometristaFormData, // Usa el estado del nuevo formulario
-            empleadoId: newEmployeeId,
-        };
-        await axios.post('http://localhost:4000/api/optometrista', finalOptometristaData);
+            console.log('Empleado creado exitosamente:', employeeResponse.data);
 
-        showAlert('success', '¡Empleado y Optometrista creados exitosamente!');
-        handleCloseModals(); // Asegúrate que esta función también resetee el form de optometrista
-        navigate('/optometristas');
+            // 2. Create the Optometrista with the new employee's ID
+            const finalOptometristaData = {
+                ...optometristaFormData,
+                empleadoId: newEmployeeId,
+            };
+            
+            console.log('Creando optometrista con datos:', finalOptometristaData);
+            
+            await axios.post('https://a-u-r-o-r-a.onrender.com/api/optometrista', finalOptometristaData);
 
-    } catch (error) {
-        showAlert('error', 'Error en la creación: ' + (error.response?.data?.message || error.message));
-    } finally {
-        setLoading(false);
-    }
-};
+            showAlert('success', '¡Empleado y Optometrista creados exitosamente!');
+            handleCloseModals();
+            navigate('/optometristas');
+
+        } catch (error) {
+            console.error('Error en la creación:', error);
+            console.error('Respuesta del servidor:', error.response?.data);
+            showAlert('error', 'Error en la creación: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setLoading(false);
+        }
+    };
     
     // Handler to navigate back to optometrista editing
     const handleReturnToOptometristaEdit = (empleadoId) => {
-         const optometrista = optometristas.find(o => o.empleadoId._id === empleadoId);
-         if (optometrista) {
+        const optometrista = optometristas?.find(o => o.empleadoId._id === empleadoId);
+        if (optometrista) {
             handleCloseModals();
             navigate('/optometristas', { state: { editOptometristaId: optometrista._id } });
-         }
+        }
     };
 
     // --- HANDLERS ---
@@ -242,20 +265,38 @@ const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
         setShowAddEditModal(false);
         setShowDetailModal(false);
         setShowDeleteModal(false);
+        setShowOptometristaModal(false);
         setSelectedEmpleado(null);
+        setTempEmployeeData(null);
         resetForm();
-        resetOptometristaForm(); // Añade esta línea
+        resetOptometristaForm();
     };
     
     const handleOpenAddModal = () => {
-        resetForm(); // Resetea el form de empleado
-        resetOptometristaForm(); // Resetea el form de optometrista
-        setFormData({ // Valores por defecto
-            nombre: '', apellido: '', dui: '', telefono: '', correo: '', cargo: '', sucursalId: '',
-            fechaContratacion: new Date().toISOString().split('T')[0], // Fecha actual
-            salario: '', estado: 'Activo', password: '', fotoPerfil: '',
-            direccion: { departamento: '', municipio: '', direccionDetallada: '' }
-        });
+        resetForm();
+        resetOptometristaForm();
+        
+        const initialFormData = {
+            nombre: '', 
+            apellido: '', 
+            dui: '', 
+            telefono: '', 
+            correo: '', 
+            cargo: '', 
+            sucursalId: '',
+            fechaContratacion: new Date().toISOString().split('T')[0],
+            salario: '', 
+            estado: 'Activo', 
+            password: '', 
+            fotoPerfil: '',
+            direccion: { 
+                departamento: '', 
+                municipio: '', 
+                direccionDetallada: '' 
+            }
+        };
+        
+        setFormData(initialFormData);
         setSelectedEmpleado(null);
         setShowAddEditModal(true);
     };
@@ -263,24 +304,30 @@ const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
     const handleOpenEditModal = (empleado, fromOptometristaPage = false) => {
         setSelectedEmpleado(empleado);
         
-        // Extraer los 8 dígitos si el teléfono ya incluye +503
-        const telefonoSinPrefijo = empleado.telefono.startsWith('+503') 
+        const telefonoSinPrefijo = empleado.telefono?.startsWith('+503') 
             ? empleado.telefono.substring(4) 
-            : empleado.telefono;
+            : empleado.telefono || '';
 
-        setFormData({
+        const direccionCompleta = {
+            departamento: empleado.departamento || '',
+            municipio: empleado.municipio || '',
+            direccionDetallada: empleado.direccionDetallada || ''
+        };
+
+        const formDataToSet = {
             ...empleado,
-            // FIX: Verificar que sucursalId existe antes de acceder a _id
             sucursalId: empleado.sucursalId?._id || '', 
-            password: '', // No precargar la contraseña
-            fechaContratacion: new Date(empleado.fechaContratacion).toISOString().split('T')[0],
-            // FIX: Asegurar que la dirección tenga la estructura correcta
-            direccion: empleado.direccion || { departamento: '', municipio: '', direccionDetallada: '' },
-            // Usar el teléfono sin el prefijo +503 para el formulario de edición
-            telefono: telefonoSinPrefijo
-        });
+            password: '',
+            fechaContratacion: empleado.fechaContratacion ? new Date(empleado.fechaContratacion).toISOString().split('T')[0] : '',
+            direccion: direccionCompleta,
+            telefono: telefonoSinPrefijo,
+            fotoPerfil: empleado.fotoPerfil || '',
+            fromOptometristaPage: fromOptometristaPage
+        };
+
+        console.log('Datos para edición:', formDataToSet);
+        setFormData(formDataToSet);
         setErrors({});
-        setFormData(prev => ({ ...prev, fromOptometristaPage }));
         setShowAddEditModal(true);
     };
     
@@ -294,25 +341,31 @@ const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
         setShowDeleteModal(true);
     };
 
+    // CORRECCIÓN 1: Función handleSubmit principal para empleados regulares
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
         try {
-            // Crear una copia del formData para enviar
             const dataToSend = { ...formData };
             
-            // Si hay una dirección anidada, aplanarla para el backend
+            console.log('Datos a enviar:', dataToSend);
+            console.log('Foto de perfil:', dataToSend.fotoPerfil);
+            
+            // Aplanar dirección para el backend
             if (formData.direccion) {
                 dataToSend.departamento = formData.direccion.departamento;
                 dataToSend.municipio = formData.direccion.municipio;
                 dataToSend.direccionDetallada = formData.direccion.direccionDetallada;
-                delete dataToSend.direccion; // Eliminar el objeto anidado
+                delete dataToSend.direccion;
             }
 
-            // Asegurar que el teléfono siempre tenga el prefijo +503 antes de enviar
+            // Formatear teléfono
             if (dataToSend.telefono && !dataToSend.telefono.startsWith('+503')) {
                 dataToSend.telefono = '+503' + dataToSend.telefono;
             }
+
+            // Remover campos innecesarios
+            delete dataToSend.fromOptometristaPage;
 
             if (selectedEmpleado) {
                 // UPDATE
@@ -323,9 +376,11 @@ const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
                 await axios.post(`${API_URL}`, dataToSend);
                 showAlert('success', '¡Empleado creado exitosamente!');
             }
-            fetchData(); // Recargar datos
+            fetchData();
             handleCloseModals();
         } catch (error) {
+            console.error('Error en handleSubmit:', error);
+            console.error('Respuesta del servidor:', error.response?.data);
             showAlert('error', 'Error: ' + (error.response?.data?.message || error.message));
         }
     };
@@ -335,18 +390,46 @@ const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
         try {
             await axios.delete(`${API_URL}/${selectedEmpleado._id}`);
             showAlert('success', '¡Empleado eliminado exitosamente!');
-            fetchData(); // Recargar datos
+            fetchData();
             handleCloseModals();
         } catch (error) {
             showAlert('error', 'Error al eliminar: ' + (error.response?.data?.message || error.message));
         }
     };
 
+    // CORRECCIÓN 2: Función para determinar el botón de acción correcto
+    const getSubmitHandler = () => {
+        // Si estamos creando un optometrista, usar el flujo de 2 pasos
+        if (!selectedEmpleado && formData.cargo === 'Optometrista') {
+            return handleProceedToOptometristaForm;
+        }
+        // Si estamos editando o creando un empleado regular, usar el submit normal
+        return handleSubmit;
+    };
+
+    // CORRECCIÓN 3: Función para determinar el texto del botón
+    const getSubmitLabel = () => {
+        if (selectedEmpleado) {
+            return 'Actualizar Empleado';
+        }
+        if (formData.cargo === 'Optometrista') {
+            return 'Continuar';
+        }
+        return 'Guardar Empleado';
+    };
+
     // --- RENDERIZADO DE TABLA ---
     const getEstadoColor = (estado) => (estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
     const getCargoColor = (cargo) => {
-      const colors = { 'Administrador': 'bg-purple-100 text-purple-800', 'Gerente': 'bg-blue-100 text-blue-800', 'Vendedor': 'bg-orange-100 text-orange-800', 'Optometrista': 'bg-cyan-100 text-cyan-800', 'Técnico': 'bg-yellow-100 text-yellow-800', 'Recepcionista': 'bg-pink-100 text-pink-800' };
-      return colors[cargo] || 'bg-gray-100 text-gray-800';
+        const colors = { 
+            'Administrador': 'bg-purple-100 text-purple-800', 
+            'Gerente': 'bg-blue-100 text-blue-800', 
+            'Vendedor': 'bg-orange-100 text-orange-800', 
+            'Optometrista': 'bg-cyan-100 text-cyan-800', 
+            'Técnico': 'bg-yellow-100 text-yellow-800', 
+            'Recepcionista': 'bg-pink-100 text-pink-800' 
+        };
+        return colors[cargo] || 'bg-gray-100 text-gray-800';
     };
     const formatFecha = (fecha) => new Date(fecha).toLocaleDateString('es-ES');
 
@@ -464,38 +547,36 @@ const handleFinalizeCreation = async () => { // Ya no recibe 'optometristaData'
             <EmpleadosFormModal
                 isOpen={showAddEditModal}
                 onClose={handleCloseModals}
-                onSubmit={formData.cargo === 'Optometrista' && !selectedEmpleado ? handleProceedToOptometristaForm : handleSubmit}
+                onSubmit={getSubmitHandler()} // CORRECCIÓN: Usar la función correcta
                 title={selectedEmpleado ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}
                 formData={formData}
                 setFormData={setFormData}
                 handleInputChange={handleInputChange}
                 errors={errors}
-                submitLabel={selectedEmpleado ? 'Actualizar Empleado' : 'Guardar Empleado'}
+                submitLabel={getSubmitLabel()} // CORRECCIÓN: Usar el texto correcto
                 sucursales={sucursales}
-                selectedEmpleado={selectedEmpleado}onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
+                selectedEmpleado={selectedEmpleado}
+                onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
             />
 
-            {/* The Optometrista modal is now rendered here, conditionally */}
             {showOptometristaModal && (
-    <OptometristasFormModal
-        isOpen={showOptometristaModal}
-        onClose={() => setShowOptometristaModal(false)}
-        onSubmit={handleFinalizeCreation} // onSubmit ya no pasa argumentos
-        title="Añadir Detalles del Optometrista (Paso 2 de 2)"
-        submitLabel="Finalizar y Guardar"
-        isCreationFlow={true}
-        preloadedEmployeeData={tempEmployeeData}
-        sucursales={sucursales}
-        
-        // --- PROPS FALTANTES (LA SOLUCIÓN PRINCIPAL) ---
-        formData={optometristaFormData}
-        setFormData={setOptometristaFormData}
-        handleInputChange={handleOptometristaInputChange}
-        errors={optometristaErrors}
-        empleados={[]} // No se necesitan empleados existentes para la creación
-        selectedOptometrista={null} // No hay un optometrista seleccionado
-    />
-)}
+                <OptometristasFormModal
+                    isOpen={showOptometristaModal}
+                    onClose={() => setShowOptometristaModal(false)}
+                    onSubmit={handleFinalizeCreation}
+                    title="Añadir Detalles del Optometrista (Paso 2 de 2)"
+                    submitLabel="Finalizar y Guardar"
+                    isCreationFlow={true}
+                    preloadedEmployeeData={tempEmployeeData}
+                    sucursales={sucursales}
+                    formData={optometristaFormData}
+                    setFormData={setOptometristaFormData}
+                    handleInputChange={handleOptometristaInputChange}
+                    errors={optometristaErrors}
+                    empleados={[]}
+                    selectedOptometrista={null}
+                />
+            )}
             
             <DetailModal
                 isOpen={showDetailModal}

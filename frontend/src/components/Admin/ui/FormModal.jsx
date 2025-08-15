@@ -230,6 +230,7 @@ const FormModal = ({
   handleInputChange,
   errors,
   submitLabel = 'Guardar',
+  submitIcon,
   fields = [],
   children,
   customFields = {},
@@ -342,13 +343,17 @@ const FormModal = ({
     );
   };
 
+  // CORRECCIÓN: Manejar el envío del formulario correctamente
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSubmit(e);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
       <form 
-        onSubmit={(e) => { 
-          e.preventDefault(); 
-          onSubmit(e);
-        }} 
+        onSubmit={handleSubmit}
         className="bg-white rounded-xl shadow-2xl w-full max-w-2xl md:max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
       >
         <div className="bg-cyan-500 text-white p-4 sm:p-6 rounded-t-xl sticky top-0 z-10">
@@ -386,7 +391,7 @@ const FormModal = ({
             type="submit" 
             className="w-full sm:w-auto px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
           >
-            <Save className="w-4 h-4" />
+            {submitIcon || <Save className="w-4 h-4" />}
             <span>{submitLabel}</span>
           </button>
         </div>
