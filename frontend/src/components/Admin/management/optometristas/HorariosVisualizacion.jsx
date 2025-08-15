@@ -15,9 +15,10 @@ const HorariosVisualizacion = ({ disponibilidad = [] }) => {
     ];
 
     // Horas disponibles
-    const horasDisponibles = [
+     const horasDisponibles = [
         '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'
     ];
+
 
     // Función para verificar si una hora está seleccionada para un día
     const isHoraSelected = (dia, hora) => {
@@ -28,20 +29,34 @@ const HorariosVisualizacion = ({ disponibilidad = [] }) => {
     };
 
     // Función para obtener las horas de un día específico
-    const getHorasByDay = (dia) => {
+     const getHorasByDay = (dia) => {
         if (!Array.isArray(disponibilidad)) return [];
-        return disponibilidad
+        const horas = disponibilidad
             .filter(d => d.dia === dia)
             .map(d => d.hora || d.horaInicio)
-            .sort();
+            .filter(hora => hora && horasDisponibles.includes(hora));
+        
+        // Ordenar por el índice en horasDisponibles para mantener el orden correcto
+        return horas.sort((a, b) => {
+            const indexA = horasDisponibles.indexOf(a);
+            const indexB = horasDisponibles.indexOf(b);
+            return indexA - indexB;
+        });
     };
 
     // Función para formatear horarios agrupados
-    const formatHorariosAgrupados = (horas) => {
+     const formatHorariosAgrupados = (horas) => {
         if (!horas || horas.length === 0) return 'Sin horario';
         
-        // Ordenar las horas
-        const horasOrdenadas = [...horas].sort();
+        // Ordenar las horas usando el índice en horasDisponibles para orden correcto
+        const horasOrdenadas = [...horas].sort((a, b) => {
+            const indexA = horasDisponibles.indexOf(a);
+            const indexB = horasDisponibles.indexOf(b);
+            return indexA - indexB;
+        });
+        
+        if (horasOrdenadas.length === 0) return 'Sin horario';
+        
         const grupos = [];
         let grupoActual = [horasOrdenadas[0]];
         
@@ -49,7 +64,7 @@ const HorariosVisualizacion = ({ disponibilidad = [] }) => {
             const horaActual = horasOrdenadas[i];
             const horaAnterior = horasOrdenadas[i - 1];
             
-            // Verificar si las horas son consecutivas
+            // Verificar si las horas son consecutivas usando índices
             const indexActual = horasDisponibles.indexOf(horaActual);
             const indexAnterior = horasDisponibles.indexOf(horaAnterior);
             
@@ -58,7 +73,7 @@ const HorariosVisualizacion = ({ disponibilidad = [] }) => {
                 grupoActual.push(horaActual);
             } else {
                 // No consecutivas, cerrar grupo actual y empezar uno nuevo
-                grupos.push(grupoActual);
+                grupos.push([...grupoActual]);
                 grupoActual = [horaActual];
             }
         }
@@ -66,12 +81,18 @@ const HorariosVisualizacion = ({ disponibilidad = [] }) => {
         // Agregar el último grupo
         grupos.push(grupoActual);
         
-        // Formatear cada grupo
+        // Formatear cada grupo - si es un bloque completo, mostrar como rango
         return grupos.map(grupo => {
             if (grupo.length === 1) {
                 return grupo[0];
+            } else if (grupo.length === 2) {
+                return `${grupo[0]}, ${grupo[1]}`;
             } else {
-                return `${grupo[0]} - ${grupo[grupo.length - 1]}`;
+                // Para 3 o más horas consecutivas, mostrar como rango
+                const horaFin = grupo[grupo.length - 1];
+                const indexFin = horasDisponibles.indexOf(horaFin);
+                const siguienteHora = horasDisponibles[indexFin + 1] || `${parseInt(horaFin.split(':')[0]) + 1}:00`;
+                return `${grupo[0]} - ${siguienteHora}`;
             }
         }).join(', ');
     };
@@ -89,7 +110,7 @@ const HorariosVisualizacion = ({ disponibilidad = [] }) => {
     }
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <h4 className="text-lg font-semibold text-gray-800 flex items-center space-x-2">
                     <Clock className="w-5 h-5 text-cyan-600" />
@@ -143,26 +164,110 @@ const HorariosVisualizacion = ({ disponibilidad = [] }) => {
                 </div>
             </div>
 
-            {/* Resumen por día */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7 gap-3">
-                {diasSemana.map((dia) => {
-                    const horasDelDia = getHorasByDay(dia.key);
-                    const horarioFormateado = formatHorariosAgrupados(horasDelDia);
-                    
-                    return (
-                        <div key={dia.key} className="bg-white border border-gray-200 rounded-lg p-3">
-                            <div className="font-medium text-sm text-gray-800 mb-2">{dia.label}</div>
-                            <div className={`text-xs ${horasDelDia.length > 0 ? 'text-cyan-600' : 'text-gray-500'}`}>
-                                {horarioFormateado}
-                            </div>
-                            {horasDelDia.length > 0 && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                    {horasDelDia.length} hora{horasDelDia.length !== 1 ? 's' : ''}
+            {/* Resumen por día - MEJORADO CON MÁS ESPACIO */}
+            <div className="space-y-4">
+                <h5 className="text-md font-medium text-gray-700 border-b border-gray-200 pb-2">
+                    Resumen Semanal
+                </h5>
+                
+                {/* Para pantallas grandes: 2 filas de 3-4 elementos */}
+                <div className="hidden lg:block space-y-4">
+                    {/* Primera fila: Lunes a Miércoles */}
+                    <div className="grid grid-cols-3 gap-4">
+                        {diasSemana.slice(0, 3).map((dia) => {
+                            const horasDelDia = getHorasByDay(dia.key);
+                            const horarioFormateado = formatHorariosAgrupados(horasDelDia);
+                            
+                            return (
+                                <div key={dia.key} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="font-semibold text-gray-800 mb-3 text-center border-b border-gray-100 pb-2">
+                                        {dia.label}
+                                    </div>
+                                    <div className={`text-sm text-center mb-2 ${horasDelDia.length > 0 ? 'text-cyan-600 font-medium' : 'text-gray-500'}`}>
+                                        {horarioFormateado}
+                                    </div>
+                                    {horasDelDia.length > 0 && (
+                                        <div className="text-xs text-gray-500 text-center bg-gray-50 rounded px-2 py-1">
+                                            {horasDelDia.length} hora{horasDelDia.length !== 1 ? 's' : ''}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    );
-                })}
+                            );
+                        })}
+                    </div>
+                    
+                    {/* Segunda fila: Jueves a Domingo */}
+                    <div className="grid grid-cols-4 gap-4">
+                        {diasSemana.slice(3).map((dia) => {
+                            const horasDelDia = getHorasByDay(dia.key);
+                            const horarioFormateado = formatHorariosAgrupados(horasDelDia);
+                            
+                            return (
+                                <div key={dia.key} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                                    <div className="font-semibold text-gray-800 mb-3 text-center border-b border-gray-100 pb-2">
+                                        {dia.label}
+                                    </div>
+                                    <div className={`text-sm text-center mb-2 ${horasDelDia.length > 0 ? 'text-cyan-600 font-medium' : 'text-gray-500'}`}>
+                                        {horarioFormateado}
+                                    </div>
+                                    {horasDelDia.length > 0 && (
+                                        <div className="text-xs text-gray-500 text-center bg-gray-50 rounded px-2 py-1">
+                                            {horasDelDia.length} hora{horasDelDia.length !== 1 ? 's' : ''}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* Para pantallas medianas: 2 columnas */}
+                <div className="hidden md:grid lg:hidden grid-cols-2 gap-4">
+                    {diasSemana.map((dia) => {
+                        const horasDelDia = getHorasByDay(dia.key);
+                        const horarioFormateado = formatHorariosAgrupados(horasDelDia);
+                        
+                        return (
+                            <div key={dia.key} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div className="font-semibold text-gray-800 mb-3 border-b border-gray-100 pb-2">
+                                    {dia.label}
+                                </div>
+                                <div className={`text-sm mb-2 ${horasDelDia.length > 0 ? 'text-cyan-600 font-medium' : 'text-gray-500'}`}>
+                                    {horarioFormateado}
+                                </div>
+                                {horasDelDia.length > 0 && (
+                                    <div className="text-xs text-gray-500 bg-gray-50 rounded px-2 py-1 inline-block">
+                                        {horasDelDia.length} hora{horasDelDia.length !== 1 ? 's' : ''}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
+                </div>
+
+                {/* Para pantallas pequeñas: 1 columna */}
+                <div className="grid md:hidden grid-cols-1 gap-3">
+                    {diasSemana.map((dia) => {
+                        const horasDelDia = getHorasByDay(dia.key);
+                        const horarioFormateado = formatHorariosAgrupados(horasDelDia);
+                        
+                        return (
+                            <div key={dia.key} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="font-semibold text-gray-800">{dia.label}</div>
+                                    {horasDelDia.length > 0 && (
+                                        <span className="text-xs text-gray-500 bg-gray-50 rounded px-2 py-1">
+                                            {horasDelDia.length}h
+                                        </span>
+                                    )}
+                                </div>
+                                <div className={`text-sm ${horasDelDia.length > 0 ? 'text-cyan-600 font-medium' : 'text-gray-500'}`}>
+                                    {horarioFormateado}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </div>
     );

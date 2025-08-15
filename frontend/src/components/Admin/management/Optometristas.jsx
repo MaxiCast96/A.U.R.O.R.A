@@ -228,10 +228,7 @@ const Optometristas = () => {
             { text: 'No Disponible', color: 'bg-red-100 text-red-800' };
     };
 
-    const formatDisponibilidad = (disponibilidad) => {
-        if (!disponibilidad || disponibilidad.length === 0) return 'Sin horario definido';
-        return disponibilidad.map(d => `${d.dia} (${d.horaInicio}-${d.horaFin})`).join(', ');
-    };
+
 
     const formatSucursales = (sucursales) => {
         if (!sucursales || sucursales.length === 0) return 'Sin sucursales asignadas';
