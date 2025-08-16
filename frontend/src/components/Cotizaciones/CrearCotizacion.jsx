@@ -1,6 +1,10 @@
 import React from "react";
+import { useState } from "react";
 import PageTransition from "../transition/PageTransition";
 import Navbar from "../layout/Navbar";
+import CustomizacionesModal from "./CustomizacionesModal";
+import PersonalizadoBuilderModal from "./PersonalizadoBuilderModal";
+import { useLocation } from "react-router-dom";
 
 // Componente hijo que recibe TODOS los datos y handlers como props desde el padre
 const CrearCotizacion = ({
@@ -15,12 +19,81 @@ const CrearCotizacion = ({
   onCrearCotizacion = null,
   onAgregarProducto = null,
   onEliminarProducto = null,
+  onActualizarProducto = null,
   onUpdateClienteInfo = null,
+  onCancel = null,
   cotizacionData = {}
 }) => {
+  const location = useLocation();
+  const [customModalOpen, setCustomModalOpen] = useState(false);
+  const [customModalIndex, setCustomModalIndex] = useState(null);
+  const [personalizadoOpen, setPersonalizadoOpen] = useState(false);
+
+  const openCustomModal = (index) => {
+    setCustomModalIndex(index);
+    setCustomModalOpen(true);
+  };
+
+  const handleAgregarPersonalizadoClick = () => {
+    setPersonalizadoOpen(true);
+  };
+
+  const handleSavePersonalizado = (item) => {
+    if (!onAgregarProducto) return setPersonalizadoOpen(false);
+    onAgregarProducto(item);
+    setPersonalizadoOpen(false);
+  };
+
+  // Auto-abrir el constructor personalizado si venimos desde productos
+  React.useEffect(() => {
+    if (location.state && location.state.openPersonalizado) {
+      setPersonalizadoOpen(true);
+    }
+  }, [location.state]);
+
+  const closeCustomModal = () => {
+    setCustomModalOpen(false);
+    setCustomModalIndex(null);
+  };
+
+  const applyCustomizaciones = (mods) => {
+    if (customModalIndex == null) return closeCustomModal();
+    if (onActualizarProducto) {
+      const prod = productos[customModalIndex] || {};
+      const next = {
+        ...prod,
+        tipo: prod.tipo || 'aro',
+        customizaciones: mods.map(m => ({
+          codigo: m.codigo,
+          nombre: m.nombre,
+          descripcion: m.descripcion || '',
+          precio: Number(m.precio || 0),
+          cantidad: Number(m.cantidad || 1)
+        }))
+      };
+      onActualizarProducto(customModalIndex, next);
+    }
+    closeCustomModal();
+  };
+
+  const calcProdSubtotal = (p) => {
+    const unit = Number(p.precioUnitario ?? p.precio ?? 0);
+    const base = (p.cantidad || 0) * unit;
+    const mods = Array.isArray(p.customizaciones)
+      ? p.customizaciones.reduce((acc, m) => acc + (Number(m.precio || 0) * Number(m.cantidad || 0)), 0)
+      : 0;
+    return base + mods;
+  };
+
+  const subtotal = productos.reduce((acc, p) => acc + calcProdSubtotal(p), 0);
+  const iva = subtotal * 0.13;
+  const total = subtotal + iva;
+
+  const canSubmit = Boolean(clienteInfo?.correoCliente) && Boolean(clienteInfo?.telefonoCliente) && productos.length > 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!canSubmit) return;
     if (onCrearCotizacion) {
       onCrearCotizacion(cotizacionData);
     }
@@ -38,27 +111,15 @@ const CrearCotizacion = ({
     }
   };
 
-  if (!user) {
-    return (
-      <PageTransition>
-        <Navbar />
-        <div className="container mx-auto px-4 py-8 font-['Lato']">
-          <h1 className="text-3xl font-bold mb-8 text-gray-800">Crear Cotización</h1>
-          <div className="mb-4 p-4 bg-yellow-100 text-yellow-700 rounded text-center">
-            Debes iniciar sesión para crear una cotización.
-          </div>
-        </div>
-      </PageTransition>
-    );
-  }
+  // No bloquear por autenticación desde el hijo; el padre debe encargarse del flujo de auth.
 
   return (
     <PageTransition>
       <Navbar />
       <div className="container mx-auto px-4 py-8 font-['Lato']">
         <h1 className="text-3xl font-bold mb-8 text-gray-800">Crear Cotización</h1>
-        {success && <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">Cotización creada correctamente.</div>}
-        {error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">{error}</div>}
+        {success && <div className="mb-4 p-4 bg-green-50 text-green-700 rounded border border-green-200">Cotización creada correctamente.</div>}
+        {error && <div className="mb-4 p-4 bg-red-50 text-red-700 rounded border border-red-200">{error}</div>}
         
         {/* Información de la cotización */}
         <div className="bg-white p-6 rounded-xl shadow-md mb-8">
@@ -113,13 +174,15 @@ const CrearCotizacion = ({
           {/* Productos */}
           <div className="bg-white p-8 rounded-xl shadow-md">
             <h2 className="text-xl font-bold mb-6 text-gray-800">Productos</h2>
-            <button
-              type="button"
-              className="bg-[#0097c2] text-white px-6 py-2 rounded-lg shadow-sm hover:bg-[#0077a2] transition-all mb-6"
-              onClick={() => {/* Abrir modal para agregar producto */}}
-            >
-              Agregar Producto
-            </button>
+            <div className="flex gap-3 mb-6">
+              <button
+                type="button"
+                className="bg-emerald-600 text-white px-6 py-2 rounded-lg shadow-sm hover:bg-emerald-700 transition-all"
+                onClick={handleAgregarPersonalizadoClick}
+              >
+                Crear Producto Personalizado
+              </button>
+            </div>
             <div className="overflow-hidden rounded-xl shadow-sm">
               <table className="min-w-full divide-y divide-gray-100">
                 <thead className="bg-gray-50">
@@ -137,10 +200,22 @@ const CrearCotizacion = ({
                   ) : (
                     productos.map((prod, idx) => (
                       <tr key={idx}>
-                        <td>{prod.producto}</td>
+                        <td>
+                          <div className="font-medium">{prod.nombre || prod.producto}</div>
+                          {Array.isArray(prod.customizaciones) && prod.customizaciones.length > 0 && (
+                            <div className="mt-1 text-xs text-gray-600 space-y-1">
+                              {prod.customizaciones.map((m, i) => (
+                                <div key={i} className="flex items-center justify-between">
+                                  <span>• {m.nombre} x{m.cantidad}</span>
+                                  <span>${(Number(m.precio||0)*Number(m.cantidad||0)).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td>{prod.cantidad}</td>
-                        <td>${prod.precio?.toFixed(2) ?? '0.00'}</td>
-                        <td>${((prod.cantidad || 0) * (prod.precio || 0)).toFixed(2)}</td>
+                        <td>${Number((prod.precioUnitario ?? prod.precio) ?? 0).toFixed(2)}</td>
+                        <td>${calcProdSubtotal(prod).toFixed(2)}</td>
                         <td>
                           <button 
                             type="button" 
@@ -148,6 +223,13 @@ const CrearCotizacion = ({
                             className="text-red-500 hover:underline"
                           >
                             Eliminar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => openCustomModal(idx)}
+                            className="ml-3 text-[#0097c2] hover:underline"
+                          >
+                            {prod.tipo === 'aro' ? 'Personalizar Aro' : 'Agregar Modificaciones'}
                           </button>
                         </td>
                       </tr>
@@ -164,15 +246,15 @@ const CrearCotizacion = ({
             <div className="space-y-3">
               <div className="flex justify-between text-gray-600">
                 <span>Subtotal</span>
-                <span>${productos.reduce((acc, p) => acc + (p.cantidad || 0) * (p.precio || 0), 0).toFixed(2)}</span>
+                <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
                 <span>IVA (13%)</span>
-                <span>${(productos.reduce((acc, p) => acc + (p.cantidad || 0) * (p.precio || 0), 0) * 0.13).toFixed(2)}</span>
+                <span>${iva.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-xl font-bold text-gray-800 pt-3">
                 <span>Total</span>
-                <span>${(productos.reduce((acc, p) => acc + (p.cantidad || 0) * (p.precio || 0), 0) * 1.13).toFixed(2)}</span>
+                <span>${total.toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -182,18 +264,37 @@ const CrearCotizacion = ({
             <button
               type="button"
               className="px-6 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+              onClick={() => onCancel && onCancel()}
             >
               Cancelar
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !canSubmit}
               className="bg-[#0097c2] text-white px-6 py-2 rounded-lg shadow-sm hover:bg-[#0077a2] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Creando...' : 'Crear Cotización'}
             </button>
           </div>
         </form>
+
+        {/* Modal de customizaciones */}
+        <CustomizacionesModal
+          open={customModalOpen}
+          onClose={closeCustomModal}
+          initial={(customModalIndex != null && productos[customModalIndex]?.customizaciones) || []}
+          onSave={applyCustomizaciones}
+        />
+
+        {/* Modal de selección de producto */}
+        {/* Eliminado: Selección de producto general (solo personalizado disponible) */}
+
+        {/* Modal de producto personalizado */}
+        <PersonalizadoBuilderModal
+          open={personalizadoOpen}
+          onClose={() => setPersonalizadoOpen(false)}
+          onSave={handleSavePersonalizado}
+        />
       </div>
     </PageTransition>
   );

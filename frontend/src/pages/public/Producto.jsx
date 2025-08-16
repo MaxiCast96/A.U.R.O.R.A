@@ -2700,7 +2700,7 @@ const Producto = () => {
   );
 
   // Componente de producto en vista grid
-  const ProductGridItem = ({ product }) => (
+  const ProductGridItem = ({ product, currentType }) => (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
       <div className="relative">
         {(() => { const src = getProductImage(product); return src ? (
@@ -2752,10 +2752,16 @@ const Producto = () => {
 
         <div className="grid grid-cols-2 gap-2">
           <button 
-            onClick={() => handleAddToCart(product, 1)}
+            onClick={() => {
+              if (currentType === 'personalizables' || product.categoria === 'Personalizado') {
+                navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+              } else {
+                handleAddToCart(product, 1);
+              }
+            }}
             className="w-full bg-emerald-600 text-white py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
           >
-            Agregar
+            {currentType === 'personalizables' || product.categoria === 'Personalizado' ? 'Personalizar' : 'Agregar'}
           </button>
           <button 
             onClick={() => showProductDetails(product)}
@@ -2769,7 +2775,7 @@ const Producto = () => {
   );
 
   // Componente de producto en vista lista
-  const ProductListItem = ({ product }) => (
+  const ProductListItem = ({ product, currentType }) => (
     <div className="bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow duration-300">
       <div className="flex items-center space-x-4">
         {(() => { const src = getProductImage(product); return src ? (
@@ -2811,10 +2817,16 @@ const Producto = () => {
             </div>
             <div className="flex gap-2">
               <button 
-                onClick={() => handleAddToCart(product, 1)}
+                onClick={() => {
+                  if (currentType === 'personalizables' || product.categoria === 'Personalizado') {
+                    navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+                  } else {
+                    handleAddToCart(product, 1);
+                  }
+                }}
                 className="bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
               >
-                Agregar
+                {currentType === 'personalizables' || product.categoria === 'Personalizado' ? 'Personalizar' : 'Agregar'}
               </button>
               <button 
                 onClick={() => showProductDetails(product)}
@@ -2920,14 +2932,22 @@ const Producto = () => {
                 <div className="flex space-x-3">
                   <button 
                     onClick={() => {
-                      handleAddToCart(selectedProduct, 1);
-                      setShowProductModal(false);
+                      if (location.pathname === '/productos/personalizables') {
+                        setShowProductModal(false);
+                        navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+                      } else {
+                        handleAddToCart(selectedProduct, 1);
+                        setShowProductModal(false);
+                      }
                     }}
                     className="flex-1 bg-[#0097c2] text-white py-3 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
                   >
-                    Agregar al carrito
+                    {location.pathname === '/productos/personalizables' ? 'Personalizar' : 'Agregar al carrito'}
                   </button>
-                  <button className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full hover:bg-gray-300 transition-colors duration-300">
+                  <button 
+                    onClick={() => navigate('/cotizaciones/crear', { state: { openPersonalizado: true } })}
+                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full hover:bg-gray-300 transition-colors duration-300"
+                  >
                     Cotizar
                   </button>
                 </div>
@@ -2986,7 +3006,7 @@ const Producto = () => {
                 {getTitle()}
               </h2>
               <div className="text-gray-600">
-                {filteredProducts.length} producto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+                {(type === 'personalizables' ? 1 : filteredProducts.length)} producto{(type === 'personalizables' ? 1 : filteredProducts.length) !== 1 ? 's' : ''} encontrado{(type === 'personalizables' ? 1 : filteredProducts.length) !== 1 ? 's' : ''}
               </div>
             </div>
 
@@ -3003,7 +3023,7 @@ const Producto = () => {
                 error={error} 
                 onRetry={() => window.location.reload()}
               />
-            ) : filteredProducts.length === 0 ? (
+            ) : (type !== 'personalizables' && filteredProducts.length === 0) ? (
               <EmptyProducts 
                 type={type} 
                 searchTerm={searchTerm}
@@ -3014,20 +3034,40 @@ const Producto = () => {
                 }}
               />
             ) : (
-              <div className={viewMode === 'grid' 
-                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
-                : "space-y-4"
-              }>
-                {sortedProducts.map((product) => (
-                  <div key={product._id}>
-                    {viewMode === 'grid' ? (
-                      <ProductGridItem product={product} />
-                    ) : (
-                      <ProductListItem product={product} />
-                    )}
+              <>
+                {type === 'personalizables' ? (
+                  <div className="bg-white rounded-xl shadow-md p-6 border border-dashed border-[#0097c2]">
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-lg bg-[#0097c2] text-white flex items-center justify-center text-2xl">✨</div>
+                      <div className="flex-1">
+                        <h3 className="text-xl font-bold text-gray-800">Crea tu Producto Personalizado</h3>
+                        <p className="text-gray-600 text-sm">Elige base, materiales, color, tipo de lente y modificaciones del catálogo.</p>
+                      </div>
+                      <button
+                        onClick={() => navigate('/cotizaciones/crear', { state: { openPersonalizado: true } })}
+                        className="bg-emerald-600 text-white px-6 py-3 rounded-full hover:bg-emerald-700 transition-colors"
+                      >
+                        Personalizar ahora
+                      </button>
+                    </div>
                   </div>
-                ))}
-              </div>
+                ) : (
+                  <div className={viewMode === 'grid' 
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
+                    : "space-y-4"
+                  }>
+                    {sortedProducts.map((product) => (
+                      <div key={product._id}>
+                        {viewMode === 'grid' ? (
+                          <ProductGridItem product={product} currentType={type} />
+                        ) : (
+                          <ProductListItem product={product} currentType={type} />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

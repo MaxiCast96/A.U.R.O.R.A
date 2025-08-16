@@ -9,6 +9,11 @@ const Cotizaciones = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [showLoginMsg, setShowLoginMsg] = useState(false);
+  // Mover TODOS los hooks al tope del componente para respetar las reglas de hooks
+  const { data: cotizaciones, loading, error } = useData('cotizaciones');
+  const [cotizacionesState, setCotizacionesState] = useState(null);
+  const [mensaje, setMensaje] = useState(null);
+  const [modalEliminar, setModalEliminar] = useState({ abierto: false, id: null });
   
   useEffect(() => {
     if (!user) {
@@ -81,12 +86,6 @@ const Cotizaciones = () => {
       </PageTransition>
     );
   }
-  // Hook para traer cotizaciones reales
-  const { data: cotizaciones, loading, error } = useData('cotizaciones');
-  const [cotizacionesState, setCotizacionesState] = useState(null);
-  const [mensaje, setMensaje] = useState(null);
-  const [modalEliminar, setModalEliminar] = useState({ abierto: false, id: null });
-
   // Handler para eliminar cotización
   const handleEliminarCotizacion = (id) => {
     setModalEliminar({ abierto: true, id });
@@ -180,8 +179,8 @@ const Cotizaciones = () => {
                 ) : (cotizacionesState || cotizaciones) && (cotizacionesState || cotizaciones).length > 0 ? (
                   (cotizacionesState || cotizaciones).map((cot) => (
                     <tr key={cot._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm text-gray-700">{cot.numero || cot.id}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{cot.fecha || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{cot.numero || (cot._id ? `COT-${String(cot._id).slice(-6).toUpperCase()}` : '-')}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{cot.fecha ? new Date(cot.fecha).toLocaleString() : '-'}</td>
                       <td className="px-6 py-4">
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
                           {cot.estado || 'Pendiente'}
@@ -199,15 +198,15 @@ const Cotizaciones = () => {
                             </svg>
                             <span>Ver</span>
                           </Link>
-                          <button
-                            onClick={() => console.log(`Descargando cotización ${cot._id}`)}
+                          <Link
+                            to={`/cotizaciones/${cot._id}?print=1`}
                             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
                           >
                             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
                             <span>Descargar</span>
-                          </button>
+                          </Link>
                           <button
                             onClick={() => handleEliminarCotizacion(cot._id)}
                             className="flex items-center text-red-600 hover:text-red-800 transition-colors"

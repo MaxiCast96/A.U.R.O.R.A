@@ -71,11 +71,13 @@ const VerCotizacion = ({
     <PageTransition>
       <Navbar />
       <div className="container mx-auto px-4 py-8 font-['Lato']">
+
         {/* Encabezado y Acciones */}
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-gray-800">
-            Cotización {cotizacion.numero || cotizacion.id}
+            Cotización {cotizacion.numero || (cotizacion._id ? `COT-${String(cotizacion._id).slice(-6).toUpperCase()}` : cotizacion.id)}
           </h1>
+
           <div className="flex space-x-4">
             {cotizacion.estado === 'Pendiente' && (
               <button 
@@ -88,11 +90,11 @@ const VerCotizacion = ({
                 Convertir a Compra
               </button>
             )}
-            <button className="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
+            <button className="flex items-center text-gray-600 hover:text-gray-800 transition-colors" onClick={() => window.print()}>
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Descargar PDF
+              Imprimir
             </button>
             <Link
               to="/cotizaciones"
@@ -139,7 +141,7 @@ const VerCotizacion = ({
             <div>
               <h3 className="text-lg font-semibold mb-4">Información de la Cotización</h3>
               <div className="space-y-2">
-                <p><span className="font-medium">Fecha:</span> {cotizacion.fecha || '-'}</p>
+                <p><span className="font-medium">Fecha:</span> {cotizacion.fecha ? new Date(cotizacion.fecha).toLocaleString() : '-'}</p>
                 <p><span className="font-medium">Estado:</span> 
                   <span className={`ml-2 px-3 py-1 text-xs font-medium rounded-full ${getEstadoColor(cotizacion.estado)}`}>
                     {cotizacion.estado || 'Pendiente'}
@@ -150,9 +152,8 @@ const VerCotizacion = ({
             <div>
               <h3 className="text-lg font-semibold mb-4">Información del Cliente</h3>
               <div className="space-y-2">
-                <p><span className="font-medium">Nombre:</span> {cotizacion.cliente?.nombre || '-'}</p>
-                <p><span className="font-medium">Email:</span> {cotizacion.cliente?.email || '-'}</p>
-                <p><span className="font-medium">Teléfono:</span> {cotizacion.cliente?.telefono || '-'}</p>
+                <p><span className="font-medium">Email:</span> {cotizacion.correoCliente || '-'}</p>
+                <p><span className="font-medium">Teléfono:</span> {cotizacion.telefonoCliente || '-'}</p>
               </div>
             </div>
           </div>
@@ -173,14 +174,18 @@ const VerCotizacion = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {cotizacion.items && cotizacion.items.length > 0 ? (
-                  cotizacion.items.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-700">{item.producto}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{item.descripcion}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{item.cantidad}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">${item.precio?.toFixed(2) ?? '0.00'}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">${((item.cantidad || 0) * (item.precio || 0)).toFixed(2)}</td>
+                {Array.isArray(cotizacion.productos) && cotizacion.productos.length > 0 ? (
+                  cotizacion.productos.map((p, idx) => (
+                    <tr key={idx} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-700">{p.nombre}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {Array.isArray(p.customizaciones) && p.customizaciones.length > 0
+                          ? p.customizaciones.map((m, i) => `• ${m.nombre} x${m.cantidad}`).join(' | ')
+                          : '-'}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{p.cantidad}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">${Number(p.precioUnitario || 0).toFixed(2)}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">${Number(p.subtotal || (p.cantidad||0) * (p.precioUnitario||0)).toFixed(2)}</td>
                     </tr>
                   ))
                 ) : (
@@ -197,7 +202,7 @@ const VerCotizacion = ({
             <div className="w-full max-w-xs">
               <div className="flex justify-between py-2">
                 <span className="font-medium">Total:</span>
-                <span className="font-bold text-lg">${cotizacion.total?.toFixed(2) ?? '0.00'}</span>
+                <span className="font-bold text-lg">${Number(cotizacion.total || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>

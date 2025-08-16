@@ -93,17 +93,31 @@ cotizacionesController.createCotizacion = async (req, res) => {
         // Validación de campos obligatorios
         if (!clienteId) return res.status(400).json({ message: "El cliente es obligatorio" });
         if (!telefonoCliente) return res.status(400).json({ message: "El teléfono del cliente es obligatorio" });
-        if (!fecha) return res.status(400).json({ message: "La fecha es obligatoria" });
+        // fecha y validaHasta son opcionales: el modelo las define por defecto
         if (!productos || productos.length === 0) return res.status(400).json({ message: "Debe agregar al menos un producto" });
-        if (!total && total !== 0) return res.status(400).json({ message: "El total es obligatorio" });
-        if (!validaHasta) return res.status(400).json({ message: "La fecha de validez es obligatoria" });
-        if (!estado) return res.status(400).json({ message: "El estado es obligatorio" });
 
         // Calcular subtotales para cada producto
-        const productosCalculados = productos.map(producto => ({
-            ...producto,
-            subtotal: producto.cantidad * producto.precioUnitario
-        }));
+        const productosCalculados = productos.map(producto => {
+            const cantidad = Number(producto.cantidad || 1);
+            const precioUnitario = Number(producto.precioUnitario || 0);
+            const customizaciones = Array.isArray(producto.customizaciones) ? producto.customizaciones.map(mod => ({
+                codigo: mod.codigo,
+                nombre: mod.nombre,
+                descripcion: mod.descripcion || '',
+                precio: Number(mod.precio || 0),
+                cantidad: Number(mod.cantidad || 1),
+                total: 0 // se recalcula en el pre('validate') del modelo
+            })) : [];
+
+            return {
+                ...producto,
+                tipo: producto.tipo || 'otro',
+                cantidad,
+                precioUnitario,
+                customizaciones,
+                subtotal: cantidad * precioUnitario // el modelo sumará customizaciones
+            };
+        });
 
         // Crear nueva instancia de cotización con todos los datos
         const nuevaCotizacion = new cotizacionesModel({
@@ -190,10 +204,27 @@ cotizacionesController.updateCotizacion = async (req, res) => {
 
         // Si se proporcionan productos, recalcular subtotales
         if (productos && productos.length > 0) {
-            const productosCalculados = productos.map(producto => ({
-                ...producto,
-                subtotal: producto.cantidad * producto.precioUnitario
-            }));
+            const productosCalculados = productos.map(producto => {
+                const cantidad = Number(producto.cantidad || 1);
+                const precioUnitario = Number(producto.precioUnitario || 0);
+                const customizaciones = Array.isArray(producto.customizaciones) ? producto.customizaciones.map(mod => ({
+                    codigo: mod.codigo,
+                    nombre: mod.nombre,
+                    descripcion: mod.descripcion || '',
+                    precio: Number(mod.precio || 0),
+                    cantidad: Number(mod.cantidad || 1),
+                    total: 0 // se recalcula en el pre('validate') del modelo
+                })) : [];
+
+                return {
+                    ...producto,
+                    tipo: producto.tipo || 'otro',
+                    cantidad,
+                    precioUnitario,
+                    customizaciones,
+                    subtotal: cantidad * precioUnitario // el modelo sumará customizaciones
+                };
+            });
             updateData.productos = productosCalculados;
         }
 

@@ -25,8 +25,8 @@ import PerfilPage from './pages/private/PerfilPage';
 import Cart from "./pages/public/Cart";
 
 //Importacion de paginas extra de publicas
-import CrearCotizacion from "./components/Cotizaciones/CrearCotizacion";
-import VerCotizacion from "./components/Cotizaciones/VerCotizacion";
+import CrearCotizacionPage from "./pages/public/CrearCotizacionPage";
+import VerCotizacionPage from "./pages/public/VerCotizacionPage";
 
 // Importación de la página de recuperación de contraseña
 import RecuperarPassword from "./pages/auth/RecuperarPassword";
@@ -70,12 +70,12 @@ function AnimatedRoutes() {
         } />
         <Route path="/cotizaciones/crear" element={
           <PrivateRoute requiredRole="Cliente">
-            <CrearCotizacion />
+            <CrearCotizacionPage />
           </PrivateRoute>
         } />
         <Route path="/cotizaciones/:id" element={
           <PrivateRoute requiredRole="Cliente">
-            <VerCotizacion />
+            <VerCotizacionPage />
           </PrivateRoute>
         } />
         
