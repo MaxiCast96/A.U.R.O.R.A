@@ -1,151 +1,123 @@
 // ===== APP.JS - CONFIGURACIÓN PRINCIPAL DE EXPRESS =====
 import express from "express";
-import cookieParser from "cookie-parser"; // Para manejar cookies HTTP
-import cors from "cors"; // Para manejar CORS (Cross-Origin Resource Sharing)
-import dotenv from "dotenv"; // Variables de entorno
+import cookieParser from "cookie-parser";
+import cors from "cors";
+import dotenv from "dotenv";
+import database from "./database.js";
 
-// Importar la conexión a la base de datos PRIMERO para registrar todos los modelos
-import database from "./database.js"; // Importación por defecto
-
-// Cargar variables de entorno
 dotenv.config();
 
-// Importar todas las rutas del sistema (después de registrar modelos)
-import empleadosRoutes from "./src/routes/empleados.js"; // Gestión de empleados
-import optometristaRoutes from "./src/routes/optometrista.js"; // Gestión de optometristas
-import clientesRoutes from "./src/routes/clientes.js"; // Gestión de clientes
-import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js"; // Registro de empleados
-import sucursalesRoutes from "./src/routes/sucursales.js"; // Gestión de sucursales
-import marcasRoutes from "./src/routes/marcas.js"; // Gestión de marcas
-import accesoriosRoutes from "./src/routes/accesorios.js"; // Gestión de accesorios
-import lentesRoutes from "./src/routes/lentes.js"; // Gestión de lentes
-import categoriaRoutes from "./src/routes/categoria.js"; // Gestión de categorías
-import historialMedicoRoutes from "./src/routes/historialMedico.js"; // Historiales médicos
-import citasRoutes from "./src/routes/citas.js"; // Sistema de citas
-import CarritoRoutes from "./src/routes/carrito.js"; // Carrito de compras
-import promocionesRoutes from "./src/routes/promociones.js"; // Sistema de promociones
-import cotizacionesRoutes from "./src/routes/cotizaciones.js"; // Sistema de cotizaciones
-import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.js"; // Productos personalizados
-import ventasRoutes from "./src/routes/ventas.js"; // Sistema de ventas
-import recetasRoutes from "./src/routes/recetas.js"; // Recetas médicas
-import registroClientesRoutes from "./src/routes/registroClientes.js"; // Registro de clientes
-import dashboardRoutes from "./src/routes/dashboard.js"; // Dashboard y estadísticas
-import authRoutes from "./src/routes/auth.js"; // Sistema de autenticación
+// Importar rutas
+import empleadosRoutes from "./src/routes/empleados.js";
+import optometristaRoutes from "./src/routes/optometrista.js";
+import clientesRoutes from "./src/routes/clientes.js";
+import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js";
+import sucursalesRoutes from "./src/routes/sucursales.js";
+import marcasRoutes from "./src/routes/marcas.js";
+import accesoriosRoutes from "./src/routes/accesorios.js";
+import lentesRoutes from "./src/routes/lentes.js";
+import categoriaRoutes from "./src/routes/categoria.js";
+import historialMedicoRoutes from "./src/routes/historialMedico.js";
+import citasRoutes from "./src/routes/citas.js";
+import CarritoRoutes from "./src/routes/carrito.js";
+import promocionesRoutes from "./src/routes/promociones.js";
+import cotizacionesRoutes from "./src/routes/cotizaciones.js";
+import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.js";
+import ventasRoutes from "./src/routes/ventas.js";
+import recetasRoutes from "./src/routes/recetas.js";
+import registroClientesRoutes from "./src/routes/registroClientes.js";
+import dashboardRoutes from "./src/routes/dashboard.js";
+import authRoutes from "./src/routes/auth.js";
 
-// Función para hacer ping a la base de datos periódicamente
+// Mantener viva la BD
 function keepDatabaseAlive() {
     setInterval(async () => {
         try {
-            await database.query('SELECT 1'); // Realiza una consulta simple para mantener la conexión activa
+            await database.query('SELECT 1');
             console.log('Ping a la base de datos exitoso');
         } catch (error) {
             console.error('Error al hacer ping a la base de datos:', error);
         }
-    }, 300000); // Intervalo de 5 minutos (300,000 ms)
+    }, 300000);
 }
-
-// Llama a la función para mantener la conexión activa
 keepDatabaseAlive();
 
-// Crear instancia de Express
 const app = express();
 
-// MIDDLEWARE DE CONFIGURACIÓN GLOBAL
-
-// Middleware para parsear cookies en las peticiones
+// Middleware global
 app.use(cookieParser());
-
-// Configuración de CORS para permitir peticiones desde el frontend
 app.use(cors({
     origin: ['http://localhost:5173', 'https://a-u-r-o-r-a.onrender.com'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-// Middleware para parsear JSON en el body de las peticiones
 app.use(express.json());
 
-// CONFIGURACIÓN DE RUTAS - Cada ruta tiene su prefijo específico
+// Prefijos de rutas
+app.use("/api/empleados", empleadosRoutes);
+app.use("/api/optometrista", optometristaRoutes);
+app.use("/api/clientes", clientesRoutes);
+app.use("/api/registroEmpleados", registroEmpleadosRoutes);
+app.use("/api/sucursales", sucursalesRoutes);
+app.use("/api/marcas", marcasRoutes);
+app.use("/api/accesorios", accesoriosRoutes);
+app.use("/api/lentes", lentesRoutes);
+app.use("/api/categoria", categoriaRoutes);
+app.use("/api/historialMedico", historialMedicoRoutes);
+app.use("/api/citas", citasRoutes);
+app.use("/api/carrito", CarritoRoutes);
+app.use("/api/promociones", promocionesRoutes);
+app.use("/api/cotizaciones", cotizacionesRoutes);
+app.use("/api/productosPersonalizados", productosPersonalizadosRoutes);
+app.use("/api/ventas", ventasRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/recetas", recetasRoutes);
+app.use("/api/registroClientes", registroClientesRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
-app.use("/api/empleados", empleadosRoutes); // /api/empleados/* - Rutas de empleados
-app.use("/api/optometrista", optometristaRoutes); // /api/optometrista/* - Rutas de optometristas
-app.use("/api/clientes", clientesRoutes); // /api/clientes/* - Rutas de clientes
-app.use("/api/registroEmpleados", registroEmpleadosRoutes); // /api/registroClientes/* - Registro empleados
-app.use("/api/sucursales", sucursalesRoutes); // /api/sucursales/* - Rutas de sucursales
-app.use("/api/marcas", marcasRoutes); // /api/marcas/* - Rutas de marcas
-app.use("/api/accesorios", accesoriosRoutes); // /api/accesorios/* - Rutas de accesorios
-app.use("/api/lentes", lentesRoutes); // /api/lentes/* - Rutas de lentes
-app.use("/api/categoria", categoriaRoutes); // /api/categoria/* - Rutas de categorías
-app.use("/api/historialMedico", historialMedicoRoutes); // /api/historialMedico/* - Historiales médicos
-app.use("/api/citas", citasRoutes); // /api/citas/* - Rutas de citas
-app.use("/api/carrito", CarritoRoutes); // /api/carrito/* - Rutas del carrito
-app.use("/api/promociones", promocionesRoutes); // /api/promociones/* - Rutas de promociones
-app.use("/api/cotizaciones", cotizacionesRoutes); // /api/cotizaciones/* - Rutas de cotizaciones
-app.use("/api/productosPersonalizados", productosPersonalizadosRoutes); // /api/productosPersonalizados/*
-app.use("/api/ventas", ventasRoutes); // /api/ventas/* - Rutas de ventas
-app.use("/api/auth", authRoutes); // /api/auth/* - Rutas de autenticación
-app.use("/api/recetas", recetasRoutes); // /api/recetas/* - Rutas de recetas
-app.use("/api/registroClientes", registroClientesRoutes); // /api/registroClientes/* - Registro clientes
-app.use("/api/dashboard", dashboardRoutes); // /api/dashboard/* - Rutas del dashboard
-
-// ================= Wompi Proxy Endpoints =================
-// Nota: Evita CORS y manejo de secretos en el frontend.
-
-// Helper para obtener fetch en entornos Node < 18
+// ================= Helpers =================
 const getFetch = async () => {
     if (global.fetch) return global.fetch;
     const mod = await import('node-fetch');
     return mod.default;
 };
 
-// Obtener token OAuth de Wompi
+// Helper para pedir token OAuth válido de Wompi
+async function getWompiAccessToken() {
+    const _fetch = await getFetch();
+    const resp = await _fetch('https://id.wompi.sv/connect/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            grant_type: process.env.GRANT_TYPE || 'client_credentials',
+            client_id: process.env.APP_ID,
+            client_secret: process.env.API_SECRET,
+            audience: process.env.AUDIENCE || 'https://api.wompi.sv/',
+            ...(process.env.SCOPE ? { scope: process.env.SCOPE } : {})
+        })
+    });
+    if (!resp.ok) {
+        throw new Error(`Error obteniendo token OAuth: ${await resp.text()}`);
+    }
+    const data = await resp.json();
+    return data.access_token;
+}
+
+// ================= Rutas Wompi =================
+
+// Obtener token manual
 app.post('/api/wompi/token', async (req, res) => {
     try {
-        const _fetch = await getFetch();
-        const grantType = process.env.GRANT_TYPE || 'client_credentials';
-        const clientId = process.env.APP_ID || '';
-        const clientSecret = process.env.API_SECRET || '';
-        const audience = process.env.AUDIENCE || 'https://api.wompi.sv/';
-        const scope = process.env.SCOPE || '';
-
-        if (!clientId || !clientSecret) {
-            console.warn('Wompi token env missing:', {
-                hasClientId: !!clientId,
-                hasClientSecret: !!clientSecret,
-                grantType,
-                audience
-            });
-            return res.status(400).json({
-                success: false,
-                error: 'Configuración Wompi incompleta: APP_ID/API_SECRET faltantes.'
-            });
-        }
-
-        const resp = await _fetch('https://id.wompi.sv/connect/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                grant_type: grantType,
-                client_id: clientId,
-                client_secret: clientSecret,
-                audience,
-                ...(scope ? { scope } : {}),
-            })
-        });
-        if (!resp.ok) {
-            const error = await resp.text();
-            return res.status(resp.status).json({ success: false, error });
-        }
-        const data = await resp.json();
-        res.json({ success: true, ...data });
+        const token = await getWompiAccessToken();
+        res.json({ success: true, access_token: token });
     } catch (err) {
-        console.error('Wompi token error:', err);
-        res.status(500).json({ success: false, error: 'Error al obtener token' });
+        console.error('Wompi token error:', err.message);
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
-// Tokenless: reenviar payload tal cual SIN Authorization (según esquema provisto)
+// Pago tokenizado sin 3DS
 app.post('/api/wompi/tokenless', async (req, res) => {
     try {
         const formData = req.body;
@@ -154,82 +126,33 @@ app.post('/api/wompi/tokenless', async (req, res) => {
         }
 
         const _fetch = await getFetch();
-        const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Accept': 'application/json' };
-        // Opción directa: Bearer con API_SECRET y opcional App-Id
-        if (process.env.API_SECRET) {
-            headers['Authorization'] = `Bearer ${process.env.API_SECRET}`;
-        }
-        if (process.env.APP_ID) {
-            headers['x-app-id'] = process.env.APP_ID; // si Wompi requiere identificar la app
-        }
-        // Opción 1: API key pública
+        const accessToken = await getWompiAccessToken();
+
+        const headers = {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${accessToken}`
+        };
+
+        // Mantener x-api-key si existe
         if (process.env.WOMPI_PUBLIC_API_KEY) {
             headers['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY;
         }
-        // Opción 2: Basic Auth (habilitar con WOMPI_USE_BASIC_AUTH=true)
-        if (process.env.WOMPI_USE_BASIC_AUTH === 'true') {
-            const appId = process.env.APP_ID || '';
-            const apiSecret = process.env.API_SECRET || '';
-            if (appId && apiSecret) {
-                const basic = Buffer.from(`${appId}:${apiSecret}`).toString('base64');
-                headers['Authorization'] = `Basic ${basic}`;
-            }
-        }
-        let resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
+
+        const resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
             method: 'POST',
             headers,
             body: JSON.stringify(formData)
         });
-        let text = await resp.text();
-        let data = {};
+
+        const text = await resp.text();
+        let data;
         try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
 
-        // Si 401, intentar con OAuth Bearer usando APP_ID/API_SECRET
-        if (resp.status === 401 && process.env.APP_ID && process.env.API_SECRET) {
-            console.info('Wompi 401: reintentando con OAuth Bearer usando APP_ID/API_SECRET');
-            try {
-                const tokenResp = await _fetch('https://id.wompi.sv/connect/token', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams({
-                        grant_type: process.env.GRANT_TYPE || 'client_credentials',
-                        client_id: process.env.APP_ID,
-                        client_secret: process.env.API_SECRET,
-                        audience: process.env.AUDIENCE || 'https://api.wompi.sv/',
-                        ...(process.env.SCOPE ? { scope: process.env.SCOPE } : {}),
-                    })
-                });
-                const tokenText = await tokenResp.text();
-                let tokenData = {};
-                try { tokenData = tokenText ? JSON.parse(tokenText) : {}; } catch { tokenData = { raw: tokenText }; }
-                if (tokenResp.ok && tokenData.access_token) {
-                    const bearerHeaders = { 'Content-Type': 'application/json; charset=utf-8', 'Accept': 'application/json', 'Authorization': `Bearer ${tokenData.access_token}` };
-                    // Mantener x-api-key si existe
-                    if (process.env.WOMPI_PUBLIC_API_KEY) bearerHeaders['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY;
-                    resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
-                        method: 'POST',
-                        headers: bearerHeaders,
-                        body: JSON.stringify(formData)
-                    });
-                    text = await resp.text();
-                    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
-                } else {
-                    // Adjuntar error de token para diagnóstico
-                    return res.status(401).json({ success: false, error: { message: 'Unauthorized y no se pudo obtener token', tokenError: tokenData }, upstreamStatus: resp.status });
-                }
-            } catch (e) {
-                return res.status(401).json({ success: false, error: { message: 'Unauthorized y error al intentar OAuth', details: e?.message }, upstreamStatus: resp.status });
-            }
+        if (!resp.ok) {
+            return res.status(resp.status).json({ success: false, error: data, upstreamStatus: resp.status });
         }
 
-        if (!resp.ok) {
-            // Extraer algunos headers útiles para diagnóstico
-            const hdrs = {};
-            try {
-                ['www-authenticate', 'date', 'x-request-id'].forEach(h => { const v = resp.headers.get(h); if (v) hdrs[h] = v; });
-            } catch {}
-            return res.status(resp.status).json({ success: false, error: data, upstreamStatus: resp.status, upstreamHeaders: hdrs });
-        }
         return res.json({ success: true, data });
     } catch (err) {
         console.error('Wompi tokenless error:', err);
@@ -237,7 +160,7 @@ app.post('/api/wompi/tokenless', async (req, res) => {
     }
 });
 
-// Pago tokenizado sin 3DS (pruebas)
+// Pago de prueba con token ya obtenido
 app.post('/api/wompi/testPayment', async (req, res) => {
     try {
         const { token, formData } = req.body;
@@ -253,10 +176,12 @@ app.post('/api/wompi/testPayment', async (req, res) => {
             },
             body: JSON.stringify(formData)
         });
+
         if (!resp.ok) {
             const error = await resp.text();
             return res.status(resp.status).json({ success: false, error });
         }
+
         const data = await resp.json();
         res.json({ success: true, data });
     } catch (err) {
@@ -265,26 +190,29 @@ app.post('/api/wompi/testPayment', async (req, res) => {
     }
 });
 
-// Pago 3DS real
+// Pago real 3DS
 app.post('/api/wompi/payment3ds', async (req, res) => {
     try {
-        const { token, formData } = req.body;
-        if (!token) return res.status(400).json({ success: false, error: 'Token de acceso requerido' });
+        const formData = req.body;
         if (!formData) return res.status(400).json({ success: false, error: 'Datos de pago requeridos' });
 
         const _fetch = await getFetch();
+        const accessToken = await getWompiAccessToken();
+
         const resp = await _fetch('https://api.wompi.sv/TransaccionCompra/3Ds', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${accessToken}`
             },
             body: JSON.stringify(formData)
         });
+
         if (!resp.ok) {
             const error = await resp.text();
             return res.status(resp.status).json({ success: false, error });
         }
+
         const data = await resp.json();
         res.json({ success: true, data });
     } catch (err) {
@@ -293,48 +221,24 @@ app.post('/api/wompi/payment3ds', async (req, res) => {
     }
 });
 
-// MIDDLEWARE DE MANEJO DE ERRORES GLOBAL
+// ================= Middleware de errores =================
 app.use((err, req, res, next) => {
     console.error('Error global:', err);
-    
-    // Si es un error de timeout o conexión
     if (err.code === 'ECONNRESET' || err.code === 'ETIMEDOUT') {
-        return res.status(504).json({
-            success: false,
-            message: 'Timeout de conexión. Por favor, intenta nuevamente.'
-        });
+        return res.status(504).json({ success: false, message: 'Timeout de conexión. Intenta nuevamente.' });
     }
-    
-    // Si es un error de validación de Mongoose
     if (err.name === 'ValidationError') {
-        return res.status(400).json({
-            success: false,
-            message: 'Error de validación: ' + err.message
-        });
+        return res.status(400).json({ success: false, message: 'Error de validación: ' + err.message });
     }
-    
-    // Si es un error de cast de ObjectId
     if (err.name === 'CastError') {
-        return res.status(400).json({
-            success: false,
-            message: 'ID inválido proporcionado'
-        });
+        return res.status(400).json({ success: false, message: 'ID inválido proporcionado' });
     }
-    
-    // Error genérico del servidor
-    res.status(500).json({
-        success: false,
-        message: 'Error interno del servidor: ' + err.message
-    });
+    res.status(500).json({ success: false, message: 'Error interno del servidor: ' + err.message });
 });
 
-// MIDDLEWARE PARA RUTAS NO ENCONTRADAS
+// ================= Middleware para 404 =================
 app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'Ruta no encontrada'
-    });
+    res.status(404).json({ success: false, message: 'Ruta no encontrada' });
 });
 
-// Exportar la aplicación configurada
 export default app;
