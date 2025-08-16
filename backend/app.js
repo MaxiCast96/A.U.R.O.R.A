@@ -107,6 +107,7 @@ app.post('/api/wompi/token', async (req, res) => {
         const clientId = process.env.APP_ID || '';
         const clientSecret = process.env.API_SECRET || '';
         const audience = process.env.AUDIENCE || 'https://api.wompi.sv/';
+        const scope = process.env.SCOPE || '';
 
         if (!clientId || !clientSecret) {
             console.warn('Wompi token env missing:', {
@@ -129,6 +130,7 @@ app.post('/api/wompi/token', async (req, res) => {
                 client_id: clientId,
                 client_secret: clientSecret,
                 audience,
+                ...(scope ? { scope } : {}),
             })
         });
         if (!resp.ok) {
@@ -152,7 +154,7 @@ app.post('/api/wompi/tokenless', async (req, res) => {
         }
 
         const _fetch = await getFetch();
-        const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+        const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Accept': 'application/json' };
         // Opción 1: API key pública
         if (process.env.WOMPI_PUBLIC_API_KEY) {
             headers['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY;
@@ -177,6 +179,7 @@ app.post('/api/wompi/tokenless', async (req, res) => {
 
         // Si 401, intentar con OAuth Bearer usando APP_ID/API_SECRET
         if (resp.status === 401 && process.env.APP_ID && process.env.API_SECRET) {
+            console.info('Wompi 401: reintentando con OAuth Bearer usando APP_ID/API_SECRET');
             try {
                 const tokenResp = await _fetch('https://id.wompi.sv/connect/token', {
                     method: 'POST',
@@ -186,13 +189,14 @@ app.post('/api/wompi/tokenless', async (req, res) => {
                         client_id: process.env.APP_ID,
                         client_secret: process.env.API_SECRET,
                         audience: process.env.AUDIENCE || 'https://api.wompi.sv/',
+                        ...(process.env.SCOPE ? { scope: process.env.SCOPE } : {}),
                     })
                 });
                 const tokenText = await tokenResp.text();
                 let tokenData = {};
                 try { tokenData = tokenText ? JSON.parse(tokenText) : {}; } catch { tokenData = { raw: tokenText }; }
                 if (tokenResp.ok && tokenData.access_token) {
-                    const bearerHeaders = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${tokenData.access_token}` };
+                    const bearerHeaders = { 'Content-Type': 'application/json; charset=utf-8', 'Accept': 'application/json', 'Authorization': `Bearer ${tokenData.access_token}` };
                     // Mantener x-api-key si existe
                     if (process.env.WOMPI_PUBLIC_API_KEY) bearerHeaders['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY;
                     resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
