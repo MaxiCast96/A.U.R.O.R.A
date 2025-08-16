@@ -36,7 +36,7 @@ ventasController.createVenta = async (req, res) => {
     try {
         // Validación de campos obligatorios
         if (!carritoId) return res.status(400).json({ message: "El carrito es obligatorio" });
-        if (!empleadoId) return res.status(400).json({ message: "El empleado es obligatorio" });
+        // empleadoId es opcional
         if (!sucursalId) return res.status(400).json({ message: "La sucursal es obligatoria" });
         if (!fecha) return res.status(400).json({ message: "La fecha es obligatoria" });
         if (!estado) return res.status(400).json({ message: "El estado es obligatorio" });
@@ -65,17 +65,19 @@ ventasController.createVenta = async (req, res) => {
             }
         }
 
-        // Crear nueva instancia de venta
-        const newVenta = new ventasModel({
+        // Crear datos de venta y solo incluir empleadoId si viene válido
+        const newVentaData = {
             carritoId,
-            empleadoId,
             sucursalId,
             fecha: fecha || new Date(), // Usa fecha actual si no se proporciona
             estado: estado || 'pendiente', // Estado por defecto
             datosPago,
             facturaDatos,
             observaciones
-        });
+        };
+        if (empleadoId) newVentaData.empleadoId = empleadoId;
+
+        const newVenta = new ventasModel(newVentaData);
 
         const savedVenta = await newVenta.save();
         

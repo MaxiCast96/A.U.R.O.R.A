@@ -10,7 +10,8 @@ const ventasSchema = new Schema({
     empleadoId: {
         type: Schema.Types.ObjectId,
         ref: 'Empleados', // Empleado que procesa la venta
-        required: true,
+        // Opcional: puede ser null/omitido si la venta se realiza sin asignación explícita
+        required: false,
     },
     sucursalId: {
         type: Schema.Types.ObjectId,
