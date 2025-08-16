@@ -155,9 +155,11 @@ app.post('/api/wompi/tokenless', async (req, res) => {
 
         const _fetch = await getFetch();
         const headers = { 'Content-Type': 'application/json; charset=utf-8', 'Accept': 'application/json' };
+        const authUsed = [];
         // Opción 1: API key pública
         if (process.env.WOMPI_PUBLIC_API_KEY) {
             headers['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY;
+            authUsed.push('x-api-key');
         }
         // Opción 2: Basic Auth (habilitar con WOMPI_USE_BASIC_AUTH=true)
         if (process.env.WOMPI_USE_BASIC_AUTH === 'true') {
@@ -166,7 +168,33 @@ app.post('/api/wompi/tokenless', async (req, res) => {
             if (appId && apiSecret) {
                 const basic = Buffer.from(`${appId}:${apiSecret}`).toString('base64');
                 headers['Authorization'] = `Basic ${basic}`;
+                authUsed.push('basic');
             }
+        }
+        // Opción 3: Bearer de entrada si hay credenciales APP_ID/API_SECRET
+        let bearerWasSet = false;
+        if (process.env.APP_ID && process.env.API_SECRET) {
+            try {
+                const tokenRespInit = await _fetch('https://id.wompi.sv/connect/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        grant_type: process.env.GRANT_TYPE || 'client_credentials',
+                        client_id: process.env.APP_ID,
+                        client_secret: process.env.API_SECRET,
+                        audience: process.env.AUDIENCE || 'https://api.wompi.sv/',
+                        ...(process.env.SCOPE ? { scope: process.env.SCOPE } : {}),
+                    })
+                });
+                const tokenTextInit = await tokenRespInit.text();
+                let tokenDataInit = {};
+                try { tokenDataInit = tokenTextInit ? JSON.parse(tokenTextInit) : {}; } catch { tokenDataInit = { raw: tokenTextInit }; }
+                if (tokenRespInit.ok && tokenDataInit.access_token) {
+                    headers['Authorization'] = `Bearer ${tokenDataInit.access_token}`;
+                    bearerWasSet = true;
+                    authUsed.push('bearer');
+                }
+            } catch {}
         }
         let resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
             method: 'POST',
@@ -177,8 +205,8 @@ app.post('/api/wompi/tokenless', async (req, res) => {
         let data = {};
         try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
 
-        // Si 401, intentar con OAuth Bearer usando APP_ID/API_SECRET
-        if (resp.status === 401 && process.env.APP_ID && process.env.API_SECRET) {
+        // Si 401 y aún no habíamos aplicado Bearer correctamente, intentar de nuevo
+        if (resp.status === 401 && process.env.APP_ID && process.env.API_SECRET && !bearerWasSet) {
             console.info('Wompi 401: reintentando con OAuth Bearer usando APP_ID/API_SECRET');
             try {
                 const tokenResp = await _fetch('https://id.wompi.sv/connect/token', {
@@ -221,9 +249,9 @@ app.post('/api/wompi/tokenless', async (req, res) => {
             try {
                 ['www-authenticate', 'date', 'x-request-id'].forEach(h => { const v = resp.headers.get(h); if (v) hdrs[h] = v; });
             } catch {}
-            return res.status(resp.status).json({ success: false, error: data, upstreamStatus: resp.status, upstreamHeaders: hdrs });
+            return res.status(resp.status).json({ success: false, error: data, upstreamStatus: resp.status, upstreamHeaders: hdrs, authUsed });
         }
-        return res.json({ success: true, data });
+        return res.json({ success: true, data, authUsed });
     } catch (err) {
         console.error('Wompi tokenless error:', err);
         res.status(500).json({ success: false, error: 'Error al procesar el pago' });
