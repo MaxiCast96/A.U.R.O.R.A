@@ -166,16 +166,58 @@ app.post('/api/wompi/tokenless', async (req, res) => {
                 headers['Authorization'] = `Basic ${basic}`;
             }
         }
-        const resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
+        let resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
             method: 'POST',
             headers,
             body: JSON.stringify(formData)
         });
-        const text = await resp.text();
+        let text = await resp.text();
         let data = {};
         try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+
+        // Si 401, intentar con OAuth Bearer usando APP_ID/API_SECRET
+        if (resp.status === 401 && process.env.APP_ID && process.env.API_SECRET) {
+            try {
+                const tokenResp = await _fetch('https://id.wompi.sv/connect/token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        grant_type: process.env.GRANT_TYPE || 'client_credentials',
+                        client_id: process.env.APP_ID,
+                        client_secret: process.env.API_SECRET,
+                        audience: process.env.AUDIENCE || 'https://api.wompi.sv/',
+                    })
+                });
+                const tokenText = await tokenResp.text();
+                let tokenData = {};
+                try { tokenData = tokenText ? JSON.parse(tokenText) : {}; } catch { tokenData = { raw: tokenText }; }
+                if (tokenResp.ok && tokenData.access_token) {
+                    const bearerHeaders = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': `Bearer ${tokenData.access_token}` };
+                    // Mantener x-api-key si existe
+                    if (process.env.WOMPI_PUBLIC_API_KEY) bearerHeaders['x-api-key'] = process.env.WOMPI_PUBLIC_API_KEY;
+                    resp = await _fetch('https://api.wompi.sv/TransaccionCompra/TokenizadaSin3Ds', {
+                        method: 'POST',
+                        headers: bearerHeaders,
+                        body: JSON.stringify(formData)
+                    });
+                    text = await resp.text();
+                    try { data = text ? JSON.parse(text) : {}; } catch { data = { raw: text }; }
+                } else {
+                    // Adjuntar error de token para diagnóstico
+                    return res.status(401).json({ success: false, error: { message: 'Unauthorized y no se pudo obtener token', tokenError: tokenData }, upstreamStatus: resp.status });
+                }
+            } catch (e) {
+                return res.status(401).json({ success: false, error: { message: 'Unauthorized y error al intentar OAuth', details: e?.message }, upstreamStatus: resp.status });
+            }
+        }
+
         if (!resp.ok) {
-            return res.status(resp.status).json({ success: false, error: data, upstreamStatus: resp.status });
+            // Extraer algunos headers útiles para diagnóstico
+            const hdrs = {};
+            try {
+                ['www-authenticate', 'date', 'x-request-id'].forEach(h => { const v = resp.headers.get(h); if (v) hdrs[h] = v; });
+            } catch {}
+            return res.status(resp.status).json({ success: false, error: data, upstreamStatus: resp.status, upstreamHeaders: hdrs });
         }
         return res.json({ success: true, data });
     } catch (err) {
