@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
 import ExamenVisualCard from "../../components/Nosotros/ExamenVisualCard";
+import { Eye, Target, Timer, CalendarCheck, Stethoscope, Glasses, Wrench } from "lucide-react";
+import Img from "../public/img/proceso-examen.jpg"
 
 const ServiceCard = ({ icon, title, description, features, details }) => (
   <div className="bg-white rounded-2xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.16)] transition-all duration-300">
@@ -83,18 +85,22 @@ const Servicio = () => {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
               <BenefitCard
+                icon={<Eye className="w-8 h-8" aria-hidden="true" />}
                 title="Detección temprana"
                 description="Identificamos problemas visuales antes de que se conviertan en condiciones graves."
               />
               <BenefitCard
+                icon={<Target className="w-8 h-8" aria-hidden="true" />}
                 title="Precisión garantizada"
                 description="Utilizamos equipos de última generación para garantizar la precisión en la medición de tu graduación."
               />
               <BenefitCard
+                icon={<Timer className="w-8 h-8" aria-hidden="true" />}
                 title="Rápido y eficiente"
                 description="Nuestro examen visual completo toma aproximadamente 30 minutos, respetando tu tiempo."
               />
               <BenefitCard
+                icon={<CalendarCheck className="w-8 h-8" aria-hidden="true" />}
                 title="Seguimiento Personalizado"
                 description="Realizamos un seguimiento de tu salud visual y te recordamos cuándo es momento de tu próximo examen."
               />
@@ -133,7 +139,7 @@ const Servicio = () => {
               </div>
               <div className="flex items-center justify-center">
                 <img
-                  src="/img/proceso-examen.png"
+                  src={Img}
                   alt="Proceso de examen visual"
                   className="rounded-2xl shadow-lg max-w-full w-full"
                 />
@@ -150,6 +156,7 @@ const Servicio = () => {
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-8">
               <ServiceCard
+                icon={<Stethoscope className="w-8 h-8" aria-hidden="true" />}
                 title="Examen Visual"
                 description="Evaluación integral de tu salud visual utilizando tecnología de vanguardia."
                 features={{
@@ -183,6 +190,7 @@ const Servicio = () => {
                 }}
               />
               <ServiceCard
+                icon={<Glasses className="w-8 h-8" aria-hidden="true" />}
                 title="Adaptación de Lentes"
                 description="Servicio completo de adaptación y personalización de lentes, garantizando tu comodidad y satisfacción."
                 features={{
@@ -212,6 +220,7 @@ const Servicio = () => {
                 }}
               />
               <ServiceCard
+                icon={<Wrench className="w-8 h-8" aria-hidden="true" />}
                 title="Reparaciones"
                 description="Servicio técnico especializado para el mantenimiento y reparación de tus lentes."
                 features={{
