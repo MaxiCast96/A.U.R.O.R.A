@@ -85,6 +85,19 @@ const productosPersonalizadosSchema = new Schema({
         type: Date,
         required: true // Fecha estimada de entrega
     },
+    // Enlaces a otras entidades del flujo
+    cotizacionId: {
+        type: Schema.Types.ObjectId,
+        ref: 'cotizaciones',
+        required: false,
+        default: null
+    },
+    pedidoId: {
+        type: Schema.Types.ObjectId,
+        ref: 'pedidos',
+        required: false,
+        default: null
+    },
     cotizacion: { // Cotización para el producto personalizado
         total: {
             type: Number,

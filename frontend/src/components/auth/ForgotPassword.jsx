@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { config } from '../../config';
 
 const ForgotPassword = ({ onClose }) => {
   const [step, setStep] = useState(1);
@@ -10,6 +11,7 @@ const ForgotPassword = ({ onClose }) => {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [notice, setNotice] = useState({ type: 'info', message: '' });
 
   const handleChange = (e) => {
     setFormData({
@@ -20,45 +22,51 @@ const ForgotPassword = ({ onClose }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const normalizedEmail = (formData.email || '').trim().toLowerCase();
+    // Base de API dinámica sin exponer 'localhost' en mensajes al usuario
+    const apiBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+      ? 'http://localhost:4000/api'
+      : config.api.baseUrl;
     if (step === 1) {
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch('https://a-u-r-o-r-a.onrender.com/api/clientes/forgot-password', {
+        let res = await fetch(`${apiBase}/clientes/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo: formData.email })
+          body: JSON.stringify({ correo: normalizedEmail })
         });
         let data = await res.json();
-        if (!res.ok && data.message?.toLowerCase().includes('no existe')) {
+        if (!res.ok && (data.message?.toLowerCase().includes('no existe') || data.message?.toLowerCase().includes('correo'))) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch('https://a-u-r-o-r-a.onrender.com/api/empleados/forgot-password', {
+          res = await fetch(`${apiBase}/empleados/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ correo: formData.email })
+            body: JSON.stringify({ correo: normalizedEmail })
           });
           data = await res.json();
         }
-        if (!res.ok) throw new Error(data.message || 'Error enviando código');
+        if (!res.ok) throw new Error(data.message || 'No pudimos enviar el código. Intenta de nuevo.');
+        setNotice({ type: 'success', message: 'Te enviamos un código de verificación. Revisa tu bandeja de entrada o spam.' });
         setStep(2);
       } catch (error) {
-        alert(error.message);
+        setNotice({ type: 'error', message: error.message || 'Ocurrió un error. Intenta nuevamente.' });
       } finally {
         setLoading(false);
       }
     } else if (step === 2) {
       if (formData.newPassword !== formData.confirmPassword) {
-        alert('Las contraseñas no coinciden');
+        setNotice({ type: 'warning', message: 'Las contraseñas no coinciden.' });
         return;
       }
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch('https://a-u-r-o-r-a.onrender.com/api/clientes/reset-password', {
+        let res = await fetch(`${apiBase}/clientes/reset-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            correo: formData.email,
+            correo: normalizedEmail,
             code: formData.code,
             newPassword: formData.newPassword
           })
@@ -66,24 +74,25 @@ const ForgotPassword = ({ onClose }) => {
         let data = await res.json();
         if (!res.ok && data.message?.toLowerCase().includes('correo')) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch('https://a-u-r-o-r-a.onrender.com/api/empleados/reset-password', {
+          res = await fetch(`${apiBase}/empleados/reset-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              correo: formData.email,
+              correo: normalizedEmail,
               code: formData.code,
               newPassword: formData.newPassword
             })
           });
           data = await res.json();
         }
-        if (!res.ok) throw new Error(data.message || 'Error al cambiar la contraseña');
+        if (!res.ok) throw new Error(data.message || 'No pudimos cambiar tu contraseña. Intenta nuevamente.');
         setSuccess(true);
+        setNotice({ type: 'success', message: '¡Contraseña actualizada! Ya puedes iniciar sesión.' });
         setTimeout(() => {
           if (onClose) onClose();
         }, 2500);
       } catch (error) {
-        alert(error.message);
+        setNotice({ type: 'error', message: error.message || 'Ocurrió un error. Intenta nuevamente.' });
       } finally {
         setLoading(false);
       }
@@ -105,12 +114,28 @@ const ForgotPassword = ({ onClose }) => {
 
         {/* Logo */}
         <div className="flex justify-center mb-6">
-        <img 
-              src="https://i.imgur.com/rYfBDzN.png" 
-              alt="Óptica La Inteligente" 
-              className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
-            />
+          <img
+            src="https://i.imgur.com/rYfBDzN.png"
+            alt="Óptica La Inteligente"
+            className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
+          />
         </div>
+
+        {/* Notificaciones inline */}
+        {notice?.message && (
+          <div
+            className={`mb-4 text-sm rounded-md px-3 py-2 ${
+              notice.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+              notice.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+              notice.type === 'warning' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' :
+              'bg-blue-50 text-blue-700 border border-blue-200'
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {notice.message}
+          </div>
+        )}
 
         {step === 1 && !success && (
           <div className="space-y-4">
@@ -133,10 +158,10 @@ const ForgotPassword = ({ onClose }) => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300"
+                className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading ? 'Enviando...' : 'Siguiente'}
+                {loading ? 'Enviando…' : 'Siguiente'}
               </button>
             </form>
           </div>
@@ -187,10 +212,10 @@ const ForgotPassword = ({ onClose }) => {
               </div>
               <button
                 type="submit"
-                className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300"
+                className="w-full bg-[#0097c2] text-white py-2 px-4 rounded-md hover:bg-[#0088b0] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                 disabled={loading}
               >
-                {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
+                {loading ? 'Cambiando…' : 'Cambiar Contraseña'}
               </button>
             </form>
           </div>

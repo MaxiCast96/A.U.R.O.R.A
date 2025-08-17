@@ -76,7 +76,7 @@ const LentesSchema = new Schema({
     },
     promocionId: {
         type: Schema.Types.ObjectId,
-        ref: 'Promocion', // Promoción aplicada si aplica
+        ref: 'Promociones', // Promoción aplicada si aplica
         required: function () {
             return this.enPromocion; // Solo requerido si está en promoción
         },

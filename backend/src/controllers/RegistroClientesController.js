@@ -21,8 +21,11 @@ registerClientesController.register = async (req, res) => {
     } = req.body;
 
     try {
+        // Normalizar correo (aceptar cualquier dominio): trim + lowercase
+        const correoNorm = String(correo || '').trim().toLowerCase();
+
         // Verificar si ya existe un cliente con el mismo correo electrónico
-        const existsCliente = await clientesModel.findOne({ correo });
+        const existsCliente = await clientesModel.findOne({ correo: correoNorm });
         if (existsCliente) {
             return res.json({ message: "Cliente already exists" });
         }
@@ -43,7 +46,7 @@ registerClientesController.register = async (req, res) => {
             edad,
             dui,
             telefono,
-            correo,
+            correo: correoNorm,
             direccion,
             password: passwordHash,
         });
@@ -56,39 +59,97 @@ registerClientesController.register = async (req, res) => {
         // Crear token JWT con el correo y código de verificación
         const tokenCode = jsonwebtoken.sign(
             { correo, verificationCode },
-            config.JWT.secret,
+            config.jwt.secret,
             { expiresIn: "2h" } // Expira en 2 horas
         );
 
         // Establecer cookie con el token de verificación que expira en 2 horas
         res.cookie("verificationTokenEmpleado", tokenCode, { maxAge: 2 * 60 * 60 * 1000 });
 
-        // Configurar el transporter de nodemailer para envío de emails
-        const transporter = nodemailer.createTransporter({
-            service: "gmail",
-            auth: {
-                user: config.emailUser.user_email,
-                pass: config.emailUser.user_pass
-            }
+        // Configurar el transporter de nodemailer (Gmail SMTP)
+        // Sugerencia: algunas contraseñas de app de Google se copian con espacios, los removemos
+        const gmailPass = (config.email.pass || '').replace(/\s+/g, '');
+        // Transport principal (465 SSL)
+        let transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 465,
+            secure: true,
+            auth: { user: config.email.user, pass: gmailPass },
+            logger: true,
+            debug: true
         });
+
+        // Verificar conexión SMTP antes de enviar
+        try {
+            await transporter.verify();
+            console.log("SMTP listo (Gmail 465 SSL)");
+        } catch (smtpErr) {
+            console.log("Fallo verificación SMTP 465, intentando 587 STARTTLS:", smtpErr?.message || smtpErr);
+            // Fallback a 587 STARTTLS
+            transporter = nodemailer.createTransport({
+                host: 'smtp.gmail.com',
+                port: 587,
+                secure: false,
+                auth: { user: config.email.user, pass: gmailPass },
+                logger: true,
+                debug: true
+            });
+            try {
+                await transporter.verify();
+                console.log("SMTP listo (Gmail 587 STARTTLS)");
+            } catch (smtpErr2) {
+                console.log("Fallo verificación SMTP 587:", smtpErr2?.message || smtpErr2);
+                return res.json({ message: "Error enviando email de verificación" });
+            }
+        }
 
         // Configurar las opciones del email de verificación
         const mailOptions = {
-            from: config.emailUser.user_email,
-            to: correo,
+            from: `"Óptica Inteligente" <${config.email.user}>`,
+            to: correoNorm,
             subject: "Verificación de cuenta - Cliente",
-            text: `Hola ${nombre} ${apellido}, para verificar tu cuenta de cliente utiliza este código: ${verificationCode}. El código expira en dos horas.`
+            text: `Hola ${nombre} ${apellido}, para verificar tu cuenta de cliente utiliza este código: ${verificationCode}. El código expira en dos horas.`,
+            html: `<p>Hola <strong>${nombre} ${apellido}</strong>,</p>
+                   <p>Para verificar tu cuenta de cliente utiliza este código:</p>
+                   <p style="font-size:20px;font-weight:bold;letter-spacing:2px;">${verificationCode}</p>
+                   <p>El código expira en <strong>2 horas</strong>.</p>`,
+            // Mejoras de entregabilidad
+            replyTo: config.email.user,
+            priority: 'high',
+            envelope: {
+                from: config.email.user,
+                to: correoNorm
+            },
+            headers: {
+                'X-Auto-Response-Suppress': 'All'
+            }
         };
 
         // Enviar email de verificación
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log("Error enviando email: " + error);
-                return res.json({ message: "Error enviando email de verificación" });
+        try {
+            const info = await transporter.sendMail(mailOptions);
+            console.log("Email enviado:", info.response || info.messageId, {
+                accepted: info.accepted,
+                rejected: info.rejected
+            });
+            // En desarrollo, devolvemos también el código para facilitar pruebas
+            if (config.server?.nodeEnv !== 'production') {
+                return res.json({
+                    message: "Cliente registrado. Código enviado por correo (modo desarrollo).",
+                    devVerificationCode: verificationCode
+                });
             }
-            console.log("Email enviado: " + info.response);
             res.json({ message: "Cliente registrado, por favor revisa tu correo para verificar tu cuenta." });
-        });
+        } catch (error) {
+            console.log("Error enviando email:", error?.message || error);
+            if (config.server?.nodeEnv !== 'production') {
+                return res.json({
+                    message: "No se pudo enviar el correo en desarrollo, usa el código mostrado para verificar.",
+                    devVerificationCode: verificationCode
+                });
+            }
+            return res.json({ message: "Error enviando email de verificación" });
+        }
 
     } catch (error) {
         console.log("Error: " + error);
@@ -110,7 +171,7 @@ registerClientesController.verifyCodeEmail = async (req, res) => {
         }
 
         // Decodificar el token JWT para obtener el correo y código almacenado
-        const decoded = jsonwebtoken.verify(token, config.JWT.secret);
+        const decoded = jsonwebtoken.verify(token, config.jwt.secret);
         const { correo, verificationCode: storedCode } = decoded;
 
         // Comparar el código enviado con el código almacenado en el token

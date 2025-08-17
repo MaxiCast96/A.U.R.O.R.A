@@ -13,21 +13,38 @@ cloudinary.config({
 
 const accesoriosController = {};
 
-// SELECT - Obtiene todos los accesorios con sus relaciones pobladas
+// SELECT - Obtiene todos los accesorios con sus relaciones pobladas (con paginación)
 accesoriosController.getAccesorios = async (req, res) => {
     try {
-         // Busca todos los accesorios y puebla las referencias a marcas, promociones y sucursales
+        // Parámetros de paginación
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 100);
+        const skip = (page - 1) * limit;
+
+        // Conteo total
+        const total = await accesoriosModel.countDocuments();
+
+        // Consulta con paginación y poblado de relaciones
         const accesorios = await accesoriosModel.find()
-            .populate('marcaId') // Obtiene datos completos de la marca
-            .populate({
-                path: 'promocionId',
-                model: 'Promociones' // Obtiene datos de promoción si existe
-            })
-            .populate('sucursales.sucursalId'); // Obtiene datos de cada sucursal asociada
-        res.json(accesorios);
+            .populate('marcaId')
+            .populate('promocionId')
+            .populate('sucursales.sucursalId')
+            .skip(skip)
+            .limit(limit);
+
+        return res.json({
+            success: true,
+            data: accesorios,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo accesorios: " + error.message });
+        return res.status(500).json({ success: false, message: "Error obteniendo accesorios: " + error.message });
     }
 };
 

@@ -4,13 +4,14 @@ import { Schema, model } from 'mongoose';
 const ventasSchema = new Schema({
     carritoId: {
         type: Schema.Types.ObjectId,
-        ref: 'Carrito', // Carrito que se convierte en venta
+        ref: 'carrito', // Debe coincidir con model('carrito', ...) en Carrito.js
         required: true,
     },
     empleadoId: {
         type: Schema.Types.ObjectId,
         ref: 'Empleados', // Empleado que procesa la venta
-        required: true,
+        // Opcional: puede ser null/omitido si la venta se realiza sin asignación explícita
+        required: false,
     },
     sucursalId: {
         type: Schema.Types.ObjectId,

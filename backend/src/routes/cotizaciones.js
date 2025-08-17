@@ -26,6 +26,9 @@ router.get("/estado/:estado", cotizacionesController.getCotizacionesByEstado);
 // PATCH /api/cotizaciones/:id/estado - Actualizar solo el estado de una cotización
 router.patch("/:id/estado", cotizacionesController.updateEstadoCotizacion);
 
+// POST /api/cotizaciones/:id/convertir-a-pedido - Convierte una cotización en un pedido
+router.post("/:id/convertir-a-pedido", cotizacionesController.convertirACedido);
+
 // POST /api/cotizaciones/actualizar-expiradas - Tarea de mantenimiento para expirar cotizaciones
 router.post("/actualizar-expiradas", cotizacionesController.actualizarCotizacionesExpiradas);
 

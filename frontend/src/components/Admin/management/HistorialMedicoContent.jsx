@@ -201,7 +201,7 @@ const HistorialMedicoContent = () => {
       setShowDeleteConfirm(false);
       setDeleteTarget(null);
     } catch (err) {
-      alert('Error al eliminar.');
+      setAlert({ type: 'error', message: 'Error al eliminar.' });
     }
   };
 

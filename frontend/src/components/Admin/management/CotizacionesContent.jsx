@@ -1,7 +1,13 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Search, Plus, Trash2, Eye, Edit, FileText, User, DollarSign, Clock, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import API_CONFIG, { buildApiUrl } from '../../../config/api';
+import useApiData from '../../../hooks/useApiData';
+import { useAuth } from '../../auth/AuthContext';
 
 const CotizacionesContent = () => {
+    const { token } = useAuth();
+    const [notice, setNotice] = useState({ type: '', message: '' });
+
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('todas');
     const [setShowAddModal] = useState(false);
@@ -10,65 +16,33 @@ const CotizacionesContent = () => {
     const [currentPage, setCurrentPage] = useState(0);
     const [pageSize, setPageSize] = useState(5);
 
-    // Datos de ejemplo para cotizaciones
-    const cotizaciones = [
-      {
-        id: 'COT-001',
-        cliente: 'Empresa ABC',
-        total: 2500,
-        fechaCreacion: '2024-05-20',
-        fechaVencimiento: '2024-06-20',
-        estado: 'Enviada'
-      },
-      {
-        id: 'COT-002',
-        cliente: 'Juan Pérez',
-        total: 1200,
-        fechaCreacion: '2024-05-18',
-        fechaVencimiento: '2024-06-18',
-        estado: 'Aprobada'
-      },
-      {
-        id: 'COT-003',
-        cliente: 'María García',
-        total: 350,
-        fechaCreacion: '2024-05-22',
-        fechaVencimiento: '2024-06-22',
-        estado: 'Pendiente'
-      },
-      {
-        id: 'COT-004',
-        cliente: 'Servicios XYZ',
-        total: 5800,
-        fechaCreacion: '2024-04-30',
-        fechaVencimiento: '2024-05-30',
-        estado: 'Rechazada'
-      },
-      {
-        id: 'COT-005',
-        cliente: 'Ana López',
-        total: 850,
-        fechaCreacion: '2024-05-21',
-        fechaVencimiento: '2024-06-21',
-        estado: 'Enviada'
-      },
-      {
-        id: 'COT-006',
-        cliente: 'Constructora Delta',
-        total: 15000,
-        fechaCreacion: '2024-05-15',
-        fechaVencimiento: '2024-06-15',
-        estado: 'Aprobada'
-      },
-      {
-        id: 'COT-007',
-        cliente: 'Roberto Martínez',
-        total: 450,
-        fechaCreacion: '2024-05-23',
-        fechaVencimiento: '2024-06-23',
-        estado: 'Pendiente'
-      }
-    ];
+    // Helpers
+    const formatDate = (value) => {
+      if (!value) return '-';
+      const d = new Date(value);
+      return isNaN(d.getTime()) ? String(value) : d.toLocaleDateString();
+    };
+
+    // Fetch real data
+    const [refreshKey, setRefreshKey] = useState(0);
+    const { data: apiData, loading, error } = useApiData('cotizaciones', { r: refreshKey });
+
+    const cotizaciones = useMemo(() => {
+      if (!Array.isArray(apiData)) return [];
+      return apiData.map((c) => {
+        const clienteNombre = typeof c.clienteId === 'object' && c.clienteId !== null
+          ? (c.clienteId.nombre || c.clienteId.fullName || c.clienteId.razonSocial || c.clienteId.email || String(c.clienteId._id || ''))
+          : String(c.clienteId || '');
+        return {
+          id: c._id,
+          cliente: clienteNombre,
+          total: Number(c.total || 0),
+          fechaCreacion: formatDate(c.createdAt || c.fechaCreacion),
+          fechaVencimiento: formatDate(c.fechaVencimiento),
+          estado: c.estado || 'Pendiente',
+        };
+      });
+    }, [apiData]);
 
     const filteredCotizaciones = cotizaciones.filter(cot => {
       const matchesSearch = cot.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -95,12 +69,49 @@ const CotizacionesContent = () => {
       }
     };
 
+    const convertirAPedido = async (cotId) => {
+      try {
+        const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.COTIZACIONES}/${cotId}/convertir-a-pedido`);
+        const res = await fetch(url, {
+          method: 'POST',
+          credentials: API_CONFIG.FETCH_CONFIG.credentials,
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {})
+          },
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setNotice({ type: 'error', message: data?.message || 'No se pudo convertir la cotización.' });
+          return;
+        }
+        setNotice({ type: 'success', message: 'Cotización convertida en pedido correctamente.' });
+        setRefreshKey((k) => k + 1);
+      } catch (e) {
+        setNotice({ type: 'error', message: 'Error de red al convertir la cotización.' });
+      }
+    };
+
     const totalCotizaciones = cotizaciones.length;
-    const cotizacionesAprobadas = cotizaciones.filter(c => c.estado === 'Aprobada').length;
-    const montoTotalAprobado = cotizaciones.filter(c => c.estado === 'Aprobada').reduce((sum, c) => sum + c.total, 0);
+    const cotizacionesAprobadas = cotizaciones.filter(c => (c.estado || '').toLowerCase() === 'aprobada').length;
+    const montoTotalAprobado = cotizaciones
+      .filter(c => (c.estado || '').toLowerCase() === 'aprobada')
+      .reduce((sum, c) => sum + (Number.isFinite(c.total) ? c.total : 0), 0);
 
     return (
       <div className="space-y-6 animate-fade-in">
+        {notice.message && (
+          <div
+            className={`p-3 rounded-lg text-sm mx-auto max-w-3xl ${
+              notice.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+              'bg-red-50 text-red-700 border border-red-200'
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {notice.message}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">
@@ -182,6 +193,12 @@ const CotizacionesContent = () => {
           </div>
 
           <div className="overflow-x-auto">
+            {loading && (
+              <div className="p-6 text-center text-gray-600">Cargando cotizaciones...</div>
+            )}
+            {error && (
+              <div className="p-6 text-center text-red-600">{String(error)}</div>
+            )}
             <table className="w-full">
               <thead className="bg-cyan-500 text-white">
                 <tr>
@@ -227,6 +244,13 @@ const CotizacionesContent = () => {
                           </button>
                           <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Editar">
                             <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            className="p-2 text-cyan-700 hover:bg-cyan-50 rounded-lg transition-colors"
+                            title="Convertir a pedido"
+                            onClick={() => convertirAPedido(cot.id)}
+                          >
+                            <FileText className="w-4 h-4" />
                           </button>
                         </div>
                       </td>

@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AuthModal from "../auth/AuthModal";
 import { useAuth } from '../auth/AuthContext';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ShoppingCart } from 'lucide-react';
+import { useCart } from '../../context/CartContext';
 
 const Navbar = () => {
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
@@ -11,6 +12,7 @@ const Navbar = () => {
   const location = useLocation();
   const isHome = location.pathname === "/";
   const { user } = useAuth();
+  const { itemCount } = useCart() || {};
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -91,9 +93,6 @@ const Navbar = () => {
               alt="Óptica La Inteligente" 
               className="w-20 h-8 sm:w-24 sm:h-10 lg:w-27 lg:h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
             />
-            <span className="font-semibold text-sm sm:text-lg lg:text-xl text-[#0097c2] ml-1 sm:ml-2 hidden sm:block">
-              Óptica La Inteligente
-            </span>
           </div>
 
           {/* Menú de escritorio */}
@@ -147,12 +146,6 @@ const Navbar = () => {
                 >
                   Accesorios
                 </Link>
-                <Link
-                  to="/productos/personalizables"
-                  className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm"
-                >
-                  Personalizables
-                </Link>
               </div>
             </li>
             <li>
@@ -179,6 +172,15 @@ const Navbar = () => {
 
           {/* Botón de sesión/perfil */}
           <div className="flex items-center space-x-2">
+            {/* Carrito */}
+            <Link to="/carrito" className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors hidden sm:inline-flex">
+              <ShoppingCart className="w-5 h-5 text-gray-700" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  {itemCount}
+                </span>
+              )}
+            </Link>
             {user ? (
               <>
                 {/* Mostrar enlace al dashboard para cualquier rol que NO sea Cliente */}
@@ -270,13 +272,6 @@ const Navbar = () => {
                       className="block py-2 px-3 text-gray-600 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors text-sm"
                     >
                       Accesorios
-                    </Link>
-                    <Link
-                      to="/productos/personalizables"
-                      onClick={closeMobileMenu}
-                      className="block py-2 px-3 text-gray-600 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors text-sm"
-                    >
-                      Personalizables
                     </Link>
                   </div>
                 )}

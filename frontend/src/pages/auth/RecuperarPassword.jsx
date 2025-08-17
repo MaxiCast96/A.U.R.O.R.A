@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { config } from '../../config';
+
 import PageTransition from '../../components/transition/PageTransition';
 import Navbar from '../../components/layout/Navbar';
 
@@ -14,6 +16,7 @@ const RecuperarPassword = () => {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
+  const [notice, setNotice] = useState({ type: 'info', message: '' });
 
   const handleChange = (e) => {
     setFormData({
@@ -24,46 +27,50 @@ const RecuperarPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const normalizedEmail = (formData.email || '').trim().toLowerCase();
+    const apiBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+      ? 'http://localhost:4000/api'
+      : config.api.baseUrl;
     if (step === 1) {
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch('https://a-u-r-o-r-a.onrender.com/api/clientes/forgot-password', {
+        let res = await fetch(`${apiBase}/clientes/forgot-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ correo: formData.email })
+          body: JSON.stringify({ correo: normalizedEmail })
         });
         let data = await res.json();
         if (!res.ok && data.message?.toLowerCase().includes('no existe')) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch('https://a-u-r-o-r-a.onrender.com/api/empleados/forgot-password', {
+          res = await fetch(`${apiBase}/empleados/forgot-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ correo: formData.email })
+            body: JSON.stringify({ correo: normalizedEmail })
           });
           data = await res.json();
         }
-        if (!res.ok) throw new Error(data.message || 'Error enviando código');
-        alert('Código de recuperación enviado. Revisa tu correo.');
+        if (!res.ok) throw new Error(data.message || 'No pudimos enviar el código. Intenta de nuevo.');
+        setNotice({ type: 'success', message: 'Te enviamos un código de verificación. Revisa tu bandeja de entrada o spam.' });
         setStep(2);
       } catch (error) {
-        alert(error.message);
+        setNotice({ type: 'error', message: error.message || 'Ocurrió un error. Intenta nuevamente.' });
       } finally {
         setLoading(false);
       }
     } else if (step === 2) {
       if (formData.newPassword !== formData.confirmPassword) {
-        alert('Las contraseñas no coinciden');
+        setNotice({ type: 'warning', message: 'Las contraseñas no coinciden.' });
         return;
       }
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch('https://a-u-r-o-r-a.onrender.com/api/clientes/reset-password', {
+        let res = await fetch(`${apiBase}/clientes/reset-password`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            correo: formData.email,
+            correo: normalizedEmail,
             code: formData.code,
             newPassword: formData.newPassword
           })
@@ -71,24 +78,25 @@ const RecuperarPassword = () => {
         let data = await res.json();
         if (!res.ok && data.message?.toLowerCase().includes('correo')) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch('https://a-u-r-o-r-a.onrender.com/api/empleados/reset-password', {
+          res = await fetch(`${apiBase}/empleados/reset-password`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              correo: formData.email,
+              correo: normalizedEmail,
               code: formData.code,
               newPassword: formData.newPassword
             })
           });
           data = await res.json();
         }
-        if (!res.ok) throw new Error(data.message || 'Error al cambiar la contraseña');
+        if (!res.ok) throw new Error(data.message || 'No pudimos cambiar tu contraseña. Intenta nuevamente.');
         setShowSuccess(true);
+        setNotice({ type: 'success', message: '¡Contraseña actualizada! Redirigiendo…' });
         setTimeout(() => {
           navigate('/');
         }, 3000);
       } catch (error) {
-        alert(error.message);
+        setNotice({ type: 'error', message: error.message || 'Ocurrió un error. Intenta nuevamente.' });
       } finally {
         setLoading(false);
       }
@@ -119,11 +127,26 @@ const RecuperarPassword = () => {
                 />
               </svg>
             </div>
+            {/* Notificaciones inline */}
+            {notice?.message && (
+              <div
+                className={`mb-6 text-sm rounded-md px-3 py-2 ${
+                  notice.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+                  notice.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+                  notice.type === 'warning' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' :
+                  'bg-blue-50 text-blue-700 border border-blue-200'
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                {notice.message}
+              </div>
+            )}
             <h2 className="text-2xl font-bold text-gray-800">
               ¡Contraseña cambiada con éxito!
             </h2>
             <p className="text-gray-600">
-              Serás redirigido al inicio de sesión en unos segundos...
+              Serás redirigido al inicio de sesión en unos segundos…
             </p>
           </div>
         </div>
@@ -148,6 +171,22 @@ const RecuperarPassword = () => {
               </h2>
             </div>
 
+            {/* Notificaciones inline */}
+            {notice?.message && (
+              <div
+                className={`mb-6 text-sm rounded-md px-3 py-2 ${
+                  notice.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+                  notice.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+                  notice.type === 'warning' ? 'bg-yellow-50 text-yellow-800 border border-yellow-200' :
+                  'bg-blue-50 text-blue-700 border border-blue-200'
+                }`}
+                role="status"
+                aria-live="polite"
+              >
+                {notice.message}
+              </div>
+            )}
+
             {step === 1 && (
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
@@ -166,7 +205,7 @@ const RecuperarPassword = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-[#0097c2] text-white py-3 rounded-xl font-medium hover:bg-[#0088b0] transition-all duration-300"
+                  className="w-full bg-[#0097c2] text-white py-3 rounded-xl font-medium hover:bg-[#0088b0] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={loading}
                 >
                   {loading ? 'Enviando...' : 'Enviar Código'}
@@ -227,7 +266,7 @@ const RecuperarPassword = () => {
                 </div>
                 <button
                   type="submit"
-                  className="w-full bg-[#0097c2] text-white py-3 rounded-xl font-medium hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02]"
+                  className="w-full bg-[#0097c2] text-white py-3 rounded-xl font-medium hover:bg-[#0088b0] transition-all duration-300 transform hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed"
                   disabled={loading}
                 >
                   {loading ? 'Cambiando...' : 'Cambiar Contraseña'}

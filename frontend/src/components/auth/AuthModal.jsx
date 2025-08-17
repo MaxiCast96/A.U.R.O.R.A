@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ForgotPassword from './ForgotPassword'; // Importa el componente de recuperación de contraseña
 import { useAuth } from './AuthContext';
+import { config } from '../../config';
 
 const AuthModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [isVisible, setIsVisible] = useState(false);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [userType, setUserType] = useState('cliente'); // Eliminar esta línea
+  const [userType, setUserType] = useState('cliente'); 
+  const [backdropMouseDown, setBackdropMouseDown] = useState(false);
+
   const [formData, setFormData] = useState({
     nombre: '',
     apellido: '',
@@ -64,11 +67,9 @@ const AuthModal = ({ isOpen, onClose }) => {
         if (result.success) {
           onClose();
           // Redirección según rol
-          if (result.user?.rol === 'Cliente') {
-            navigate('/');
-          } else {
-            navigate('/dashboard');
-          }
+          const role = result.user?.rol;
+          if (role === 'Cliente') navigate('/');
+          else navigate('/dashboard');
         } else {
           setLoginError(result.message);
         }
@@ -78,9 +79,13 @@ const AuthModal = ({ isOpen, onClose }) => {
     } else {
       // Registro real
       try {
-        const res = await fetch('https://a-u-r-o-r-a.onrender.com/api/registroClientes', {
+        const apiBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+          ? 'http://localhost:4000/api'
+          : config.api.baseUrl;
+        const res = await fetch(`${apiBase}/registroClientes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             nombre: formData.nombre,
             apellido: formData.apellido,
@@ -101,8 +106,15 @@ const AuthModal = ({ isOpen, onClose }) => {
           setRegisterMsg(data.message || 'Error al registrarse');
           return;
         }
-        setRegisterMsg('Registro exitoso. Revisa tu correo para verificar tu cuenta.');
-        setShowVerify(true);
+        // Si el backend retorna un código de verificación en desarrollo, úsalo
+        if (data.devVerificationCode) {
+          setRegisterMsg('Registro en desarrollo: se generó un código de verificación automáticamente.');
+          setShowVerify(true);
+          setVerifyCode(data.devVerificationCode);
+        } else {
+          setRegisterMsg('Registro exitoso. Revisa tu correo para verificar tu cuenta.');
+          setShowVerify(true);
+        }
       } catch (err) {
         setRegisterMsg('Error de red o del servidor');
       }
@@ -120,13 +132,25 @@ const AuthModal = ({ isOpen, onClose }) => {
       className={`fixed inset-0 z-50 flex items-center justify-center p-4 transition-all duration-300 ${
         isVisible ? 'bg-black/30 backdrop-blur-sm' : 'bg-transparent'
       }`}
-      onClick={onClose}
+      onMouseDown={(e) => {
+        // Solo considerar cierre si el mousedown inició en el backdrop (no en el contenido)
+        setBackdropMouseDown(e.target === e.currentTarget);
+      }}
+      onClick={(e) => {
+        // Cerrar solo si el clic empezó y terminó en el backdrop
+        if (backdropMouseDown && e.target === e.currentTarget) {
+          onClose();
+        }
+        // Resetear flag después del clic
+        setBackdropMouseDown(false);
+      }}
     >
       <div 
         className={`bg-white rounded-2xl w-full max-w-md p-6 relative shadow-xl overflow-y-auto max-h-[90vh] transform transition-all duration-300 ${
           isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}
         onClick={e => e.stopPropagation()}
+        onMouseDown={e => e.stopPropagation()}
       >
         {/* Close button - Updated hitbox and positioning */}
         <button
@@ -319,7 +343,10 @@ const AuthModal = ({ isOpen, onClose }) => {
             e.preventDefault();
             setVerifyMsg(null);
             try {
-              const res = await fetch('https://a-u-r-o-r-a.onrender.com/api/registroClientes/verifyCodeEmail', {
+              const apiBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
+                ? 'http://localhost:4000/api'
+                : config.api.baseUrl;
+              const res = await fetch(`${apiBase}/registroClientes/verifyCodeEmail`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: 'include',

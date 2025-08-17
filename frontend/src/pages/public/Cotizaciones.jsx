@@ -4,11 +4,18 @@ import PageTransition from "../../components/transition/PageTransition.jsx";
 import Navbar from "../../components/layout/Navbar";
 import useData from '../../hooks/useData';
 import { useAuth } from '../../components/auth/AuthContext';
+import API_CONFIG, { buildApiUrl } from '../../config/api';
 
 const Cotizaciones = () => {
   const location = useLocation();
   const { user } = useAuth();
   const [showLoginMsg, setShowLoginMsg] = useState(false);
+  // Mover TODOS los hooks al tope del componente para respetar las reglas de hooks
+  const { data: cotizaciones, loading, error } = useData('cotizaciones');
+  const [cotizacionesState, setCotizacionesState] = useState(null);
+  const [mensaje, setMensaje] = useState(null);
+  const [modalEliminar, setModalEliminar] = useState({ abierto: false, id: null });
+  const [convertingId, setConvertingId] = useState(null);
   
   useEffect(() => {
     if (!user) {
@@ -81,12 +88,6 @@ const Cotizaciones = () => {
       </PageTransition>
     );
   }
-  // Hook para traer cotizaciones reales
-  const { data: cotizaciones, loading, error } = useData('cotizaciones');
-  const [cotizacionesState, setCotizacionesState] = useState(null);
-  const [mensaje, setMensaje] = useState(null);
-  const [modalEliminar, setModalEliminar] = useState({ abierto: false, id: null });
-
   // Handler para eliminar cotización
   const handleEliminarCotizacion = (id) => {
     setModalEliminar({ abierto: true, id });
@@ -118,6 +119,34 @@ const Cotizaciones = () => {
 
   const cancelarEliminarCotizacion = () => {
     setModalEliminar({ abierto: false, id: null });
+  };
+
+  // Convertir a pedido desde listado público
+  const handleConvertirCotizacion = async (id) => {
+    try {
+      setConvertingId(id);
+      const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.COTIZACIONES}/${id}/convertir-a-pedido`);
+      const res = await fetch(url, {
+        method: 'POST',
+        credentials: API_CONFIG.FETCH_CONFIG.credentials,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMensaje(data?.message || 'No se pudo convertir la cotización.');
+      } else {
+        setMensaje('Cotización convertida en pedido correctamente.');
+        // Refrescar estado local marcando como convertida
+        const base = cotizacionesState || cotizaciones || [];
+        const updated = base.map(c => c._id === id ? { ...c, estado: 'convertida' } : c);
+        setCotizacionesState(updated);
+      }
+    } catch (err) {
+      setMensaje('Error al convertir la cotización.');
+    } finally {
+      setConvertingId(null);
+      setTimeout(() => setMensaje(null), 3000);
+    }
   };
 
   return (
@@ -180,8 +209,8 @@ const Cotizaciones = () => {
                 ) : (cotizacionesState || cotizaciones) && (cotizacionesState || cotizaciones).length > 0 ? (
                   (cotizacionesState || cotizaciones).map((cot) => (
                     <tr key={cot._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 text-sm text-gray-700">{cot.numero || cot.id}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{cot.fecha || '-'}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{cot.numero || (cot._id ? `COT-${String(cot._id).slice(-6).toUpperCase()}` : '-')}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{cot.fecha ? new Date(cot.fecha).toLocaleString() : '-'}</td>
                       <td className="px-6 py-4">
                         <span className="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-700">
                           {cot.estado || 'Pendiente'}
@@ -199,15 +228,27 @@ const Cotizaciones = () => {
                             </svg>
                             <span>Ver</span>
                           </Link>
-                          <button
-                            onClick={() => console.log(`Descargando cotización ${cot._id}`)}
+                          <Link
+                            to={`/cotizaciones/${cot._id}?print=1`}
                             className="flex items-center text-gray-600 hover:text-gray-800 transition-colors"
                           >
                             <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
                             <span>Descargar</span>
-                          </button>
+                          </Link>
+                          {(!cot.estado || cot.estado !== 'convertida') && (
+                            <button
+                              onClick={() => handleConvertirCotizacion(cot._id)}
+                              disabled={convertingId === cot._id}
+                              className={`flex items-center ${convertingId === cot._id ? 'text-gray-400' : 'text-green-600 hover:text-green-800'} transition-colors`}
+                            >
+                              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                              <span>{convertingId === cot._id ? 'Convirtiendo...' : 'Convertir a pedido'}</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleEliminarCotizacion(cot._id)}
                             className="flex items-center text-red-600 hover:text-red-800 transition-colors"

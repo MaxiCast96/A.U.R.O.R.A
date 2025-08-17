@@ -1,161 +1,153 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-// Componente hijo que recibe TODOS los datos como props desde el padre
-const BrandsCarousel = ({ 
-  brands = [], 
-  loading = false, 
-  error = null, 
-  currentSlide = 0, 
-  onSlideChange 
+const BrandsCarousel = ({
+  brands = [],
+  loading = false,
+  error = null,
+  visibleItems = 5,
+  currentSlide = 0,
+  onSlideChange
 }) => {
-  const [currentSlideInternal, setCurrentSlideInternal] = useState(currentSlide);
+  const items = Array.isArray(brands) ? brands.filter(b => b.logo || b.image || b.imagen) : [];
   
-  // Usar el estado interno solo si no se proporciona onSlideChange
   const isControlled = !!onSlideChange;
-  const slideState = isControlled ? currentSlide : currentSlideInternal;
-  const setSlideState = isControlled ? onSlideChange : setCurrentSlideInternal;
+  const [currentIndex, setCurrentIndex] = useState(currentSlide);
+  const setSlideState = isControlled ? onSlideChange : setCurrentIndex;
   
-  const safeBrands = Array.isArray(brands) ? brands.filter(brand => brand.image || brand.logo) : [];
-  const itemsPerSlide = 5;
-  const totalSlides = Math.ceil(safeBrands.length / itemsPerSlide);
+  const generatePlaceholder = (width = 160, height = 120) => {
+    const svg = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100%" height="100%" fill="#f3f4f6"/>
+        <rect x="20%" y="20%" width="60%" height="60%" fill="#d1d5db" rx="4"/>
+        <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">
+          Logo
+        </text>
+      </svg>
+    `;
+    return `data:image/svg+xml;base64,${btoa(svg)}`;
+  };
 
-  // Auto-play del carrusel (solo si no es controlado externamente)
+  const infiniteItems = items.length > 0 ? [...items, ...items, ...items] : [];
+
+  const getVisibleBrands = () => {
+    if (infiniteItems.length === 0) return [];
+    const visible = infiniteItems.slice(currentIndex, currentIndex + visibleItems);
+    const count = visible.length;
+    const centerIndex = Math.floor((count - 1) / 2);
+
+    return visible.map((brand, idx) => {
+      const distanceFromCenter = Math.abs(idx - centerIndex);
+      const maxDistance = Math.max(centerIndex, count - 1 - centerIndex);
+      const normalizedDistance = maxDistance > 0 ? distanceFromCenter / maxDistance : 0;
+      const scale = 0.8 + (1 - normalizedDistance) * 0.2;
+      const opacity = 0.6 + (1 - normalizedDistance) * 0.4;
+      const leftPercent = count > 1 ? (idx / (count - 1)) * 60 + 20 : 50;
+
+      return {
+        ...brand,
+        scale,
+        zIndex: 100 + count - distanceFromCenter,
+        opacity,
+        leftPercent,
+        globalIndex: currentIndex + idx,
+      };
+    });
+  };
+
+  // autoplay solo si no es controlado
   useEffect(() => {
-    if (!isControlled && totalSlides > 1) {
+    if (!isControlled && items.length > visibleItems) {
       const interval = setInterval(() => {
-        setSlideState((prev) => (prev + 1) % totalSlides);
+        setSlideState(prev => prev + 1);
       }, 5000);
-
       return () => clearInterval(interval);
     }
-  }, [totalSlides, isControlled, setSlideState]);
+  }, [isControlled, items.length, visibleItems, setSlideState]);
 
-  const nextSlide = () => {
-    setSlideState((prev) => (prev + 1) % totalSlides);
-  };
+  const nextSlide = () => setSlideState(prev => prev + 1);
+  const prevSlide = () => setSlideState(prev => Math.max(0, prev - 1));
 
-  const prevSlide = () => {
-    setSlideState((prev) => (prev - 1 + totalSlides) % totalSlides);
-  };
-
-  const goToSlide = (slideIndex) => {
-    setSlideState(slideIndex);
-  };
-
-  const getCurrentSlideItems = () => {
-    const startIndex = slideState * itemsPerSlide;
-    const endIndex = startIndex + itemsPerSlide;
-    return safeBrands.slice(startIndex, endIndex);
-  };
-
-  // Mostrar estados de carga y error DESPUÉS de todos los hooks
   if (loading) {
     return (
-      <section className="w-full bg-white-50 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center py-8">Cargando marcas...</div>
-        </div>
+      <section className="w-full py-16 text-center">
+        Cargando marcas...
       </section>
     );
   }
-  
+
   if (error) {
     return (
-      <section className="w-full bg-white-50 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center py-8 text-red-500">Error al cargar marcas: {error}</div>
-        </div>
+      <section className="w-full py-16 text-center text-red-500">
+        Error al cargar marcas: {String(error)}
       </section>
     );
   }
-  
-  if (safeBrands.length === 0) {
+
+  if (!items.length) {
     return (
-      <section className="w-full bg-white-50 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center py-8">No se encontraron marcas.</div>
-        </div>
+      <section className="w-full py-16 text-center text-gray-500">
+        No hay marcas disponibles
       </section>
     );
   }
+
+  const visibleBrands = getVisibleBrands();
 
   return (
-    <section className="w-full bg-white-50 py-12">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="relative">
-          {/* Contenedor del carrusel */}
-          <div className="overflow-hidden">
-            <div 
-              className="flex transition-transform duration-700 ease-in-out min-h-[120px]"
-              style={{ 
-                transform: `translateX(-${slideState * (100 / totalSlides)}%)`,
-                width: `${totalSlides * 100}%`
-              }}
-            >
-              {Array.from({ length: totalSlides }).map((_, slideIndex) => (
-                <div 
-                  key={slideIndex}
-                  className="flex items-center justify-center gap-8"
-                  style={{ width: `${100 / totalSlides}%` }}
-                >
-                  {safeBrands
-                    .slice(slideIndex * itemsPerSlide, (slideIndex + 1) * itemsPerSlide)
-                    .map((brand, idx) => (
-                      <div 
-                        key={brand.id || idx}
-                        className="flex items-center justify-center p-6 transition-transform duration-300 hover:scale-110 cursor-pointer"
-                      >
-                        <img
-                          src={brand.image || brand.logo}
-                          alt={brand.name || 'Marca'}
-                          className="h-35 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300"
-                        />
-                      </div>
-                    ))}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Botones de navegación */}
-          {totalSlides > 1 && (
-            <>
-              <button
-                onClick={prevSlide}
-                className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl z-10"
-                aria-label="Anterior"
-              >
-                <ChevronLeft className="w-6 h-6 text-gray-700" />
-              </button>
-              
-              <button
-                onClick={nextSlide}
-                className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-white rounded-full p-3 shadow-lg transition-all duration-300 hover:scale-110 hover:shadow-xl z-10"
-                aria-label="Siguiente"
-              >
-                <ChevronRight className="w-6 h-6 text-gray-700" />
-              </button>
-            </>
-          )}
+    <section className="w-full relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 relative z-10">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-800 mb-4">Nuestras Marcas</h2>
+          <p className="text-gray-600 text-lg">Descubre la calidad de nuestras marcas asociadas</p>
         </div>
 
-        {/* Indicadores de página */}
-        {totalSlides > 1 && (
-          <div className="flex justify-center mt-8 space-x-2">
-            {Array.from({ length: totalSlides }).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  slideState === index 
-                    ? 'bg-blue-600 w-8' 
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-                aria-label={`Ir a la página ${index + 1}`}
+        <div className="overflow-hidden relative w-full min-h-[400px] flex items-center justify-center">
+          {visibleBrands.map((brand) => (
+            <div
+              key={`${brand._id || brand.id || 'brand'}-${brand.globalIndex}`}
+              className="absolute transition-all duration-700 ease-in-out cursor-pointer"
+              style={{
+                transform: `translateX(-50%) scale(${brand.scale})`,
+                opacity: brand.opacity,
+                zIndex: brand.zIndex,
+                left: `${brand.leftPercent}%`,
+              }}
+            >
+              <img
+                src={brand.logo || brand.imagen || brand.image || generatePlaceholder()}
+                alt={brand.nombre || brand.name || 'Marca'}
+                className="h-48 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300 hover:scale-125 block shadow-xl rounded-xl bg-white p-6 border border-gray-200"
+                onError={(e) => {
+                  if (!e.currentTarget.dataset.fallbackSet) {
+                    e.currentTarget.src = generatePlaceholder();
+                    e.currentTarget.alt = 'Logo no disponible';
+                    e.currentTarget.dataset.fallbackSet = 'true';
+                  }
+                }}
               />
-            ))}
-          </div>
+              <div className="mt-4 text-center">
+                <p className="text-base font-semibold text-gray-700">{brand.nombre || brand.name || 'Marca'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {items.length > 1 && (
+          <>
+            <button
+              onClick={prevSlide}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition"
+            >
+              <ChevronLeft className="w-6 h-6 text-gray-700" />
+            </button>
+            <button
+              onClick={nextSlide}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition"
+            >
+              <ChevronRight className="w-6 h-6 text-gray-700" />
+            </button>
+          </>
         )}
       </div>
     </section>

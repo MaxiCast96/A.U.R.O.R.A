@@ -6,9 +6,11 @@ import {
   Routes,
   Route,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./components/auth/AuthContext";
+import { CartProvider } from "./context/CartContext";
 import LoadingSpinner from "./components/auth/LoadingSpinner";
 import OpticaDashboard from "./pages/private/OpticaDashboard";
 import PrivateRoute from "./components/auth/PrivateRoute";
@@ -21,10 +23,11 @@ import Servicio from "./pages/public/Servicio";
 import AgendarCitas from "./pages/public/AgendarCitas";
 import Nosotros from "./pages/public/Nosotros";
 import PerfilPage from './pages/private/PerfilPage';
+import Cart from "./pages/public/Cart";
 
 //Importacion de paginas extra de publicas
-import CrearCotizacion from "./components/Cotizaciones/CrearCotizacion";
-import VerCotizacion from "./components/Cotizaciones/VerCotizacion";
+import CrearCotizacionPage from "./pages/public/CrearCotizacionPage";
+import VerCotizacionPage from "./pages/public/VerCotizacionPage";
 
 // Importación de la página de recuperación de contraseña
 import RecuperarPassword from "./pages/auth/RecuperarPassword";
@@ -53,7 +56,8 @@ function AnimatedRoutes() {
         {/* Rutas de productos específicos */}
         <Route path="/productos/lentes" element={<Producto />} />
         <Route path="/productos/accesorios" element={<Producto />} />
-        <Route path="/productos/personalizables" element={<Producto />} />
+        {/* Redirección de ruta eliminada */}
+        <Route path="/productos/personalizables" element={<Navigate to="/productos" replace />} />
         
         {/* Rutas que requieren autenticación de cliente */}
         <Route path="/cotizaciones" element={
@@ -61,14 +65,19 @@ function AnimatedRoutes() {
             <Cotizaciones />
           </PrivateRoute>
         } />
+        <Route path="/carrito" element={
+          <PrivateRoute requiredRole="Cliente" noRedirect={true}>
+            <Cart />
+          </PrivateRoute>
+        } />
         <Route path="/cotizaciones/crear" element={
           <PrivateRoute requiredRole="Cliente">
-            <CrearCotizacion />
+            <CrearCotizacionPage />
           </PrivateRoute>
         } />
         <Route path="/cotizaciones/:id" element={
           <PrivateRoute requiredRole="Cliente">
-            <VerCotizacion />
+            <VerCotizacionPage />
           </PrivateRoute>
         } />
         
@@ -94,9 +103,11 @@ function AnimatedRoutes() {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AnimatedRoutes />
-      </Router>
+      <CartProvider>
+        <Router>
+          <AnimatedRoutes />
+        </Router>
+      </CartProvider>
     </AuthProvider>
   );
 }

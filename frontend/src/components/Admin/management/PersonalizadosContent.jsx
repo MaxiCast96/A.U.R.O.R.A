@@ -1,142 +1,361 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Search, Plus, Trash2, Eye, Edit, Package, Clock, UserCheck } from 'lucide-react';
+import { useApiData } from '../../../hooks/useApiData';
+import { API_CONFIG, buildApiUrl } from '../../../config/api';
+import FormModal from '../ui/FormModal';
+import Alert, { ToastContainer, useAlert } from '../../ui/Alert';
 
 const PersonalizadosContent = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('todos');
-    const [setShowAddModal] = useState(false);
-
-    // Datos de ejemplo para productos personalizados
-    const productosPersonalizados = [
-      {
-        id: 1,
-        nombre: 'Lente Personalizado',
-        descripcion: 'Lente Personalizado para Cliente',
-        categoria: 'Lentes',
-        color: 'Negro',
-        precio: '$500',
-        cliente: 'Juan Pérez',
-        fechaCreacion: '2024-05-15',
-        estado: 'En Proceso'
-      },
-      {
-        id: 2,
-        nombre: 'Armazón Personalizado',
-        descripcion: 'Armazón diseñado especialmente',
-        categoria: 'Lentes',
-        color: 'Dorado',
-        precio: '$350',
-        cliente: 'María García',
-        fechaCreacion: '2024-05-18',
-        estado: 'Completado'
-      },
-      {
-        id: 3,
-        nombre: 'Lente Bifocal Custom',
-        descripcion: 'Lente bifocal con medidas específicas',
-        categoria: 'Lentes',
-        color: 'Transparente',
-        precio: '$450',
-        cliente: 'Roberto Martínez',
-        fechaCreacion: '2024-05-20',
-        estado: 'Pendiente'
-      },
-      {
-        id: 4,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
-      },
-      {
-        id: 5,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
-      },
-      {
-        id: 6,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
-      },
-      {
-        id: 7,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
-      },
-      {
-        id: 8,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
-      },
-      {
-        id: 9,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
-      },
-      {
-        id: 10,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
-      },
-      {
-        id: 11,
-        nombre: 'Gafas Deportivas Custom',
-        descripcion: 'Gafas deportivas personalizadas',
-        categoria: 'Lentes',
-        color: 'Azul',
-        precio: '$280',
-        cliente: 'Ana López',
-        fechaCreacion: '2024-05-22',
-        estado: 'En Proceso'
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const { data: apiData, loading, error } = useApiData('productosPersonalizados', { r: refreshKey });
+    const { data: pedidosData } = useApiData('pedidos', { r: refreshKey });
+    const { data: clientesData } = useApiData('clientes');
+    const { data: lentesData } = useApiData('lentes');
+    const { data: marcasData } = useApiData('marcas');
+    const [stats, setStats] = useState({ total: 0, enProceso: 0, completado: 0 });
+    const [showRecentOnly, setShowRecentOnly] = useState(false);
+    const { alertState, showSuccess, showError, hideAlert } = useAlert();
+    const [formData, setFormData] = useState({
+      clienteId: '',
+      productoBaseId: '',
+      nombre: '',
+      descripcion: '',
+      categoria: '',
+      marcaId: '',
+      material: '',
+      color: '',
+      tipoLente: '',
+      precioCalculado: null,
+      fechaEntregaEstimada: '',
+      cotizacion: {
+        total: null,
+        validaHasta: ''
       }
-
+    });
+    const [errors, setErrors] = useState({});
+    const estadoOptions = [
+      { value: 'pendiente', label: 'Pendiente' },
+      { value: 'en_proceso', label: 'En Proceso' },
+      { value: 'completado', label: 'Completado' },
+      { value: 'cancelado', label: 'Cancelado' },
+      { value: 'entregado', label: 'Entregado' },
     ];
 
-    const filteredProducts = productosPersonalizados.filter(producto => {
+    // Mapear estado del backend a etiquetas de UI
+    const estadoLabel = (estado) => {
+      switch (estado) {
+        case 'completado': return 'Completado';
+        case 'en_proceso': return 'En Proceso';
+        case 'pendiente': return 'Pendiente';
+        case 'cancelado': return 'Cancelado';
+        case 'entregado': return 'Entregado';
+        default: return estado || 'Pendiente';
+      }
+    };
+
+    const formatPrice = (n) => {
+      if (typeof n !== 'number') return '-';
+      try { return n.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' }); } catch { return `$${n}`; }
+    };
+
+    const formatDate = (d) => {
+      if (!d) return '';
+      const dt = new Date(d);
+      if (isNaN(dt.getTime())) return '';
+      return dt.toISOString().slice(0, 10);
+    };
+
+    const handleInputChange = (e) => {
+      const { name, value, type } = e.target;
+      // dot-notation support
+      if (name.includes('.')) {
+        const keys = name.split('.');
+        setFormData(prev => {
+          const copy = { ...prev };
+          let cur = copy;
+          for (let i = 0; i < keys.length - 1; i++) {
+            const k = keys[i];
+            cur[k] = cur[k] ?? {};
+            cur = cur[k];
+          }
+          const last = keys[keys.length - 1];
+          cur[last] = type === 'number' ? (value === '' ? null : Number(value)) : value;
+          return copy;
+        });
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          [name]: type === 'number' ? (value === '' ? null : Number(value)) : value
+        }));
+      }
+    };
+
+    const validate = () => {
+      const req = ['clienteId','productoBaseId','nombre','descripcion','categoria','marcaId','material','color','tipoLente','precioCalculado','fechaEntregaEstimada','cotizacion.total','cotizacion.validaHasta'];
+      const errs = {};
+      for (const field of req) {
+        let val = formData;
+        for (const k of field.split('.')) val = val?.[k];
+        if (val === '' || val === null || val === undefined) errs[field] = 'Requerido';
+      }
+      setErrors(errs);
+      return Object.keys(errs).length === 0;
+    };
+
+    const resetForm = () => {
+      setFormData({
+        clienteId: '',
+        productoBaseId: '',
+        nombre: '',
+        descripcion: '',
+        categoria: '',
+        marcaId: '',
+        material: '',
+        color: '',
+        tipoLente: '',
+        precioCalculado: null,
+        fechaEntregaEstimada: '',
+        cotizacion: { total: null, validaHasta: '' }
+      });
+      setErrors({});
+    };
+
+    const handleCreate = async (e) => {
+      e.preventDefault();
+      if (!validate()) return;
+      try {
+        const url = buildApiUrl(API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS);
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: API_CONFIG.FETCH_CONFIG.credentials,
+          body: JSON.stringify(formData)
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `Error ${res.status}`);
+        }
+        setShowAddModal(false);
+        resetForm();
+        setRefreshKey(k => k + 1);
+        showSuccess('Producto personalizado creado correctamente', 3000);
+      } catch (err) {
+        setErrors(prev => ({ ...prev, submit: err.message || 'Error al crear' }));
+        showError(err.message || 'Error al crear el personalizado', 4000);
+      }
+    };
+
+    const prepareEdit = (id) => {
+      const item = Array.isArray(apiData) ? apiData.find(x => x._id === id) : null;
+      if (!item) return;
+      setEditingId(id);
+      setFormData({
+        clienteId: item.clienteId?._id || item.clienteId || '',
+        productoBaseId: item.productoBaseId?._id || item.productoBaseId || '',
+        nombre: item.nombre || '',
+        descripcion: item.descripcion || '',
+        categoria: item.categoria || '',
+        marcaId: item.marcaId?._id || item.marcaId || '',
+        material: item.material || '',
+        color: item.color || '',
+        tipoLente: item.tipoLente || '',
+        precioCalculado: typeof item.precioCalculado === 'number' ? item.precioCalculado : null,
+        fechaEntregaEstimada: item.fechaEntregaEstimada ? formatDate(item.fechaEntregaEstimada) : '',
+        cotizacion: {
+          total: item.cotizacion?.total ?? null,
+          validaHasta: item.cotizacion?.validaHasta ? formatDate(item.cotizacion.validaHasta) : ''
+        }
+      });
+      setErrors({});
+      setShowEditModal(true);
+    };
+
+    const handleUpdate = async (e) => {
+      e.preventDefault();
+      if (!validate() || !editingId) return;
+      try {
+        const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${editingId}`);
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: API_CONFIG.FETCH_CONFIG.credentials,
+          body: JSON.stringify(formData)
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `Error ${res.status}`);
+        }
+        setShowEditModal(false);
+        setEditingId(null);
+        resetForm();
+        setRefreshKey(k => k + 1);
+        showSuccess('Producto personalizado actualizado', 2500);
+      } catch (err) {
+        setErrors(prev => ({ ...prev, submit: err.message || 'Error al actualizar' }));
+        showError(err.message || 'Error al actualizar el personalizado', 4000);
+      }
+    };
+
+    const handleDelete = async (id) => {
+      if (!window.confirm('¿Eliminar este personalizado? Esta acción no se puede deshacer.')) return;
+      try {
+        const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}`);
+        const res = await fetch(url, {
+          method: 'DELETE',
+          credentials: API_CONFIG.FETCH_CONFIG.credentials,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `Error ${res.status}`);
+        }
+        setRefreshKey(k => k + 1);
+        showSuccess('Producto personalizado eliminado', 2500);
+      } catch (err) {
+        showError(err.message || 'Error al eliminar', 4000);
+      }
+    };
+
+    const handleEstadoChange = async (id, nuevoEstado) => {
+      try {
+        const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}/estado`);
+        const res = await fetch(url, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: API_CONFIG.FETCH_CONFIG.credentials,
+          body: JSON.stringify({ estado: nuevoEstado })
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.message || `Error ${res.status}`);
+        }
+        setRefreshKey(k => k + 1);
+        showSuccess('Estado actualizado', 2000);
+      } catch (err) {
+        showError(err.message || 'Error al actualizar estado', 3500);
+      }
+    };
+
+    // Normalizar datos desde la API para la tabla
+    const productosPersonalizados = useMemo(() => {
+      if (!Array.isArray(apiData)) return [];
+      return apiData.map((p) => {
+        const createdAtRaw = p.fechaSolicitud || p.createdAt;
+        const createdAtDate = createdAtRaw ? new Date(createdAtRaw) : null;
+        const isRecent = createdAtDate ? (Date.now() - createdAtDate.getTime()) <= (24 * 60 * 60 * 1000) : false;
+        return {
+        id: p._id,
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        categoria: p.categoria,
+        color: p.color,
+        precio: formatPrice(p.precioCalculado),
+        cliente: typeof p.clienteId === 'object' && p.clienteId !== null ? (p.clienteId.nombre || p.clienteId.fullName || p.clienteId.razonSocial || p.clienteId.email || String(p.clienteId._id || '')) : String(p.clienteId || ''),
+        fechaCreacion: formatDate(createdAtRaw),
+        estado: estadoLabel(p.estado),
+        backendEstado: p.estado,
+        cotizacionId: p.cotizacionId || null,
+        pedidoId: p.pedidoId || null,
+        isRecent,
+        source: 'personalizado',
+      };
+      });
+    }, [apiData]);
+
+    // Extraer filas desde pedidos: solo items con tipo 'personalizado'
+    const pedidosPersonalizados = useMemo(() => {
+      if (!Array.isArray(pedidosData)) return [];
+      const rows = [];
+      for (const ped of pedidosData) {
+        const cliente = typeof ped.clienteId === 'object' && ped.clienteId !== null
+          ? (ped.clienteId.nombre || ped.clienteId.fullName || ped.clienteId.razonSocial || ped.clienteId.email || String(ped.clienteId._id || ''))
+          : String(ped.clienteId || '');
+        const createdAtRaw = ped.createdAt || ped.fecha;
+        const createdAtDate = createdAtRaw ? new Date(createdAtRaw) : null;
+        const isRecent = createdAtDate ? (Date.now() - createdAtDate.getTime()) <= (24 * 60 * 60 * 1000) : false;
+        const items = Array.isArray(ped.items) ? ped.items : [];
+        items.forEach((it, idx) => {
+          if ((it.tipo || 'otro') === 'personalizado') {
+            rows.push({
+              id: `${ped._id}:${idx}`,
+              nombre: it.nombre || 'Personalizado',
+              descripcion: it.categoria ? `Categoría: ${it.categoria}` : '',
+              categoria: it.categoria || 'Personalizado',
+              color: '-',
+              precio: formatPrice(typeof it.subtotal === 'number' ? it.subtotal : (Number(it.precioUnitario||0) * Number(it.cantidad||1))),
+              cliente,
+              fechaCreacion: formatDate(createdAtRaw),
+              // Mapear estado del pedido a etiqueta visual. Se muestra como En Proceso por flujo operativo.
+              estado: estadoLabel('en_proceso'),
+              backendEstado: 'en_proceso',
+              cotizacionId: ped.cotizacionId || null,
+              pedidoId: ped._id,
+              isRecent,
+              source: 'pedido',
+            });
+          }
+        });
+      }
+      return rows;
+    }, [pedidosData]);
+
+    // Unir personalizados propios con personalizados provenientes de pedidos
+    const allPersonalizados = useMemo(() => {
+      return [...productosPersonalizados, ...pedidosPersonalizados];
+    }, [productosPersonalizados, pedidosPersonalizados]);
+
+    // Cargar estadísticas rápidas desde backend con fallback al cálculo local
+    useEffect(() => {
+      let cancelled = false;
+      const loadStats = async () => {
+        try {
+          const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/estadisticas`);
+          const res = await fetch(url, { credentials: API_CONFIG.FETCH_CONFIG.credentials });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const json = await res.json().catch(() => ({}));
+          const obj = (json && typeof json === 'object' && (json.data || json)) || {};
+          const enProceso = obj.en_proceso ?? obj.enProceso ?? 0;
+          const completado = obj.completado ?? 0;
+          const total = obj.total ?? Object.values(obj).filter(v => typeof v === 'number').reduce((a, b) => a + b, 0);
+          if (!cancelled) setStats({ total, enProceso, completado });
+        } catch (err) {
+          // Fallback a cálculo local
+          const total = allPersonalizados.length;
+          const enProceso = allPersonalizados.filter(p => p.estado === 'En Proceso').length;
+          const completado = allPersonalizados.filter(p => p.estado === 'Completado').length;
+          if (!cancelled) setStats({ total, enProceso, completado });
+        }
+      };
+      loadStats();
+      return () => { cancelled = true; };
+    }, [refreshKey, allPersonalizados]);
+
+    // Opciones para selects
+    const clienteOptions = useMemo(() => (Array.isArray(clientesData) ? clientesData.map(c => ({
+      value: c._id,
+      label: c.nombre || c.fullName || c.razonSocial || c.email || String(c._id)
+    })) : []), [clientesData]);
+
+    const lenteOptions = useMemo(() => (Array.isArray(lentesData) ? lentesData.map(l => ({
+      value: l._id,
+      label: l.nombre || l.modelo || String(l._id)
+    })) : []), [lentesData]);
+
+    const marcaOptions = useMemo(() => (Array.isArray(marcasData) ? marcasData.map(m => ({
+      value: m._id,
+      label: m.nombre || m.descripcion || String(m._id)
+    })) : []), [marcasData]);
+
+    const filteredProducts = allPersonalizados.filter(producto => {
       const matchesSearch = producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            producto.cliente.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = selectedCategory === 'todos' || producto.categoria === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesRecent = !showRecentOnly || producto.isRecent;
+      return matchesSearch && matchesCategory && matchesRecent;
     });
 
     const getEstadoColor = (estado) => {
@@ -148,12 +367,33 @@ const PersonalizadosContent = () => {
       }
     };
 
+    const convertirAPedido = async (cotizacionId) => {
+      if (!cotizacionId) {
+        showError('Este personalizado no tiene cotización vinculada', 3000);
+        return;
+      }
+      try {
+        const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.COTIZACIONES}/${cotizacionId}/convertir-a-pedido`);
+        const res = await fetch(url, {
+          method: 'POST',
+          credentials: API_CONFIG.FETCH_CONFIG.credentials,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
+        showSuccess('Cotización convertida en pedido', 2500);
+        setRefreshKey(k => k + 1);
+      } catch (err) {
+        showError(err.message || 'No se pudo convertir a pedido', 4000);
+      }
+    };
+
     // Estado para la página actual y tamaño de página.
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
 
   // Calculamos la cantidad total de páginas
-  const totalPages = Math.ceil(filteredProducts.length / pageSize);
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
 
   // Obtenemos los productos de la página actual
   const currentProducts = filteredProducts.slice(
@@ -168,7 +408,17 @@ const PersonalizadosContent = () => {
   const goToLastPage = () => setCurrentPage(totalPages - 1);
 
     return (
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6">
+      <ToastContainer>
+        <Alert 
+          type={alertState.type}
+          message={alertState.message}
+          show={alertState.show}
+          onClose={hideAlert}
+          duration={alertState.duration}
+        />
+      </ToastContainer>
+      <div className="animate-fade-in">
 
           {/* Estadísticas rápidas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -176,7 +426,7 @@ const PersonalizadosContent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm font-medium">Total Personalizados</p>
-                <p className="text-3xl font-bold text-gray-800 mt-2">{productosPersonalizados.length}</p>
+                <p className="text-3xl font-bold text-gray-800 mt-2">{stats.total}</p>
               </div>
               <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
                 <Package className="w-6 h-6 text-cyan-600" />
@@ -188,9 +438,7 @@ const PersonalizadosContent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm font-medium">En Proceso</p>
-                <p className="text-3xl font-bold text-yellow-600 mt-2">
-                  {productosPersonalizados.filter(p => p.estado === 'En Proceso').length}
-                </p>
+                <p className="text-3xl font-bold text-yellow-600 mt-2">{stats.enProceso}</p>
               </div>
               <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
                 <Clock className="w-6 h-6 text-yellow-600" />
@@ -202,9 +450,7 @@ const PersonalizadosContent = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm font-medium">Completados</p>
-                <p className="text-3xl font-bold text-green-600 mt-2">
-                  {productosPersonalizados.filter(p => p.estado === 'Completado').length}
-                </p>
+                <p className="text-3xl font-bold text-green-600 mt-2">{stats.completado}</p>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <UserCheck className="w-6 h-6 text-green-600" />
@@ -271,6 +517,17 @@ const PersonalizadosContent = () => {
                 >
                   Accesorios
                 </button>
+                <button
+                  onClick={() => setShowRecentOnly(prev => !prev)}
+                  className={`px-4 py-2 rounded-lg transition-colors ${
+                    showRecentOnly
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  }`}
+                  title="Mostrar solo solicitudes de las últimas 24 horas"
+                >
+                  {showRecentOnly ? 'Recientes (24h): ON' : 'Recientes (24h)'}
+                </button>
               </div>
             </div>
           </div>
@@ -292,11 +549,26 @@ const PersonalizadosContent = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {currentProducts.map((producto) => (
+            {loading && (
+              <tr>
+                <td colSpan={8} className="px-6 py-6 text-center text-gray-500">Cargando...</td>
+              </tr>
+            )}
+            {!loading && error && (
+              <tr>
+                <td colSpan={8} className="px-6 py-6 text-center text-red-600">{String(error)}</td>
+              </tr>
+            )}
+            {!loading && !error && currentProducts.map((producto) => (
               <tr key={producto.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
                   <div>
-                    <div className="font-medium text-gray-900">{producto.nombre}</div>
+                    <div className="font-medium text-gray-900 flex items-center gap-2">
+                  {producto.nombre}
+                  {producto.isRecent && (
+                    <span className="px-2 py-0.5 text-[11px] rounded-full bg-green-100 text-green-700 border border-green-200">Nuevo</span>
+                  )}
+                </div>
                     <div className="text-sm text-gray-500">{producto.descripcion}</div>
                   </div>
                 </td>
@@ -306,15 +578,23 @@ const PersonalizadosContent = () => {
                 <td className="px-6 py-4 font-semibold text-cyan-600">{producto.precio}</td>
                 <td className="px-6 py-4 text-gray-600">{producto.fechaCreacion}</td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEstadoColor(producto.estado)}`}>
-                    {producto.estado}
-                  </span>
+                  <select
+                    value={producto.backendEstado || 'pendiente'}
+                    onChange={(e) => handleEstadoChange(producto.id, e.target.value)}
+                    className="px-3 py-1 border rounded-lg text-sm"
+                  >
+                    {estadoOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex space-x-2">
                     <button
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       title="Eliminar"
+                      onClick={() => producto.source === 'pedido' ? null : handleDelete(producto.id)}
+                      disabled={producto.source === 'pedido'}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -327,9 +607,21 @@ const PersonalizadosContent = () => {
                     <button
                       className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                       title="Editar"
+                      onClick={() => producto.source === 'pedido' ? null : prepareEdit(producto.id)}
+                      disabled={producto.source === 'pedido'}
                     >
                       <Edit className="w-4 h-4" />
                     </button>
+                    {producto.source !== 'pedido' && (
+                      <button
+                        className={`p-2 ${producto.cotizacionId ? 'text-cyan-700 hover:bg-cyan-50' : 'text-gray-400 cursor-not-allowed'} rounded-lg transition-colors`}
+                        title={producto.cotizacionId ? 'Convertir cotización a pedido' : 'Sin cotización vinculada'}
+                        disabled={!producto.cotizacionId}
+                        onClick={() => convertirAPedido(producto.cotizacionId)}
+                      >
+                        <Package className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -339,7 +631,7 @@ const PersonalizadosContent = () => {
       </div>
 
       {/* Mensaje cuando no hay resultados */}
-      {filteredProducts.length === 0 && (
+      {!loading && !error && filteredProducts.length === 0 && (
             <div className="p-8 text-center">
               <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -350,6 +642,66 @@ const PersonalizadosContent = () => {
               </p>
             </div>
           )}
+
+      {/* Modal Crear */}
+      {showAddModal && (
+        <FormModal
+          isOpen={showAddModal}
+          onClose={() => { setShowAddModal(false); }}
+          onSubmit={handleCreate}
+          title="Crear Personalizado"
+          formData={formData}
+          handleInputChange={handleInputChange}
+          errors={errors}
+          submitLabel="Crear"
+          gridCols={2}
+          fields={[
+            { name: 'clienteId', label: 'Cliente', type: 'select', required: true, options: clienteOptions },
+            { name: 'productoBaseId', label: 'Producto Base (Lente)', type: 'select', required: true, options: lenteOptions },
+            { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+            { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
+            { name: 'categoria', label: 'Categoría', type: 'text', required: true },
+            { name: 'marcaId', label: 'Marca', type: 'select', required: true, options: marcaOptions },
+            { name: 'material', label: 'Material', type: 'text', required: true },
+            { name: 'color', label: 'Color', type: 'text', required: true },
+            { name: 'tipoLente', label: 'Tipo de Lente', type: 'text', required: true },
+            { name: 'precioCalculado', label: 'Precio Calculado', type: 'number', required: true },
+            { name: 'fechaEntregaEstimada', label: 'Fecha Entrega Estimada', type: 'date', required: true },
+            { name: 'cotizacion.total', label: 'Cotización Total', type: 'number', required: true, nested: true },
+            { name: 'cotizacion.validaHasta', label: 'Cotización Válida Hasta', type: 'date', required: true, nested: true },
+          ]}
+        />
+      )}
+
+      {/* Modal Editar */}
+      {showEditModal && (
+        <FormModal
+          isOpen={showEditModal}
+          onClose={() => { setShowEditModal(false); setEditingId(null); }}
+          onSubmit={handleUpdate}
+          title="Editar Personalizado"
+          formData={formData}
+          handleInputChange={handleInputChange}
+          errors={errors}
+          submitLabel="Guardar Cambios"
+          gridCols={2}
+          fields={[
+            { name: 'clienteId', label: 'Cliente', type: 'select', required: true, options: clienteOptions },
+            { name: 'productoBaseId', label: 'Producto Base (Lente)', type: 'select', required: true, options: lenteOptions },
+            { name: 'nombre', label: 'Nombre', type: 'text', required: true },
+            { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
+            { name: 'categoria', label: 'Categoría', type: 'text', required: true },
+            { name: 'marcaId', label: 'Marca', type: 'select', required: true, options: marcaOptions },
+            { name: 'material', label: 'Material', type: 'text', required: true },
+            { name: 'color', label: 'Color', type: 'text', required: true },
+            { name: 'tipoLente', label: 'Tipo de Lente', type: 'text', required: true },
+            { name: 'precioCalculado', label: 'Precio Calculado', type: 'number', required: true },
+            { name: 'fechaEntregaEstimada', label: 'Fecha Entrega Estimada', type: 'date', required: true },
+            { name: 'cotizacion.total', label: 'Cotización Total', type: 'number', required: true, nested: true },
+            { name: 'cotizacion.validaHasta', label: 'Cotización Válida Hasta', type: 'date', required: true, nested: true },
+          ]}
+        />
+      )}
 
       {/* Controles de paginación centrados */}
       <div className="mt-4 flex flex-col items-center gap-4 pb-6">
@@ -407,6 +759,7 @@ const PersonalizadosContent = () => {
         </div>
       </div>
         </div>
+    </div>
     </div>
     </div>
     );

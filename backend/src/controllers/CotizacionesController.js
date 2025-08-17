@@ -1,4 +1,6 @@
 import cotizacionesModel from "../models/Cotizaciones.js";
+import pedidosModel from "../models/Pedidos.js";
+import productosPersonalizadosModel from "../models/ProductosPersonalizados.js";
 
 const cotizacionesController = {};
 
@@ -93,17 +95,31 @@ cotizacionesController.createCotizacion = async (req, res) => {
         // Validación de campos obligatorios
         if (!clienteId) return res.status(400).json({ message: "El cliente es obligatorio" });
         if (!telefonoCliente) return res.status(400).json({ message: "El teléfono del cliente es obligatorio" });
-        if (!fecha) return res.status(400).json({ message: "La fecha es obligatoria" });
+        // fecha y validaHasta son opcionales: el modelo las define por defecto
         if (!productos || productos.length === 0) return res.status(400).json({ message: "Debe agregar al menos un producto" });
-        if (!total && total !== 0) return res.status(400).json({ message: "El total es obligatorio" });
-        if (!validaHasta) return res.status(400).json({ message: "La fecha de validez es obligatoria" });
-        if (!estado) return res.status(400).json({ message: "El estado es obligatorio" });
 
         // Calcular subtotales para cada producto
-        const productosCalculados = productos.map(producto => ({
-            ...producto,
-            subtotal: producto.cantidad * producto.precioUnitario
-        }));
+        const productosCalculados = productos.map(producto => {
+            const cantidad = Number(producto.cantidad || 1);
+            const precioUnitario = Number(producto.precioUnitario || 0);
+            const customizaciones = Array.isArray(producto.customizaciones) ? producto.customizaciones.map(mod => ({
+                codigo: mod.codigo,
+                nombre: mod.nombre,
+                descripcion: mod.descripcion || '',
+                precio: Number(mod.precio || 0),
+                cantidad: Number(mod.cantidad || 1),
+                total: 0 // se recalcula en el pre('validate') del modelo
+            })) : [];
+
+            return {
+                ...producto,
+                tipo: producto.tipo || 'otro',
+                cantidad,
+                precioUnitario,
+                customizaciones,
+                subtotal: cantidad * precioUnitario // el modelo sumará customizaciones
+            };
+        });
 
         // Crear nueva instancia de cotización con todos los datos
         const nuevaCotizacion = new cotizacionesModel({
@@ -190,10 +206,27 @@ cotizacionesController.updateCotizacion = async (req, res) => {
 
         // Si se proporcionan productos, recalcular subtotales
         if (productos && productos.length > 0) {
-            const productosCalculados = productos.map(producto => ({
-                ...producto,
-                subtotal: producto.cantidad * producto.precioUnitario
-            }));
+            const productosCalculados = productos.map(producto => {
+                const cantidad = Number(producto.cantidad || 1);
+                const precioUnitario = Number(producto.precioUnitario || 0);
+                const customizaciones = Array.isArray(producto.customizaciones) ? producto.customizaciones.map(mod => ({
+                    codigo: mod.codigo,
+                    nombre: mod.nombre,
+                    descripcion: mod.descripcion || '',
+                    precio: Number(mod.precio || 0),
+                    cantidad: Number(mod.cantidad || 1),
+                    total: 0 // se recalcula en el pre('validate') del modelo
+                })) : [];
+
+                return {
+                    ...producto,
+                    tipo: producto.tipo || 'otro',
+                    cantidad,
+                    precioUnitario,
+                    customizaciones,
+                    subtotal: cantidad * precioUnitario // el modelo sumará customizaciones
+                };
+            });
             updateData.productos = productosCalculados;
         }
 
@@ -322,6 +355,66 @@ cotizacionesController.actualizarCotizacionesExpiradas = async (req, res) => {
     } catch (error) {
         console.log("Error: " + error);
         res.status(500).json({ message: "Error actualizando cotizaciones expiradas: " + error.message });
+    }
+};
+
+// CONVERTIR A PEDIDO - Convierte una cotización en un pedido
+cotizacionesController.convertirACedido = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        const cotizacion = await cotizacionesModel.findById(id);
+        if (!cotizacion) {
+            return res.status(404).json({ message: "Cotización no encontrada" });
+        }
+
+        if (cotizacion.estado === 'convertida') {
+            return res.status(400).json({ message: "La cotización ya está convertida en un pedido" });
+        }
+
+        // Mapear productos de cotización a items de pedido
+        const items = (cotizacion.productos || []).map(p => ({
+            productoId: p.productoId || undefined,
+            nombre: p.nombre,
+            categoria: p.categoria,
+            tipo: p.tipo || 'otro',
+            cantidad: Number(p.cantidad || 1),
+            precioUnitario: Number(p.precioUnitario || 0),
+            subtotal: Number(p.subtotal || ((p.precioUnitario || 0) * (p.cantidad || 1)))
+        }));
+
+        const pedidoDoc = new pedidosModel({
+            clienteId: cotizacion.clienteId,
+            cotizacionId: cotizacion._id,
+            items,
+            total: cotizacion.total || items.reduce((s, it) => s + (it.subtotal || 0), 0),
+            estado: 'creado',
+        });
+
+        await pedidoDoc.save();
+
+        // Vincular productos personalizados de la cotización al nuevo pedido
+        try {
+            await productosPersonalizadosModel.updateMany(
+                { cotizacionId: cotizacion._id },
+                { $set: { pedidoId: pedidoDoc._id, estado: 'en_proceso' } }
+            );
+        } catch (e) {
+            // No bloquear el flujo si falla la vinculación
+            console.warn('No se pudieron vincular personalizados a pedido', e);
+        }
+
+        // Marcar cotización como convertida
+        cotizacion.estado = 'convertida';
+        await cotizacion.save();
+
+        res.json({
+            message: 'Cotización convertida en pedido exitosamente',
+            pedido: pedidoDoc
+        });
+    } catch (error) {
+        console.log('Error: ' + error);
+        res.status(500).json({ message: 'Error convirtiendo cotización en pedido: ' + error.message });
     }
 };
 

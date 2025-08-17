@@ -1,6 +1,15 @@
 // ===== MODELO COTIZACIONES =====
 import { Schema, model } from 'mongoose';
 
+const customizacionSchema = new Schema({
+    codigo: { type: String, required: true },
+    nombre: { type: String, required: true },
+    descripcion: { type: String, default: '' },
+    precio: { type: Number, required: true, min: 0 },
+    cantidad: { type: Number, default: 1, min: 1 },
+    total: { type: Number, default: 0, min: 0 }
+}, { _id: false });
+
 const cotizacionesSchema = new Schema({
     clienteId: {
         type: Schema.Types.ObjectId,
@@ -24,9 +33,10 @@ const cotizacionesSchema = new Schema({
         {
             productoId: {
                 type: Schema.Types.ObjectId,
-                ref: 'Lentes', // Referencia al producto
-                required: true,
+                ref: 'Lentes', // o Aros segun catálogo existente; puede ser null para personalizados
+                required: false,
             },
+            tipo: { type: String, enum: ['aro', 'lente', 'personalizado', 'otro'], default: 'otro' },
             nombre: {
                 type: String,
                 required: true, // Nombre del producto
@@ -46,9 +56,10 @@ const cotizacionesSchema = new Schema({
                 required: true, // Precio por unidad
                 min: 0
             },
+            customizaciones: { type: [customizacionSchema], default: [] },
             subtotal: {
                 type: Number,
-                required: true, // Cantidad * precio unitario
+                required: true, // Cantidad * precio unitario + customizaciones
                 min: 0
             }
         }
@@ -108,18 +119,25 @@ const cotizacionesSchema = new Schema({
 cotizacionesSchema.pre('validate', function(next) {
     // Asegurar valores numéricos para descuento
     this.descuento = this.descuento || 0;
-    // Eliminar referencia a impuesto
 
-    // Calcular subtotales si no existen
+    // Calcular subtotales con customizaciones
     if (this.productos && this.productos.length > 0) {
         this.productos.forEach(producto => {
-            if (!producto.subtotal) {
-                producto.subtotal = producto.precioUnitario * producto.cantidad;
+            const base = (producto.precioUnitario || 0) * (producto.cantidad || 1);
+            let modsTotal = 0;
+            if (Array.isArray(producto.customizaciones) && producto.customizaciones.length > 0) {
+                producto.customizaciones.forEach(mod => {
+                    const qty = mod.cantidad || 1;
+                    const precio = mod.precio || 0;
+                    mod.total = precio * qty;
+                    modsTotal += mod.total;
+                });
             }
+            producto.subtotal = base + modsTotal;
         });
 
         // Calcular total final
-        this.total = this.productos.reduce((sum, producto) => sum + producto.subtotal, 0);
+        this.total = this.productos.reduce((sum, p) => sum + (p.subtotal || 0), 0);
         this.total = this.total - this.descuento;
     } else {
         this.total = 0;
