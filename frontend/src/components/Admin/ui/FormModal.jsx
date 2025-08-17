@@ -44,7 +44,29 @@ const SelectField = ({ name, label, error, formData, handleInputChange, options,
       const keys = name.split('.');
       return keys.reduce((obj, key) => obj?.[key], formData) || '';
     }
-    return formData[name] || '';
+    // Manejar valores booleanos para el campo disponible
+    const value = formData[name];
+    if (typeof value === 'boolean') {
+      return value.toString();
+    }
+    return value || '';
+  };
+
+  const handleChange = (e) => {
+    const value = e.target.value;
+    
+    // Manejar conversión de valores booleanos
+    if (name === 'disponible') {
+      handleInputChange({
+        target: {
+          name,
+          value: value === 'true'
+        }
+      });
+      return;
+    }
+    
+    handleInputChange(e);
   };
 
   return (
@@ -53,7 +75,7 @@ const SelectField = ({ name, label, error, formData, handleInputChange, options,
       <select
         name={name}
         value={getValue()}
-        onChange={handleInputChange}
+        onChange={handleChange}
         className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 text-xs sm:text-sm ${
           error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
         }`}
@@ -109,6 +131,96 @@ const TextAreaField = ({ name, label, error, formData, handleInputChange, nested
   );
 };
 
+const MultiSelectField = ({ name, label, error, formData, handleInputChange, options, placeholder, ...props }) => {
+  const getValue = () => {
+    const value = formData[name];
+    return Array.isArray(value) ? value : [];
+  };
+
+  const handleChange = (e) => {
+    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+    handleInputChange({
+      target: {
+        name,
+        value: selectedOptions
+      }
+    });
+  };
+
+  return (
+    <div>
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <select
+        name={name}
+        multiple
+        value={getValue()}
+        onChange={handleChange}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 text-xs sm:text-sm ${
+          error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
+        }`}
+        size="4"
+        {...props}
+      >
+        {options.map(option => (
+          <option key={typeof option === 'object' ? option.value : option} 
+          value={typeof option === 'object' ? option.value : option}>
+            {typeof option === 'object' ? option.label : option}
+          </option>
+        ))}
+      </select>
+      {error && (
+        <div className="mt-1 text-red-500 text-xs sm:text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+      <p className="text-xs text-gray-500 mt-1">
+        Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples opciones
+      </p>
+    </div>
+  );
+};
+
+const BooleanField = ({ name, label, error, formData, handleInputChange, ...props }) => {
+  const getValue = () => {
+    const value = formData[name];
+    return typeof value === 'boolean' ? value.toString() : (value || 'true');
+  };
+
+  const handleChange = (e) => {
+    handleInputChange({
+      target: {
+        name,
+        value: e.target.value === 'true'
+      }
+    });
+  };
+
+  return (
+    <div>
+      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <select
+        name={name}
+        value={getValue()}
+        onChange={handleChange}
+        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 text-xs sm:text-sm ${
+          error ? 'border-red-500 animate-shake' : 'border-gray-300 hover:border-cyan-300'
+        }`}
+        {...props}
+      >
+        <option value="true">Disponible</option>
+        <option value="false">No Disponible</option>
+      </select>
+      {error && (
+        <div className="mt-1 text-red-500 text-xs sm:text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const FormModal = ({
   isOpen,
   onClose,
@@ -118,9 +230,11 @@ const FormModal = ({
   handleInputChange,
   errors,
   submitLabel = 'Guardar',
+  submitIcon,
   fields = [],
-  children, // Agregamos children para componentes personalizados
-  gridCols = 2 // Agregamos flexibilidad para las columnas
+  children,
+  customFields = {},
+  gridCols = 2
 }) => {
   if (!isOpen) return null;
 
@@ -128,6 +242,15 @@ const FormModal = ({
     const { name, label, type, options, required, colSpan = 1, nested, ...fieldProps } = field;
     const displayLabel = required ? `${label} *` : label;
     const error = errors[name];
+
+    // Verificar si hay un campo personalizado para este nombre
+    if (customFields[name]) {
+      return (
+        <div key={name || index} className={`col-span-${colSpan}`}>
+          {customFields[name]}
+        </div>
+      );
+    }
 
     const commonProps = {
       name,
@@ -146,6 +269,19 @@ const FormModal = ({
             <SelectField
               {...commonProps}
               options={options}
+            />
+          );
+        case 'multi-select':
+          return (
+            <MultiSelectField
+              {...commonProps}
+              options={options}
+            />
+          );
+        case 'boolean':
+          return (
+            <BooleanField
+              {...commonProps}
             />
           );
         case 'textarea':
@@ -207,13 +343,17 @@ const FormModal = ({
     );
   };
 
+  // CORRECCIÓN: Manejar el envío del formulario correctamente
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSubmit(e);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
       <form 
-        onSubmit={(e) => { 
-          e.preventDefault(); 
-          onSubmit(e); // Pasar el evento al onSubmit
-        }} 
+        onSubmit={handleSubmit}
         className="bg-white rounded-xl shadow-2xl w-full max-w-2xl md:max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
       >
         <div className="bg-cyan-500 text-white p-4 sm:p-6 rounded-t-xl sticky top-0 z-10">
@@ -251,7 +391,7 @@ const FormModal = ({
             type="submit" 
             className="w-full sm:w-auto px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
           >
-            <Save className="w-4 h-4" />
+            {submitIcon || <Save className="w-4 h-4" />}
             <span>{submitLabel}</span>
           </button>
         </div>

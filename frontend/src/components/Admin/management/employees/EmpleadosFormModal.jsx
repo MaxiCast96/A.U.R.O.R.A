@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
-import { Camera, Upload, X, User, Edit3, Eye, EyeOff, Lock, Unlock, Check, AlertCircle, Phone as PhoneIcon } from 'lucide-react';
+import { Camera, Upload, X, User, Edit3, Eye, EyeOff, Lock, Unlock, Check, AlertCircle, Phone as PhoneIcon, ArrowRight, Save } from 'lucide-react';
 import { EL_SALVADOR_DATA } from '../../constants/ElSalvadorData';
 
 // Componente de subida de foto profesional
@@ -13,6 +13,7 @@ const PhotoUploadComponent = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   const sizeConfigs = {
     small: { container: 'w-16 h-16', overlay: 'w-16 h-16', icon: 'w-4 h-4', text: 'text-xs' },
@@ -80,23 +81,25 @@ const PhotoUploadComponent = ({
     }, (error, result) => {
       if (error) {
         console.error('Error uploading:', error);
+        setIsUploading(false);
         return;
       }
 
-      if (result && result.event === "success") {
-        console.log('Upload successful:', result.info);
-        onPhotoChange(result.info.secure_url);
-      }
-
       if (result && result.event === "upload-added") {
+        setIsUploading(true);
         setUploadProgress(10);
       }
       if (result && result.event === "upload-progress") {
         setUploadProgress(result.info.progress || 50);
       }
       if (result && result.event === "success") {
+        console.log('Upload successful:', result.info);
         setUploadProgress(100);
-        setTimeout(() => setUploadProgress(0), 1000);
+        onPhotoChange(result.info.secure_url);
+        setTimeout(() => {
+          setUploadProgress(0);
+          setIsUploading(false);
+        }, 1000);
       }
     });
 
@@ -141,7 +144,7 @@ const PhotoUploadComponent = ({
 
         <div className={`absolute inset-0 ${config.container} rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center`}>
           <div className="text-white text-center">
-            {uploading ? (
+            {isUploading ? (
               <div className="flex flex-col items-center space-y-1">
                 <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 <span className="text-xs">Subiendo...</span>
@@ -192,10 +195,10 @@ const PhotoUploadComponent = ({
       <button
         type="button"
         onClick={handleOpenWidget}
-        disabled={uploading}
+        disabled={isUploading}
         className="sm:hidden w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-300 text-white rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
       >
-        {uploading ? (
+        {isUploading ? (
           <>
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
             <span>Subiendo...</span>
@@ -398,10 +401,9 @@ const EnhancedField = ({
   const getFieldValue = () => {
     if (nested) {
       const keys = field.name.split('.');
-      // Acceder al valor dentro del objeto 'direccion'
-      return formData.direccion[keys[1]] || ''; 
+      return formData?.direccion?.[keys[1]] || ''; 
     }
-    return value;
+    return value || '';
   };
 
   const handleFieldChange = (e) => {
@@ -409,10 +411,9 @@ const EnhancedField = ({
 
     if (nested) {
       const keys = name.split('.');
-      // Actualizar el estado anidado
       onChange({
         target: {
-          name: keys[0], // 'direccion'
+          name: keys[0],
           value: {
             ...formData.direccion,
             [keys[1]]: inputValue
@@ -420,20 +421,18 @@ const EnhancedField = ({
         }
       });
       
-      // Si se cambia el departamento, resetear el municipio
-      if (keys[1] === 'departamento' && inputValue !== formData.direccion.departamento) {
+      if (keys[1] === 'departamento' && inputValue !== formData.direccion?.departamento) {
         onChange({
           target: {
             name: 'direccion',
             value: {
               ...formData.direccion,
               departamento: inputValue,
-              municipio: '' // Resetear municipio
+              municipio: ''
             }
           }
         });
       }
-
     } else {
       onChange(e);
     }
@@ -515,43 +514,43 @@ const EnhancedField = ({
 
   if (field.name === 'telefono') {
     return (
-        <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-                {field.label} {field.required && <span className="text-red-500">*</span>}
-            </label>
-            <div className="flex items-center">
-                <div className="px-4 py-3 bg-gray-100 border border-gray-300 rounded-l-lg flex items-center space-x-2 text-gray-600">
-                    <PhoneIcon className="w-5 h-5 text-gray-500" />
-                    <span>+503</span>
-                </div>
-                <input
-                    type="tel"
-                    name={field.name}
-                    value={value}
-                    onChange={onChange}
-                    placeholder="78901234"
-                    className={`flex-1 px-4 py-3 border-t border-b border-r rounded-r-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all text-base ${
-                        error ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                    }`}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    maxLength="8"
-                    inputMode="numeric"
-                />
-            </div>
-            {error && (
-                <p className="text-red-500 text-sm flex items-center space-x-1">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>{error}</span>
-                </p>
-            )}
-            <p className="text-xs text-gray-500 flex items-center space-x-1">
-                <AlertCircle className="w-3 h-3" />
-                <span>Ingrese 8 dígitos. Ej: 78901234</span>
-            </p>
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {field.label} {field.required && <span className="text-red-500">*</span>}
+        </label>
+        <div className="flex items-center">
+          <div className="px-4 py-3 bg-gray-100 border border-gray-300 rounded-l-lg flex items-center space-x-2 text-gray-600">
+            <PhoneIcon className="w-5 h-5 text-gray-500" />
+            <span>+503</span>
+          </div>
+          <input
+            type="tel"
+            name={field.name}
+            value={value}
+            onChange={onChange}
+            placeholder="78901234"
+            className={`flex-1 px-4 py-3 border-t border-b border-r rounded-r-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all text-base ${
+              error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            }`}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            maxLength="8"
+            inputMode="numeric"
+          />
         </div>
+        {error && (
+          <p className="text-red-500 text-sm flex items-center space-x-1">
+            <AlertCircle className="w-4 h-4" />
+            <span>{error}</span>
+          </p>
+        )}
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Ingrese 8 dígitos. Ej: 78901234</span>
+        </p>
+      </div>
     );
-}
+  }
 
   return (
     <div className="space-y-2">
@@ -603,7 +602,8 @@ const EmpleadosFormModal = ({
     submitLabel, 
     sucursales,
     setFormData,
-    selectedEmpleado = null
+    selectedEmpleado = null,
+    onReturnToOptometristaEdit
 }) => {
     const [uploading, setUploading] = useState(false);
     const [currentPassword, setCurrentPassword] = useState('');
@@ -615,23 +615,49 @@ const EmpleadosFormModal = ({
         }
     }, [isEditing, selectedEmpleado]);
 
+    // Función corregida para manejar cambios de foto
     const handlePhotoChange = (photoUrl) => {
+        console.log('Nueva foto URL:', photoUrl);
         setFormData(prev => ({ ...prev, fotoPerfil: photoUrl }));
     };
 
-    const handleFormSubmit = () => {
+    // NUEVO: Función personalizada para manejar cambios en campos (especialmente cargo)
+    const handleCustomInputChange = (e) => {
+        const { name, value } = e.target;
+        
+        // Log para debugging del cambio de cargo
+        if (name === 'cargo') {
+            console.log('🔄 Cambio de cargo detectado:', {
+                anterior: formData.cargo,
+                nuevo: value,
+                esEdicion: isEditing,
+                cargoOriginal: selectedEmpleado?.cargo
+            });
+        }
+        
+        // Llamar al handleInputChange original
+        handleInputChange(e);
+    };
+
+    // Función de envío que maneja correctamente la lógica
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+        
+        // Si estamos editando y no hay contraseña, usar la actual
         if (isEditing && !formData.password) {
             setFormData(prev => ({ ...prev, password: currentPassword }));
         }
+        
+        // Llamar a la función onSubmit pasada desde el componente padre
         onSubmit();
     };
 
     // Obtener los departamentos y municipios dinámicamente
     const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
     const municipalities = useMemo(() => {
-        const selectedDepartment = formData.direccion.departamento;
+        const selectedDepartment = formData?.direccion?.departamento;
         return selectedDepartment ? EL_SALVADOR_DATA[selectedDepartment] : [];
-    }, [formData.direccion.departamento]);
+    }, [formData?.direccion?.departamento]);
 
     const sections = [
         {
@@ -662,8 +688,7 @@ const EmpleadosFormModal = ({
                     options: municipalities, 
                     placeholder: 'Seleccione un municipio',
                     nested: true,
-                    // Deshabilitar si no se ha seleccionado un departamento
-                    disabled: !formData.direccion.departamento || municipalities.length === 0
+                    disabled: !formData?.direccion?.departamento || municipalities.length === 0
                 },
                 { name: 'direccion.direccionDetallada', label: 'Dirección Completa', type: 'textarea', placeholder: 'Colonia Las Flores, Calle Principal #123, Casa azul con portón blanco', nested: true },
             ]
@@ -678,13 +703,32 @@ const EmpleadosFormModal = ({
                     options: sucursales ? sucursales.map(s => ({ value: s._id, label: s.nombre })) : [], 
                     required: true 
                 },
-                { name: 'cargo', label: 'Puesto de Trabajo', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
+                { 
+                    name: 'cargo', 
+                    label: 'Puesto de Trabajo', 
+                    type: 'select', 
+                    options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], 
+                    required: true,
+                    // NUEVO: Indicador visual para optometrista
+                    highlighted: formData?.cargo === 'Optometrista'
+                },
                 { name: 'salario', label: 'Salario Mensual (USD)', type: 'number', placeholder: '500.00', required: true },
                 { name: 'fechaContratacion', label: 'Fecha de Contratación', type: 'date', required: true },
                 { name: 'estado', label: 'Estado del Empleado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
             ]
         }
     ];
+
+    // Función para determinar el ícono correcto del botón
+    const getSubmitIcon = () => {
+        if (isEditing) {
+            return <Save className="w-4 h-4" />;
+        }
+        if (formData?.cargo === 'Optometrista') {
+            return <ArrowRight className="w-4 h-4" />;
+        }
+        return <Save className="w-4 h-4" />;
+    };
 
     const customContent = (
         <div className="space-y-8">
@@ -695,10 +739,10 @@ const EmpleadosFormModal = ({
             </div>
             <div className="flex justify-center">
               <PhotoUploadComponent
-                currentPhoto={formData.fotoPerfil}
+                currentPhoto={formData?.fotoPerfil}
                 onPhotoChange={handlePhotoChange}
                 uploading={uploading}
-                employeeName={`${formData.nombre} ${formData.apellido}`.trim()}
+                employeeName={`${formData?.nombre || ''} ${formData?.apellido || ''}`.trim()}
                 size="large"
               />
             </div>
@@ -711,12 +755,25 @@ const EmpleadosFormModal = ({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {section.fields.map((field, fieldIndex) => (
-                  <div key={`field-${sectionIndex}-${fieldIndex}`} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                  <div key={`field-${sectionIndex}-${fieldIndex}`} 
+                       className={`${field.type === 'textarea' ? 'md:col-span-2' : ''} ${
+                         field.highlighted ? 'relative' : ''
+                       }`}>
+                    
+                    {/* NUEVO: Indicador especial para el campo cargo cuando es Optometrista */}
+                    {field.name === 'cargo' && formData?.cargo === 'Optometrista' && (
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <div className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
+                          ✨ Especialista
+                        </div>
+                      </div>
+                    )}
+                    
                     <EnhancedField
                       field={field}
-                      value={formData[field.name]}
-                      onChange={handleInputChange}
-                      error={errors[field.name] || (field.nested && errors[field.name.split('.')[1]])}
+                      value={formData?.[field.name]}
+                      onChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
+                      error={errors?.[field.name] || (field.nested && errors?.[field.name.split('.')[1]])}
                       nested={field.nested}
                       placeholder={field.placeholder}
                       formData={formData}
@@ -729,19 +786,60 @@ const EmpleadosFormModal = ({
 
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-              🔐 Acceso y Seguridad
+              🔒 Acceso y Seguridad
             </h3>
             <div className="max-w-md">
               <PasswordField
-                value={formData.password}
-                onChange={handleInputChange}
-                error={errors.password}
+                value={formData?.password || ''}
+                onChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
+                error={errors?.password}
                 isEditing={isEditing}
                 currentPassword={currentPassword}
                 placeholder="Contraseña para acceder al sistema"
               />
             </div>
           </div>
+
+          {/* NUEVO: Indicador visual cuando se selecciona Optometrista */}
+          {formData?.cargo === 'Optometrista' && !isEditing && (
+            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-cyan-800">¡Perfil de Optometrista Seleccionado!</h4>
+                  <p className="text-sm text-cyan-600 mt-1">
+                    Después de guardar la información básica, podrás configurar los horarios, especialidades y sucursales asignadas.
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <ArrowRight className="w-8 h-8 text-cyan-500" />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer personalizado para flujos especiales */}
+          {formData?.fromOptometristaPage && onReturnToOptometristaEdit && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-blue-800">Edición desde Optometrista</h4>
+                  <p className="text-xs text-blue-600">Puedes regresar a editar la información específica del optometrista</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onReturnToOptometristaEdit(selectedEmpleado?._id)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all text-sm"
+                >
+                  Editar Optometrista
+                </button>
+              </div>
+            </div>
+          )}
         </div>
     );
 
@@ -752,9 +850,10 @@ const EmpleadosFormModal = ({
             onSubmit={handleFormSubmit}
             title={title}
             formData={formData}
-            handleInputChange={handleInputChange}
+            handleInputChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
             errors={errors}
             submitLabel={submitLabel}
+            submitIcon={getSubmitIcon()}
             fields={[]}
             gridCols={1}
             size="xl"

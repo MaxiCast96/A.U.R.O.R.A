@@ -1,7 +1,8 @@
-// src/components/management/Optometristas.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import axios from 'axios';
 import { useForm } from '../../../hooks/admin/useForm';
 import { usePagination } from '../../../hooks/admin/usePagination';
+import HorariosVisualizacion from './optometristas/HorariosVisualizacion';
 
 // Componentes de UI
 import PageHeader from '../ui/PageHeader';
@@ -12,169 +13,112 @@ import Pagination from '../ui/Pagination';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
-
-// Modal de Formulario Específico
 import OptometristasFormModal from './optometristas/OptometristasFormModal';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 // Iconos
-import { Eye, Plus, Edit, Trash2, UserCheck, UserX, Search, Award, Clock, MapPin } from 'lucide-react';
+import { Eye, Plus, Edit, Trash2, UserCheck, UserX, Search, Award, Clock, MapPin, Phone, Mail, Building2 } from 'lucide-react';
 
-// Datos de ejemplo para optometristas (extraídos de OpticaDashboard.jsx y extendidos)
-const initialOptometristas = [
-    {
-        _id: "3de939ed28a595d73ec46613",
-        empleadoId: "abb46881fa25120ffd6d97f",
-        nombre: "Dr. Javier Méndez",
-        email: "javier.mendez@optica.com",
-        telefono: "+50371234567",
-        especialidad: "General",
-        licencia: "L8489",
-        experiencia: 8,
-        fotoPerfil: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=face",
-        disponibilidad: [{ dia: "jueves", horaInicio: "08:00", horaFin: "17:00" }, { dia: "viernes", horaInicio: "08:00", horaFin: "17:00" }, { dia: "lunes", horaInicio: "08:00", horaFin: "17:00" }],
-        sucursalesAsignadas: ["Principal", "Quezaltepeque"],
-        disponible: true,
-        fechaCreacion: "2024-01-15",
-        pacientesAtendidos: 1250
-    },
-    {
-        _id: "4ef040fe39b606e84fd57724",
-        empleadoId: "bcc57992gb36231gge7e08g",
-        nombre: "Dra. María Rodríguez",
-        email: "maria.rodriguez@optica.com",
-        telefono: "+50372345678",
-        especialidad: "Pediátrica",
-        licencia: "L9012",
-        experiencia: 6,
-        fotoPerfil: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=face",
-        disponibilidad: [{ dia: "lunes", horaInicio: "08:00", horaFin: "16:00" }, { dia: "martes", horaInicio: "08:00", horaFin: "16:00" }, { dia: "miércoles", horaInicio: "08:00", horaFin: "16:00" }],
-        sucursalesAsignadas: ["Principal"],
-        disponible: true,
-        fechaCreacion: "2024-01-20",
-        pacientesAtendidos: 890
-    },
-    {
-        _id: "5fg151gf50c717f95ge68835",
-        empleadoId: "cdd68003hc47342hh8f19h",
-        nombre: "Dr. Carlos Hernández",
-        email: "carlos.hernandez@optica.com",
-        telefono: "+50373456789",
-        especialidad: "Contactología",
-        licencia: "L7856",
-        experiencia: 10,
-        fotoPerfil: "https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=150&h=150&fit=crop&crop=face",
-        disponibilidad: [{ dia: "martes", horaInicio: "09:00", horaFin: "18:00" }, { dia: "jueves", horaInicio: "09:00", horaFin: "18:00" }, { dia: "sábado", horaInicio: "08:00", horaFin: "14:00" }],
-        sucursalesAsignadas: ["Quezaltepeque"],
-        disponible: true,
-        fechaCreacion: "2024-02-01",
-        pacientesAtendidos: 1420
-    },
-    {
-        _id: "6gh262hg61d828g06hf79946",
-        empleadoId: "dee79114id58453ii9g20i",
-        nombre: "Dra. Ana López",
-        email: "ana.lopez@optica.com",
-        telefono: "+50374567890",
-        especialidad: "General",
-        licencia: "L6543",
-        experiencia: 4,
-        fotoPerfil: "https://images.unsplash.com/photo-1594824885093-45c3fce3238b?w=150&h=150&fit=crop&crop=face",
-        disponibilidad: [{ dia: "lunes", horaInicio: "08:00", horaFin: "17:00" }, { dia: "miércoles", horaInicio: "08:00", horaFin: "17:00" }, { dia: "viernes", horaInicio: "08:00", horaFin: "17:00" }],
-        sucursalesAsignadas: ["Quezaltepeque"],
-        disponible: true,
-        fechaCreacion: "2024-02-10",
-        pacientesAtendidos: 980
-    },
-    {
-        _id: "7hi373ih72e939h17ig80057",
-        empleadoId: "eff80225je69564jj0h31j",
-        nombre: "Dr. Luis García",
-        email: "luis.garcia@optica.com",
-        telefono: "+50375678901",
-        especialidad: "Baja Visión",
-        licencia: "L5432",
-        experiencia: 12,
-        fotoPerfil: "https://images.unsplash.com/photo-1607990281513-2c110a25bd8c?w=150&h=150&fit=crop&crop=face",
-        disponibilidad: [{ dia: "martes", horaInicio: "08:00", horaFin: "16:00" }, { dia: "jueves", horaInicio: "08:00", horaFin: "16:00" }],
-        sucursalesAsignadas: ["Principal"],
-        disponible: false,
-        fechaCreacion: "2024-03-05",
-        pacientesAtendidos: 650
-    },
-    {
-        _id: "8ij484ji83f040i28jh91168",
-        empleadoId: "fgg91336kg70675kk1i42k",
-        nombre: "Dra. Patricia Vásquez",
-        email: "patricia.vasquez@optica.com",
-        telefono: "+50376789012",
-        especialidad: "Ortóptica",
-        licencia: "L4321",
-        experiencia: 7,
-        fotoPerfil: "https://images.unsplash.com/photo-1551836022-d5d88e9218df?w=150&h=150&fit=crop&crop=face",
-        disponibilidad: [{ dia: "lunes", horaInicio: "09:00", horaFin: "17:00" }, { dia: "miércoles", horaInicio: "09:00", horaFin: "17:00" }, { dia: "viernes", horaInicio: "09:00", horaFin: "17:00" }],
-        sucursalesAsignadas: ["Principal", "Quezaltepeque"],
-        disponible: true,
-        fechaCreacion: "2024-03-10",
-        pacientesAtendidos: 1100
-    },
-    {
-        _id: "9jk595kj94g151j39ki02279",
-        empleadoId: "ghh02447lh81786ll2j53l",
-        nombre: "Dr. Roberto Martínez",
-        email: "roberto.martinez@optica.com",
-        telefono: "+50377890123",
-        especialidad: "Contactología",
-        licencia: "L3210",
-        experiencia: 5,
-        fotoPerfil: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=face",
-        disponibilidad: [{ dia: "martes", horaInicio: "08:00", horaFin: "18:00" }, { dia: "jueves", horaInicio: "08:00", horaFin: "18:00" }, { dia: "sábado", horaInicio: "08:00", horaFin: "14:00" }],
-        sucursalesAsignadas: ["Quezaltepeque"],
-        disponible: true,
-        fechaCreacion: "2024-03-15",
-        pacientesAtendidos: 780
-    }
-];
+// URLs de la API
+const OPTOMETRISTAS_URL = 'http://localhost:4000/api/optometrista';
+const EMPLEADOS_URL = 'http://localhost:4000/api/empleados';
+const SUCURSALES_URL = 'http://localhost:4000/api/sucursales';
 
 const Optometristas = () => {
-    const [optometristas, setOptometristas] = useState(initialOptometristas);
+    // --- ESTADOS ---
+    const [optometristas, setOptometristas] = useState([]);
+    const [empleados, setEmpleados] = useState([]);
+    const [sucursales, setSucursales] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedOptometrista, setSelectedOptometrista] = useState(null);
+    const [alert, setAlert] = useState(null);
     const [isFormModalOpen, setIsFormModalOpen] = useState(false);
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [selectedOptometrista, setSelectedOptometrista] = useState(null);
-    const [alert, setAlert] = useState(null);
-
-    const {
-        formData,
-        setFormData,
-        handleInputChange,
-        errors,
-        setErrors,
-        resetForm
-    } = useForm({
-        nombre: '',
-        email: '',
-        telefono: '',
-        especialidad: '',
-        licencia: '',
-        experiencia: '',
-        fotoPerfil: '',
-        disponibilidad: [],
-        sucursalesAsignadas: [],
-        disponible: true,
-        pacientesAtendidos: 0,
-    });
-
     const [searchTerm, setSearchTerm] = useState('');
     const [filterEspecialidad, setFilterEspecialidad] = useState('todos');
     const [filterDisponible, setFilterDisponible] = useState('todos');
+    const [filterSucursal, setFilterSucursal] = useState('todos');
+    const navigate = useNavigate();
+    const location = useLocation();
 
+    // --- EFFECT TO HANDLE RETURN REDIRECT FOR EDITING ---
+    useEffect(() => {
+        if (location.state?.editOptometristaId) {
+            const optometristaToEdit = optometristas.find(o => o._id === location.state.editOptometristaId);
+            if (optometristaToEdit) {
+                handleEdit(optometristaToEdit);
+            }
+            // Clear state
+            navigate(location.pathname, { replace: true, state: {} });
+        }
+    }, [location.state, optometristas, navigate]);
+
+    // New handler to navigate to the employee edit page
+    const handleEditEmployeeRequest = (empleadoId) => {
+        handleCloseModals();
+        navigate('/empleados', { state: { editEmployeeId: empleadoId } });
+    };
+
+
+
+    // --- FORMULARIO ---
+    const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm({
+        empleadoId: '',
+        especialidad: '',
+        licencia: '',
+        experiencia: '',
+        disponibilidad: [],
+        sucursalesAsignadas: [],
+        disponible: true
+    }, (data) => {
+        const newErrors = {};
+        if (!data.empleadoId) newErrors.empleadoId = 'El empleado es requerido';
+        if (!data.especialidad) newErrors.especialidad = 'La especialidad es requerida';
+        if (!data.licencia) newErrors.licencia = 'La licencia es requerida';
+        if (!data.experiencia || data.experiencia < 0) newErrors.experiencia = 'La experiencia debe ser un número positivo';
+        if (!data.sucursalesAsignadas || data.sucursalesAsignadas.length === 0) newErrors.sucursalesAsignadas = 'Debe asignar al menos una sucursal';
+        return newErrors;
+    });
+
+    // --- FETCH DE DATOS ---
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [optometristasRes, empleadosRes, sucursalesRes] = await Promise.all([
+                axios.get(OPTOMETRISTAS_URL),
+                axios.get(EMPLEADOS_URL),
+                axios.get(SUCURSALES_URL)
+            ]);
+            
+            setOptometristas(optometristasRes.data);
+            // Filtrar solo empleados que son optometristas
+            const empleadosOptometristas = empleadosRes.data.filter(emp => emp.cargo === 'Optometrista');
+            setEmpleados(empleadosOptometristas);
+            setSucursales(sucursalesRes.data);
+        } catch (error) {
+            showAlert('error', 'Error al cargar los datos: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    // --- FILTRADO Y PAGINACIÓN ---
     const filteredOptometristas = useMemo(() => {
         return optometristas.filter(optometrista => {
-            const matchesSearch = searchTerm === '' ||
-                optometrista.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                optometrista.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                optometrista.telefono.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                optometrista.licencia.toLowerCase().includes(searchTerm.toLowerCase());
+            const empleado = optometrista.empleadoId;
+            if (!empleado) return false;
+
+            const search = searchTerm.toLowerCase();
+            const matchesSearch = 
+                `${empleado.nombre} ${empleado.apellido}`.toLowerCase().includes(search) ||
+                empleado.correo.toLowerCase().includes(search) ||
+                optometrista.especialidad.toLowerCase().includes(search) ||
+                optometrista.licencia.toLowerCase().includes(search);
 
             const matchesEspecialidad = filterEspecialidad === 'todos' ||
                 optometrista.especialidad.toLowerCase() === filterEspecialidad.toLowerCase();
@@ -183,36 +127,58 @@ const Optometristas = () => {
                 (filterDisponible === 'disponible' && optometrista.disponible) ||
                 (filterDisponible === 'no disponible' && !optometrista.disponible);
 
-            return matchesSearch && matchesEspecialidad && matchesDisponible;
+            const matchesSucursal = filterSucursal === 'todos' ||
+                optometrista.sucursalesAsignadas.some(sucursal => sucursal._id === filterSucursal);
+
+            return matchesSearch && matchesEspecialidad && matchesDisponible && matchesSucursal;
         });
-    }, [optometristas, searchTerm, filterEspecialidad, filterDisponible]);
+    }, [optometristas, searchTerm, filterEspecialidad, filterDisponible, filterSucursal]);
 
-    const {
-        currentPage,
-        pageSize,
-        currentData,
-        totalPages,
-        goToNextPage,
-        goToPreviousPage,
-        goToPage,
-        setPageSize,
-    } = usePagination(filteredOptometristas, 5); 
+    const { paginatedData: currentOptometristas, ...paginationProps } = usePagination(filteredOptometristas, 5);
 
-    const handleAdd = () => {
+    // --- HANDLERS ---
+    const showAlert = (type, message) => {
+        setAlert({ type, message });
+        setTimeout(() => setAlert(null), 5000);
+    };
+
+    const handleCloseModals = () => {
+        setIsFormModalOpen(false);
+        setIsDetailModalOpen(false);
+        setIsDeleteModalOpen(false);
         setSelectedOptometrista(null);
         resetForm();
+        setErrors({});
+    };
+
+    const handleAdd = () => {
+        resetForm();
+        setFormData({
+            empleadoId: '',
+            especialidad: '',
+            licencia: '',
+            experiencia: '',
+            disponibilidad: [],
+            sucursalesAsignadas: [],
+            disponible: true
+        });
+        setSelectedOptometrista(null);
         setIsFormModalOpen(true);
     };
 
     const handleEdit = (optometrista) => {
         setSelectedOptometrista(optometrista);
-        setFormData(optometrista);
+        setFormData({
+            empleadoId: optometrista.empleadoId?._id || '',
+            especialidad: optometrista.especialidad,
+            licencia: optometrista.licencia,
+            experiencia: optometrista.experiencia,
+            disponibilidad: optometrista.disponibilidad || [],
+            sucursalesAsignadas: optometrista.sucursalesAsignadas?.map(s => s._id) || [],
+            disponible: optometrista.disponible
+        });
+        setErrors({});
         setIsFormModalOpen(true);
-    };
-
-    const handleDeleteAttempt = (optometrista) => {
-        setSelectedOptometrista(optometrista);
-        setIsDeleteModalOpen(true);
     };
 
     const handleViewDetails = (optometrista) => {
@@ -220,172 +186,253 @@ const Optometristas = () => {
         setIsDetailModalOpen(true);
     };
 
-    const handleCloseModals = () => {
-        setIsFormModalOpen(false);
-        setIsDeleteModalOpen(false);
-        setIsDetailModalOpen(false);
-        setSelectedOptometrista(null);
-        resetForm();
-        setErrors({});
+    const handleDeleteAttempt = (optometrista) => {
+        setSelectedOptometrista(optometrista);
+        setIsDeleteModalOpen(true);
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
+        if (!validateForm()) return;
 
-        // Basic validation example
-        const newErrors = {};
-        if (!formData.nombre) newErrors.nombre = 'El nombre es requerido.';
-        if (!formData.email) newErrors.email = 'El correo electrónico es requerido.';
-        if (!formData.telefono) newErrors.telefono = 'El teléfono es requerido.';
-        if (!formData.especialidad) newErrors.especialidad = 'La especialidad es requerida.';
-        if (!formData.licencia) newErrors.licencia = 'La licencia es requerida.';
-        if (formData.experiencia === '' || formData.experiencia < 0) newErrors.experiencia = 'La experiencia es requerida y debe ser un número positivo.';
+        try {
+            const dataToSend = {
+                ...formData,
+                // Asegurar que disponibilidad sea un array válido
+                disponibilidad: Array.isArray(formData.disponibilidad) ? formData.disponibilidad : [],
+                // Asegurar que sucursalesAsignadas sea un array válido
+                sucursalesAsignadas: Array.isArray(formData.sucursalesAsignadas) ? formData.sucursalesAsignadas : []
+            };
 
-        if (Object.keys(newErrors).length > 0) {
-            setErrors(newErrors);
-            setAlert({ type: 'error', message: 'Por favor, corrija los errores en el formulario.' });
-            return;
+            if (selectedOptometrista) {
+                // UPDATE
+                await axios.put(`${OPTOMETRISTAS_URL}/${selectedOptometrista._id}`, dataToSend);
+                showAlert('success', '¡Optometrista actualizado exitosamente!');
+            } else {
+                // CREATE
+                await axios.post(OPTOMETRISTAS_URL, dataToSend);
+                showAlert('success', '¡Optometrista creado exitosamente!');
+            }
+            
+            fetchData(); // Recargar datos
+            handleCloseModals();
+        } catch (error) {
+            showAlert('error', 'Error: ' + (error.response?.data?.message || error.message));
         }
+    };
 
-        if (selectedOptometrista) {
-            // Update existing optometrista
-            setOptometristas(optometristas.map(o => o._id === selectedOptometrista._id ? { ...formData, _id: selectedOptometrista._id } : o));
-            setAlert({ type: 'success', message: 'Optometrista actualizado con éxito!' });
-        } else {
-            // Add new optometrista
-            setOptometristas([...optometristas, { ...formData, _id: Date.now().toString(), fechaCreacion: new Date().toISOString().split('T')[0], pacientesAtendidos: 0 }]);
-            setAlert({ type: 'success', message: 'Optometrista añadido con éxito!' });
+    const handleDelete = async () => {
+        if (!selectedOptometrista) return;
+        
+        try {
+            await axios.delete(`${OPTOMETRISTAS_URL}/${selectedOptometrista._id}`);
+            showAlert('success', '¡Optometrista eliminado exitosamente!');
+            fetchData(); // Recargar datos
+            handleCloseModals();
+        } catch (error) {
+            showAlert('error', 'Error al eliminar: ' + (error.response?.data?.message || error.message));
         }
-        handleCloseModals();
     };
 
-    const handleDelete = () => {
-        setOptometristas(optometristas.filter(o => o._id !== selectedOptometrista._id));
-        setAlert({ type: 'success', message: 'Optometrista eliminado con éxito!' });
-        handleCloseModals();
-    };
-
+    // --- UTILIDADES ---
     const getEspecialidadColor = (especialidad) => {
-        switch (especialidad) {
-            case 'General': return 'bg-blue-100 text-blue-800';
-            case 'Pediátrica': return 'bg-pink-100 text-pink-800';
-            case 'Contactología': return 'bg-green-100 text-green-800';
-            case 'Baja Visión': return 'bg-purple-100 text-purple-800';
-            case 'Ortóptica': return 'bg-yellow-100 text-yellow-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
+        const colors = {
+            'General': 'bg-blue-100 text-blue-800',
+            'Pediátrica': 'bg-pink-100 text-pink-800',
+            'Contactología': 'bg-green-100 text-green-800',
+            'Baja Visión': 'bg-purple-100 text-purple-800',
+            'Ortóptica': 'bg-yellow-100 text-yellow-800'
+        };
+        return colors[especialidad] || 'bg-gray-100 text-gray-800';
     };
 
-    const getDisponibilidadStatus = (isDisponible) => {
-        return isDisponible ? { text: 'Disponible', color: 'bg-green-100 text-green-800' } : { text: 'No Disponible', color: 'bg-red-100 text-red-800' };
+    const getDisponibilidadColor = (isDisponible) => {
+        return isDisponible ? 
+            { text: 'Disponible', color: 'bg-green-100 text-green-800' } : 
+            { text: 'No Disponible', color: 'bg-red-100 text-red-800' };
     };
 
-    // Estadísticas
+
+
+    const formatSucursales = (sucursales) => {
+        if (!sucursales || sucursales.length === 0) return 'Sin sucursales asignadas';
+        return sucursales.map(s => s.nombre).join(', ');
+    };
+
+    // --- ESTADÍSTICAS ---
     const totalOptometristas = optometristas.length;
     const optometristasDisponibles = optometristas.filter(o => o.disponible).length;
     const optometristasNoDisponibles = totalOptometristas - optometristasDisponibles;
-    const promedioExperiencia = (optometristas.reduce((sum, o) => sum + o.experiencia, 0) / totalOptometristas).toFixed(1);
+    const promedioExperiencia = totalOptometristas > 0 ? 
+        (optometristas.reduce((sum, o) => sum + (o.experiencia || 0), 0) / totalOptometristas).toFixed(1) : '0';
 
-    const columns = [
-        { header: 'Nombre', accessor: 'nombre' },
-        { header: 'Especialidad', accessor: 'especialidad', render: (row) => (
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getEspecialidadColor(row.especialidad)}`}>
-                {row.especialidad}
-            </span>
-        )},
-        { header: 'Licencia', accessor: 'licencia' },
-        { header: 'Teléfono', accessor: 'telefono' },
-        { header: 'Experiencia (años)', accessor: 'experiencia' },
-        { header: 'Estado', accessor: 'disponible', render: (row) => {
-            const status = getDisponibilidadStatus(row.disponible);
-            return (
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${status.color}`}>
-                    {status.text}
-                </span>
-            );
-        }},
-        {
-            header: 'Acciones',
-            accessor: 'actions',
-            render: (row) => (
-                <div className="flex space-x-2">
-                    <button onClick={() => handleViewDetails(row)} className="btn-icon text-blue-600 hover:text-blue-800">
-                        <Eye className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => handleEdit(row)} className="btn-icon text-yellow-600 hover:text-yellow-800">
-                        <Edit className="w-5 h-5" />
-                    </button>
-                    <button onClick={() => handleDeleteAttempt(row)} className="btn-icon text-red-600 hover:text-red-800">
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                </div>
-            ),
-            isActionColumn: true
-        },
+    // --- RENDERIZADO DE TABLA ---
+    const tableColumns = [
+        { header: 'Optometrista', key: 'optometrista' },
+        { header: 'Contacto', key: 'contacto' },
+        { header: 'Especialidad', key: 'especialidad' },
+        { header: 'Licencia', key: 'licencia' },
+        { header: 'Experiencia', key: 'experiencia' },
+        { header: 'Sucursales', key: 'sucursales' },
+        { header: 'Estado', key: 'estado' },
+        { header: 'Acciones', key: 'acciones' }
     ];
 
-    return (
-        <div className="space-y-6">
-            <PageHeader
-                title="Gestión de Optometristas"
-                subtitle="Administra la información de los optometristas registrados."
-                buttonText="Añadir Optometrista"
-                onButtonClick={handleAdd}
-                icon={Eye}
-            />
+    const renderRow = (optometrista) => {
+        const empleado = optometrista.empleadoId;
+        if (!empleado) return null;
 
+        return (
+            <>
+                <td className="px-6 py-4">
+                    <div className="flex items-center space-x-3">
+                        <img 
+                            src={empleado.fotoPerfil || `https://ui-avatars.com/api/?name=${empleado.nombre}+${empleado.apellido}`} 
+                            alt={`${empleado.nombre}`} 
+                            className="w-10 h-10 rounded-full object-cover" 
+                        />
+                        <div>
+                            <div className="font-medium text-gray-900">{empleado.nombre} {empleado.apellido}</div>
+                            <div className="text-sm text-gray-500">ID: {optometrista.licencia}</div>
+                        </div>
+                    </div>
+                </td>
+                <td className="px-6 py-4 text-gray-600 text-sm">
+                    <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                            <Phone className="w-4 h-4 text-gray-400" />
+                            <span>{empleado.telefono}</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Mail className="w-4 h-4 text-gray-400" />
+                            <span>{empleado.correo}</span>
+                        </div>
+                    </div>
+                </td>
+                <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEspecialidadColor(optometrista.especialidad)}`}>
+                        {optometrista.especialidad}
+                    </span>
+                </td>
+                <td className="px-6 py-4 font-mono text-gray-700">
+                    {optometrista.licencia}
+                </td>
+                <td className="px-6 py-4">
+                    <div className="flex items-center space-x-2">
+                        <Award className="w-4 h-4 text-gray-400" />
+                        <span className="font-medium">{optometrista.experiencia || 0} años</span>
+                    </div>
+                </td>
+                <td className="px-6 py-4 text-gray-600">
+                    <div className="flex items-center space-x-2">
+                        <Building2 className="w-4 h-4 text-gray-400" />
+                        <span className="text-sm">{formatSucursales(optometrista.sucursalesAsignadas)}</span>
+                    </div>
+                </td>
+                <td className="px-6 py-4">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDisponibilidadColor(optometrista.disponible).color}`}>
+                        {getDisponibilidadColor(optometrista.disponible).text}
+                    </span>
+                </td>
+                <td className="px-6 py-4">
+                    <div className="flex space-x-2">
+                        <button 
+                            onClick={() => handleDeleteAttempt(optometrista)} 
+                            className="p-2 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110" 
+                            title="Eliminar"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                            onClick={() => handleViewDetails(optometrista)} 
+                            className="p-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
+                            title="Ver detalles"
+                        >
+                            <Eye className="w-4 h-4" />
+                        </button>
+                        <button 
+                            onClick={() => handleEdit(optometrista)} 
+                            className="p-2 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
+                            title="Editar"
+                        >
+                            <Edit className="w-4 h-4" />
+                        </button>
+                    </div>
+                </td>
+            </>
+        );
+    };
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <Alert alert={alert} />
+            
             <StatsGrid stats={[
                 { title: 'Total Optometristas', value: totalOptometristas, Icon: Eye, color: 'cyan' },
-                { title: 'Optometristas Disponibles', value: optometristasDisponibles, Icon: UserCheck, color: 'green' },
-                { title: 'Optometristas No Disponibles', value: optometristasNoDisponibles, Icon: UserX, color: 'red' },
-                { title: 'Experiencia Promedio (años)', value: promedioExperiencia, Icon: Award, color: 'purple' },
+                { title: 'Disponibles', value: optometristasDisponibles, Icon: UserCheck, color: 'green' },
+                { title: 'No Disponibles', value: optometristasNoDisponibles, Icon: UserX, color: 'red' },
+                { title: 'Experiencia Promedio', value: `${promedioExperiencia} años`, Icon: Award, color: 'purple' },
             ]} />
 
-            <FilterBar
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                placeholder="Buscar optometrista por nombre, email, licencia..."
-                filters={[
-                    {
-                        label: 'Especialidad',
-                        options: [
-                            { value: 'todos', label: 'Todas' },
-                            { value: 'General', label: 'General' },
-                            { value: 'Pediátrica', label: 'Pediátrica' },
-                            { value: 'Contactología', label: 'Contactología' },
-                            { value: 'Baja Visión', label: 'Baja Visión' },
-                            { value: 'Ortóptica', label: 'Ortóptica' },
-                        ],
-                        selectedValue: filterEspecialidad,
-                        onFilterChange: setFilterEspecialidad,
-                    },
-                    {
-                        label: 'Disponibilidad',
-                        options: [
-                            { value: 'todos', label: 'Todos' },
-                            { value: 'disponible', label: 'Disponible' },
-                            { value: 'no disponible', label: 'No Disponible' },
-                        ],
-                        selectedValue: filterDisponible,
-                        onFilterChange: setFilterDisponible,
-                    },
-                ]}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <PageHeader 
+                title="Gestión de Optometristas" 
+                // REMOVED: buttonLabel="Añadir Optometrista" 
+                // REMOVED: onButtonClick={handleAdd} 
             />
+                
+                <FilterBar
+                    searchTerm={searchTerm}
+                    onSearchChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar por nombre, email, especialidad, licencia..."
+                    filters={[
+                        {
+                            label: 'Especialidad',
+                            options: [
+                                { value: 'todos', label: 'Todas' },
+                                { value: 'General', label: 'General' },
+                                { value: 'Pediátrica', label: 'Pediátrica' },
+                                { value: 'Contactología', label: 'Contactología' },
+                                { value: 'Baja Visión', label: 'Baja Visión' },
+                                { value: 'Ortóptica', label: 'Ortóptica' },
+                            ],
+                            selectedValue: filterEspecialidad,
+                            onFilterChange: setFilterEspecialidad,
+                        },
+                        {
+                            label: 'Disponibilidad',
+                            options: [
+                                { value: 'todos', label: 'Todos' },
+                                { value: 'disponible', label: 'Disponible' },
+                                { value: 'no disponible', label: 'No Disponible' },
+                            ],
+                            selectedValue: filterDisponible,
+                            onFilterChange: setFilterDisponible,
+                        },
+                        {
+                            label: 'Sucursal',
+                            options: [
+                                { value: 'todos', label: 'Todas' },
+                                ...sucursales.map(s => ({ value: s._id, label: s.nombre }))
+                            ],
+                            selectedValue: filterSucursal,
+                            onFilterChange: setFilterSucursal,
+                        }
+                    ]}
+                    activeFilter={filterEspecialidad}
+                    onFilterChange={setFilterEspecialidad}
+                />
 
-<DataTable 
-    columns={columns} 
-    data={currentData || []} // Aseguramos que siempre sea un array
-/>
-
-            <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                goToPreviousPage={goToPreviousPage}
-                goToNextPage={goToNextPage}
-                goToPage={goToPage}
-                pageSize={pageSize}
-                setPageSize={setPageSize}
-            />
+                <DataTable
+                    columns={tableColumns}
+                    data={currentOptometristas}
+                    renderRow={renderRow}
+                    loading={loading}
+                    noDataMessage="No se encontraron optometristas"
+                    noDataSubMessage={searchTerm ? 'Intenta con otros términos de búsqueda' : 'Aún no hay optometristas registrados'}
+                />
+                
+                <Pagination {...paginationProps} />
+            </div>
 
             <OptometristasFormModal
                 isOpen={isFormModalOpen}
@@ -393,42 +440,80 @@ const Optometristas = () => {
                 onSubmit={handleSubmit}
                 title={selectedOptometrista ? 'Editar Optometrista' : 'Añadir Nuevo Optometrista'}
                 formData={formData}
+                setFormData={setFormData}
                 handleInputChange={handleInputChange}
                 errors={errors}
                 submitLabel={selectedOptometrista ? 'Actualizar Optometrista' : 'Guardar Optometrista'}
+                empleados={empleados}
+                sucursales={sucursales}
+                selectedOptometrista={selectedOptometrista}
+                onEditEmployeeRequest={handleEditEmployeeRequest}
             />
 
-            <DetailModal
-                isOpen={isDetailModalOpen}
-                onClose={handleCloseModals}
-                title="Detalles del Optometrista"
-                item={selectedOptometrista}
-                data={selectedOptometrista ? [
-                    { label: "Nombre Completo", value: selectedOptometrista.nombre },
-                    { label: "Email", value: selectedOptometrista.email },
-                    { label: "Teléfono", value: selectedOptometrista.telefono },
-                    { label: "Especialidad", value: selectedOptometrista.especialidad, color: getEspecialidadColor(selectedOptometrista.especialidad) },
-                    { label: "Licencia", value: selectedOptometrista.licencia },
-                    { label: "Experiencia", value: `${selectedOptometrista.experiencia} años` },
-                    { label: "Disponibilidad", value: selectedOptometrista.disponibilidad.map(d => `${d.dia} (${d.horaInicio}-${d.horaFin})`).join(', ') || 'N/A' },
-                    { label: "Sucursales Asignadas", value: selectedOptometrista.sucursalesAsignadas.join(', ') || 'N/A' },
-                    { label: "Estado", value: getDisponibilidadStatus(selectedOptometrista.disponible).text, color: getDisponibilidadStatus(selectedOptometrista.disponible).color },
-                    { label: "Pacientes Atendidos", value: selectedOptometrista.pacientesAtendidos },
-                    { label: "Fecha de Registro", value: selectedOptometrista.fechaCreacion },
-                ] : []}
+<DetailModal
+    isOpen={isDetailModalOpen}
+    onClose={handleCloseModals}
+    title="Detalles del Optometrista"
+    item={selectedOptometrista?.empleadoId || {}}
+    data={selectedOptometrista ? [
+        { 
+            label: "Nombre Completo", 
+            value: selectedOptometrista.empleadoId ? 
+                `${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}` : 
+                'N/A' 
+        },
+        { 
+            label: "Email", 
+            value: selectedOptometrista.empleadoId?.correo || 'N/A' 
+        },
+        { 
+            label: "Teléfono", 
+            value: selectedOptometrista.empleadoId?.telefono || 'N/A' 
+        },
+        { 
+            label: "Especialidad", 
+            value: selectedOptometrista.especialidad, 
+            color: getEspecialidadColor(selectedOptometrista.especialidad) 
+        },
+        { label: "Licencia", value: selectedOptometrista.licencia },
+        { label: "Experiencia", value: `${selectedOptometrista.experiencia || 0} años` },
+        { 
+            label: "Sucursales Asignadas", 
+            value: formatSucursales(selectedOptometrista.sucursalesAsignadas) 
+        },
+        { 
+            label: "Estado", 
+            value: getDisponibilidadColor(selectedOptometrista.disponible).text, 
+            color: getDisponibilidadColor(selectedOptometrista.disponible).color 
+        },
+        { 
+            label: "Fecha de Registro", 
+            value: selectedOptometrista.createdAt ? 
+                new Date(selectedOptometrista.createdAt).toLocaleDateString('es-ES') : 
+                'N/A' 
+        },
+    ] : []}
+>
+    {/* Visualización gráfica de horarios */}
+    {selectedOptometrista && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+            <HorariosVisualizacion 
+                disponibilidad={selectedOptometrista.disponibilidad || []} 
             />
+        </div>
+    )}
+</DetailModal>
 
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={handleCloseModals}
                 onConfirm={handleDelete}
                 title="Confirmar Eliminación"
-                message={`¿Estás seguro de que deseas eliminar al optometrista ${selectedOptometrista?.nombre}?`}
-            />
-
-            <Alert
-                alert={alert}
-                onClose={() => setAlert(null)}
+                message={
+                    selectedOptometrista?.empleadoId ? 
+                        `¿Estás seguro de que deseas eliminar al optometrista ${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}? Esta acción no se puede deshacer.` :
+                        '¿Estás seguro de que deseas eliminar este optometrista?'
+                }
             />
         </div>
     );

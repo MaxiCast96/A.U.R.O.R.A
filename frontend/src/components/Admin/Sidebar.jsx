@@ -64,7 +64,6 @@ const Sidebar = ({
       } else {
         setIsContracting(true);
         setIsExpanding(false);
-        const timer = setTimeout(() => setIsContracting(false), 600);
       }
     }
     setPreviousSidebarOpen(sidebarOpen);
