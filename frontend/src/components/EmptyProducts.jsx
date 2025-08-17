@@ -6,7 +6,6 @@ const EmptyProducts = ({ type, searchTerm, filters }) => {
     switch (type) {
       case 'lentes': return 'lentes';
       case 'accesorios': return 'accesorios';
-      case 'personalizables': return 'productos personalizables';
       default: return 'productos';
     }
   };
@@ -43,9 +42,7 @@ const EmptyProducts = ({ type, searchTerm, filters }) => {
     <div className="text-center py-16 px-4">
       <div className="max-w-md mx-auto">
         {/* Icono */}
-        <div className="text-6xl mb-4">
-          {type === 'lentes' ? '👓' : type === 'accesorios' ? '👜' : '✨'}
-        </div>
+        <div className="text-6xl mb-4">{type === 'lentes' ? '👓' : type === 'accesorios' ? '👜' : '🛍️'}</div>
         
         {/* Título */}
         <h3 className="text-2xl font-bold text-gray-800 mb-2">

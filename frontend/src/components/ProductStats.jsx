@@ -18,7 +18,6 @@ const ProductStats = ({ products, type }) => {
     switch (type) {
       case 'lentes': return '👓';
       case 'accesorios': return '👜';
-      case 'personalizables': return '✨';
       default: return '🛍️';
     }
   };
@@ -27,7 +26,6 @@ const ProductStats = ({ products, type }) => {
     switch (type) {
       case 'lentes': return 'Lentes';
       case 'accesorios': return 'Accesorios';
-      case 'personalizables': return 'Personalizables';
       default: return 'Productos';
     }
   };

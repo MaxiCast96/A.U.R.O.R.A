@@ -10,7 +10,7 @@ export const AuthProvider = ({ children }) => {
         // Intentar recuperar el token del localStorage al iniciar
         return localStorage.getItem('aurora_token');
     });
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     // Decodificar JWT sin validar (solo para recuperar datos básicos)
     const decodeJwt = (jwtToken) => {
@@ -42,16 +42,30 @@ export const AuthProvider = ({ children }) => {
             }
         } catch (_) {
             // noop
+        } finally {
+            setLoading(false);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Cuando cambie el token, actualizar axios y persistencia
+    useEffect(() => {
+        if (token) {
+            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            axios.defaults.withCredentials = true;
+            localStorage.setItem('aurora_token', token);
+        } else {
+            delete axios.defaults.headers.common['Authorization'];
+            localStorage.removeItem('aurora_token');
+        }
+    }, [token]);
 
     const login = async (credentials) => {
         try {
             const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials, {
                 withCredentials: true,
             });
-            
+
             if (response.data.success) {
                 const { token: authToken, user: authUser } = response.data;
                 setToken(authToken);

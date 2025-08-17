@@ -6,6 +6,7 @@ import { useAuth } from '../../auth/AuthContext';
 
 const CotizacionesContent = () => {
     const { token } = useAuth();
+    const [notice, setNotice] = useState({ type: '', message: '' });
 
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('todas');
@@ -81,13 +82,13 @@ const CotizacionesContent = () => {
         });
         const data = await res.json();
         if (!res.ok) {
-          alert(data?.message || 'No se pudo convertir la cotización.');
+          setNotice({ type: 'error', message: data?.message || 'No se pudo convertir la cotización.' });
           return;
         }
-        alert('Cotización convertida en pedido correctamente.');
+        setNotice({ type: 'success', message: 'Cotización convertida en pedido correctamente.' });
         setRefreshKey((k) => k + 1);
       } catch (e) {
-        alert('Error de red al convertir la cotización.');
+        setNotice({ type: 'error', message: 'Error de red al convertir la cotización.' });
       }
     };
 
@@ -99,6 +100,18 @@ const CotizacionesContent = () => {
 
     return (
       <div className="space-y-6 animate-fade-in">
+        {notice.message && (
+          <div
+            className={`p-3 rounded-lg text-sm mx-auto max-w-3xl ${
+              notice.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+              'bg-red-50 text-red-700 border border-red-200'
+            }`}
+            role="status"
+            aria-live="polite"
+          >
+            {notice.message}
+          </div>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
             <div className="flex items-center justify-between">

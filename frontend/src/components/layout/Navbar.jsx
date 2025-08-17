@@ -146,12 +146,6 @@ const Navbar = () => {
                 >
                   Accesorios
                 </Link>
-                <Link
-                  to="/productos/personalizables"
-                  className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm"
-                >
-                  Personalizables
-                </Link>
               </div>
             </li>
             <li>
@@ -278,13 +272,6 @@ const Navbar = () => {
                       className="block py-2 px-3 text-gray-600 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors text-sm"
                     >
                       Accesorios
-                    </Link>
-                    <Link
-                      to="/productos/personalizables"
-                      onClick={closeMobileMenu}
-                      className="block py-2 px-3 text-gray-600 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors text-sm"
-                    >
-                      Personalizables
                     </Link>
                   </div>
                 )}

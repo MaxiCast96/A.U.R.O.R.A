@@ -37,22 +37,7 @@ const ProductTypeInfo = ({ type }) => {
           ]
         };
       
-      case 'personalizables':
-        return {
-          title: '✨ Productos Personalizados',
-          description: 'Crea lentes únicos adaptados a tus necesidades específicas',
-          features: [
-            'Diseño personalizado',
-            'Materiales especiales',
-            'Colores únicos',
-            'Adaptación perfecta'
-          ],
-          tips: [
-            'Consulta sobre opciones de personalización',
-            'Considera el tiempo de fabricación',
-            'Asegúrate de que las especificaciones sean claras'
-          ]
-        };
+      
       
       default:
         return {

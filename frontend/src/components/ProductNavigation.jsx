@@ -20,11 +20,6 @@ const ProductNavigation = () => {
       label: 'Accesorios',
       icon: '👜'
     },
-    {
-      path: '/productos/personalizables',
-      label: 'Personalizables',
-      icon: '✨'
-    }
   ];
 
   return (

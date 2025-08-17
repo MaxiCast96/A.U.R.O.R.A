@@ -6,6 +6,7 @@ import {
   Routes,
   Route,
   useLocation,
+  Navigate,
 } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { AuthProvider, useAuth } from "./components/auth/AuthContext";
@@ -55,7 +56,8 @@ function AnimatedRoutes() {
         {/* Rutas de productos específicos */}
         <Route path="/productos/lentes" element={<Producto />} />
         <Route path="/productos/accesorios" element={<Producto />} />
-        <Route path="/productos/personalizables" element={<Producto />} />
+        {/* Redirección de ruta eliminada */}
+        <Route path="/productos/personalizables" element={<Navigate to="/productos" replace />} />
         
         {/* Rutas que requieren autenticación de cliente */}
         <Route path="/cotizaciones" element={

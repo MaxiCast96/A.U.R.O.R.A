@@ -77,7 +77,7 @@ const Producto = () => {
   const handleCrearSolicitudPersonalizada = async () => {
     try {
       if (!user?.id) {
-        alert('Inicia sesión para solicitar un producto personalizado.');
+        showError('Inicia sesión para solicitar un producto personalizado.');
         return;
       }
       if (!selectedProduct?._id) {
@@ -141,7 +141,7 @@ const Producto = () => {
   const handleAddToCart = async (product, qty = 1) => {
     if (!user) {
       // Evitar navegar fuera; mostrar aviso y permanecer en la página
-      alert('Inicia sesión para agregar productos al carrito.');
+      showError('Inicia sesión para agregar productos al carrito.');
       return;
     }
     try {
@@ -413,25 +413,8 @@ const Producto = () => {
     ]
   };
 
-  // Los datos ahora se cargan automáticamente desde el backend a través de useApiData
-
-  // Debug: Log de los datos recibidos del backend
-  useEffect(() => {
-    console.log('Debug - Datos del backend cargados:', {
-      lentes: { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes },
-      accesorios: { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, success: successAccesorios },
-      personalizables: { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, success: successPersonalizables },
-      marcas: { data: marcas, loading: loadingMarcas, error: errorMarcas, success: successMarcas },
-      categorias: { data: categorias, loading: loadingCategorias, error: errorCategorias, success: successCategorias }
-    });
-  }, [lentes, accesorios, personalizables, marcas, categorias, 
-      loadingLentes, loadingAccesorios, loadingPersonalizables, loadingMarcas, loadingCategorias,
-      errorLentes, errorAccesorios, errorPersonalizables, errorMarcas, errorCategorias,
-      successLentes, successAccesorios, successPersonalizables, successMarcas, successCategorias]);
-
-  // Función para filtrar productos
+  // Filtrar productos según búsqueda y filtros activos
   const filterProducts = (products) => {
-    // Validar que products sea un array válido
     if (!Array.isArray(products)) {
       console.warn('filterProducts: products no es un array válido:', products);
       return [];
@@ -523,13 +506,11 @@ const Producto = () => {
         return { data: lentes, loading: loadingLentes, error: errorLentes, type: 'lentes', pagination: paginationLentes };
       case "/productos/accesorios":
         return { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, type: 'accesorios', pagination: paginationAccesorios };
-      case "/productos/personalizables":
-        return { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, type: 'personalizables' };
       default:
         return { 
-          data: [...lentes, ...accesorios, ...personalizables], 
-          loading: loadingLentes || loadingAccesorios || loadingPersonalizables, 
-          error: errorLentes || errorAccesorios || errorPersonalizables, 
+          data: [...lentes, ...accesorios], 
+          loading: loadingLentes || loadingAccesorios, 
+          error: errorLentes || errorAccesorios, 
           type: 'todos' 
         };
     }
@@ -657,7 +638,7 @@ const Producto = () => {
     const filteredProducts = filterProducts(currentProducts.data);
     
     if (filteredProducts.length === 0) {
-      alert('No hay productos para exportar con los filtros actuales');
+      showError('No hay productos para exportar con los filtros actuales');
       return;
     }
     
@@ -860,7 +841,7 @@ const Producto = () => {
   const compareProducts = () => {
     const productsToCompare = getCompareProducts();
     if (productsToCompare.length < 2) {
-      alert('Necesitas al menos 2 productos para comparar');
+      showError('Necesitas al menos 2 productos para comparar');
       return;
     }
     

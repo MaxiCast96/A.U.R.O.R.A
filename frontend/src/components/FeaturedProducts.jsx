@@ -15,7 +15,6 @@ const FeaturedProducts = ({ products, type }) => {
     switch (type) {
       case 'lentes': return '/productos/lentes';
       case 'accesorios': return '/productos/accesorios';
-      case 'personalizables': return '/productos/personalizables';
       default: return '/productos';
     }
   };
@@ -24,7 +23,6 @@ const FeaturedProducts = ({ products, type }) => {
     switch (type) {
       case 'lentes': return 'Lentes';
       case 'accesorios': return 'Accesorios';
-      case 'personalizables': return 'Personalizables';
       default: return 'Productos';
     }
   };
@@ -46,9 +44,7 @@ const FeaturedProducts = ({ products, type }) => {
           <div key={product._id} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition-colors duration-200">
             <div className="flex items-center space-x-3">
               <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center">
-                <span className="text-2xl">
-                  {type === 'lentes' ? '👓' : type === 'accesorios' ? '👜' : '✨'}
-                </span>
+                <span className="text-2xl">{type === 'lentes' ? '👓' : '👜'}</span>
               </div>
               <div className="flex-1">
                 <h4 className="font-semibold text-sm line-clamp-2">{product.nombre}</h4>
