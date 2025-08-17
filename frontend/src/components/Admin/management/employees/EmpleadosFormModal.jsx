@@ -621,7 +621,25 @@ const EmpleadosFormModal = ({
         setFormData(prev => ({ ...prev, fotoPerfil: photoUrl }));
     };
 
-    // CORRECCIÓN: Función de envío que maneja correctamente la lógica
+    // NUEVO: Función personalizada para manejar cambios en campos (especialmente cargo)
+    const handleCustomInputChange = (e) => {
+        const { name, value } = e.target;
+        
+        // Log para debugging del cambio de cargo
+        if (name === 'cargo') {
+            console.log('🔄 Cambio de cargo detectado:', {
+                anterior: formData.cargo,
+                nuevo: value,
+                esEdicion: isEditing,
+                cargoOriginal: selectedEmpleado?.cargo
+            });
+        }
+        
+        // Llamar al handleInputChange original
+        handleInputChange(e);
+    };
+
+    // Función de envío que maneja correctamente la lógica
     const handleFormSubmit = (e) => {
         e.preventDefault();
         
@@ -685,7 +703,15 @@ const EmpleadosFormModal = ({
                     options: sucursales ? sucursales.map(s => ({ value: s._id, label: s.nombre })) : [], 
                     required: true 
                 },
-                { name: 'cargo', label: 'Puesto de Trabajo', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
+                { 
+                    name: 'cargo', 
+                    label: 'Puesto de Trabajo', 
+                    type: 'select', 
+                    options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], 
+                    required: true,
+                    // NUEVO: Indicador visual para optometrista
+                    highlighted: formData?.cargo === 'Optometrista'
+                },
                 { name: 'salario', label: 'Salario Mensual (USD)', type: 'number', placeholder: '500.00', required: true },
                 { name: 'fechaContratacion', label: 'Fecha de Contratación', type: 'date', required: true },
                 { name: 'estado', label: 'Estado del Empleado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
@@ -693,7 +719,7 @@ const EmpleadosFormModal = ({
         }
     ];
 
-    // CORRECCIÓN: Función para determinar el ícono correcto del botón
+    // Función para determinar el ícono correcto del botón
     const getSubmitIcon = () => {
         if (isEditing) {
             return <Save className="w-4 h-4" />;
@@ -729,11 +755,24 @@ const EmpleadosFormModal = ({
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {section.fields.map((field, fieldIndex) => (
-                  <div key={`field-${sectionIndex}-${fieldIndex}`} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                  <div key={`field-${sectionIndex}-${fieldIndex}`} 
+                       className={`${field.type === 'textarea' ? 'md:col-span-2' : ''} ${
+                         field.highlighted ? 'relative' : ''
+                       }`}>
+                    
+                    {/* NUEVO: Indicador especial para el campo cargo cuando es Optometrista */}
+                    {field.name === 'cargo' && formData?.cargo === 'Optometrista' && (
+                      <div className="absolute -top-2 -right-2 z-10">
+                        <div className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
+                          ✨ Especialista
+                        </div>
+                      </div>
+                    )}
+                    
                     <EnhancedField
                       field={field}
                       value={formData?.[field.name]}
-                      onChange={handleInputChange}
+                      onChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
                       error={errors?.[field.name] || (field.nested && errors?.[field.name.split('.')[1]])}
                       nested={field.nested}
                       placeholder={field.placeholder}
@@ -747,12 +786,12 @@ const EmpleadosFormModal = ({
 
           <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-              🔐 Acceso y Seguridad
+              🔒 Acceso y Seguridad
             </h3>
             <div className="max-w-md">
               <PasswordField
                 value={formData?.password || ''}
-                onChange={handleInputChange}
+                onChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
                 error={errors?.password}
                 isEditing={isEditing}
                 currentPassword={currentPassword}
@@ -760,6 +799,28 @@ const EmpleadosFormModal = ({
               />
             </div>
           </div>
+
+          {/* NUEVO: Indicador visual cuando se selecciona Optometrista */}
+          {formData?.cargo === 'Optometrista' && !isEditing && (
+            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-xl p-4">
+              <div className="flex items-center space-x-3">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
+                    <User className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-lg font-semibold text-cyan-800">¡Perfil de Optometrista Seleccionado!</h4>
+                  <p className="text-sm text-cyan-600 mt-1">
+                    Después de guardar la información básica, podrás configurar los horarios, especialidades y sucursales asignadas.
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <ArrowRight className="w-8 h-8 text-cyan-500" />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Footer personalizado para flujos especiales */}
           {formData?.fromOptometristaPage && onReturnToOptometristaEdit && (
@@ -789,7 +850,7 @@ const EmpleadosFormModal = ({
             onSubmit={handleFormSubmit}
             title={title}
             formData={formData}
-            handleInputChange={handleInputChange}
+            handleInputChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
             errors={errors}
             submitLabel={submitLabel}
             submitIcon={getSubmitIcon()}

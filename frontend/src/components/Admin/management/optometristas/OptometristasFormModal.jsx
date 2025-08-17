@@ -1,8 +1,8 @@
 // src/components/management/optometristas/OptometristasFormModal.jsx
-import React, { useState, useEffect, createRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import FormModal from '../../ui/FormModal';
-import { Plus, Trash2, Clock, X, User, Mail, Phone, ChevronDown, Check, MapPin } from 'lucide-react';
+import { Plus, Trash2, Clock, X, User, Mail, Phone, ChevronDown, Check, MapPin, ArrowLeft } from 'lucide-react';
 
 const OptometristasFormModal = ({ 
     isOpen, 
@@ -17,9 +17,9 @@ const OptometristasFormModal = ({
     empleados,
     sucursales,
     selectedOptometrista,
-    isCreationFlow = false,       // New prop to identify the creation flow
-    preloadedEmployeeData = null, // New prop for displaying new employee data
-    onEditEmployeeRequest,        // New prop for handling the edit navigatio
+    isCreationFlow = false,
+    preloadedEmployeeData = null,
+    onBackToEmployeeForm = null, // NUEVO: Función para regresar al paso 1
 }) => {
     // Estado para la alerta de límite de horas
     const [showLimitAlert, setShowLimitAlert] = useState(false);
@@ -33,6 +33,13 @@ const OptometristasFormModal = ({
         'Baja Visión', 
         'Ortóptica'
     ];
+
+    // Efecto para establecer el empleadoId cuando estamos en flujo de creación
+    useEffect(() => {
+        if (isCreationFlow && preloadedEmployeeData && !formData.empleadoId) {
+            console.log('Estableciendo empleadoId para flujo de creación');
+        }
+    }, [isCreationFlow, preloadedEmployeeData, formData.empleadoId]);
 
     // Convertir empleados a opciones para el select
     const empleadosOptions = empleados?.map(emp => ({
@@ -236,7 +243,7 @@ const OptometristasFormModal = ({
     };
 
     // Función para mostrar alerta de límite de horas
-    const showHourLimitAlert = (message) => {
+    const showHourLimitAlert = () => {
         setShowLimitAlert(true);
         setTimeout(() => {
             setShowLimitAlert(false);
@@ -258,6 +265,33 @@ const OptometristasFormModal = ({
             }
         });
         setIsEmployeeDropdownOpen(false);
+    };
+
+    // CORRECCIÓN: Función mejorada para manejar el envío del formulario
+    const handleFormSubmit = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('=== ENVÍO DEL FORMULARIO OPTOMETRISTA ===');
+        console.log('isCreationFlow:', isCreationFlow);
+        console.log('formData actual:', formData);
+        console.log('preloadedEmployeeData:', preloadedEmployeeData);
+        
+        // CORRECCIÓN: Llamar directamente a onSubmit sin parámetros adicionales
+        onSubmit();
+    };
+
+    // NUEVO: Función para manejar el botón de regresar
+    const handleBackButton = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        console.log('🔙 Botón regresar presionado');
+        if (onBackToEmployeeForm && typeof onBackToEmployeeForm === 'function') {
+            onBackToEmployeeForm();
+        } else {
+            console.warn('⚠️ onBackToEmployeeForm no está definido o no es una función');
+        }
     };
 
     // Componente de alerta minimalista para límite de horas (usando Portal)
@@ -296,15 +330,8 @@ const OptometristasFormModal = ({
         return createPortal(alertContent, document.body);
     };
 
-     // Determine which employee data to show
-     const employeeToShow = isCreationFlow ? preloadedEmployeeData : selectedOptometrista?.empleadoId;
-    // Si estamos en el flujo de creación, mostramos los datos del nuevo empleado
-    const selectedEmpleado = getSelectedEmpleado(); // Usa tu función existente
     // Campo personalizado para selección de empleado con tarjetas
     const EmpleadoSelectorField = () => {
-        // El 'employeeToShow' ya está definido correctamente arriba
-        // const employeeToShow = isCreationFlow ? preloadedEmployeeData : selectedOptometrista?.empleadoId;
-    
         if (isCreationFlow) {
             // --- VISTA PARA EL FLUJO DE CREACIÓN ---
             // Muestra una tarjeta estática con los datos del empleado que se está creando
@@ -312,21 +339,23 @@ const OptometristasFormModal = ({
             
             return (
                 <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Empleado *</label>
-                    <div className="w-full p-4 border rounded-lg bg-gray-50 flex items-center space-x-3">
+                    <label className="block text-sm font-medium text-gray-700">Empleado *</label>
+                    <div className="w-full p-4 border rounded-lg bg-gradient-to-r from-cyan-50 to-blue-50 border-cyan-200 flex items-center space-x-3">
                         <img 
                             src={preloadedEmployeeData.fotoPerfil || `https://ui-avatars.com/api/?name=${preloadedEmployeeData.nombre}+${preloadedEmployeeData.apellido}`} 
                             alt={preloadedEmployeeData.nombre} 
                             className="w-12 h-12 rounded-full object-cover border-2 border-cyan-200" 
                         />
-                        <div>
+                        <div className="flex-1">
                             <div className="font-medium text-gray-900">{preloadedEmployeeData.nombre} {preloadedEmployeeData.apellido}</div>
-                            <div className="text-sm text-gray-500">{preloadedEmployeeData.correo}</div>
+                            <div className="text-sm text-gray-600">{preloadedEmployeeData.correo}</div>
+                            <div className="text-xs text-cyan-600 font-medium">✓ Empleado nuevo - Se guardará automáticamente</div>
                         </div>
                     </div>
                 </div>
             );
         }
+
         return (
             <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -342,23 +371,23 @@ const OptometristasFormModal = ({
                             errors.empleadoId ? 'border-red-500' : 'border-gray-300'
                         } ${selectedOptometrista ? 'bg-gray-100 cursor-not-allowed' : 'bg-white hover:border-cyan-300'}`}
                     >
-                        {selectedEmpleado ? (
+                        {getSelectedEmpleado() ? (
                             <div className="flex items-center space-x-3">
                                 <img 
-                                    src={selectedEmpleado.fotoPerfil || `https://ui-avatars.com/api/?name=${selectedEmpleado.nombre}+${selectedEmpleado.apellido}&background=0891b2&color=fff`} 
-                                    alt={`${selectedEmpleado.nombre}`} 
+                                    src={getSelectedEmpleado().fotoPerfil || `https://ui-avatars.com/api/?name=${getSelectedEmpleado().nombre}+${getSelectedEmpleado().apellido}&background=0891b2&color=fff`} 
+                                    alt={`${getSelectedEmpleado().nombre}`} 
                                     className="w-12 h-12 rounded-full object-cover border-2 border-cyan-200" 
                                 />
                                 <div className="flex-1">
-                                    <div className="font-medium text-gray-900">{selectedEmpleado.nombre} {selectedEmpleado.apellido}</div>
+                                    <div className="font-medium text-gray-900">{getSelectedEmpleado().nombre} {getSelectedEmpleado().apellido}</div>
                                     <div className="flex items-center space-x-4 text-sm text-gray-500">
                                         <div className="flex items-center space-x-1">
                                             <Mail className="w-4 h-4" />
-                                            <span>{selectedEmpleado.correo}</span>
+                                            <span>{getSelectedEmpleado().correo}</span>
                                         </div>
                                         <div className="flex items-center space-x-1">
                                             <Phone className="w-4 h-4" />
-                                            <span>{selectedEmpleado.telefono}</span>
+                                            <span>{getSelectedEmpleado().telefono}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -413,358 +442,377 @@ const OptometristasFormModal = ({
                                                             {emp.correo}
                                                         </div>
                                                         <div className="text-xs text-gray-400">
-                                                            {emp.telefono}
-                                                        </div>
-                                                    </div>
-                                                    {isSelected && (
-                                                        <Check className="w-5 h-5 text-cyan-600 flex-shrink-0" />
-                                                    )}
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
-
-                {errors.empleadoId && (
-                    <p className="text-red-500 text-sm mt-1">{errors.empleadoId}</p>
-                )}
-
-                {selectedOptometrista && (
-                    <p className="text-xs text-gray-500 mt-1">
-                        El empleado no se puede cambiar al editar un optometrista
-                    </p>
-                )}
-            </div>
-        );
-    };
-
-    // Campo personalizado para horarios de disponibilidad
-    const HorariosDisponibilidadField = () => {
-        const totalHoras = normalizeDisponibilidad(formData.disponibilidad).length;
-        const isOverLimit = totalHoras > 44;
-        
-        return (
-            <div className="space-y-4">
-                <div className="text-center">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Horarios de Disponibilidad:</h3>
-                    <p className="text-sm text-gray-600">Selecciona las horas disponibles para cada día. Puedes elegir horas no consecutivas.</p>
-                    
-                    {/* Indicador de horas */}
-                    <div className={`mt-3 inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
-                        isOverLimit ? 'bg-red-500 text-white border-2 border-red-600' :
-                        'bg-green-100 text-green-800 border-2 border-green-200'
-                    }`}>
-                        <Clock className="w-4 h-4" />
-                        <span>{totalHoras} horas semanales</span>
-                        {isOverLimit && <span className="text-white font-bold">!</span>}
-                    </div>
-                </div>
-            
-                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                    {/* Header con días y controles */}
-                    <div className="bg-cyan-50 border-b border-gray-200">
-                        <div className="grid grid-cols-7 text-center">
-                            {diasSemana.map((dia) => {
-                                const selectedCount = getSelectedHoursCount(dia.key);
-                                
-                                return (
-                                    <div key={dia.key} className="py-3 px-2 border-r border-gray-200 last:border-r-0">
-                                        <div className="font-medium text-sm text-gray-700 mb-2">{dia.label}</div>
-                                        <div className="flex flex-col space-y-1">
-                                            <button
-                                                type="button"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    selectAllDaySchedule(dia.key);
-                                                }}
-                                                className="text-xs px-2 py-1 bg-cyan-500 text-white rounded hover:bg-cyan-600 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1"
-                                                title="Seleccionar todo el día"
-                                            >
-                                                Todo
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    clearDaySchedule(dia.key);
-                                                }}
-                                                className="text-xs px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
-                                                title="Limpiar día"
-                                            >
-                                                Limpiar
-                                            </button>
-                                            {selectedCount > 0 ? (
-                                                    <span className="text-xs text-cyan-600 font-medium">
-                                                        {selectedCount}h
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-xs text-transparent">
-                                                        0h
-                                                    </span>
-                                                )}
+                                            {emp.telefono}
                                         </div>
                                     </div>
-                                );
-                            })}
+                                    {isSelected && (
+                                        <Check className="w-5 h-5 text-cyan-600 flex-shrink-0" />
+                                    )}
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    )}
+</div>
+
+{errors.empleadoId && (
+    <p className="text-red-500 text-sm mt-1">{errors.empleadoId}</p>
+)}
+
+{selectedOptometrista && (
+    <p className="text-xs text-gray-500 mt-1">
+        El empleado no se puede cambiar al editar un optometrista
+    </p>
+)}
+</div>
+);
+};
+
+// Campo personalizado para horarios de disponibilidad
+const HorariosDisponibilidadField = () => {
+const totalHoras = normalizeDisponibilidad(formData.disponibilidad).length;
+const isOverLimit = totalHoras > 44;
+
+return (
+    <div className="space-y-4">
+        <div className="text-center">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Horarios de Disponibilidad:</h3>
+            <p className="text-sm text-gray-600">Selecciona las horas disponibles para cada día. Puedes elegir horas no consecutivas.</p>
+            
+            {/* Indicador de horas */}
+            <div className={`mt-3 inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
+                isOverLimit ? 'bg-red-500 text-white border-2 border-red-600' :
+                'bg-green-100 text-green-800 border-2 border-green-200'
+            }`}>
+                <Clock className="w-4 h-4" />
+                <span>{totalHoras} horas semanales</span>
+                {isOverLimit && <span className="text-white font-bold">!</span>}
+            </div>
+        </div>
+    
+        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            {/* Header con días y controles */}
+            <div className="bg-cyan-50 border-b border-gray-200">
+                <div className="grid grid-cols-7 text-center">
+                    {diasSemana.map((dia) => {
+                        const selectedCount = getSelectedHoursCount(dia.key);
+                        
+                        return (
+                            <div key={dia.key} className="py-3 px-2 border-r border-gray-200 last:border-r-0">
+                                <div className="font-medium text-sm text-gray-700 mb-2">{dia.label}</div>
+                                <div className="flex flex-col space-y-1">
+                                    <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            selectAllDaySchedule(dia.key);
+                                        }}
+                                        className="text-xs px-2 py-1 bg-cyan-500 text-white rounded hover:bg-cyan-600 transition-colors focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-1"
+                                        title="Seleccionar todo el día"
+                                    >
+                                        Todo
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onMouseDown={(e) => e.preventDefault()}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            clearDaySchedule(dia.key);
+                                        }}
+                                        className="text-xs px-2 py-1 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-1"
+                                        title="Limpiar día"
+                                    >
+                                        Limpiar
+                                    </button>
+                                    {selectedCount > 0 ? (
+                                        <span className="text-xs text-cyan-600 font-medium">
+                                            {selectedCount}h
+                                        </span>
+                                    ) : (
+                                        <span className="text-xs text-transparent">
+                                            0h
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+            
+            {/* Grid de horas */}
+            <div className="p-4">
+                {horasDisponibles.map((hora) => (
+                    <div key={hora} className="grid grid-cols-7 mb-2 last:mb-0">
+                        {diasSemana.map((dia) => {
+                            const isSelected = isHoraSelected(dia.key, hora);
+                            return (
+                                <div key={`${dia.key}-${hora}`} className="px-1">
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            handleHoraToggle(dia.key, hora);
+                                        }}
+                                        onMouseDown={(e) => {
+                                            e.preventDefault();
+                                        }}
+                                        className={`w-full py-2 px-2 text-sm font-medium rounded transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
+                                            isSelected
+                                                ? 'bg-cyan-500 text-white shadow-md hover:bg-cyan-600 scale-105 focus:ring-cyan-500'
+                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-105 focus:ring-gray-400'
+                                        }`}
+                                    >
+                                        {hora}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
+            
+            {/* Leyenda y resumen */}
+            <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-6 text-sm">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-cyan-500 rounded"></div>
+                            <span className="text-gray-600">Disponible</span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
+                            <span className="text-gray-600">No disponible</span>
                         </div>
                     </div>
-                    
-                    {/* Grid de horas */}
-                    <div className="p-4">
-                        {horasDisponibles.map((hora) => (
-                            <div key={hora} className="grid grid-cols-7 mb-2 last:mb-0">
-                                {diasSemana.map((dia) => {
-                                    const isSelected = isHoraSelected(dia.key, hora);
-                                    return (
-                                        <div key={`${dia.key}-${hora}`} className="px-1">
-                                            <button
-                                                type="button"
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    e.stopPropagation();
-                                                    handleHoraToggle(dia.key, hora);
-                                                }}
-                                                onMouseDown={(e) => {
-                                                    e.preventDefault();
-                                                }}
-                                                className={`w-full py-2 px-2 text-sm font-medium rounded transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 ${
-                                                    isSelected
-                                                        ? 'bg-cyan-500 text-white shadow-md hover:bg-cyan-600 scale-105 focus:ring-cyan-500'
-                                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:scale-105 focus:ring-gray-400'
-                                                }`}
-                                            >
-                                                {hora}
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ))}
-                    </div>
-                    
-                    {/* Leyenda y resumen */}
-                    <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-6 text-sm">
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-4 h-4 bg-cyan-500 rounded"></div>
-                                    <span className="text-gray-600">Disponible</span>
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <div className="w-4 h-4 bg-gray-100 border border-gray-300 rounded"></div>
-                                    <span className="text-gray-600">No disponible</span>
-                                </div>
-                            </div>
-                            <div className="text-sm text-gray-600">
-                                Total: {normalizeDisponibilidad(formData.disponibilidad).length} horas seleccionadas
-                            </div>
-                        </div>
+                    <div className="text-sm text-gray-600">
+                        Total: {normalizeDisponibilidad(formData.disponibilidad).length} horas seleccionadas
                     </div>
                 </div>
             </div>
-        );
-    };
-
-    // Campo personalizado para sucursales (multi-select)
-    const SucursalesField = () => (
-        <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-                Sucursales Asignadas *
-            </label>
-            <select
-                multiple
-                value={Array.isArray(formData.sucursalesAsignadas) ? formData.sucursalesAsignadas : []}
-                onChange={handleSucursalesChange}
-                className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm ${
-                    errors.sucursalesAsignadas ? 'border-red-500' : 'border-gray-300'
-                }`}
-                size="4"
-            >
-                {sucursalesOptions.map(option => (
-                    <option key={option.value} value={option.value}>
-                        {option.label}
-                    </option>
-                ))}
-            </select>
-            {errors.sucursalesAsignadas && (
-                <p className="text-red-500 text-sm">{errors.sucursalesAsignadas}</p>
-            )}
-            <p className="text-xs text-gray-500">
-                Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples sucursales
-            </p>
         </div>
-    );
 
-    // Campos básicos de información (sin empleado) - ahora vacío porque se renderiza directamente
-    const fields = [
-        {
-            name: 'especialidad',
-            label: 'Especialidad',
-            type: 'select',
-            options: especialidadOptions.map(esp => ({ value: esp, label: esp })),
-            placeholder: 'Seleccione la especialidad',
-            required: true
-        },
-        {
-            name: 'licencia',
-            label: 'Número de Licencia',
-            type: 'text',
-            placeholder: 'Ingrese el número de licencia',
-            required: true
-        },
-        {
-            name: 'experiencia',
-            label: 'Años de Experiencia',
-            type: 'number',
-            placeholder: 'Ingrese años de experiencia',
-            min: 0,
-            required: true
-        },
-        {
-            name: 'disponible',
-            label: 'Estado de Disponibilidad',
-            type: 'select',
-            options: [
-                { value: true, label: 'Disponible' },
-                { value: false, label: 'No Disponible' }
-            ],
-            required: true
-        }
-    ];
+        {/* CORRECCIÓN: Mostrar error si no hay disponibilidad */}
+        {errors.disponibilidad && (
+            <p className="text-red-500 text-sm mt-2 flex items-center space-x-1">
+                <X className="w-4 h-4" />
+                <span>{errors.disponibilidad}</span>
+            </p>
+        )}
+    </div>
+);
+};
 
-    // Cerrar dropdown al hacer clic fuera
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (isEmployeeDropdownOpen && !event.target.closest('.relative')) {
-                setIsEmployeeDropdownOpen(false);
-            }
-        };
+// Campo personalizado para sucursales (multi-select)
+const SucursalesField = () => (
+<div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700">
+        Sucursales Asignadas *
+    </label>
+    <select
+        multiple
+        value={Array.isArray(formData.sucursalesAsignadas) ? formData.sucursalesAsignadas : []}
+        onChange={handleSucursalesChange}
+        className={`w-full px-3 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm ${
+            errors.sucursalesAsignadas ? 'border-red-500' : 'border-gray-300'
+        }`}
+        size="4"
+    >
+        {sucursalesOptions.map(option => (
+            <option key={option.value} value={option.value}>
+                {option.label}
+            </option>
+        ))}
+    </select>
+    {errors.sucursalesAsignadas && (
+        <p className="text-red-500 text-sm">{errors.sucursalesAsignadas}</p>
+    )}
+    <p className="text-xs text-gray-500">
+        Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples sucursales
+    </p>
+</div>
+);
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [isEmployeeDropdownOpen]);
+// Campos básicos de información
+const fields = [
+{
+    name: 'especialidad',
+    label: 'Especialidad',
+    type: 'select',
+    options: especialidadOptions.map(esp => ({ value: esp, label: esp })),
+    placeholder: 'Seleccione la especialidad',
+    required: true
+},
+{
+    name: 'licencia',
+    label: 'Número de Licencia',
+    type: 'text',
+    placeholder: 'Ingrese el número de licencia',
+    required: true
+},
+{
+    name: 'experiencia',
+    label: 'Años de Experiencia',
+    type: 'number',
+    placeholder: 'Ingrese años de experiencia',
+    min: 0,
+    required: true
+},
+{
+    name: 'disponible',
+    label: 'Estado de Disponibilidad',
+    type: 'select',
+    options: [
+        { value: true, label: 'Disponible' },
+        { value: false, label: 'No Disponible' }
+    ],
+    required: true
+}
+];
 
-    return (
-        <>
-            <HourLimitAlert />
-            <FormModal
-                isOpen={isOpen}
-                onClose={() => {
-                    setIsEmployeeDropdownOpen(false);
-                    onClose();
-                }}
-                onSubmit={onSubmit}
-                title={title}
-                formData={formData}
-                handleInputChange={handleInputChange}
-                errors={errors}
-                submitLabel={submitLabel}
-                fields={[]} // Array vacío porque ahora renderizamos los campos directamente
-                gridCols={2}
+// Cerrar dropdown al hacer clic fuera
+useEffect(() => {
+const handleClickOutside = (event) => {
+    if (isEmployeeDropdownOpen && !event.target.closest('.relative')) {
+        setIsEmployeeDropdownOpen(false);
+    }
+};
+
+document.addEventListener('mousedown', handleClickOutside);
+return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+};
+}, [isEmployeeDropdownOpen]);
+
+return (
+<>
+    <HourLimitAlert />
+    <FormModal
+        isOpen={isOpen}
+        onClose={() => {
+            setIsEmployeeDropdownOpen(false);
+            onClose();
+        }}
+        onSubmit={handleFormSubmit}
+        title={title}
+        formData={formData}
+        handleInputChange={handleInputChange}
+        errors={errors}
+        submitLabel={submitLabel}
+        fields={[]} // Array vacío porque ahora renderizamos los campos directamente
+        gridCols={2}
+        // NUEVO: Botón personalizado de regresar para el flujo de creación
+        customButtons={isCreationFlow && onBackToEmployeeForm ? (
+            <button
+                type="button"
+                onClick={handleBackButton}
+                className="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-all duration-200 flex items-center space-x-2 font-medium"
             >
-                <div className="md:col-span-2 space-y-6">
-                    {/* 1. INFORMACIÓN DEL OPTOMETRISTA */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
-                            <User className="w-5 h-5 mr-2" />
-                            Información del Optometrista
-                        </h4>
-                        <div className="space-y-4">
-                            <EmpleadoSelectorField />
-                            
-                            {/* Campos de información básica en grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
-                                {fields.map((field, index) => {
-                                    const { name, label, type, options, required, ...fieldProps } = field;
-                                    const displayLabel = required ? `${label} *` : label;
-                                    const error = errors[name];
+                <ArrowLeft className="w-5 h-5" />
+                <span>Regresar</span>
+            </button>
+        ) : null}
+    >
+        <div className="md:col-span-2 space-y-6">
+            {/* 1. INFORMACIÓN DEL OPTOMETRISTA */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
+                    <User className="w-5 h-5 mr-2" />
+                    Información del Optometrista
+                </h4>
+                <div className="space-y-4">
+                    <EmpleadoSelectorField />
+                    
+                    {/* Campos de información básica en grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+                        {fields.map((field) => {
+                            const { name, label, type, options, required, ...fieldProps } = field;
+                            const displayLabel = required ? `${label} *` : label;
+                            const error = errors[name];
 
-                                    if (type === 'select') {
-                                        return (
-                                            <div key={name}>
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                    {displayLabel}
-                                                </label>
-                                                <select
-                                                    name={name}
-                                                    value={formData[name] || ''}
-                                                    onChange={handleInputChange}
-                                                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm ${
-                                                        error ? 'border-red-500' : 'border-gray-300'
-                                                    }`}
-                                                    {...fieldProps}
-                                                >
-                                                    <option value="">{fieldProps.placeholder || 'Seleccione una opción'}</option>
-                                                    {options.map(option => (
-                                                        <option key={typeof option === 'object' ? option.value : option} 
-                                                                value={typeof option === 'object' ? option.value : option}>
-                                                            {typeof option === 'object' ? option.label : option}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                                {error && (
-                                                    <p className="text-red-500 text-sm mt-1">{error}</p>
-                                                )}
-                                            </div>
-                                        );
-                                    }
+                            if (type === 'select') {
+                                return (
+                                    <div key={name}>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            {displayLabel}
+                                        </label>
+                                        <select
+                                            name={name}
+                                            value={formData[name] || ''}
+                                            onChange={handleInputChange}
+                                            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm ${
+                                                error ? 'border-red-500' : 'border-gray-300'
+                                            }`}
+                                            {...fieldProps}
+                                        >
+                                            <option value="">{fieldProps.placeholder || 'Seleccione una opción'}</option>
+                                            {options.map(option => (
+                                                <option key={typeof option === 'object' ? option.value : option} 
+                                                        value={typeof option === 'object' ? option.value : option}>
+                                                    {typeof option === 'object' ? option.label : option}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        {error && (
+                                            <p className="text-red-500 text-sm mt-1">{error}</p>
+                                        )}
+                                    </div>
+                                );
+                            }
 
-                                    return (
-                                        <div key={name}>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                {displayLabel}
-                                            </label>
-                                            <input
-                                                name={name}
-                                                type={type}
-                                                value={formData[name] || ''}
-                                                onChange={handleInputChange}
-                                                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm ${
-                                                    error ? 'border-red-500' : 'border-gray-300'
-                                                }`}
-                                                {...fieldProps}
-                                            />
-                                            {error && (
-                                                <p className="text-red-500 text-sm mt-1">{error}</p>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 2. HORARIOS DE DISPONIBILIDAD */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
-                            <Clock className="w-5 h-5 mr-2" />
-                            Configuración de Horarios
-                        </h4>
-                        <HorariosDisponibilidadField />
-                    </div>
-
-                    {/* 3. SUCURSALES ASIGNADAS */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-4">
-                        <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
-                            <MapPin className="w-5 h-5 mr-2" />
-                            Asignación de Sucursales
-                        </h4>
-                        <SucursalesField />
+                            return (
+                                <div key={name}>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        {displayLabel}
+                                    </label>
+                                    <input
+                                        name={name}
+                                        type={type}
+                                        value={formData[name] || ''}
+                                        onChange={handleInputChange}
+                                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all text-sm ${
+                                            error ? 'border-red-500' : 'border-gray-300'
+                                        }`}
+                                        {...fieldProps}
+                                    />
+                                    {error && (
+                                        <p className="text-red-500 text-sm mt-1">{error}</p>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
-            </FormModal>
-        </>
-    );
+            </div>
+
+            {/* 2. HORARIOS DE DISPONIBILIDAD */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
+                    <Clock className="w-5 h-5 mr-2" />
+                    Configuración de Horarios
+                </h4>
+                <HorariosDisponibilidadField />
+            </div>
+
+            {/* 3. SUCURSALES ASIGNADAS */}
+            <div className="bg-white border border-gray-200 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
+                    <MapPin className="w-5 h-5 mr-2" />
+                    Asignación de Sucursales
+                </h4>
+                <SucursalesField />
+            </div>
+        </div>
+    </FormModal>
+</>
+);
 };
 
 export default OptometristasFormModal;
