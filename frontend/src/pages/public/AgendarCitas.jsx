@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
+import API_CONFIG, { buildApiUrl } from "../../config/api";
+import { useAuth } from "../../components/auth/AuthContext";
 
 const AgendarCitas = () => {
   const [step, setStep] = useState(1);
@@ -12,14 +14,21 @@ const AgendarCitas = () => {
     telefono: "",
     email: "",
     motivo: "",
-    sucursal: "",
+    sucursalId: "",
+    optometristaId: "",
     fecha: "",
     hora: "",
-    contacto: "telefono", // Default contact method
+    tipoLente: "",
+    graduacion: "",
+    notasAdicionales: "",
+    contacto: "telefono",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [sucursales, setSucursales] = useState([]);
+  const [optometristas, setOptometristas] = useState([]);
+  const { user } = useAuth?.() || {};
 
   const horarios = {
     Lun: ["9:00", "10:00", "11:00", "12:00"],
@@ -28,6 +37,39 @@ const AgendarCitas = () => {
     Jue: ["9:00", "11:00"],
     Vie: ["10:00", "12:00"],
   };
+
+  const dayNames = ["Lun", "Mar", "Mie", "Jue", "Vie"];
+  const getWeekDays = () => {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun..6=Sat
+    const mondayOffset = (day + 6) % 7; // days since Monday
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - mondayOffset);
+    monday.setHours(0, 0, 0, 0);
+    return dayNames.map((_, idx) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + idx);
+      return d;
+    });
+  };
+
+  // Cargar opciones de sucursales y optometristas
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [sRes, oRes] = await Promise.all([
+          fetch(buildApiUrl(API_CONFIG.ENDPOINTS.SUCURSALES), API_CONFIG.FETCH_CONFIG),
+          fetch(buildApiUrl(API_CONFIG.ENDPOINTS.OPTOMETRISTAS), API_CONFIG.FETCH_CONFIG),
+        ]);
+        const [sData, oData] = await Promise.all([sRes.json(), oRes.json()]);
+        setSucursales(Array.isArray(sData) ? sData : []);
+        setOptometristas(Array.isArray(oData) ? oData : []);
+      } catch (e) {
+        console.error('Error cargando opciones', e);
+      }
+    };
+    fetchOptions();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -44,12 +86,43 @@ const AgendarCitas = () => {
       setError(null);
       setSuccess(false);
       try {
-        const res = await fetch('http://localhost:3001/citas', {
+        // Requiere inicio de sesión para asociar la cita al cliente
+        const clienteId = user?._id || user?.id;
+        if (!clienteId) {
+          throw new Error('Inicia sesión para agendar tu cita.');
+        }
+
+        // Validaciones mínimas requeridas por backend
+        const required = ['sucursalId', 'optometristaId', 'fecha', 'hora', 'motivo', 'tipoLente', 'graduacion'];
+        for (const k of required) {
+          if (!formData[k]) {
+            throw new Error('Completa todos los campos requeridos.');
+          }
+        }
+
+        const payload = {
+          clienteId,
+          optometristaId: formData.optometristaId,
+          sucursalId: formData.sucursalId,
+          fecha: formData.fecha ? new Date(formData.fecha) : null,
+          hora: formData.hora,
+          estado: 'pendiente',
+          motivoCita: formData.motivo,
+          tipoLente: formData.tipoLente,
+          graduacion: formData.graduacion,
+          notasAdicionales: formData.notasAdicionales || ''
+        };
+
+        const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.CITAS), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          credentials: API_CONFIG.FETCH_CONFIG.credentials,
+          body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error('Error al agendar la cita');
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data?.message || 'Error al agendar la cita');
+        }
         setSuccess(true);
         setFormData({
           nombres: "",
@@ -57,9 +130,13 @@ const AgendarCitas = () => {
           telefono: "",
           email: "",
           motivo: "",
-          sucursal: "",
+          sucursalId: "",
+          optometristaId: "",
           fecha: "",
           hora: "",
+          tipoLente: "",
+          graduacion: "",
+          notasAdicionales: "",
           contacto: "telefono",
         });
         setStep(1);
@@ -130,25 +207,64 @@ const AgendarCitas = () => {
               <input
                 type="text"
                 name="motivo"
-                placeholder="Motivo de cita"
+                placeholder="Motivo de cita (Ej. Examen visual)"
                 value={formData.motivo}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
                 required
               />
             </div>
-            <div className="md:col-span-2">
+            <div>
               <select
-                name="sucursal"
-                value={formData.sucursal}
+                name="sucursalId"
+                value={formData.sucursalId}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
                 required
               >
                 <option value="">Seleccionar sucursal</option>
-                <option value="principal">Sucursal Principal</option>
-                <option value="quezaltepeque">Sucursal Quezaltepeque</option>
+                {sucursales.map(s => (
+                  <option key={s._id} value={s._id}>{s.nombre}</option>
+                ))}
               </select>
+            </div>
+            <div>
+              <select
+                name="optometristaId"
+                value={formData.optometristaId}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
+                required
+              >
+                <option value="">Seleccionar optometrista</option>
+                {optometristas.map(o => (
+                  <option key={o._id} value={o._id}>
+                    {o.empleadoId ? `${o.empleadoId.nombre || ''} ${o.empleadoId.apellido || ''}`.trim() : `Optometrista ${o._id}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <input
+                type="text"
+                name="tipoLente"
+                placeholder="Tipo de lente (Ej. Monofocal)"
+                value={formData.tipoLente}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
+                required
+              />
+            </div>
+            <div>
+              <input
+                type="text"
+                name="graduacion"
+                placeholder="Graduación (Ej. -1.25)"
+                value={formData.graduacion}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
+                required
+              />
             </div>
           </div>
         );
@@ -156,47 +272,61 @@ const AgendarCitas = () => {
         return (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-4">
+              <h3 className="text-sm font-medium mb-3">Selecciona una hora</h3>
               <div className="overflow-x-auto">
-                <table className="w-full text-xs sm:text-sm md:text-base">
-                  <thead>
-                    <tr>
-                      <th className="py-2">Lun</th>
-                      <th className="py-2">Mar</th>
-                      <th className="py-2">Mie</th>
-                      <th className="py-2">Jue</th>
-                      <th className="py-2">Vie</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {["9:00", "10:00", "11:00", "12:00", "13:00"].map((hora) => (
-                      <tr key={hora}>
-                        {["Lun", "Mar", "Mie", "Jue", "Vie"].map((dia) => (
-                          <td key={`${dia}-${hora}`} className="p-2 text-center">
-                            {horarios[dia]?.includes(hora) ? (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  handleInputChange({
-                                    target: { name: "hora", value: `${dia} ${hora}` },
-                                  })
-                                }
-                                className={`w-full py-2 rounded-lg transition-all ${
-                                  formData.hora === `${dia} ${hora}`
-                                    ? "bg-[#0097c2] text-white"
-                                    : "bg-gray-50 hover:bg-gray-100"
-                                }`}
-                              >
-                                {hora}
-                              </button>
-                            ) : (
-                              <span className="text-gray-400">No disponible</span>
-                            )}
-                          </td>
+                {(() => {
+                  const weekDays = getWeekDays();
+                  const formatDM = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                  const hours = ["9:00", "10:00", "11:00", "12:00", "13:00"];
+                  return (
+                    <table className="w-full text-xs sm:text-sm md:text-base">
+                      <thead>
+                        <tr>
+                          {dayNames.map((dia, i) => (
+                            <th key={dia} className="py-2">
+                              <div className="flex flex-col items-center">
+                                <span>{dia}</span>
+                                <span className="text-[11px] text-gray-500">{formatDM(weekDays[i])}</span>
+                              </div>
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {hours.map((hora) => (
+                          <tr key={hora}>
+                            {dayNames.map((dia, i) => {
+                              const dayDate = weekDays[i];
+                              const iso = new Date(dayDate.getTime());
+                              iso.setHours(0, 0, 0, 0);
+                              const isoStr = iso.toISOString();
+                              const available = horarios[dia]?.includes(hora);
+                              const selected = available && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
+                              return (
+                                <td key={`${dia}-${hora}`} className="p-2 text-center">
+                                  {available ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleInputChange({ target: { name: "hora", value: hora } });
+                                        handleInputChange({ target: { name: "fecha", value: isoStr } });
+                                      }}
+                                      className={`w-full py-2 rounded-lg transition-all ${selected ? "bg-[#0097c2] text-white" : "bg-gray-50 hover:bg-gray-100"}`}
+                                    >
+                                      {hora}
+                                    </button>
+                                  ) : (
+                                    <span className="text-gray-400">No disponible</span>
+                                  )}
+                                </td>
+                              );
+                            })}
+                          </tr>
                         ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                      </tbody>
+                    </table>
+                  );
+                })()}
               </div>
               {Object.values(horarios).every(arr => arr.length === 0) && (
                 <div className="text-center text-gray-500 mt-4">No hay horarios disponibles actualmente.</div>

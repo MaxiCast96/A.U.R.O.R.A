@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Check, Info, ChevronDown, Clock, CheckCircle, ClipboardList } from 'lucide-react';
 
 const ExamenVisualCard = () => {
   return (
@@ -26,9 +27,7 @@ const ExamenVisualCard = () => {
             <div className="bg-gray-50/50 p-6 rounded-xl hover:bg-gray-50 transition-colors">
               <div className="flex items-center mb-4">
                 <div className="p-2 bg-[#0097c2]/5 rounded-lg mr-3">
-                  <svg className="w-6 h-6 text-[#0097c2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <CheckCircle className="w-6 h-6 text-[#0097c2]" aria-hidden="true" />
                 </div>
                 <h4 className="font-semibold text-lg text-gray-800">
                   Beneficios Incluidos
@@ -43,14 +42,7 @@ const ExamenVisualCard = () => {
                   "Recomendaciones específicas",
                 ].map((item, index) => (
                   <li key={index} className="flex items-center text-gray-600 group">
-                    <svg
-                      className="w-5 h-5 mr-3 text-[#0097c2] group-hover:scale-110 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
+                    <Check className="w-5 h-5 mr-3 text-[#0097c2] group-hover:scale-110 transition-transform" aria-hidden="true" />
                     {item}
                   </li>
                 ))}
@@ -61,27 +53,25 @@ const ExamenVisualCard = () => {
             <div className="bg-gray-50/50 p-6 rounded-xl hover:bg-gray-50 transition-colors">
               <div className="flex items-center mb-4">
                 <div className="p-2 bg-[#0097c2]/5 rounded-lg mr-3">
-                  <svg className="w-6 h-6 text-[#0097c2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                  <Info className="w-6 h-6 text-[#0097c2]" aria-hidden="true" />
                 </div>
                 <h4 className="font-semibold text-lg text-gray-800">
                   Información del Servicio
                 </h4>
               </div>
               <ul className="space-y-4">
-                {[
-                  { icon: "⏱️", text: "Duración: 30 minutos aproximadamente" },
-                  { icon: "✅", text: "Resultados inmediatos" },
-                  { icon: "📋", text: "Seguimiento incluido" }
-                ].map((item, index) => (
-                  <li key={index} className="flex items-center text-gray-600 group">
-                    <span className="mr-3 text-lg group-hover:scale-110 transition-transform">
-                      {item.icon}
-                    </span>
-                    {item.text}
-                  </li>
-                ))}
+                <li className="flex items-center text-gray-600 group">
+                  <Clock className="w-5 h-5 mr-3 text-[#0097c2] group-hover:scale-110 transition-transform" aria-hidden="true" />
+                  Duración: 30 minutos aproximadamente
+                </li>
+                <li className="flex items-center text-gray-600 group">
+                  <CheckCircle className="w-5 h-5 mr-3 text-[#0097c2] group-hover:scale-110 transition-transform" aria-hidden="true" />
+                  Resultados inmediatos
+                </li>
+                <li className="flex items-center text-gray-600 group">
+                  <ClipboardList className="w-5 h-5 mr-3 text-[#0097c2] group-hover:scale-110 transition-transform" aria-hidden="true" />
+                  Seguimiento incluido
+                </li>
               </ul>
             </div>
           </div>
@@ -92,9 +82,7 @@ const ExamenVisualCard = () => {
             <div className="bg-gray-50/50 p-6 rounded-xl hover:bg-gray-50 transition-colors">
               <div className="flex items-center mb-4">
                 <div className="p-2 bg-[#0097c2]/5 rounded-lg mr-3">
-                  <svg className="w-6 h-6 text-[#0097c2]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <ChevronDown className="w-6 h-6 text-[#0097c2]" aria-hidden="true" />
                 </div>
                 <h4 className="font-semibold text-lg text-gray-800">
                   Proceso del Examen
