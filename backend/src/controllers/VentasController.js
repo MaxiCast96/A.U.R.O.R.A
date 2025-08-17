@@ -1,4 +1,6 @@
 import ventasModel from "../models/Ventas.js";
+import pedidosModel from "../models/Pedidos.js";
+import carritoModel from "../models/Carrito.js";
 
 const ventasController = {};
 
@@ -80,7 +82,38 @@ ventasController.createVenta = async (req, res) => {
         const newVenta = new ventasModel(newVentaData);
 
         const savedVenta = await newVenta.save();
-        
+
+        // Intentar crear Pedido automáticamente a partir del carrito
+        let createdPedido = null;
+        try {
+            // Cargar carrito para armar items del pedido
+            const carrito = await carritoModel.findById(carritoId);
+            if (carrito && Array.isArray(carrito.productos)) {
+                const items = carrito.productos.map(p => ({
+                    productoId: p.productoId,
+                    nombre: p.nombre,
+                    categoria: undefined,
+                    tipo: 'otro',
+                    cantidad: p.cantidad || 1,
+                    precioUnitario: p.precio || 0,
+                    subtotal: p.subtotal || ((p.precio || 0) * (p.cantidad || 1)),
+                }));
+                const pedidoDoc = new pedidosModel({
+                    clienteId: facturaDatos.clienteId,
+                    ventaId: savedVenta._id,
+                    carritoId: carritoId,
+                    items,
+                    total: facturaDatos.total,
+                    estado: 'creado',
+                    notas: observaciones || undefined,
+                });
+                createdPedido = await pedidoDoc.save();
+            }
+        } catch (e) {
+            // No romper el flujo si falla la creación del pedido
+            console.warn('No se pudo crear Pedido automáticamente:', e?.message || e);
+        }
+
         // Pobla las referencias para la respuesta completa
         const populatedVenta = await ventasModel.findById(savedVenta._id)
             .populate('carritoId')
@@ -90,7 +123,9 @@ ventasController.createVenta = async (req, res) => {
 
         res.status(201).json({ 
             message: "Venta creada exitosamente", 
-            venta: populatedVenta 
+            venta: populatedVenta,
+            pedidoId: createdPedido?._id || null,
+            pedido: createdPedido || undefined,
         });
     } catch (error) {
         console.log("Error: " + error);

@@ -12,19 +12,39 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// SELECT - Obtiene todos los lentes con sus relaciones pobladas
+// SELECT - Obtiene todos los lentes con sus relaciones pobladas (con paginación)
 async function getLentes(req, res) {
     try {
-        // Busca todos los lentes y puebla las referencias a categorías, marcas, promociones y sucursales
+        // Parámetros de paginación
+        const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 100);
+        const skip = (page - 1) * limit;
+
+        // Conteo total para paginación
+        const total = await lentesModel.countDocuments();
+
+        // Consulta con paginación y relaciones pobladas
         const lentes = await lentesModel.find()
-            .populate('categoriaId') // Obtiene datos completos de la categoría
-            .populate('marcaId') // Obtiene datos completos de la marca
-            .populate('promocionId') // Obtiene datos de promoción si existe
-            .populate('sucursales.sucursalId'); // Obtiene datos de cada sucursal asociada
-        res.json(lentes);
+            .populate('categoriaId')
+            .populate('marcaId')
+            .populate('promocionId')
+            .populate('sucursales.sucursalId')
+            .skip(skip)
+            .limit(limit);
+
+        return res.json({
+            success: true,
+            data: lentes,
+            pagination: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit)
+            }
+        });
     } catch (error) {
         console.log("Error: " + error);
-        res.json({ message: "Error obteniendo lentes: " + error.message });
+        return res.status(500).json({ success: false, message: "Error obteniendo lentes: " + error.message });
     }
 }
 

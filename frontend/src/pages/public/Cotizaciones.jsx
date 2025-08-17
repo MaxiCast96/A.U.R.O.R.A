@@ -4,6 +4,7 @@ import PageTransition from "../../components/transition/PageTransition.jsx";
 import Navbar from "../../components/layout/Navbar";
 import useData from '../../hooks/useData';
 import { useAuth } from '../../components/auth/AuthContext';
+import API_CONFIG, { buildApiUrl } from '../../config/api';
 
 const Cotizaciones = () => {
   const location = useLocation();
@@ -14,6 +15,7 @@ const Cotizaciones = () => {
   const [cotizacionesState, setCotizacionesState] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const [modalEliminar, setModalEliminar] = useState({ abierto: false, id: null });
+  const [convertingId, setConvertingId] = useState(null);
   
   useEffect(() => {
     if (!user) {
@@ -119,6 +121,34 @@ const Cotizaciones = () => {
     setModalEliminar({ abierto: false, id: null });
   };
 
+  // Convertir a pedido desde listado público
+  const handleConvertirCotizacion = async (id) => {
+    try {
+      setConvertingId(id);
+      const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.COTIZACIONES}/${id}/convertir-a-pedido`);
+      const res = await fetch(url, {
+        method: 'POST',
+        credentials: API_CONFIG.FETCH_CONFIG.credentials,
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setMensaje(data?.message || 'No se pudo convertir la cotización.');
+      } else {
+        setMensaje('Cotización convertida en pedido correctamente.');
+        // Refrescar estado local marcando como convertida
+        const base = cotizacionesState || cotizaciones || [];
+        const updated = base.map(c => c._id === id ? { ...c, estado: 'convertida' } : c);
+        setCotizacionesState(updated);
+      }
+    } catch (err) {
+      setMensaje('Error al convertir la cotización.');
+    } finally {
+      setConvertingId(null);
+      setTimeout(() => setMensaje(null), 3000);
+    }
+  };
+
   return (
     <PageTransition>
       <Navbar />
@@ -207,6 +237,18 @@ const Cotizaciones = () => {
                             </svg>
                             <span>Descargar</span>
                           </Link>
+                          {(!cot.estado || cot.estado !== 'convertida') && (
+                            <button
+                              onClick={() => handleConvertirCotizacion(cot._id)}
+                              disabled={convertingId === cot._id}
+                              className={`flex items-center ${convertingId === cot._id ? 'text-gray-400' : 'text-green-600 hover:text-green-800'} transition-colors`}
+                            >
+                              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                              </svg>
+                              <span>{convertingId === cot._id ? 'Convirtiendo...' : 'Convertir a pedido'}</span>
+                            </button>
+                          )}
                           <button
                             onClick={() => handleEliminarCotizacion(cot._id)}
                             className="flex items-center text-red-600 hover:text-red-800 transition-colors"

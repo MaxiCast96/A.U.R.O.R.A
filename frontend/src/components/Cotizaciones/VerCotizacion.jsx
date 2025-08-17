@@ -27,7 +27,7 @@ const VerCotizacion = ({
   const getEstadoColor = (estado) => {
     const estados = {
       'Pendiente': 'bg-yellow-100 text-yellow-700',
-      'Convertido a Compra': 'bg-green-100 text-green-700',
+      'convertida': 'bg-green-100 text-green-700',
       'Cancelado': 'bg-red-100 text-red-700'
     };
     return estados[estado] || estados['Pendiente'];
@@ -79,7 +79,7 @@ const VerCotizacion = ({
           </h1>
 
           <div className="flex space-x-4">
-            {cotizacion.estado === 'Pendiente' && (
+            {(!cotizacion.estado || cotizacion.estado !== 'convertida') && (
               <button 
                 onClick={handleConvertirACompra}
                 className="flex items-center bg-[#0097c2] text-white px-4 py-2 rounded-lg hover:bg-[#0077a2] transition-colors"
@@ -87,7 +87,7 @@ const VerCotizacion = ({
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                Convertir a Compra
+                Convertir a pedido
               </button>
             )}
             <button className="flex items-center text-gray-600 hover:text-gray-800 transition-colors" onClick={() => window.print()}>
@@ -112,9 +112,9 @@ const VerCotizacion = ({
         {showConfirmDialog && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
-              <h3 className="text-xl font-semibold mb-4">Confirmar Conversión</h3>
+              <h3 className="text-xl font-semibold mb-4">Confirmar conversión</h3>
               <p className="text-gray-600 mb-6">
-                ¿Estás seguro de que deseas convertir esta cotización en una compra? 
+                ¿Estás seguro de que deseas convertir esta cotización en un pedido? 
                 Esta acción no se puede deshacer.
               </p>
               <div className="flex justify-end space-x-4">
@@ -144,7 +144,7 @@ const VerCotizacion = ({
                 <p><span className="font-medium">Fecha:</span> {cotizacion.fecha ? new Date(cotizacion.fecha).toLocaleString() : '-'}</p>
                 <p><span className="font-medium">Estado:</span> 
                   <span className={`ml-2 px-3 py-1 text-xs font-medium rounded-full ${getEstadoColor(cotizacion.estado)}`}>
-                    {cotizacion.estado || 'Pendiente'}
+                    {cotizacion.estado === 'convertida' ? 'Pedido' : (cotizacion.estado || 'Pendiente')}
                   </span>
                 </p>
               </div>

@@ -19,6 +19,7 @@ export const API_CONFIG = {
     SUCURSALES: '/sucursales',
     PROMOCIONES: '/promociones',
     COTIZACIONES: '/cotizaciones',
+    PEDIDOS: '/pedidos',
     CATALOGO_MODIFICACIONES: '/catalogoModificaciones',
     VENTAS: '/ventas',
     RECETAS: '/recetas',

@@ -31,6 +31,7 @@ import recetasRoutes from "./src/routes/recetas.js";
 import registroClientesRoutes from "./src/routes/registroClientes.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import authRoutes from "./src/routes/auth.js";
+import pedidosRoutes from "./src/routes/pedidos.js";
 
 // Mantener viva la BD
 function keepDatabaseAlive() {
@@ -80,6 +81,7 @@ app.use("/api/cotizaciones", cotizacionesRoutes);
 app.use("/api/productosPersonalizados", productosPersonalizadosRoutes);
 app.use("/api/catalogoModificaciones", catalogoModificacionesRoutes);
 app.use("/api/ventas", ventasRoutes);
+app.use("/api/pedidos", pedidosRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/recetas", recetasRoutes);
 app.use("/api/registroClientes", registroClientesRoutes);

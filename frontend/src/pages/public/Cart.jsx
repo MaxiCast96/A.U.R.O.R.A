@@ -25,6 +25,7 @@ const Cart = () => {
     metodoPago: 'efectivo',
     montoPagado: 0,
     emailPago: '',
+    telefonoCliente: '',
     nombreCliente: '',
     duiCliente: '',
     direccion: { calle: '', ciudad: '', departamento: '' },
@@ -67,6 +68,7 @@ const Cart = () => {
           ...f,
           nombreCliente: f.nombreCliente || nombreCompleto || f.nombreCliente,
           emailPago: f.emailPago || data?.correo || f.emailPago,
+          telefonoCliente: f.telefonoCliente || data?.telefono || data?.telefono1 || data?.telefonoPrincipal || f.telefonoCliente || '',
           duiCliente: f.duiCliente || data?.dui || f.duiCliente,
           direccion: {
             calle: f.direccion.calle || data?.direccion?.calle || '',
@@ -78,6 +80,34 @@ const Cart = () => {
         console.error('Error precargando datos de cliente', e);
       }
     };
+
+  // Vincular pedidoId a personalizados si el backend devuelve un identificador de pedido en la venta
+  const patchPedidoOnPersonalizados = async (pedidoId) => {
+    if (!pedidoId) return;
+    try {
+      // Detectar qué items del carrito son personalizados
+      const personalizedFlags = await Promise.all((cart?.productos || []).map(p => isPersonalizedProduct(p.productoId)));
+      const personalizedIds = (cart?.productos || [])
+        .filter((_, idx) => personalizedFlags[idx])
+        .map(p => p.productoId);
+      if (personalizedIds.length === 0) return;
+
+      await Promise.all(personalizedIds.map(async (id) => {
+        try {
+          await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}/vinculos`, {
+            method: 'PATCH',
+            headers: authHeaders,
+            credentials: 'include',
+            body: JSON.stringify({ pedidoId }),
+          });
+        } catch (e) {
+          console.warn('No se pudo vincular pedidoId al personalizado', id, e);
+        }
+      }));
+    } catch (e) {
+      console.warn('Fallo al procesar vinculación de pedidoId en personalizados', e);
+    }
+  };
     cargarCliente();
   }, [user?.id, user?.rol]);
 
@@ -166,7 +196,7 @@ const Cart = () => {
       setError('Primero realiza el pago con tarjeta/transferencia (Wompi).');
       return;
     }
-    if (!form.nombreCliente || !form.duiCliente || !form.direccion.calle || !form.direccion.ciudad || !form.direccion.departamento) {
+    if (!form.nombreCliente || !form.duiCliente || !form.direccion.calle || !form.direccion.ciudad || !form.direccion.departamento || !form.telefonoCliente) {
       setError('Completa los datos de facturación.');
       return;
     }
@@ -215,7 +245,17 @@ const Cart = () => {
       });
       const data = await res.json();
       if (res.ok) {
+        // Extraer posible identificador de pedido de la respuesta
+        const venta = data?.venta || data?.data || data;
+        const possiblePedidoId = venta?.pedidoId || venta?.pedido?._id || data?.pedidoId || data?.pedido?._id;
+        // Intentar vincular pedidoId a personalizados antes de limpiar el carrito
+        if (possiblePedidoId) {
+          await patchPedidoOnPersonalizados(possiblePedidoId);
+        }
+
         setSuccess('Venta creada correctamente.');
+        // Vaciar carrito tras venta exitosa
+        await clearCart();
       } else {
         setError(data?.message || 'Error creando la venta.');
       }
@@ -225,6 +265,90 @@ const Cart = () => {
     } finally {
       setCreating(false);
     }
+  };
+
+  // Detectar si un producto del carrito es un personalizado consultando al backend
+  const isPersonalizedProduct = async (id) => {
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}`, { credentials: 'include' });
+      if (!res.ok) return false;
+      const data = await res.json();
+      return Boolean(data && (data._id || data?.data?._id));
+    } catch (e) {
+      return false;
+    }
+  };
+
+  const buildCotizacionPayload = async () => {
+    const productos = [];
+    for (const item of (cart?.productos || [])) {
+      const personalizado = await isPersonalizedProduct(item.productoId);
+      productos.push({
+        productoId: personalizado ? undefined : item.productoId,
+        tipo: personalizado ? 'personalizado' : 'otro',
+        nombre: item.nombre,
+        categoria: personalizado ? 'Personalizado' : (item.categoria || 'Otros'),
+        cantidad: item.cantidad || 1,
+        precioUnitario: item.precio || 0,
+        customizaciones: [],
+        subtotal: (item.precio || 0) * (item.cantidad || 1),
+      });
+    }
+    const fecha = new Date();
+    const validaHasta = new Date(fecha);
+    validaHasta.setDate(validaHasta.getDate() + 30);
+    return {
+      clienteId: user.id,
+      correoCliente: form.emailPago || undefined,
+      telefonoCliente: form.telefonoCliente,
+      fecha: fecha.toISOString(),
+      productos,
+      total: productos.reduce((s, p) => s + (p.subtotal || 0), 0),
+      validaHasta: validaHasta.toISOString(),
+      estado: 'pendiente',
+      observaciones: form.observaciones || undefined,
+    };
+  };
+
+  const createCotizacionAndPatchPersonalizados = async () => {
+    // Verificar si hay al menos un personalizado
+    const personalizedFlags = await Promise.all((cart?.productos || []).map(p => isPersonalizedProduct(p.productoId)));
+    const hasPersonalized = personalizedFlags.some(Boolean);
+    if (!hasPersonalized) return null;
+
+    // Crear cotización
+    const cotPayload = await buildCotizacionPayload();
+    const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.COTIZACIONES}`, {
+      method: 'POST',
+      headers: authHeaders,
+      credentials: 'include',
+      body: JSON.stringify(cotPayload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.message || 'Error creando la cotización');
+    }
+    const cot = data?.cotizacion || data?.data || data; // compatibilidad
+
+    // Vincular personalizados con la cotización y actualizar estado
+    const personalizedIds = (cart?.productos || [])
+      .filter((_, idx) => personalizedFlags[idx])
+      .map(p => p.productoId);
+
+    await Promise.all(personalizedIds.map(async (id) => {
+      try {
+        await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}/vinculos`, {
+          method: 'PATCH',
+          headers: authHeaders,
+          credentials: 'include',
+          body: JSON.stringify({ estado: 'en_proceso', cotizacionId: cot._id }),
+        });
+      } catch (e) {
+        console.warn('No se pudo actualizar personalizado', id, e);
+      }
+    }));
+
+    return cot;
   };
 
   // Botón unificado: si es electrónico, paga con Wompi y luego crea la venta; si no, solo crea la venta
@@ -247,6 +371,14 @@ const Cart = () => {
         }
         setWompiTxId(res.transactionId || null);
       }
+      // Crear Cotización y vincular personalizados si aplica
+      try {
+        await createCotizacionAndPatchPersonalizados();
+      } catch (e) {
+        // Si falla la cotización, no bloquear la venta, pero informar
+        console.error('Fallo creando cotización', e);
+      }
+      // Luego crear la venta
       await handleCreateVenta();
     } catch (e) {
       console.error('Error en flujo de pago y creación', e);
@@ -366,31 +498,11 @@ const Cart = () => {
                     <label className="block text-sm text-gray-600">Email para recibo/pago</label>
                     <input type="email" name="emailPago" value={form.emailPago} onChange={handleChange} className="w-full border rounded-lg px-3 py-2" />
                   </div>
+                  <div>
+                    <label className="block text-sm text-gray-600">Teléfono de contacto</label>
+                    <input type="tel" name="telefonoCliente" value={form.telefonoCliente} onChange={handleChange} className="w-full border rounded-lg px-3 py-2" />
+                  </div>
                   <div className="md:col-span-2 text-right text-sm text-gray-700">Total a pagar: <span className="font-semibold">${montoTotal.toFixed(2)}</span></div>
-                </div>
-
-                <h2 className="text-xl font-semibold">Datos de facturación</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm text-gray-600">Nombre del cliente</label>
-                    <input type="text" name="nombreCliente" value={form.nombreCliente} onChange={handleChange} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600">DUI</label>
-                    <input type="text" name="duiCliente" value={form.duiCliente} onChange={handleChange} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600">Calle</label>
-                    <input type="text" name="direccion.calle" value={form.direccion.calle} onChange={handleChange} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600">Ciudad</label>
-                    <input type="text" name="direccion.ciudad" value={form.direccion.ciudad} onChange={handleChange} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
-                  <div>
-                    <label className="block text-sm text-gray-600">Departamento</label>
-                    <input type="text" name="direccion.departamento" value={form.direccion.departamento} onChange={handleChange} className="w-full border rounded-lg px-3 py-2" />
-                  </div>
                 </div>
 
                 {/* Se removieron secciones de Sucursal/Empleado, Observaciones y Configuración de notificaciones */}

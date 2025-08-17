@@ -9,6 +9,9 @@ import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import ErrorMessage from "../../components/ErrorMessage.jsx";
 import ErrorBoundary from "../../components/ErrorBoundary.jsx";
 import useApiData from '../../hooks/useApiData';
+import Pagination from '../../components/Admin/ui/Pagination.jsx';
+import { API_CONFIG, buildApiUrl } from '../../config/api';
+import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
 
 const Producto = () => {
   const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
@@ -23,18 +26,116 @@ const Producto = () => {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' o 'list'
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
+  const { alertState, showSuccess, showError, hideAlert } = useAlert();
+  const [showSolicitudModal, setShowSolicitudModal] = useState(false);
+  const [solicitudForm, setSolicitudForm] = useState({
+    nombre: '',
+    descripcion: '',
+    material: '',
+    color: '',
+    tipoLente: '',
+    instruccionesAdicionales: '',
+  });
 
   const location = useLocation();
   const navigate = useNavigate();
   const { addItem } = useCart() || {};
   const { user } = useAuth();
 
-  // Datos del backend usando useApiData
-  const { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes } = useApiData('lentes');
-  const { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, success: successAccesorios } = useApiData('accesorios');
+  // Paginación server-side
+  const [pageSize, setPageSize] = useState(12);
+  const [pageLentes, setPageLentes] = useState(1);
+  const [pageAccesorios, setPageAccesorios] = useState(1);
+
+  // Datos del backend usando useApiData con paginación
+  const { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes, pagination: paginationLentes } = useApiData('lentes', { page: pageLentes, limit: pageSize });
+  const { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, success: successAccesorios, pagination: paginationAccesorios } = useApiData('accesorios', { page: pageAccesorios, limit: pageSize });
   const { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, success: successPersonalizables } = useApiData('productosPersonalizados');
   const { data: marcas, loading: loadingMarcas, error: errorMarcas, success: successMarcas } = useApiData('marcas');
   const { data: categorias, loading: loadingCategorias, error: errorCategorias, success: successCategorias } = useApiData('categoria');
+
+  // Abrir modal de solicitud personalizada tomando el producto base seleccionado
+  const openSolicitudModal = (product) => {
+    setSelectedProduct(product);
+    setSolicitudForm((f) => ({
+      ...f,
+      nombre: product?.nombre || '',
+      descripcion: product?.descripcion || '',
+      material: product?.material || '',
+      color: product?.color || '',
+      tipoLente: product?.tipoLente || '',
+    }));
+    setShowSolicitudModal(true);
+  };
+
+  const handleSolicitudChange = (e) => {
+    const { name, value } = e.target;
+    setSolicitudForm((f) => ({ ...f, [name]: value }));
+  };
+
+  // Crear producto personalizado (pendiente) y agregar al carrito
+  const handleCrearSolicitudPersonalizada = async () => {
+    try {
+      if (!user?.id) {
+        alert('Inicia sesión para solicitar un producto personalizado.');
+        return;
+      }
+      if (!selectedProduct?._id) {
+        showError('Producto base no seleccionado');
+        return;
+      }
+      const precioCalculado = Number(selectedProduct?.precioActual ?? selectedProduct?.precioBase ?? 0);
+      const fechaEntregaEstimada = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+      const validaHasta = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+      const payload = {
+        clienteId: user.id,
+        productoBaseId: selectedProduct._id,
+        nombre: solicitudForm.nombre || selectedProduct.nombre,
+        descripcion: solicitudForm.descripcion || selectedProduct.descripcion || 'Solicitud de personalización',
+        categoria: selectedProduct?.categoriaId?.nombre || selectedProduct?.categoria || 'Personalizado',
+        marcaId: selectedProduct?.marcaId?._id || selectedProduct?.marcaId || null,
+        material: solicitudForm.material || selectedProduct?.material || '',
+        color: solicitudForm.color || selectedProduct?.color || '',
+        tipoLente: solicitudForm.tipoLente || selectedProduct?.tipoLente || '',
+        precioCalculado,
+        detallesPersonalizacion: {
+          instruccionesAdicionales: solicitudForm.instruccionesAdicionales || '',
+        },
+        estado: 'pendiente',
+        fechaSolicitud: new Date().toISOString(),
+        fechaEntregaEstimada,
+        cotizacion: {
+          total: precioCalculado,
+          validaHasta,
+          estado: 'vigente',
+        },
+      };
+
+      const url = buildApiUrl(API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS);
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: API_CONFIG.FETCH_CONFIG.credentials,
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.message || 'No se pudo crear la solicitud');
+      }
+
+      const created = data?.data || data; // compatibilidad
+      // Agregar al carrito como ítem
+      await addItem?.({ _id: created._id, nombre: `Personalizado: ${created.nombre}`, precioActual: created.precioCalculado }, 1);
+
+      setShowSolicitudModal(false);
+      showSuccess('Solicitud creada y agregada al carrito');
+      navigate('/carrito');
+    } catch (e) {
+      console.error('Error creando solicitud personalizada', e);
+      showError(e.message || 'Error creando solicitud');
+    }
+  };
 
   // Handler: agregar al carrito
   const handleAddToCart = async (product, qty = 1) => {
@@ -419,9 +520,9 @@ const Producto = () => {
   const getCurrentProducts = () => {
     switch (location.pathname) {
       case "/productos/lentes":
-        return { data: lentes, loading: loadingLentes, error: errorLentes, type: 'lentes' };
+        return { data: lentes, loading: loadingLentes, error: errorLentes, type: 'lentes', pagination: paginationLentes };
       case "/productos/accesorios":
-        return { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, type: 'accesorios' };
+        return { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, type: 'accesorios', pagination: paginationAccesorios };
       case "/productos/personalizables":
         return { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, type: 'personalizables' };
       default:
@@ -473,7 +574,7 @@ const Producto = () => {
     return `Mostrando ${currentProducts.data.length} productos`;
   };
 
-  // Estado para paginación
+  // Estado para paginación client-side (mantener para listas combinadas y fallback)
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(12);
 
@@ -494,6 +595,12 @@ const Producto = () => {
       totalProducts: sortedProducts.length
     };
   };
+
+  // Reset páginas server-side al cambiar de ruta
+  useEffect(() => {
+    setPageLentes(1);
+    setPageAccesorios(1);
+  }, [location.pathname]);
 
   // Función para cambiar de página
   const handlePageChange = (pageNumber) => {
@@ -2644,58 +2751,6 @@ const Producto = () => {
         </div>
       )}
 
-      {/* Estadísticas de filtros */}
-      <div className="text-xs text-gray-500 text-center p-2 bg-gray-50 rounded">
-        {getFilterStats().filtered} de {getFilterStats().total} productos
-      </div>
-
-      {/* Resumen de filtros */}
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-        <h4 className="text-sm font-medium text-blue-800 mb-2">Resumen de productos</h4>
-        <div className="space-y-2 text-xs text-blue-700">
-          <div className="flex justify-between">
-            <span>Por categoría:</span>
-            <span>{Object.keys(getBackendDetailedFilterStats().categories).length} opciones</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Por marca:</span>
-            <span>{Object.keys(getBackendDetailedFilterStats().brands).length} opciones</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Por material:</span>
-            <span>{Object.keys(getBackendDetailedFilterStats().materials).length} opciones</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Por color:</span>
-            <span>{Object.keys(getBackendDetailedFilterStats().colors).length} opciones</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Botones de exportación */}
-      <div className="mt-4 space-y-2">
-        <button
-          onClick={exportFilteredProducts}
-          className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors text-sm font-medium"
-          title="Exportar productos filtrados a CSV"
-        >
-          📊 Exportar Filtrados
-        </button>
-        <button
-          onClick={exportProducts}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium"
-          title="Exportar todos los productos a CSV"
-        >
-          📋 Exportar Todos
-        </button>
-      </div>
-
-      {/* Consejo de filtrado */}
-      <div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
-        <div className="text-xs text-yellow-800 text-center">
-          {getFilterTips()}
-        </div>
-      </div>
     </div>
   );
 
@@ -2754,7 +2809,7 @@ const Producto = () => {
           <button 
             onClick={() => {
               if (currentType === 'personalizables' || product.categoria === 'Personalizado') {
-                navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+                openSolicitudModal(product);
               } else {
                 handleAddToCart(product, 1);
               }
@@ -2771,6 +2826,44 @@ const Producto = () => {
           </button>
         </div>
       </div>
+
+      {showSolicitudModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6">
+            <h3 className="text-lg font-semibold mb-4">Solicitud de producto personalizado</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm text-gray-600">Nombre</label>
+                <input name="nombre" value={solicitudForm.nombre} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Tipo de lente</label>
+                <input name="tipoLente" value={solicitudForm.tipoLente} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Material</label>
+                <input name="material" value={solicitudForm.material} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600">Color</label>
+                <input name="color" value={solicitudForm.color} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm text-gray-600">Descripción</label>
+                <textarea name="descripcion" value={solicitudForm.descripcion} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={3} />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm text-gray-600">Instrucciones adicionales</label>
+                <textarea name="instruccionesAdicionales" value={solicitudForm.instruccionesAdicionales} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={2} />
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3 justify-end">
+              <button onClick={() => setShowSolicitudModal(false)} className="px-4 py-2 rounded-lg border">Cancelar</button>
+              <button onClick={handleCrearSolicitudPersonalizada} className="px-4 py-2 rounded-lg bg-[#0097c2] text-white">Crear solicitud</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -2819,7 +2912,7 @@ const Producto = () => {
               <button 
                 onClick={() => {
                   if (currentType === 'personalizables' || product.categoria === 'Personalizado') {
-                    navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+                    openSolicitudModal(product);
                   } else {
                     handleAddToCart(product, 1);
                   }
@@ -2931,6 +3024,7 @@ const Producto = () => {
                 {/* Botones de acción */}
                 <div className="flex space-x-3">
                   <button 
+                    className="bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
                     onClick={() => {
                       if (location.pathname === '/productos/personalizables') {
                         setShowProductModal(false);
@@ -2940,15 +3034,14 @@ const Producto = () => {
                         setShowProductModal(false);
                       }
                     }}
-                    className="flex-1 bg-[#0097c2] text-white py-3 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
                   >
                     {location.pathname === '/productos/personalizables' ? 'Personalizar' : 'Agregar al carrito'}
                   </button>
                   <button 
-                    onClick={() => navigate('/cotizaciones/crear', { state: { openPersonalizado: true } })}
-                    className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full hover:bg-gray-300 transition-colors duration-300"
+                    className="bg-white border border-[#0097c2] text-[#0097c2] px-4 py-2 rounded-full hover:bg-[#e6f7fb] transition-colors duration-300"
+                    onClick={() => openSolicitudModal(selectedProduct)}
                   >
-                    Cotizar
+                    Solicitar a óptica
                   </button>
                 </div>
               </div>
@@ -2957,30 +3050,16 @@ const Producto = () => {
         </div>
       </div>
     );
-  };
-
-  const renderContent = () => {
-    const { data: products, loading, error, type } = getCurrentProducts();
+  }
     
-    // Validar que products sea un array válido
-    if (!Array.isArray(products)) {
-      console.warn('renderContent: products no es un array válido:', products);
-        return (
-        <div className="text-center py-16 px-4">
-          <div className="text-red-500 text-lg mb-2">Error en el formato de datos</div>
-          <p className="text-gray-600">Los datos recibidos no tienen el formato esperado</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="mt-4 bg-[#0097c2] text-white px-6 py-2 rounded-full hover:bg-[#0077a2] transition"
-          >
-            Recargar página
-          </button>
-          </div>
-        );
-    }
-    
-    const filteredProducts = filterProducts(products);
+    const renderContent = () => {
+    const currentProducts = getCurrentProducts();
+    const loading = currentProducts.loading;
+    const error = currentProducts.error;
+    const filteredProducts = filterProducts(currentProducts.data);
     const sortedProducts = sortProducts(filteredProducts);
+    const pagination = currentProducts.pagination;
+    const type = currentProducts.type;
 
     const getTitle = () => {
       switch (type) {
@@ -3000,13 +3079,13 @@ const Producto = () => {
           </div>
 
           {/* Productos */}
-          <div className="lg:w-3/4">
+          <div className="lg:w-1/2">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">
                 {getTitle()}
               </h2>
               <div className="text-gray-600">
-                {(type === 'personalizables' ? 1 : filteredProducts.length)} producto{(type === 'personalizables' ? 1 : filteredProducts.length) !== 1 ? 's' : ''} encontrado{(type === 'personalizables' ? 1 : filteredProducts.length) !== 1 ? 's' : ''}
+                {(pagination?.total ?? sortedProducts.length)} producto{(pagination?.total ?? sortedProducts.length) !== 1 ? 's' : ''} encontrado{(pagination?.total ?? sortedProducts.length) !== 1 ? 's' : ''}
               </div>
             </div>
 
@@ -3067,8 +3146,50 @@ const Producto = () => {
                     ))}
                   </div>
                 )}
+
+                {/* Server-side Pagination Controls */}
+                {(type === 'lentes' || type === 'accesorios') && pagination?.totalPages > 1 && (
+                  <Pagination
+                    currentPage={(type === 'lentes' ? pageLentes : pageAccesorios) - 1}
+                    totalPages={pagination.totalPages}
+                    goToFirstPage={() => (type === 'lentes' ? setPageLentes(1) : setPageAccesorios(1))}
+                    goToPreviousPage={() => (type === 'lentes'
+                      ? setPageLentes(prev => Math.max(1, prev - 1))
+                      : setPageAccesorios(prev => Math.max(1, prev - 1)))}
+                    goToNextPage={() => (type === 'lentes'
+                      ? setPageLentes(prev => Math.min(pagination.totalPages, prev + 1))
+                      : setPageAccesorios(prev => Math.min(pagination.totalPages, prev + 1)))}
+                    goToLastPage={() => (type === 'lentes' ? setPageLentes(pagination.totalPages) : setPageAccesorios(pagination.totalPages))}
+                    pageSize={pageSize}
+                    setPageSize={(size) => {
+                      setPageSize(size);
+                      if (type === 'lentes') setPageLentes(1); else setPageAccesorios(1);
+                    }}
+                  />
+                )}
               </>
             )}
+          </div>
+
+          {/* Sidebar derecha: anuncio de personalizados */}
+          <div className="lg:w-1/4">
+            <div className="sticky top-24">
+              <div className="bg-white rounded-xl shadow-md p-6 border border-[#0097c2]/30">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 rounded-lg bg-[#0097c2] text-white flex items-center justify-center text-xl">✨</div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-gray-800 mb-1">¿Buscas algo único?</h3>
+                    <p className="text-gray-600 text-sm mb-4">Crea tu producto personalizado eligiendo base, materiales, color y más.</p>
+                    <button
+                      onClick={() => navigate('/cotizaciones/crear', { state: { openPersonalizado: true } })}
+                      className="w-full bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors"
+                    >
+                      Personalizar ahora
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3079,15 +3200,21 @@ const Producto = () => {
     <ErrorBoundary>
     <PageTransition>
       <Navbar />
-        
-
+      {/* Toasts */}
+      <ToastContainer>
+        <Alert 
+          type={alertState.type}
+          message={alertState.message}
+          show={alertState.show}
+          onClose={hideAlert}
+          duration={alertState.duration}
+        />
+      </ToastContainer>
 
       {renderContent()}
 
-
-
-        {/* Modal de detalles del producto */}
-        {showProductModal && <ProductDetailModal />}
+      {/* Modal de detalles del producto */}
+      {showProductModal && <ProductDetailModal />}
 
       {/* Footer */}
       <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10 text-xs sm:text-sm">

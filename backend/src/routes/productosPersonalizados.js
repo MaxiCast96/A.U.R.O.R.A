@@ -29,6 +29,10 @@ router.route("/estado/:estado")
 router.route("/:id/estado")
     .patch(productosPersonalizadosController.updateEstado);
 
+// PATCH /api/productosPersonalizados/:id/vinculos - Actualizar cotizacionId/pedidoId y estado
+router.route("/:id/vinculos")
+    .patch(productosPersonalizadosController.updateVinculos);
+
 // GET /api/productosPersonalizados/estadisticas/resumen - Estadísticas y resumen
 router.route("/estadisticas/resumen")
     .get(productosPersonalizadosController.getEstadisticas);

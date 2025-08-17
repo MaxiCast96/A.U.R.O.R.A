@@ -12,6 +12,7 @@ export const useApiData = (resource, params = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [pagination, setPagination] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -52,6 +53,13 @@ export const useApiData = (resource, params = {}) => {
 
         if (isMounted) {
           // Validar la respuesta usando la función centralizada
+          // Capturar paginación si viene en el payload
+          if (result && typeof result === 'object' && result.pagination) {
+            setPagination(result.pagination);
+          } else {
+            setPagination(null);
+          }
+
           const validation = validateApiResponse(result);
           
           if (validation.isValid) {
@@ -121,7 +129,7 @@ export const useApiData = (resource, params = {}) => {
     };
   }, [resource, JSON.stringify(params)]);
 
-  return { data, loading, error, success };
+  return { data, loading, error, success, pagination };
 };
 
 export default useApiData;
