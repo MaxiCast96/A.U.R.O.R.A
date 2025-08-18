@@ -81,33 +81,6 @@ const Cart = () => {
       }
     };
 
-  // Vincular pedidoId a personalizados si el backend devuelve un identificador de pedido en la venta
-  const patchPedidoOnPersonalizados = async (pedidoId) => {
-    if (!pedidoId) return;
-    try {
-      // Detectar qué items del carrito son personalizados
-      const personalizedFlags = await Promise.all((cart?.productos || []).map(p => isPersonalizedProduct(p.productoId)));
-      const personalizedIds = (cart?.productos || [])
-        .filter((_, idx) => personalizedFlags[idx])
-        .map(p => p.productoId);
-      if (personalizedIds.length === 0) return;
-
-      await Promise.all(personalizedIds.map(async (id) => {
-        try {
-          await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}/vinculos`, {
-            method: 'PATCH',
-            headers: authHeaders,
-            credentials: 'include',
-            body: JSON.stringify({ pedidoId }),
-          });
-        } catch (e) {
-          if (!import.meta.env.PROD) console.warn('No se pudo vincular pedidoId al personalizado', id, e);
-        }
-      }));
-    } catch (e) {
-      if (!import.meta.env.PROD) console.warn('Fallo al procesar vinculación de pedidoId en personalizados', e);
-    }
-  };
     cargarCliente();
   }, [user?.id, user?.rol]);
 
@@ -140,6 +113,46 @@ const Cart = () => {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {})
   }), [token]);
+
+  // Detectar si un producto del carrito es un personalizado consultando al backend
+  const isPersonalizedProduct = async (id) => {
+    try {
+      const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}`, { credentials: 'include' });
+      if (!res.ok) return false;
+      const data = await res.json();
+      return Boolean(data && (data._id || data?.data?._id));
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Vincular pedidoId a personalizados si el backend devuelve un identificador de pedido en la venta
+  const patchPedidoOnPersonalizados = async (pedidoId) => {
+    if (!pedidoId) return;
+    try {
+      // Detectar qué items del carrito son personalizados
+      const personalizedFlags = await Promise.all((cart?.productos || []).map(p => isPersonalizedProduct(p.productoId)));
+      const personalizedIds = (cart?.productos || [])
+        .filter((_, idx) => personalizedFlags[idx])
+        .map(p => p.productoId);
+      if (personalizedIds.length === 0) return;
+
+      await Promise.all(personalizedIds.map(async (id) => {
+        try {
+          await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}/vinculos`, {
+            method: 'PATCH',
+            headers: authHeaders,
+            credentials: 'include',
+            body: JSON.stringify({ pedidoId }),
+          });
+        } catch (e) {
+          if (!import.meta.env.PROD) console.warn('No se pudo vincular pedidoId al personalizado', id, e);
+        }
+      }));
+    } catch (e) {
+      if (!import.meta.env.PROD) console.warn('Fallo al procesar vinculación de pedidoId en personalizados', e);
+    }
+  };
 
   const handleQtyChange = (id, value) => {
     const qty = Math.max(1, Number(value) || 1);
@@ -269,17 +282,6 @@ const Cart = () => {
     }
   };
 
-  // Detectar si un producto del carrito es un personalizado consultando al backend
-  const isPersonalizedProduct = async (id) => {
-    try {
-      const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}`, { credentials: 'include' });
-      if (!res.ok) return false;
-      const data = await res.json();
-      return Boolean(data && (data._id || data?.data?._id));
-    } catch (e) {
-      return false;
-    }
-  };
 
   const buildCotizacionPayload = async () => {
     const productos = [];

@@ -18,6 +18,7 @@ import Promociones from '../../components/Admin/management/PromocionesContent';
 import Citas from '../../components/Admin/management/CitasContent';
 import HistorialMedico from '../../components/Admin/management/HistorialMedicoContent';
 import Sucursales from '../../components/Admin/management/SucursalesContent';
+import Ventas from '../../components/Admin/management/VentasContent';
 
 const OpticaDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -48,6 +49,7 @@ const OpticaDashboard = () => {
     { id: 'personalizados', icon: Package, label: 'Personalizados', section: 'Productos' },
     { id: 'categorias', icon: Tags, label: 'Categorías', section: 'Productos' },
     { id: 'marcas', icon: Bookmark, label: 'Marcas', section: 'Productos' },
+    { id: 'ventas', icon: DollarSign, label: 'Ventas', section: 'Administración' },
     { id: 'citas', icon: Calendar, label: 'Citas', section: 'Médico' },
     { id: 'historial', icon: FileText, label: 'Historial Médico', section: 'Médico' },
     { id: 'recetas', icon: Receipt, label: 'Recetas', section: 'Médico' },
@@ -81,6 +83,8 @@ const OpticaDashboard = () => {
         return<Categorias />;
       case 'marcas':
         return <Marcas />;
+      case 'ventas':
+        return <Ventas />;
       case 'citas': 
         return <Citas />;
       case 'historial': 
