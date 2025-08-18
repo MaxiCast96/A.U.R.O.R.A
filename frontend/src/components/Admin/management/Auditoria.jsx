@@ -90,13 +90,11 @@ const Auditoria = () => {
   };
 
   const exportCSV = () => {
-    const headers = ['fecha','usuario','email','rol','cargo','metodo','status','ruta','entidad','accion','resumen'];
+    const headers = ['Fecha','Usuario','Rol/Cargo','Método','Status','Ruta','Entidad','Acción','Resumen'];
     const rows = logs.map(l => [
       fmtDate(l.timestamp || l.createdAt),
       l.user?.nombre || '',
-      l.user?.email || '',
-      l.user?.rol || '',
-      l.user?.cargo || '',
+      [l.user?.rol, l.user?.cargo].filter(Boolean).join(' / '),
       l.request?.method || '',
       l.response?.status || '',
       l.request?.path || '',

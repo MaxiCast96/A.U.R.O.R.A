@@ -22,7 +22,7 @@ export const authenticateToken = async (req, res, next) => {
             });
         }
 
-        jwt.verify(token, config.jwt.secret, (err, user) => {
+        jwt.verify(token, config.jwt.secret, async (err, user) => {
             if (err) {
                 return res.status(401).json({
                     success: false,
@@ -30,7 +30,35 @@ export const authenticateToken = async (req, res, next) => {
                 });
             }
 
-            req.user = user;
+            // Enriquecer el usuario con datos desde BD para auditoría (nombre/correo/cargo)
+            try {
+                let enriched = { ...user };
+                if (user?.id) {
+                    if (user.rol === 'Cliente') {
+                        const cli = await clientesModel.findById(user.id).lean();
+                        if (cli) {
+                            enriched = {
+                                ...enriched,
+                                nombre: [cli.nombre, cli.apellido].filter(Boolean).join(' ') || cli.nombre || enriched.nombre,
+                                correo: cli.correo || enriched.correo,
+                            };
+                        }
+                    } else {
+                        const emp = await empleadosModel.findById(user.id).lean();
+                        if (emp) {
+                            enriched = {
+                                ...enriched,
+                                nombre: [emp.nombre, emp.apellido].filter(Boolean).join(' ') || emp.nombre || enriched.nombre,
+                                correo: emp.correo || enriched.correo,
+                                cargo: emp.cargo || enriched.cargo,
+                            };
+                        }
+                    }
+                }
+                req.user = enriched;
+            } catch {
+                req.user = user;
+            }
             next();
         });
     } catch (error) {
