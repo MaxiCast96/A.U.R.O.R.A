@@ -1,493 +1,654 @@
-import React, { useState } from 'react';
-import { Search, Plus, Trash2, Eye, Edit, ShoppingBag, Tags, Package, DollarSign } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import axios from 'axios';
+import { useForm } from '../../../hooks/admin/useForm';
+import { usePagination } from '../../../hooks/admin/usePagination';
+import PageHeader from '../ui/PageHeader';
+import StatsGrid from '../ui/StatsGrid';
+import FilterBar from '../ui/FilterBar';
+import DataTable from '../ui/DataTable';
+import Pagination from '../ui/Pagination';
+import ConfirmationModal from '../ui/ConfirmationModal';
+import DetailModal from '../ui/DetailModal';
+import Alert from '../ui/Alert';
+import AccesoriosFormModal from '../management/employees/AccesoriosFormModal';
+import { Search, Plus, Trash2, Eye, Edit, ShoppingBag, Tags, Package, DollarSign, Clock, ImageIcon, Building2, Palette, Layers } from 'lucide-react';
+
+const API_URL = 'http://localhost:4000/api/accesorios';
+const MARCAS_URL = 'http://localhost:4000/api/marcas';
+const CATEGORIAS_URL = 'http://localhost:4000/api/categoria';
+const SUCURSALES_URL = 'http://localhost:4000/api/sucursales';
 
 const AccesoriosContent = () => {
+  // Estados principales
+  const [accesorios, setAccesorios] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAccesorio, setSelectedAccesorio] = useState(null);
+  const [alert, setAlert] = useState(null);
+  
+  // Estados de modales
+  const [showAddEditModal, setShowAddEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Estados para datos relacionados
+  const [marcas, setMarcas] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
+
+  // Estados de filtrado
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('todos');
-  const [setShowAddModal] = useState(false);
 
-  // Estado para la paginación
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(5);
+  // Hook de formulario con validación completa
+  const { formData, setFormData, handleInputChange, resetForm, errors, validateForm } = useForm({
+    nombre: '',
+    descripcion: '',
+    tipo: '',
+    marcaId: '',
+    linea: '',
+    material: '',
+    color: '',
+    precioBase: 0,
+    precioActual: 0,
+    imagenes: [],
+    enPromocion: false,
+    promocionId: '',
+    sucursales: []
+  }, (data) => {
+    const newErrors = {};
+    
+    // Validaciones básicas
+    if (!data.nombre?.trim()) newErrors.nombre = 'El nombre es requerido';
+    if (!data.descripcion?.trim()) newErrors.descripcion = 'La descripción es requerida';
+    if (!data.tipo) newErrors.tipo = 'La categoría es requerida';
+    if (!data.marcaId) newErrors.marcaId = 'La marca es requerida';
+    if (!data.linea) newErrors.linea = 'La línea es requerida';
+    if (!data.material) newErrors.material = 'El material es requerido';
+    if (!data.color) newErrors.color = 'El color es requerido';
+    
+    // Validaciones de precios
+    if (!data.precioBase || data.precioBase <= 0) {
+      newErrors.precioBase = 'El precio base debe ser mayor a 0';
+    }
+    
+    if (data.enPromocion) {
+      if (!data.precioActual || data.precioActual <= 0) {
+        newErrors.precioActual = 'El precio promocional debe ser mayor a 0';
+      } else if (data.precioActual >= data.precioBase) {
+        newErrors.precioActual = 'El precio promocional debe ser menor al precio base';
+      }
+    }
+    
+    // Validación de sucursales
+    if (!data.sucursales || data.sucursales.length === 0) {
+      newErrors.sucursales = 'Debe seleccionar al menos una sucursal';
+    }
+    
+    // Validación de stock
+    const hasInvalidStock = data.sucursales?.some(s => s.stock < 0);
+    if (hasInvalidStock) {
+      newErrors.sucursales = 'El stock no puede ser negativo';
+    }
+    
+    return newErrors;
+  });
 
-  // Datos de ejemplo actualizados según el modelo de MongoDB
-  const accesorios = [
-    {
-      _id: "b163ff84128afec8a3dc4228",
-      nombre: "Gomas para Lentes Premium",
-      descripcion: "Gomas de repuesto antideslizantes para lentes",
-      tipo: "plaquetas",
-      marcaId: "818a89e98b3b742205285ea2",
-      material: "Goma de silicona",
-      color: "Transparente",
-      precioBase: 25.99,
-      precioActual: 22.50,
-      imagenes: [
-        "https://images.unsplash.com/photo-1574258495973-f010dfbb5371?w=150&h=150&fit=crop&crop=center",
-        "https://images.unsplash.com/photo-1556306535-38febf6782e7?w=150&h=150&fit=crop&crop=center"
-      ],
-      enPromocion: true,
-      promocionId: "0789a6cabc739c773e71f957",
-      fechaCreacion: "2023-01-25",
-      sucursales: [
-        { id: "suc1", stock: 45 },
-        { id: "suc2", stock: 23 }
-      ]
-    },
-    {
-      _id: "c264gg94239bged9b4ed5339",
-      nombre: "Estuche Premium Rígido",
-      descripcion: "Estuche rígido de alta calidad con forro interno",
-      tipo: "estuche",
-      marcaId: "919b90f09c4c853306396fb3",
-      material: "Plástico ABS",
-      color: "Negro",
-      precioBase: 45.00,
-      precioActual: 45.00,
-      imagenes: [
-        "https://images.unsplash.com/photo-1509114397022-ed747cca3f65?w=150&h=150&fit=crop&crop=center"
-      ],
+  // Hook de paginación
+  const filteredAccesorios = useMemo(() => {
+    return accesorios.filter(accesorio => {
+      const search = searchTerm.toLowerCase();
+      const matchesSearch = 
+        accesorio.nombre?.toLowerCase().includes(search) ||
+        accesorio.descripcion?.toLowerCase().includes(search) ||
+        accesorio.marcaId?.nombre?.toLowerCase().includes(search) ||
+        accesorio.tipo?.nombre?.toLowerCase().includes(search) ||
+        accesorio.material?.toLowerCase().includes(search) ||
+        accesorio.color?.toLowerCase().includes(search);
+
+      let matchesFilter = true;
+      if (selectedFilter === 'en_promocion') {
+        matchesFilter = accesorio.enPromocion === true;
+      } else if (selectedFilter === 'sin_promocion') {
+        matchesFilter = accesorio.enPromocion === false;
+      } else if (selectedFilter === 'sin_stock') {
+        matchesFilter = accesorio.sucursales?.every(s => s.stock === 0);
+      } else if (selectedFilter === 'con_stock') {
+        matchesFilter = accesorio.sucursales?.some(s => s.stock > 0);
+      }
+
+      return matchesSearch && matchesFilter;
+    });
+  }, [accesorios, searchTerm, selectedFilter]);
+
+  const { paginatedData: currentAccesorios, ...paginationProps } = usePagination(filteredAccesorios, 12);
+
+  // Función para mostrar alertas
+  const showAlert = (type, message) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert(null), 5000);
+  };
+
+  // Funciones de carga de datos
+  const fetchAccesorios = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(API_URL);
+      console.log('Accesorios response:', response.data);
+      // Manejar diferentes estructuras de respuesta
+      const data = response.data.data || response.data;
+      setAccesorios(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Error fetching accesorios:", error);
+      showAlert('error', 'Error al cargar los accesorios: ' + (error.response?.data?.message || error.message));
+      setAccesorios([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDependencies = async () => {
+    try {
+      const [marcasRes, categoriasRes, sucursalesRes] = await Promise.all([
+        axios.get(MARCAS_URL),
+        axios.get(CATEGORIAS_URL),
+        axios.get(SUCURSALES_URL)
+      ]);
+      
+      console.log('Dependencies loaded:', {
+        marcas: marcasRes.data,
+        categorias: categoriasRes.data,
+        sucursales: sucursalesRes.data
+      });
+      
+      setMarcas(Array.isArray(marcasRes.data) ? marcasRes.data : marcasRes.data.data || []);
+      setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : categoriasRes.data.data || []);
+      setSucursales(Array.isArray(sucursalesRes.data) ? sucursalesRes.data : sucursalesRes.data.data || []);
+      
+    } catch (error) {
+      console.error("Error fetching dependencies:", error);
+      showAlert('error', 'Error al cargar marcas, categorías o sucursales: ' + (error.response?.data?.message || error.message));
+      
+      // Establecer arrays vacíos en caso de error
+      setMarcas([]);
+      setCategorias([]);
+      setSucursales([]);
+    }
+  };
+
+  // Cargar datos al montar el componente
+  useEffect(() => {
+    fetchAccesorios();
+    fetchDependencies();
+    
+    // Cargar script de Cloudinary
+    const script = document.createElement('script');
+    script.src = "https://widget.cloudinary.com/v2.0/global/all.js";
+    script.async = true;
+    document.body.appendChild(script);
+
+    return () => {
+      if (document.body.contains(script)) {
+        document.body.removeChild(script);
+      }
+    };
+  }, []);
+
+  // Funciones de manejo de modales
+  const handleCloseModals = () => {
+    setShowAddEditModal(false);
+    setShowDetailModal(false);
+    setShowDeleteModal(false);
+    setSelectedAccesorio(null);
+    resetForm();
+  };
+
+  const handleOpenAddModal = () => {
+    resetForm();
+    setSelectedAccesorio(null);
+    
+    // Establecer valores por defecto
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      tipo: '',
+      marcaId: '',
+      linea: '',
+      material: '',
+      color: '',
+      precioBase: 0,
+      precioActual: 0,
+      imagenes: [],
       enPromocion: false,
-      fechaCreacion: "2023-02-10",
-      sucursales: [
-        { id: "suc1", stock: 18 },
-        { id: "suc2", stock: 12 }
-      ]
+      promocionId: '',
+      sucursales: []
+    });
+    
+    setShowAddEditModal(true);
+  };
+
+  const handleOpenEditModal = (accesorio) => {
+    setSelectedAccesorio(accesorio);
+    
+    // Preparar datos para edición
+    const editData = {
+      nombre: accesorio.nombre || '',
+      descripcion: accesorio.descripcion || '',
+      tipo: accesorio.tipo?._id || accesorio.tipo || '',
+      marcaId: accesorio.marcaId?._id || accesorio.marcaId || '',
+      linea: accesorio.linea || '',
+      material: accesorio.material || '',
+      color: accesorio.color || '',
+      precioBase: accesorio.precioBase || 0,
+      precioActual: accesorio.precioActual || accesorio.precioBase || 0,
+      imagenes: accesorio.imagenes || [],
+      enPromocion: accesorio.enPromocion || false,
+      promocionId: accesorio.promocionId?._id || accesorio.promocionId || '',
+      sucursales: accesorio.sucursales?.map(s => ({
+        sucursalId: s.sucursalId?._id || s.sucursalId || '',
+        nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || '',
+        stock: s.stock || 0
+      })) || []
+    };
+    
+    console.log('Datos para edición:', editData);
+    setFormData(editData);
+    setShowAddEditModal(true);
+  };
+
+  const handleOpenDetailModal = (accesorio) => {
+    setSelectedAccesorio(accesorio);
+    setShowDetailModal(true);
+  };
+
+  const handleOpenDeleteModal = (accesorio) => {
+    setSelectedAccesorio(accesorio);
+    setShowDeleteModal(true);
+  };
+
+  // Función de envío del formulario
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    
+    console.log('Form data before validation:', formData);
+    
+    if (!validateForm()) {
+      showAlert('error', 'Por favor, corrige los errores del formulario.');
+      return;
+    }
+
+    // Preparar FormData para el envío
+    const dataToSend = new FormData();
+    
+    // Agregar campos básicos
+    Object.keys(formData).forEach(key => {
+      if (key === 'sucursales') {
+        dataToSend.append('sucursales', JSON.stringify(formData.sucursales));
+      } else if (key === 'imagenes') {
+        // Las imágenes ya son URLs de Cloudinary, enviarlas como JSON
+        dataToSend.append('imagenes', JSON.stringify(formData.imagenes));
+      } else if (key !== 'promocionId' || formData.enPromocion) {
+        // Solo enviar promocionId si está en promoción
+        dataToSend.append(key, formData[key]);
+      }
+    });
+
+    // Debug: Ver qué se está enviando
+    console.log('Sending data:', Object.fromEntries(dataToSend));
+
+    try {
+      let response;
+      if (selectedAccesorio) {
+        // Actualizar accesorio existente
+        response = await axios.put(`${API_URL}/${selectedAccesorio._id}`, dataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        showAlert('success', 'Accesorio actualizado exitosamente');
+      } else {
+        // Crear nuevo accesorio
+        response = await axios.post(API_URL, dataToSend, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        showAlert('success', 'Accesorio creado exitosamente');
+      }
+      
+      console.log('Server response:', response.data);
+      
+      // Recargar datos y cerrar modal
+      await fetchAccesorios();
+      handleCloseModals();
+      
+    } catch (error) {
+      console.error("Error submitting form:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+      showAlert('error', `Error al guardar el accesorio: ${errorMessage}`);
+    }
+  };
+
+  // Función de eliminación
+  const handleDelete = async () => {
+    if (!selectedAccesorio) return;
+    
+    try {
+      await axios.delete(`${API_URL}/${selectedAccesorio._id}`);
+      showAlert('success', 'Accesorio eliminado exitosamente');
+      await fetchAccesorios();
+      handleCloseModals();
+    } catch (error) {
+      console.error("Error deleting accesorio:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+      showAlert('error', `Error al eliminar el accesorio: ${errorMessage}`);
+    }
+  };
+
+  // Calcular estadísticas
+  const totalAccesorios = accesorios.length;
+  const accesoriosEnPromocion = accesorios.filter(a => a.enPromocion).length;
+  const precioPromedio = accesorios.length > 0 
+    ? (accesorios.reduce((sum, a) => sum + (a.precioActual || a.precioBase || 0), 0) / accesorios.length)
+    : 0;
+  const stockTotal = accesorios.reduce((total, accesorio) => {
+    return total + (accesorio.sucursales?.reduce((subtotal, sucursal) => subtotal + (sucursal.stock || 0), 0) || 0);
+  }, 0);
+
+  const stats = [
+    { 
+      title: "Total Accesorios", 
+      value: totalAccesorios, 
+      Icon: Package,
+      color: "bg-blue-500" 
     },
-    {
-      _id: "d375hh05340chfe0c5fe6440",
-      nombre: "Cadena Decorativa Elegante",
-      descripcion: "Cadena elegante dorada para lentes con diseño vintage",
-      tipo: "cadena",
-      marcaId: "020c01g10d5d964417407gc4",
-      material: "Aleación dorada",
-      color: "Dorado",
-      precioBase: 38.99,
-      precioActual: 35.50,
-      imagenes: [
-        "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=150&h=150&fit=crop&crop=center"
-      ],
-      enPromocion: true,
-      promocionId: "1890b7dbcd840d884f82g068",
-      fechaCreacion: "2023-03-05",
-      sucursales: [
-        { id: "suc1", stock: 8 },
-        { id: "suc2", stock: 15 }
-      ]
+    { 
+      title: "En Promoción", 
+      value: accesoriosEnPromocion, 
+      Icon: Tags,
+      color: "bg-green-500" 
     },
-    {
-      _id: "e486ii16451digg1d6gg7551",
-      nombre: "Kit Limpieza Profesional",
-      descripcion: "Kit completo de limpieza con spray y paño microfibra",
-      tipo: "limpieza",
-      marcaId: "131d12h21e6e075528518hd5",
-      material: "Líquido + Microfibra",
-      color: "Azul",
-      precioBase: 28.50,
-      precioActual: 25.99,
-      imagenes: [
-        "https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?w=150&h=150&fit=crop&crop=center"
-      ],
-      enPromocion: true,
-      fechaCreacion: "2023-03-15",
-      sucursales: [
-        { id: "suc1", stock: 32 },
-        { id: "suc2", stock: 28 }
-      ]
+    { 
+      title: "Precio Promedio", 
+      value: `${precioPromedio.toFixed(2)}`, 
+      Icon: DollarSign,
+      color: "bg-yellow-500" 
     },
-    {
-      _id: "f597jj27562ejhh2e7hh8662",
-      nombre: "Paño Microfibra Premium",
-      descripcion: "Paño de microfibra ultrasuave para lentes delicados",
-      tipo: "limpieza",
-      marcaId: "242e23i32f7f186639629ie6",
-      material: "Microfibra",
-      color: "Gris",
-      precioBase: 12.00,
-      precioActual: 12.00,
-      imagenes: [
-        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=150&h=150&fit=crop&crop=center"
-      ],
-      enPromocion: false,
-      fechaCreacion: "2023-04-01",
-      sucursales: [
-        { id: "suc1", stock: 67 },
-        { id: "suc2", stock: 43 }
-      ]
-    },
-    {
-      _id: "g608kk38673fkii3f8ii9773",
-      nombre: "Estuche Blando Deportivo",
-      descripcion: "Estuche flexible y resistente para actividades deportivas",
-      tipo: "estuche",
-      marcaId: "353f34j43g8g297740730jf7",
-      material: "Neopreno",
-      color: "Verde",
-      precioBase: 32.50,
-      precioActual: 29.99,
-      imagenes: [
-        "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=150&h=150&fit=crop&crop=center"
-      ],
-      enPromocion: true,
-      fechaCreacion: "2023-04-12",
-      sucursales: [
-        { id: "suc1", stock: 21 },
-        { id: "suc2", stock: 16 }
-      ]
-    },
-    {
-      _id: "h719ll49784gljj4g9jj0884",
-      nombre: "Soporte Elegante Madera",
-      descripcion: "Base de escritorio en madera natural para exhibir lentes",
-      tipo: "soporte",
-      marcaId: "464g45k54h9h308851841kg8",
-      material: "Madera de roble",
-      color: "Natural",
-      precioBase: 65.00,
-      precioActual: 58.50,
-      imagenes: [
-        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=150&h=150&fit=crop&crop=center"
-      ],
-      enPromocion: true,
-      fechaCreacion: "2023-05-08",
-      sucursales: [
-        { id: "suc1", stock: 5 },
-        { id: "suc2", stock: 8 }
-      ]
-    },
-    {
-      _id: "i820mm50895hmkk5h0kk1995",
-      nombre: "Kit Reparación Completo",
-      descripcion: "Herramientas profesionales para reparación de lentes",
-      tipo: "herramientas",
-      marcaId: "575h56l65i0i419962952lh9",
-      material: "Acero inoxidable",
-      color: "Plateado",
-      precioBase: 48.99,
-      precioActual: 45.00,
-      imagenes: [
-        "https://images.unsplash.com/photo-1581833971358-2c8b550f87b3?w=150&h=150&fit=crop&crop=center"
-      ],
-      enPromocion: true,
-      fechaCreacion: "2023-05-20",
-      sucursales: [
-        { id: "suc1", stock: 12 },
-        { id: "suc2", stock: 9 }
-      ]
+    { 
+      title: "Stock Total", 
+      value: stockTotal, 
+      Icon: ShoppingBag,
+      color: "bg-purple-500" 
     }
   ];
 
-  const filteredAccesorios = accesorios.filter(accesorio => {
-    const matchesSearch = accesorio.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         accesorio.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         accesorio.material.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = selectedFilter === 'todos' || accesorio.tipo === selectedFilter;
-    return matchesSearch && matchesFilter;
-  });
+  // Definir columnas de la tabla
+  const tableColumns = [
+    { header: 'Producto', key: 'producto' },
+    { header: 'Marca/Categoría', key: 'marca_categoria' },
+    { header: 'Características', key: 'caracteristicas' },
+    { header: 'Precio', key: 'precio' },
+    { header: 'Stock', key: 'stock' },
+    { header: 'Estado', key: 'estado' },
+    { header: 'Acciones', key: 'acciones' }
+  ];
 
-  // Calculamos la cantidad total de páginas
-  const totalPages = Math.ceil(filteredAccesorios.length / pageSize);
-
-  // Obtenemos los accesorios de la página actual
-  const currentAccesorios = filteredAccesorios.slice(
-    currentPage * pageSize,
-    currentPage * pageSize + pageSize
-  );
-
-  // Funciones para cambiar de página
-  const goToFirstPage = () => setCurrentPage(0);
-  const goToPreviousPage = () => setCurrentPage(prev => (prev > 0 ? prev - 1 : prev));
-  const goToNextPage = () => setCurrentPage(prev => (prev < totalPages - 1 ? prev + 1 : prev));
-  const goToLastPage = () => setCurrentPage(totalPages - 1);
-
-  const getMaterialColor = (material) => {
-    const materialColors = {
-      'Goma de silicona': 'bg-orange-100 text-orange-800',
-      'Plástico ABS': 'bg-blue-100 text-blue-800',
-      'Aleación dorada': 'bg-yellow-100 text-yellow-800',
-      'Líquido + Microfibra': 'bg-cyan-100 text-cyan-800',
-      'Microfibra': 'bg-purple-100 text-purple-800',
-      'Neopreno': 'bg-green-100 text-green-800',
-      'Madera de roble': 'bg-amber-100 text-amber-800',
-      'Acero inoxidable': 'bg-gray-100 text-gray-800'
-    };
-    return materialColors[material] || 'bg-gray-100 text-gray-800';
+  // Función para renderizar filas de la tabla
+  const renderRow = (accesorio) => {
+    const stockTotal = accesorio.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0;
+    const tieneStock = stockTotal > 0;
+    
+    return (
+      <>
+        <td className="px-6 py-4">
+          <div className="flex items-center space-x-3">
+            <div className="flex-shrink-0 w-12 h-12">
+              {accesorio.imagenes && accesorio.imagenes.length > 0 ? (
+                <img 
+                  src={accesorio.imagenes[0]} 
+                  alt={accesorio.nombre}
+                  className="w-12 h-12 rounded-lg object-cover border"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                  <Package className="w-6 h-6 text-gray-400" />
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {accesorio.nombre}
+              </p>
+              <p className="text-sm text-gray-500 truncate">
+                {accesorio.descripcion}
+              </p>
+            </div>
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2">
+              <Tags className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-900">
+                {accesorio.marcaId?.nombre || 'Sin marca'}
+              </span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Layers className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-500">
+                {accesorio.tipo?.nombre || accesorio.tipo || 'Sin categoría'}
+              </span>
+            </div>
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="space-y-1 text-sm">
+            <div className="flex items-center space-x-2">
+              <Palette className="w-4 h-4 text-gray-400" />
+              <span>{accesorio.color}</span>
+            </div>
+            <div className="text-gray-500">
+              {accesorio.material}
+            </div>
+            {accesorio.linea && (
+              <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block">
+                {accesorio.linea}
+              </div>
+            )}
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="space-y-1">
+            {accesorio.enPromocion ? (
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg font-bold text-green-600">
+                    ${(accesorio.precioActual || 0).toFixed(2)}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    OFERTA
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500 line-through">
+                  ${(accesorio.precioBase || 0).toFixed(2)}
+                </div>
+              </div>
+            ) : (
+              <span className="text-lg font-semibold text-gray-900">
+                ${(accesorio.precioBase || 0).toFixed(2)}
+              </span>
+            )}
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="space-y-1">
+            <div className={`text-sm font-medium ${tieneStock ? 'text-green-600' : 'text-red-600'}`}>
+              {stockTotal} unidades
+            </div>
+            <div className="text-xs text-gray-500">
+              en {accesorio.sucursales?.length || 0} sucursal(es)
+            </div>
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="flex flex-col space-y-1">
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              accesorio.enPromocion 
+                ? 'bg-yellow-100 text-yellow-800' 
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {accesorio.enPromocion ? '🏷️ Promoción' : 'Precio normal'}
+            </span>
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              tieneStock 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {tieneStock ? '✅ Disponible' : '❌ Sin stock'}
+            </span>
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="flex space-x-2">
+            <button 
+              onClick={() => handleOpenDetailModal(accesorio)} 
+              className="p-2 text-blue-600 bg-white hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              title="Ver detalles"
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => handleOpenEditModal(accesorio)} 
+              className="p-2 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              title="Editar"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => handleOpenDeleteModal(accesorio)} 
+              className="p-2 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              title="Eliminar"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </td>
+      </>
+    );
   };
-
-  const getColorIndicator = (color) => {
-    const colorMap = {
-      'Transparente': 'bg-white border-2 border-gray-400',
-      'Negro': 'bg-black',
-      'Dorado': 'bg-yellow-400',
-      'Azul': 'bg-blue-500',
-      'Gris': 'bg-gray-400',
-      'Verde': 'bg-green-500',
-      'Natural': 'bg-amber-200',
-      'Plateado': 'bg-gray-300'
-    };
-    return colorMap[color] || 'bg-gray-300';
-  };
-
-  // Cálculos para estadísticas
-  const totalAccesorios = accesorios.length;
-  const accesoriosEnPromocion = accesorios.filter(a => a.enPromocion).length;
-  const stockTotal = accesorios.reduce((sum, a) => 
-    sum + a.sucursales.reduce((stockSum, s) => stockSum + s.stock, 0), 0
-  );
-  const valorPromedio = accesorios.reduce((sum, a) => sum + a.precioActual, 0) / accesorios.length;
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Estadísticas rápidas arriba */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Total Accesorios</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">{totalAccesorios}</p>
-            </div>
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-              <ShoppingBag className="w-6 h-6 text-cyan-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">En Promoción</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{accesoriosEnPromocion}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <Tags className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Stock Total</p>
-              <p className="text-3xl font-bold text-cyan-600 mt-2">{stockTotal}</p>
-            </div>
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-              <Package className="w-6 h-6 text-cyan-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Precio Promedio</p>
-              <p className="text-3xl font-bold text-purple-600 mt-2">${valorPromedio.toFixed(2)}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <DollarSign className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
+      {/* Alerta */}
+      <Alert alert={alert} />
+      
+      {/* Estadísticas */}
+      <StatsGrid stats={stats} />
+      
       {/* Tabla principal */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-cyan-500 text-white p-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Gestión de Accesorios</h2>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-white text-cyan-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Añadir Accesorio</span>
-            </button>
-          </div>
-        </div>
+        <PageHeader 
+          title="Gestión de Accesorios" 
+          buttonLabel="Agregar Accesorio" 
+          onButtonClick={handleOpenAddModal} 
+        />
         
-        {/* Filtros */}
-        <div className="p-4 sm:p-6 bg-gray-50 border-b">
-          <div className="flex flex-col md:flex-row gap-2 sm:gap-4 items-center">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar accesorio..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent text-xs sm:text-sm"
-              />
-            </div>
-            <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
-              {['todos', 'estuche', 'cadena', 'limpieza', 'plaquetas', 'soporte', 'herramientas'].map(filter => (
-                <button
-                  key={filter}
-                  onClick={() => setSelectedFilter(filter)}
-                  className={`px-4 py-2 rounded-lg transition-colors capitalize ${
-                    selectedFilter === filter 
-                      ? 'bg-cyan-500 text-white' 
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  {filter}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Tabla */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs sm:text-sm md:text-base">
-            <thead className="bg-cyan-500 text-white">
-              <tr>
-                <th className="px-6 py-4 text-left font-semibold">Imagen</th>
-                <th className="px-6 py-4 text-left font-semibold">Nombre</th>
-                <th className="px-6 py-4 text-left font-semibold">Descripción</th>
-                <th className="px-6 py-4 text-left font-semibold">Material</th>
-                <th className="px-6 py-4 text-left font-semibold">Color</th>
-                <th className="px-6 py-4 text-left font-semibold">Precio</th>
-                <th className="px-6 py-4 text-left font-semibold">Stock</th>
-                <th className="px-6 py-4 text-left font-semibold">Estado</th>
-                <th className="px-6 py-4 text-left font-semibold">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {currentAccesorios.map((accesorio) => (
-                <tr key={accesorio._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-gray-200">
-                      <img 
-                        src={accesorio.imagenes[0]} 
-                        alt={accesorio.nombre}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-medium text-gray-900">{accesorio.nombre}</td>
-                  <td className="px-6 py-4 text-gray-600 max-w-xs">
-                    <div className="truncate">{accesorio.descripcion}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getMaterialColor(accesorio.material)}`}>
-                      {accesorio.material}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
-                      <div className={`w-4 h-4 rounded-full border border-gray-300 ${getColorIndicator(accesorio.color)}`}></div>
-                      <span className="text-sm text-gray-600">{accesorio.color}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="text-cyan-600 font-bold text-lg">${accesorio.precioActual}</span>
-                      {accesorio.enPromocion && accesorio.precioBase !== accesorio.precioActual && (
-                        <span className="text-gray-400 line-through text-sm">${accesorio.precioBase}</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-center">
-                      <span className="text-lg font-semibold text-gray-900">
-                        {accesorio.sucursales.reduce((sum, s) => sum + s.stock, 0)}
-                      </span>
-                      <div className="text-xs text-gray-500">unidades</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      accesorio.enPromocion ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
-                    }`}>
-                      {accesorio.enPromocion ? 'En Promoción' : 'Regular'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Ver detalles">
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Editar">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mensaje cuando no hay resultados */}
-        {filteredAccesorios.length === 0 && (
-          <div className="p-8 text-center">
-            <ShoppingBag className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No se encontraron accesorios
-            </h3>
-            <p className="text-gray-500">
-              {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza agregando tu primer accesorio'}
-            </p>
-          </div>
-        )}
-
-        {/* Controles de paginación */}
-        <div className="mt-4 flex flex-col items-center gap-4 pb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700">Mostrar</span>
-            <select
-              value={pageSize}
-              onChange={e => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(0);
-              }}
-              className="border border-cyan-500 rounded py-1 px-2"
-            >
-              {[5, 10, 15, 20].map(size => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            <span className="text-gray-700">por página</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={goToFirstPage}
-              disabled={currentPage === 0}
-              className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-            >
-              {"<<"}
-            </button>
-            <button
-              onClick={goToPreviousPage}
-              disabled={currentPage === 0}
-              className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-            >
-              {"<"}
-            </button>
-            <span className="text-gray-700 font-medium">
-              Página {currentPage + 1} de {totalPages}
-            </span>
-            <button
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages - 1}
-              className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-            >
-              {">"}
-            </button>
-            <button
-              onClick={goToLastPage}
-              disabled={currentPage === totalPages - 1}
-              className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-            >
-              {">>"}
-            </button>
-          </div>
-        </div>
+        <FilterBar
+          searchTerm={searchTerm}
+          onSearchChange={(e) => setSearchTerm(e.target.value)}
+          placeholder="Buscar por nombre, marca, material o color..."
+          filters={[
+            { label: 'Todos', value: 'todos' },
+            { label: 'En Promoción', value: 'en_promocion' },
+            { label: 'Sin Promoción', value: 'sin_promocion' },
+            { label: 'Con Stock', value: 'con_stock' },
+            { label: 'Sin Stock', value: 'sin_stock' }
+          ]}
+          activeFilter={selectedFilter}
+          onFilterChange={setSelectedFilter}
+        />
+        
+        <DataTable
+          columns={tableColumns}
+          data={currentAccesorios}
+          renderRow={renderRow}
+          loading={loading}
+          noDataMessage="No se encontraron accesorios"
+          noDataSubMessage={searchTerm ? 'Intenta con otros términos de búsqueda' : 'Aún no hay accesorios registrados'}
+        />
+        
+        <Pagination {...paginationProps} />
       </div>
+
+      {/* Modal de formulario */}
+      <AccesoriosFormModal
+        isOpen={showAddEditModal}
+        onClose={handleCloseModals}
+        onSubmit={handleFormSubmit}
+        title={selectedAccesorio ? "Editar Accesorio" : "Agregar Nuevo Accesorio"}
+        formData={formData}
+        setFormData={setFormData}
+        handleInputChange={handleInputChange}
+        errors={errors}
+        isEditing={!!selectedAccesorio}
+        marcas={marcas}
+        categorias={categorias}
+        sucursales={sucursales}
+        selectedAccesorio={selectedAccesorio}
+      />
+
+      {/* Modal de detalles */}
+      <DetailModal
+        isOpen={showDetailModal}
+        onClose={handleCloseModals}
+        title="Detalles del Accesorio"
+        item={selectedAccesorio}
+        data={selectedAccesorio ? [
+          { label: "Nombre", value: selectedAccesorio.nombre },
+          { label: "Descripción", value: selectedAccesorio.descripcion },
+          { label: "Categoría", value: selectedAccesorio.tipo?.nombre || selectedAccesorio.tipo },
+          { label: "Marca", value: selectedAccesorio.marcaId?.nombre },
+          { label: "Línea", value: selectedAccesorio.linea },
+          { label: "Material", value: selectedAccesorio.material },
+          { label: "Color", value: selectedAccesorio.color },
+          { label: "Precio Base", value: `${(selectedAccesorio.precioBase || 0).toFixed(2)}` },
+          { 
+            label: "Precio Actual", 
+            value: `${(selectedAccesorio.precioActual || selectedAccesorio.precioBase || 0).toFixed(2)}`,
+            color: selectedAccesorio.enPromocion ? 'text-green-600' : 'text-gray-900'
+          },
+          { 
+            label: "Estado", 
+            value: selectedAccesorio.enPromocion ? 'En Promoción' : 'Precio Normal',
+            color: selectedAccesorio.enPromocion ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+          },
+          { 
+            label: "Stock Total", 
+            value: `${selectedAccesorio.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0} unidades`
+          },
+          { 
+            label: "Disponibilidad por Sucursal", 
+            value: selectedAccesorio.sucursales?.map(s => 
+              `${s.nombreSucursal || s.sucursalId?.nombre}: ${s.stock || 0} unidades`
+            ).join(' | ') || 'Sin stock'
+          },
+          { label: "Imágenes", value: `${selectedAccesorio.imagenes?.length || 0} imagen(es)` },
+          { label: "Fecha de Creación", value: new Date(selectedAccesorio.createdAt).toLocaleDateString('es-ES') }
+        ] : []}
+      />
+
+      {/* Modal de confirmación de eliminación */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleCloseModals}
+        onConfirm={handleDelete}
+        title="Confirmar Eliminación"
+        message={`¿Estás seguro de que deseas eliminar el accesorio "${selectedAccesorio?.nombre}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+        type="danger"
+      />
     </div>
   );
 };

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import FormModal from '../../ui/FormModal';
-import { Plus, Trash2, Clock, X, User, Mail, Phone, ChevronDown, Check, MapPin, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Plus, Trash2, Clock, X, User, Mail, Phone, ChevronDown, Check, MapPin, ArrowLeft, AlertCircle} from 'lucide-react';
 
 const OptometristasFormModal = ({ 
     isOpen, 
