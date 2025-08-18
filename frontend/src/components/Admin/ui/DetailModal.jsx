@@ -18,19 +18,28 @@ const DetailModal = ({ isOpen, onClose, title, item, data = [], actions = [], ch
         
         {/* Contenido */}
         <div className="p-6 space-y-6 overflow-y-auto">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
-              {item.fotoPerfil ? (
-                <img src={item.fotoPerfil} alt={item.nombre} className="w-full h-full rounded-full object-cover" />
-              ) : (
-                <span className="text-cyan-600 font-bold text-2xl">{item.nombre?.charAt(0)}{item.apellido?.charAt(0)}</span>
-              )}
+          {/* Encabezado de perfil (solo si hay datos de perfil) */}
+          {(
+            item?.nombre || item?.apellido || item?.cargo || (typeof item?.edad === 'number') || item?.fotoPerfil
+          ) && (
+            <div className="flex items-center space-x-4">
+              <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+                {item.fotoPerfil ? (
+                  <img src={item.fotoPerfil} alt={item.nombre || ''} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <span className="text-cyan-600 font-bold text-2xl">{(item.nombre?.charAt(0) || '')}{(item.apellido?.charAt(0) || '')}</span>
+                )}
+              </div>
+              <div>
+                {(item.nombre || item.apellido) && (
+                  <h4 className="text-2xl font-bold text-gray-800">{item.nombre} {item.apellido}</h4>
+                )}
+                {(item.cargo || typeof item?.edad === 'number') && (
+                  <p className="text-gray-500">{item.cargo || `${item.edad} años`}</p>
+                )}
+              </div>
             </div>
-            <div>
-              <h4 className="text-2xl font-bold text-gray-800">{item.nombre} {item.apellido}</h4>
-              <p className="text-gray-500">{item.cargo || `${item.edad} años`}</p>
-            </div>
-          </div>
+          )}
 
           <div className="space-y-2 pt-4 border-t">
             {data.map((field, index) => (

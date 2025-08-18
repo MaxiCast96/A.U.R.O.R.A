@@ -15,11 +15,12 @@ const Sidebar = ({
   activeSection, 
   setActiveSection 
 }) => {
-  const [isExpanding, setIsExpanding] = React.useState(false);
-  const [isContracting, setIsContracting] = React.useState(false);
-  const [previousSidebarOpen, setPreviousSidebarOpen] = React.useState(sidebarOpen);
+  // Eliminadas animaciones de expansión/contracción para evitar flicker
   const [profileMenuOpen, setProfileMenuOpen] = React.useState(false);
   const profileMenuRef = React.useRef(null);
+  const headerRef = React.useRef(null);
+  const footerRef = React.useRef(null);
+  const [contentHeight, setContentHeight] = React.useState(null);
   
   // Datos del usuario autenticado
   const { user, logout } = useAuth();
@@ -48,26 +49,13 @@ const Sidebar = ({
       };
     }
   }
+  // El Sidebar confía en que menuItems ya viene filtrado por rol desde el layout
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
   };
   
-  // Controlar las animaciones de expansión y contracción
-  React.useEffect(() => {
-    if (sidebarOpen !== previousSidebarOpen) {
-      if (sidebarOpen) {
-        setIsExpanding(true);
-        setIsContracting(false);
-        const timer = setTimeout(() => setIsExpanding(false), 600);
-        return () => clearTimeout(timer);
-      } else {
-        setIsContracting(true);
-        setIsExpanding(false);
-      }
-    }
-    setPreviousSidebarOpen(sidebarOpen);
-  }, [sidebarOpen, previousSidebarOpen]);
+  // (Animaciones de expansión/contracción removidas)
 
   // Cerrar menú de perfil al hacer clic fuera
   React.useEffect(() => {
@@ -80,6 +68,44 @@ const Sidebar = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Mejoras responsive: bloquear scroll en móvil y cerrar con Escape
+  React.useEffect(() => {
+    if (mobileMenuOpen) {
+      const original = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      const onKey = (e) => {
+        if (e.key === 'Escape') closeMobileMenu();
+      };
+      document.addEventListener('keydown', onKey);
+      return () => {
+        document.body.style.overflow = original;
+        document.removeEventListener('keydown', onKey);
+      };
+    }
+  }, [mobileMenuOpen]);
+
+  // Recalcular altura útil del contenedor scroll (viewport - header - footer)
+  React.useEffect(() => {
+    const recalc = () => {
+      const headerH = headerRef.current?.offsetHeight || 0;
+      const footerH = footerRef.current?.offsetHeight || 0;
+      const vh = window.innerHeight || 0;
+      const h = Math.max(vh - headerH - footerH, 120);
+      setContentHeight(h);
+    };
+    recalc();
+    const ro = new ResizeObserver(recalc);
+    if (headerRef.current) ro.observe(headerRef.current);
+    if (footerRef.current) ro.observe(footerRef.current);
+    window.addEventListener('resize', recalc);
+    const id = setTimeout(recalc, 0);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('resize', recalc);
+      try { ro.disconnect(); } catch {}
+    };
+  }, [sidebarOpen, mobileMenuOpen]);
 
   const handleLogout = () => {
     logout();
@@ -112,15 +138,16 @@ const Sidebar = ({
       
       <div className={`
         bg-white shadow-xl min-h-screen fixed left-0 top-0 z-30 overflow-visible
-        transition-all duration-700 ease-in-out transform-gpu
-        ${sidebarOpen ? 'w-52 sm:w-56 md:w-60 lg:w-64' : 'w-12 sm:w-14 md:w-16'}
+        transition-transform duration-300 ease-out transform-gpu
+        ${sidebarOpen 
+          ? 'w-[82vw] max-w-[320px] md:w-60 lg:w-64' 
+          : 'w-[82vw] max-w-[320px] md:w-16'}
         ${mobileMenuOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         md:translate-x-0 border-r border-gray-200
-        ${isExpanding ? 'animate-expandSidebar' : ''}
-        ${isContracting ? 'animate-contractSidebar' : ''}
+        
       `}>
         {/* Header de la sidebar con logo - Responsivo */}
-        <div className="p-1 sm:p-1.5 md:p-2 lg:p-3 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
+        <div ref={headerRef} className="p-1 sm:p-1.5 md:p-2 lg:p-3 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
           <div className="flex items-center">
             <button
               onClick={() => window.innerWidth >= 768 && setSidebarOpen(!sidebarOpen)}
@@ -156,23 +183,27 @@ const Sidebar = ({
           </button>
         </div>
         
-        {/* Contenedor principal con padding responsivo */}
-        <div className="py-1 sm:py-1.5 md:py-2 overflow-y-auto h-[calc(100vh-90px)] sm:h-[calc(100vh-95px)] md:h-[calc(100vh-100px)] lg:h-[calc(100vh-120px)]">
-          {['Principal', 'Personal', 'Productos', 'Médico', 'Administración'].map((section, sectionIndex) => (
+        {/* Contenedor principal con altura dinámica */}
+        <div className="py-1 sm:py-1.5 md:py-2 overflow-y-auto" style={{ height: contentHeight ? `${contentHeight}px` : undefined }}>
+          {['Principal', 'Personal', 'Productos', 'Médico', 'Administración'].map((section, sectionIndex) => {
+            const itemsBySection = (menuItems || []).filter(item => item.section === section);
+            if (itemsBySection.length === 0) return null;
+            return (
             <div key={section} className="mb-1.5 sm:mb-2 md:mb-3 lg:mb-4" style={{ animationDelay: `${sectionIndex * 100}ms` }}>
               <h3 className={`px-1.5 sm:px-2 md:px-3 lg:px-4 mb-1 sm:mb-1.5 md:mb-2 text-[9px] sm:text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wider transition-all duration-700 ease-in-out transform ${
                 sidebarOpen ? 'opacity-100 translate-x-0 scale-100' : 'opacity-0 -translate-x-4 scale-95'
               }`}>
                 {section}
               </h3>
-              {menuItems
-                .filter(item => item.section === section)
+              {itemsBySection
                 .map((item, itemIndex) => (
                   <button
                     key={item.id}
                     onClick={() => {
+                      console.log('[Sidebar] click item ->', item.id);
                       setActiveSection(item.id);
-                      closeMobileMenu();
+                      // Cerrar el menú móvil en el siguiente tick para no interferir con el update
+                      setTimeout(() => closeMobileMenu(), 0);
                     }}
                     className={`w-full flex items-center px-1 sm:px-1.5 md:px-3 lg:px-4 py-1 sm:py-1.5 md:py-2 lg:py-2.5 text-left bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 hover:text-cyan-700 transition-all duration-300 group relative transform hover:scale-105 hover:translate-x-1 active:scale-95 active:translate-x-0 overflow-hidden ${
                       activeSection === item.id 
@@ -219,11 +250,11 @@ const Sidebar = ({
                   </button>
                 ))}
             </div>
-          ))}
+          )})}
         </div>
 
         {/* Sección de perfil del usuario - Responsivo */}
-        <div className="absolute bottom-0 left-0 right-0 p-0.5 sm:p-1 md:p-1.5 border-t border-gray-200 bg-gradient-to-r from-gray-50 to-gray-100 bg-white">
+        <div ref={footerRef} className="absolute bottom-0 left-0 right-0 p-0.5 sm:p-1 md:p-1.5 border-t border-gray-200 bg-white bg-gradient-to-r from-gray-50 to-gray-100 relative z-40">
           <div className="relative" ref={profileMenuRef}>
             <button
               onClick={() => {
@@ -272,7 +303,7 @@ const Sidebar = ({
             </button>
 
             {profileMenuOpen && sidebarOpen && (
-              <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 animate-slideUp z-60">
+              <div className="absolute bottom-full left-0 right-0 mb-1 bg-white rounded-lg shadow-xl border border-gray-200 py-1 animate-slideUp z-[60]">
                 <button
                   onClick={handleViewProfile}
                   className="w-full bg-white flex items-center px-2 sm:px-3 py-1 sm:py-1.5 text-[10px] sm:text-xs text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-all duration-200 group"
@@ -302,12 +333,6 @@ const Sidebar = ({
         {/* Efectos de borde brillante con animación */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
           <div className="absolute top-0 left-0 w-0.5 sm:w-1 h-full bg-gradient-to-b from-cyan-400 via-blue-500 to-cyan-400 opacity-30 animate-pulse"></div>
-          {isExpanding && (
-            <div className="absolute inset-0 bg-gradient-to-r from-cyan-100 via-blue-100 to-transparent opacity-20 animate-expandGlow"></div>
-          )}
-          {isContracting && (
-            <div className="absolute inset-0 bg-gradient-to-l from-gray-100 via-gray-50 to-transparent opacity-30 animate-contractGlow"></div>
-          )}
         </div>
       </div>
 
@@ -495,18 +520,6 @@ const Sidebar = ({
             }
             .animate-slideUp {
               animation: slideUp 0.2s ease-out;
-            }
-            .animate-expandSidebar {
-              animation: expandSidebar 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            }
-            .animate-contractSidebar {
-              animation: contractSidebar 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-            }
-            .animate-expandGlow {
-              animation: expandGlow 0.6s ease-out;
-            }
-            .animate-contractGlow {
-              animation: contractGlow 0.6s ease-out;
             }
             .animate-bounce-soft {
               animation: bounce-soft 0.6s ease-in-out;

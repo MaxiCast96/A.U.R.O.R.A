@@ -24,7 +24,7 @@ import {
 import { useDashboard } from '../../../hooks/useDashboard';
 import { useAuth } from '../../../components/auth/AuthContext';
 
-const DashboardContent = ({ onNavigate }) => {
+const DashboardContent = ({ onNavigate, visibleIds = [] }) => {
   const { 
     dashboardData, 
     loading, 
@@ -40,21 +40,25 @@ const DashboardContent = ({ onNavigate }) => {
 
   const quickActions = [
     {
+      id: 'lentes',
       title: 'Crear Lentes',
       icon: Eye,
       onClick: () => onNavigate ? onNavigate('lentes') : console.log('Crear Lentes')
     },
     {
+      id: 'citas',
       title: 'Crear Cita',
       icon: Calendar,
       onClick: () => onNavigate ? onNavigate('citas') : console.log('Crear Cita')
     },
     {
+      id: 'recetas',
       title: 'Crear Receta',
       icon: Stethoscope,
       onClick: () => onNavigate ? onNavigate('recetas') : console.log('Crear Receta')
     },
     {
+      id: 'promociones',
       title: 'Crear Promoción',
       icon: Tag,
       onClick: () => onNavigate ? onNavigate('promociones') : console.log('Crear Promoción')
@@ -222,16 +226,18 @@ const DashboardContent = ({ onNavigate }) => {
       <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 border border-gray-200">
         <h2 className="text-lg sm:text-xl font-semibold text-[#3C3C3B] mb-4 sm:mb-6">Acciones Rápidas</h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          {quickActions.map((action, index) => (
-            <button
-              key={index}
-              onClick={action.onClick}
-              className="bg-[#009BBF] hover:bg-[#0088A8] text-white p-3 sm:p-4 rounded-lg flex flex-col items-center justify-center transition-all duration-200 transform hover:scale-105 shadow-md"
-            >
-              <action.icon className="h-6 w-6 sm:h-8 sm:w-8 mb-2" />
-              <span className="text-xs sm:text-sm font-medium text-center">{action.title}</span>
-            </button>
-          ))}
+          {quickActions
+            .filter(action => !visibleIds.length || visibleIds.includes(action.id))
+            .map((action, index) => (
+              <button
+                key={index}
+                onClick={action.onClick}
+                className="bg-[#009BBF] hover:bg-[#0088A8] text-white p-3 sm:p-4 rounded-lg flex flex-col items-center justify-center transition-all duration-200 transform hover:scale-105 shadow-md"
+              >
+                <action.icon className="h-6 w-6 sm:h-8 sm:w-8 mb-2" />
+                <span className="text-xs sm:text-sm font-medium text-center">{action.title}</span>
+              </button>
+            ))}
         </div>
       </div>
     </div>

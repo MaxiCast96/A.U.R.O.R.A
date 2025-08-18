@@ -29,7 +29,7 @@ const DataTable = ({
                 <thead className="bg-cyan-500 text-white">
                     <tr>
                         {columns.map(col => (
-                            <th key={col.key || col.header} className="px-2 sm:px-3 md:px-6 py-2 sm:py-3 md:py-4 text-left font-semibold text-xs sm:text-sm">
+                            <th key={col.key || col.header} className="px-2 md:px-3 py-1 md:py-2 text-left font-semibold text-xs">
                                 {col.label || col.header}
                             </th>
                         ))}
@@ -43,7 +43,7 @@ const DataTable = ({
                                     renderRow(item)
                                 ) : (
                                     columns.map(column => (
-                                        <td key={column.key || column.header} className="px-2 sm:px-3 md:px-6 py-2 sm:py-3 md:py-4 text-gray-600 text-xs sm:text-sm">
+                                        <td key={column.key || column.header} className="px-2 md:px-3 py-1 md:py-2 text-gray-700 text-xs">
                                             {renderCell(item, column)}
                                         </td>
                                     ))
