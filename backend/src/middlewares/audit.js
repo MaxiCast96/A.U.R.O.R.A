@@ -1,4 +1,8 @@
 import AuditLog from '../models/AuditLog.js';
+import jwt from 'jsonwebtoken';
+import { config } from '../config.js';
+import empleadosModel from '../models/Empleados.js';
+import clientesModel from '../models/Clientes.js';
 
 // Paths to ignore from logging
 const IGNORE_PATHS = new Set([
@@ -31,15 +35,44 @@ export const auditLogger = async (req, res, next) => {
         const shouldLog = interesting.includes(req.method) || status >= 400;
         if (!shouldLog) return;
 
-        // Derive entity and action
-        const pathParts = (req.path || '').split('/').filter(Boolean);
-        const entity = pathParts[1] || pathParts[0] || 'unknown';
+        // Derive entity from full original URL to avoid capturing IDs when router is mounted
+        const fullPath = (req.originalUrl || req.url || '').split('?')[0];
+        const parts = fullPath.split('/').filter(Boolean);
+        const apiIdx = parts.indexOf('api');
+        const entity = apiIdx >= 0 ? (parts[apiIdx + 1] || 'unknown') : (parts[0] || 'unknown');
         let type = 'read';
         if (req.method === 'POST') type = 'create';
         else if (req.method === 'PUT' || req.method === 'PATCH') type = 'update';
         else if (req.method === 'DELETE') type = 'delete';
 
-        const user = req.user || {};
+        // Build user info: prefer req.user; if absent, try to decode token and enrich from DB
+        let user = req.user || {};
+        if (!user || (!user.id && !user._id)) {
+          try {
+            const authHeader = req.headers['authorization'];
+            const tok = authHeader && authHeader.split(' ')[1];
+            if (tok) {
+              const decoded = jwt.verify(tok, config.jwt.secret);
+              user = { ...decoded };
+              if (decoded?.id) {
+                if (decoded.rol === 'Cliente') {
+                  const cli = await clientesModel.findById(decoded.id).lean();
+                  if (cli) {
+                    user.nombre = [cli.nombre, cli.apellido].filter(Boolean).join(' ') || cli.nombre;
+                    user.correo = cli.correo || user.correo;
+                  }
+                } else {
+                  const emp = await empleadosModel.findById(decoded.id).lean();
+                  if (emp) {
+                    user.nombre = [emp.nombre, emp.apellido].filter(Boolean).join(' ') || emp.nombre;
+                    user.correo = emp.correo || user.correo;
+                    user.cargo = emp.cargo || user.cargo;
+                  }
+                }
+              }
+            }
+          } catch { /* ignore token errors for audit */ }
+        }
         const payloadBody = (() => {
           try {
             // Avoid logging secrets
@@ -61,7 +94,7 @@ export const auditLogger = async (req, res, next) => {
           },
           request: {
             method: req.method,
-            path,
+            path: fullPath,
             query: req.query || {},
             params: req.params || {},
             ip,
