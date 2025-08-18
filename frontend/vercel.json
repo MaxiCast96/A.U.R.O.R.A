@@ -1,3 +1,0 @@
-{
-  "buildCommand": "npm install --platform=linux --arch=x64 && npm run build"
-}
