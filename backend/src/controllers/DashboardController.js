@@ -23,9 +23,10 @@ const getDashboardStats = async (req, res) => {
       }
     });
 
-    // Contar ventas del mes actual
+    // Contar ventas del mes actual (solo finalizadas)
     const ventasDelMes = await Ventas.countDocuments({
-      fecha: { $gte: firstDayOfMonth }
+      fecha: { $gte: firstDayOfMonth },
+      estado: { $in: ['completada', 'procesada'] }
     });
 
     // Calcular ingresos del mes usando agregación
@@ -223,20 +224,21 @@ const getAllDashboardData = async (req, res) => {
           }
         });
         const ventasDelMes = await Ventas.countDocuments({
-          fecha: { $gte: firstDayOfMonth }
+          fecha: { $gte: firstDayOfMonth },
+          estado: { $in: ['completada', 'procesada'] }
         });
 
         const ventasIngresos = await Ventas.aggregate([
           {
             $match: {
               fecha: { $gte: firstDayOfMonth },
-              estado: 'completada'
+              estado: { $in: ['completada', 'procesada'] }
             }
           },
           {
             $group: {
               _id: null,
-              totalIngresos: { $sum: '$total' }
+              totalIngresos: { $sum: '$facturaDatos.total' }
             }
           }
         ]);
