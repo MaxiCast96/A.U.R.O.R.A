@@ -36,8 +36,5 @@
     "rollup": "^4.46.3",
     "vite-plugin-top-level-await": "^1.6.0",
     "vite-plugin-wasm": "^3.5.0"
-  },
-  "optionalDependencies": {
-    "lightningcss": "^1.24.1"
   }
 }
