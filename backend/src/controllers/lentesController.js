@@ -146,6 +146,10 @@ async function updateLentes(req, res) {
 
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
+    console.log('[updateLentes] params.id:', req.params.id);
+    try {
+        console.log('[updateLentes] raw sucursales (req.body.sucursales):', typeof req.body.sucursales, req.body.sucursales);
+    } catch {}
     if (typeof sucursales === "string") {
         try {
             sucursales = JSON.parse(sucursales);
@@ -186,6 +190,30 @@ async function updateLentes(req, res) {
             }
         }
 
+        // Sanitizar sucursales: solo entradas válidas con ObjectId y stock numérico >= 0
+        let sucursalesLimpias = [];
+        if (Array.isArray(sucursales)) {
+            sucursalesLimpias = sucursales
+                .map((s) => {
+                    const id = (s && s.sucursalId && typeof s.sucursalId === 'object' && s.sucursalId._id)
+                        ? s.sucursalId._id
+                        : s?.sucursalId;
+                    const idStr = typeof id === 'string' ? id : '';
+                    const valido = /^[a-fA-F0-9]{24}$/.test(idStr);
+                    if (!valido) return null;
+                    return {
+                        sucursalId: idStr,
+                        nombreSucursal: s?.nombreSucursal || '',
+                        stock: Number.isFinite(Number(s?.stock)) && Number(s.stock) >= 0 ? Number(s.stock) : 0,
+                    };
+                })
+                .filter(Boolean);
+            console.log('[updateLentes] sucursales parsed length:', sucursales?.length || 0, '=> sanitized length:', sucursalesLimpias.length);
+            if (sucursalesLimpias.length > 0) {
+                console.log('[updateLentes] first sanitized item sample:', sucursalesLimpias[0]);
+            }
+        }
+
         // Construir documento de actualización con operadores atómicos
         const setData = {
             nombre,
@@ -202,12 +230,16 @@ async function updateLentes(req, res) {
             imagenes: imagenesURLs,
             enPromocion: !!enPromocion,
             fechaCreacion,
-            sucursales: sucursales || []
+            sucursales: sucursalesLimpias
         };
 
         const updateDoc = (enPromocion && promocionId)
             ? { $set: { ...setData, promocionId } }
             : { $set: setData, $unset: { promocionId: "" } };
+
+        try {
+            console.log('[updateLentes] updateDoc.$set.sucursales length:', Array.isArray(updateDoc.$set.sucursales) ? updateDoc.$set.sucursales.length : 'N/A');
+        } catch {}
 
         // Actualiza el documento y retorna la versión nueva, validando esquema
         const updatedLentes = await lentesModel.findByIdAndUpdate(

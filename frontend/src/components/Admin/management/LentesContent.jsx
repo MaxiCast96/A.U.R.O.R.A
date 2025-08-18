@@ -1,6 +1,7 @@
 // src/pages/LentesContent.jsx
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../../config/api';
 import { useForm } from '../../../hooks/admin/useForm'; // Ajusta la ruta si es necesario
 import { usePagination } from '../../../hooks/admin/usePagination'; // Ajusta la ruta si es necesario
 
@@ -18,8 +19,8 @@ import LentesFormModal from '../management/lentes/LentesFormModal'; // Importa e
 // Iconos
 import { Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, Image as ImageIcon } from 'lucide-react';
 
-// URL base de tu API
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api'; // Asegúrate que el puerto sea el correcto
+// URL base de tu API (centralizada)
+const API_URL = API_CONFIG.BASE_URL;
 
 const LentesContent = () => {
   // --- ESTADOS ---
@@ -218,11 +219,14 @@ const LentesContent = () => {
         enPromocion: !!formData.enPromocion,
         promocionId: formData.enPromocion ? formData.promocionId : undefined,
         fechaCreacion: formData.fechaCreacion,
-        sucursales: Array.isArray(formData.sucursales) ? formData.sucursales.map(s => ({
-          sucursalId: typeof s.sucursalId === 'object' && s.sucursalId?._id ? s.sucursalId._id : s.sucursalId,
-          nombreSucursal: s.nombreSucursal || (sucursales.find(x => x._id === (typeof s.sucursalId === 'object' ? s.sucursalId?._id : s.sucursalId))?.nombre) || '',
-          stock: Number(s.stock ?? 0),
-        })) : [],
+        sucursales: Array.isArray(formData.sucursales) ? formData.sucursales
+          .map(s => ({
+            sucursalId: typeof s.sucursalId === 'object' && s.sucursalId?._id ? s.sucursalId._id : s.sucursalId,
+            nombreSucursal: s.nombreSucursal || (sucursales.find(x => x._id === (typeof s.sucursalId === 'object' ? s.sucursalId?._id : s.sucursalId))?.nombre) || '',
+            stock: Number(s.stock ?? 0),
+          }))
+          .filter(s => typeof s.sucursalId === 'string' && /^[a-fA-F0-9]{24}$/.test(s.sucursalId))
+          : [],
       };
 
       // Prune invalid fields for update
