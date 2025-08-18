@@ -53,7 +53,7 @@ empleadosController.createEmpleados = async (req, res) => {
         if (await empleadosModel.findOne({ correo })) {
             return res.status(400).json({ message: "El correo electrónico ya está registrado." });
         }
-
+        
         // Verificar si ya existe empleado con el mismo DUI
         if (await empleadosModel.findOne({ dui })) {
             return res.status(400).json({ message: "El DUI ya está registrado." });
@@ -96,11 +96,11 @@ empleadosController.createEmpleados = async (req, res) => {
         });
 
         await newEmpleado.save();
-
+        
         // Poblar los datos del empleado para respuesta completa
         const empleadoCreado = await empleadosModel.findById(newEmpleado._id).populate('sucursalId', 'nombre');
-
-        res.status(201).json({
+        
+        res.status(201).json({ 
             message: "Empleado creado exitosamente",
             empleado: empleadoCreado
         });
@@ -133,7 +133,7 @@ empleadosController.updateEmpleados = async (req, res) => {
         if (correo && await empleadosModel.findOne({ correo, _id: { $ne: id } })) {
             return res.status(400).json({ message: "El correo electrónico ya pertenece a otro empleado." });
         }
-
+        
         // Verificar unicidad de DUI (excluyendo empleado actual)
         if (dui && await empleadosModel.findOne({ dui, _id: { $ne: id } })) {
             return res.status(400).json({ message: "El DUI ya pertenece a otro empleado." });
@@ -165,11 +165,11 @@ empleadosController.updateEmpleados = async (req, res) => {
         }
 
         await empleadosModel.findByIdAndUpdate(id, updateData);
-
+        
         // Obtener el empleado actualizado con población
         const empleadoActualizado = await empleadosModel.findById(id).populate('sucursalId', 'nombre');
-
-        res.status(200).json({
+        
+        res.status(200).json({ 
             message: "Empleado actualizado exitosamente",
             empleado: empleadoActualizado
         });
@@ -188,7 +188,7 @@ empleadosController.deleteEmpleados = async (req, res) => {
         if (!deletedEmpleado) {
             return res.status(404).json({ message: "Empleado no encontrado" });
         }
-
+        
         // Opcional: Eliminar la imagen de Cloudinary también
         if (deletedEmpleado.fotoPerfil) {
             try {
@@ -199,7 +199,7 @@ empleadosController.deleteEmpleados = async (req, res) => {
                 console.log("Error al eliminar imagen de Cloudinary:", cloudinaryError.message);
             }
         }
-
+        
         res.status(200).json({ message: "Empleado eliminado exitosamente" });
     } catch (error) {
         res.status(500).json({ message: "Error eliminando empleado: " + error.message });
@@ -210,32 +210,32 @@ empleadosController.deleteEmpleados = async (req, res) => {
 empleadosController.forgotPassword = async (req, res) => {
     const { correo } = req.body;
     if (!correo) return res.status(400).json({ message: "Correo es requerido" });
-
+    
     // Verificar configuración de email
     if (!config.email.user || !config.email.pass) {
         console.error("Configuración de email no encontrada. Verifica las variables de entorno USER_EMAIL y USER_PASS");
         return res.status(500).json({ message: "Error de configuración del servidor. Contacta al administrador." });
     }
-
+    
     try {
         // Busca empleado por correo
         const empleado = await empleadosModel.findOne({ correo });
         if (!empleado) return res.status(404).json({ message: "No existe usuario con ese correo" });
-
+        
         // Generar código de 6 dígitos
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-
+        
         console.log('Código generado (empleado):', resetCode);
         console.log('Expiración calculada (empleado):', new Date(Date.now() + 1000 * 60 * 30));
-
+        
         // Guardar código y expiración en el usuario
         empleado.resetPasswordToken = resetCode;
         empleado.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutos
         await empleado.save();
-
+        
         console.log('Código guardado en BD (empleado):', empleado.resetPasswordToken);
         console.log('Expiración guardada en BD (empleado):', empleado.resetPasswordExpires);
-
+        
         // Enviar email con código de recuperación
         const transporter = nodemailer.createTransport({
             service: "gmail",
@@ -484,7 +484,7 @@ empleadosController.forgotPassword = async (req, res) => {
                 <div class="header">
                     <div class="logo-container">
                         <div class="logo">
-                            <span class="glasses-icon"></span>
+                            <span class="glasses-icon">👓</span>
                         </div>
                     </div>
                     <h1 class="company-name">Óptica La Inteligente</h1>
@@ -583,9 +583,9 @@ soporte@opticalainteligente.com
 empleadosController.verifyResetCode = async (req, res) => {
     const { correo, code } = req.body;
     if (!correo || !code) return res.status(400).json({ message: "Correo y código requeridos" });
-
+    
     console.log('Verify code attempt (empleado):', { correo, code: code.substring(0, 3) + '***' });
-
+    
     try {
         // Busca empleado con token válido y no expirado
         const empleado = await empleadosModel.findOne({
@@ -593,7 +593,7 @@ empleadosController.verifyResetCode = async (req, res) => {
             resetPasswordToken: code,
             resetPasswordExpires: { $gt: Date.now() }
         });
-
+        
         console.log('Empleado encontrado para verificación:', empleado ? 'Sí' : 'No');
         if (empleado) {
             console.log('Token almacenado:', empleado.resetPasswordToken);
@@ -601,11 +601,11 @@ empleadosController.verifyResetCode = async (req, res) => {
             console.log('Tiempo actual:', new Date());
             console.log('¿Token expirado?:', empleado.resetPasswordExpires < Date.now());
         }
-
+        
         if (!empleado) {
             return res.status(400).json({ message: "Código inválido, expirado o correo incorrecto" });
         }
-
+        
         // Si llegamos aquí, el código es válido
         res.json({ message: "Código válido", valid: true });
     } catch (error) {
@@ -618,9 +618,9 @@ empleadosController.verifyResetCode = async (req, res) => {
 empleadosController.resetPassword = async (req, res) => {
     const { correo, code, newPassword } = req.body;
     if (!correo || !code || !newPassword) return res.status(400).json({ message: "Correo, código y nueva contraseña requeridos" });
-
+    
     console.log('Reset password attempt (empleado):', { correo, code: code.substring(0, 3) + '***' });
-
+    
     try {
         // Busca empleado con token válido y no expirado
         const empleado = await empleadosModel.findOne({
@@ -628,7 +628,7 @@ empleadosController.resetPassword = async (req, res) => {
             resetPasswordToken: code,
             resetPasswordExpires: { $gt: Date.now() }
         });
-
+        
         console.log('Empleado encontrado:', empleado ? 'Sí' : 'No');
         if (empleado) {
             console.log('Token almacenado:', empleado.resetPasswordToken);
@@ -636,15 +636,15 @@ empleadosController.resetPassword = async (req, res) => {
             console.log('Tiempo actual:', new Date());
             console.log('¿Token expirado?:', empleado.resetPasswordExpires < Date.now());
         }
-
+        
         if (!empleado) return res.status(400).json({ message: "Código inválido, expirado o correo incorrecto" });
-
+        
         // Actualizar contraseña y limpiar tokens
         empleado.password = await bcryptjs.hash(newPassword, 10);
         empleado.resetPasswordToken = undefined;
         empleado.resetPasswordExpires = undefined;
         await empleado.save();
-
+        
         console.log('Contraseña actualizada exitosamente para empleado:', correo);
         res.json({ message: "Contraseña actualizada correctamente" });
     } catch (error) {
