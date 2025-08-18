@@ -27,7 +27,7 @@ const PrivateRoute = ({ children, requiredRole = null, noRedirect = false }) => 
   if (requiredRole === 'Empleado') {
     // Si requiere rol de Empleado, permitir acceso a cualquier rol que NO sea Cliente
     if (userRole === 'Cliente') {
-      return <Navigate to="/perfil" state={{ 
+      return <Navigate to="/acceso-denegado" state={{ 
         message: 'No tienes permisos para acceder a esta página. Solo el personal autorizado puede acceder al dashboard.' 
       }} replace />;
     }
@@ -36,8 +36,8 @@ const PrivateRoute = ({ children, requiredRole = null, noRedirect = false }) => 
   }
 
   if (requiredRole === 'Cliente' && userRole !== 'Cliente') {
-    // Si requiere rol de Cliente pero el usuario no lo tiene, redirigir al perfil
-    return <Navigate to="/perfil" state={{ 
+    // Si requiere rol de Cliente pero el usuario no lo tiene, redirigir al acceso denegado
+    return <Navigate to="/acceso-denegado" state={{ 
       message: 'No tienes permisos para acceder a esta página. Solo los clientes pueden acceder a las cotizaciones.' 
     }} replace />;
   }
