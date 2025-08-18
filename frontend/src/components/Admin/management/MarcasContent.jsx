@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../../config/api';
 
 // ============================================================================
 // CUSTOM HOOKS
@@ -473,10 +474,44 @@ import {
 } from 'lucide-react';
 
 // ============================================================================
-// API CONSTANTS
+// API ENDPOINTS + FALLBACK AXIOS HELPER
 // ============================================================================
 
-const API_BASE_URL = 'http://localhost:4000/api';
+const MARCAS_EP = API_CONFIG.ENDPOINTS.MARCAS; // '/marcas'
+
+// Axios helper con fallback (localhost <-> producción)
+const axiosWithFallback = async (method, path, data, config = {}) => {
+  const buildUrl = (base) => `${base}${path}`;
+
+  const tryOnce = async (base) => {
+    const url = buildUrl(base);
+    const res = await axios({
+      url,
+      method,
+      data,
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json', ...(config.headers || {}) },
+      ...config,
+    });
+    API_CONFIG.BASE_URL = base; // recordar último base exitoso
+    return res;
+  };
+
+  const primary = API_CONFIG.BASE_URL;
+  const secondary = primary.includes('localhost')
+    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    : 'http://localhost:4000/api';
+
+  try {
+    return await tryOnce(primary);
+  } catch (e1) {
+    const msg = e1?.message || '';
+    if (e1.code === 'ECONNABORTED' || msg.includes('Network Error') || msg.includes('ECONNREFUSED')) {
+      return await tryOnce(secondary);
+    }
+    throw e1;
+  }
+};
 
 // ============================================================================
 // MAIN COMPONENT
@@ -526,14 +561,14 @@ const MarcasContent = () => {
         formValidator
     );
 
-    // ========================================================================
+    // ============================================================================
     // API FUNCTIONS
-    // ========================================================================
+    // ============================================================================
 
     const fetchMarcas = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(`${API_BASE_URL}/marcas`);
+            const response = await axiosWithFallback('get', MARCAS_EP);
             setMarcas(response.data);
         } catch (error) {
             console.error('Error al cargar marcas:', error);
@@ -545,7 +580,7 @@ const MarcasContent = () => {
 
     const createMarca = async (marcaData) => {
         try {
-            const response = await axios.post(`${API_BASE_URL}/marcas`, {
+            const response = await axiosWithFallback('post', MARCAS_EP, {
                 ...marcaData,
                 fechaCreacion: new Date().toISOString()
             });
@@ -563,7 +598,7 @@ const MarcasContent = () => {
 
     const updateMarca = async (id, marcaData) => {
         try {
-            const response = await axios.put(`${API_BASE_URL}/marcas/${id}`, {
+            const response = await axiosWithFallback('put', `${MARCAS_EP}/${id}`, {
                 ...marcaData,
                 fechaActualizacion: new Date().toISOString()
             });
@@ -583,7 +618,7 @@ const MarcasContent = () => {
 
     const deleteMarca = async (id) => {
         try {
-            await axios.delete(`${API_BASE_URL}/marcas/${id}`);
+            await axiosWithFallback('delete', `${MARCAS_EP}/${id}`);
             
             // Actualizar la lista local inmediatamente
             setMarcas(prev => prev.filter(marca => marca._id !== id));
@@ -596,9 +631,9 @@ const MarcasContent = () => {
         }
     };
 
-    // ========================================================================
+    // ============================================================================
     // EFFECTS
-    // ========================================================================
+    // ============================================================================
 
     useEffect(() => {
         fetchMarcas();

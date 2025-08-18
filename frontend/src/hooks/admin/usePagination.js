@@ -4,17 +4,21 @@ export const usePagination = (data, initialPageSize = 5) => {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(initialPageSize);
 
-  const totalPages = Math.ceil(data.length / pageSize);
+  // Asegurar que data sea un arreglo para evitar errores (e.g., cuando la API devuelve un objeto)
+  const arr = Array.isArray(data) ? data : [];
+  const arrLength = arr.length;
+
+  const totalPages = Math.ceil(arrLength / pageSize);
 
   const paginatedData = useMemo(() => {
     const start = currentPage * pageSize;
-    return data.slice(start, start + pageSize);
-  }, [data, currentPage, pageSize]);
+    return arr.slice(start, start + pageSize);
+  }, [arr, currentPage, pageSize]);
 
   // Reset to first page if data or page size changes
   useEffect(() => {
     setCurrentPage(0);
-  }, [data.length, pageSize]);
+  }, [arrLength, pageSize]);
 
   const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages - 1));
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(prev - 1, 0));

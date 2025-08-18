@@ -4,6 +4,7 @@ import "../models/Categoria.js";
 import lentesModel from "../models/Lentes.js";
 import { v2 as cloudinary } from "cloudinary";
 import Lentes from '../models/Lentes.js';
+import Promociones from '../models/Promociones.js';
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -143,8 +144,13 @@ async function deleteLentes(req, res) {
 
 // UPDATE - Actualiza lentes existentes con nuevos datos e imágenes
 async function updateLentes(req, res) {
+
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
+    console.log('[updateLentes] params.id:', req.params.id);
+    try {
+        console.log('[updateLentes] raw sucursales (req.body.sucursales):', typeof req.body.sucursales, req.body.sucursales);
+    } catch {}
     if (typeof sucursales === "string") {
         try {
             sucursales = JSON.parse(sucursales);
@@ -185,12 +191,60 @@ async function updateLentes(req, res) {
             }
         }
 
-        // Prepara objeto con datos a actualizar
-        const updateData = {
+        // Sanitizar sucursales: solo entradas válidas con ObjectId y stock numérico >= 0
+        let sucursalesLimpias = [];
+        if (Array.isArray(sucursales)) {
+            sucursalesLimpias = sucursales
+                .map((s) => {
+                    const id = (s && s.sucursalId && typeof s.sucursalId === 'object' && s.sucursalId._id)
+                        ? s.sucursalId._id
+                        : s?.sucursalId;
+                    const idStr = typeof id === 'string' ? id : '';
+                    const valido = /^[a-fA-F0-9]{24}$/.test(idStr);
+                    if (!valido) return null;
+                    return {
+                        sucursalId: idStr,
+                        nombreSucursal: s?.nombreSucursal || '',
+                        stock: Number.isFinite(Number(s?.stock)) && Number(s.stock) >= 0 ? Number(s.stock) : 0,
+                    };
+                })
+                .filter(Boolean);
+            console.log('[updateLentes] sucursales parsed length:', sucursales?.length || 0, '=> sanitized length:', sucursalesLimpias.length);
+            if (sucursalesLimpias.length > 0) {
+                console.log('[updateLentes] first sanitized item sample:', sucursalesLimpias[0]);
+            }
+        }
+
+        // Normalizar y validar IDs que pueden venir como objetos poblados
+        const normalizeId = (val) => {
+            try {
+                const maybe = (val && typeof val === 'object' && val._id) ? val._id : val;
+                const str = typeof maybe === 'string' ? maybe : '';
+                return /^[a-fA-F0-9]{24}$/.test(str) ? str : undefined;
+            } catch (_) {
+                return undefined;
+            }
+        };
+
+        const categoriaIdNorm = normalizeId(categoriaId);
+        const marcaIdNorm = normalizeId(marcaId);
+        const promocionIdNorm = normalizeId(promocionId);
+
+        // Obtener estado actual (para precio base o categoría si no vienen en body)
+        const currentDoc = await lentesModel.findById(req.params.id).select('categoriaId precioBase');
+        if (!currentDoc) {
+            return res.status(404).json({ success: false, message: "Lentes no encontrados" });
+        }
+
+        const basePrice = (typeof precioBase === 'number') ? precioBase : (currentDoc.precioBase || 0);
+        const categoriaParaPromo = categoriaIdNorm || (currentDoc.categoriaId ? String(currentDoc.categoriaId) : undefined);
+
+        // Construir documento de actualización con operadores atómicos
+        const setData = {
             nombre,
             descripcion,
-            categoriaId,
-            marcaId,
+            categoriaId: categoriaIdNorm,
+            marcaId: marcaIdNorm,
             material,
             color,
             tipoLente,
@@ -199,33 +253,58 @@ async function updateLentes(req, res) {
             linea,
             medidas,
             imagenes: imagenesURLs,
-            enPromocion: enPromocion || false,
+            enPromocion: !!enPromocion,
+            promocionId: promocionIdNorm,
             fechaCreacion,
-            sucursales: sucursales || []
+            sucursales: sucursalesLimpias
         };
 
-        // Maneja promoción: agrega o elimina según el estado
-        if (enPromocion && promocionId) {
-            updateData.promocionId = promocionId; // Asigna promoción
-        } else {
-            updateData.$unset = { promocionId: "" }; // Elimina promoción
+        // Eliminar claves undefined para no pisar con valores inválidos
+        Object.keys(setData).forEach((k) => {
+            if (typeof setData[k] === 'undefined') delete setData[k];
+        });
+
+        // Respetar la elección del cliente: no forzar enPromocion=false por vigencia/aplicabilidad.
+        // Confiamos en el precioActual calculado en el frontend.
+        let shouldUnsetPromo = false;
+        if (enPromocion === false) {
+            setData.enPromocion = false;
+            // Usuario desactiva explícitamente la promoción: desasociar
+            shouldUnsetPromo = true;
+        } else if (enPromocion === true) {
+            // Si el usuario marcó enPromocion, aseguramos que quede activo y preservamos el promocionId si es válido
+            setData.enPromocion = true;
+            if (promocionIdNorm) {
+                setData.promocionId = promocionIdNorm;
+            }
         }
 
-        // Actualiza el documento y retorna la versión nueva
+        const updateDoc = { $set: setData };
+        if (shouldUnsetPromo) {
+            updateDoc.$unset = { ...(updateDoc.$unset || {}), promocionId: "" };
+            delete setData.promocionId; // evitar validar id inválido
+        }
+
+        try {
+            console.log('[updateLentes] updateDoc.$set.sucursales length:', Array.isArray(updateDoc.$set.sucursales) ? updateDoc.$set.sucursales.length : 'N/A');
+        } catch {}
+
+        // Actualiza el documento y retorna la versión nueva, validando esquema
         const updatedLentes = await lentesModel.findByIdAndUpdate(
             req.params.id,
-            updateData,
-            { new: true } // Retorna documento actualizado
+            updateDoc,
+            { new: true, runValidators: true }
         );
 
         if (!updatedLentes) {
-            return res.json({ message: "Lentes no encontrados" });
+            return res.status(404).json({ success: false, message: "Lentes no encontrados" });
         }
 
-        res.json({ message: "Lentes actualizado" });
+        res.json({ success: true, message: "Lentes actualizado", data: updatedLentes });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error actualizando lentes: " + error.message });
+        console.log("Error actualizando lentes: ", error);
+        const status = error.name === 'ValidationError' ? 400 : 500;
+        res.status(status).json({ success: false, message: "Error actualizando lentes: " + error.message });
     }
 }
 

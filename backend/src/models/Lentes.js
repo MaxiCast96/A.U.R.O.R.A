@@ -22,33 +22,27 @@ const LentesSchema = new Schema({
     },
     material: {
         type: String,
-        required: true, // Material del armazón
-        unique: true
+        required: true // Material del armazón
     },
      color: {
         type: String,
-        required: true, // Color del armazón
-        unique: true
+        required: true // Color del armazón
     },
      tipoLente: {
         type: String,
-        required: true, // Tipo (graduado, sol, bifocal, etc.)
-        unique: true
+        required: true // Tipo (graduado, sol, bifocal, etc.)
     },
      precioBase: {
         type: Number,
-        required: true, // Precio original
-        unique: true
+        required: true // Precio original
     },
       precioActual: {
         type: Number,
-        required: true, // Precio actual (con descuentos)
-        unique: true
+        required: true // Precio actual (con descuentos)
     },
       linea: {
         type: String,
-        required: true, // Línea de producto (Premium, Económica)
-        unique: true
+        required: true // Línea de producto (Premium, Económica)
     },
     medidas: { // Dimensiones físicas del lente
         anchoPuente: {

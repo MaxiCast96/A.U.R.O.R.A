@@ -1,11 +1,44 @@
-// Configuración de la API
+// Configuración de la API con fallback dinámico (localhost -> render)
+const LOCAL_BASE = 'http://localhost:4000/api';
+const PROD_BASE = 'https://a-u-r-o-r-a.onrender.com/api';
+const ENV_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
+  ? String(import.meta.env.VITE_API_BASE_URL).trim()
+  : '';
+
+// Para evitar errores iniciales si el backend local no está arriba aún,
+// empezar en PROD y cambiar a LOCAL cuando el ping confirme disponibilidad.
+let ACTIVE_BASE = ENV_BASE || PROD_BASE;
+
+// Ping con timeout corto para decidir en runtime
+const ping = async (url, path = '/health', timeoutMs = 1200) => {
+  try {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch(url.replace(/\/$/, '') + path, { method: 'GET', signal: controller.signal, credentials: 'include' }).catch(() => null);
+    clearTimeout(t);
+    return !!(res && res.ok);
+  } catch (_) {
+    return false;
+  }
+};
+
+// Resolver automáticamente: preferir localhost si responde, de lo contrario usar PROD
+(async () => {
+  // Si ya se forzó por ENV, no modificar
+  if (ENV_BASE) {
+    ACTIVE_BASE = ENV_BASE;
+    return;
+  }
+  const okLocal = await ping(LOCAL_BASE, '/'); // ruta raíz suele responder
+  ACTIVE_BASE = okLocal ? LOCAL_BASE : PROD_BASE;
+  // Debug opcional
+  console.log('[API] BASE_URL activo:', ACTIVE_BASE);
+})();
+
 export const API_CONFIG = {
-  // URL base de la API
-  BASE_URL: (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
-    ? import.meta.env.VITE_API_BASE_URL
-    : (typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost'
-      ? 'http://localhost:4000/api'
-      : 'https://a-u-r-o-r-a.onrender.com/api'),
+  // URL base de la API (puede actualizarse en runtime)
+  get BASE_URL() { return ACTIVE_BASE; },
+  set BASE_URL(v) { ACTIVE_BASE = v; },
   
   // Endpoints disponibles
   ENDPOINTS: {

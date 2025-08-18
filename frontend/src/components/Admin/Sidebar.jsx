@@ -312,256 +312,256 @@ const Sidebar = ({
       </div>
 
       {/* Estilos CSS personalizados */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes slideInRight {
-          from { 
-            opacity: 0;
-            transform: translateX(20px);
-          }
-          to { 
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
+      <style>{`
+            @keyframes fadeIn {
+              from { opacity: 0; }
+              to { opacity: 1; }
+            }
+            
+            @keyframes slideInRight {
+              from { 
+                opacity: 0;
+                transform: translateX(20px);
+              }
+              to { 
+                opacity: 1;
+                transform: translateX(0);
+              }
+            }
 
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-        
-        @keyframes expandSidebar {
-          0% { 
-            transform: scaleX(0.95) scaleY(0.98);
-            opacity: 0.9;
-            box-shadow: 0 0 0 rgba(6, 182, 212, 0);
-          }
-          30% {
-            transform: scaleX(1.03) scaleY(1.01);
-            opacity: 1;
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);
-          }
-          70% {
-            transform: scaleX(1.01) scaleY(1.005);
-            opacity: 1;
-            box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
-          }
-          100% { 
-            transform: scaleX(1) scaleY(1);
-            opacity: 1;
-            box-shadow: 0 0 0 rgba(6, 182, 212, 0);
-          }
-        }
-        
-        @keyframes contractSidebar {
-          0% { 
-            transform: scaleX(1) scaleY(1);
-            opacity: 1;
-            box-shadow: 0 0 0 rgba(107, 114, 128, 0);
-          }
-          30% {
-            transform: scaleX(0.97) scaleY(0.99);
-            opacity: 0.95;
-            box-shadow: 0 0 15px rgba(107, 114, 128, 0.15);
-          }
-          70% {
-            transform: scaleX(0.99) scaleY(1.005);
-            opacity: 0.98;
-            box-shadow: 0 0 8px rgba(107, 114, 128, 0.08);
-          }
-          100% { 
-            transform: scaleX(1) scaleY(1);
-            opacity: 1;
-            box-shadow: 0 0 0 rgba(107, 114, 128, 0);
-          }
-        }
-        
-        @keyframes expandGlow {
-          0% { 
-            opacity: 0;
-            transform: translateX(-100%);
-          }
-          20% {
-            opacity: 0.2;
-            transform: translateX(-50%);
-          }
-          50% {
-            opacity: 0.4;
-            transform: translateX(0%);
-          }
-          80% {
-            opacity: 0.2;
-            transform: translateX(50%);
-          }
-          100% { 
-            opacity: 0;
-            transform: translateX(100%);
-          }
-        }
-        
-        @keyframes contractGlow {
-          0% { 
-            opacity: 0;
-            transform: translateX(100%);
-          }
-          20% {
-            opacity: 0.15;
-            transform: translateX(50%);
-          }
-          50% {
-            opacity: 0.3;
-            transform: translateX(0%);
-          }
-          80% {
-            opacity: 0.15;
-            transform: translateX(-50%);
-          }
-          100% { 
-            opacity: 0;
-            transform: translateX(-100%);
-          }
-        }
-        
-        @keyframes gradientFlow {
-          0% { 
-            background-size: 200% 100%;
-            background-position: 0% 0%;
-          }
-          100% { 
-            background-size: 200% 100%;
-            background-position: 200% 0%;
-          }
-        }
-        
-        @keyframes gradientFlowReverse {
-          0% { 
-            background-size: 200% 100%;
-            background-position: 200% 0%;
-            opacity: 0.3;
-          }
-          100% { 
-            background-size: 200% 100%;
-            background-position: 0% 0%;
-            opacity: 0.7;
-          }
-        }
-        
-        @keyframes pop-in {
-          0% { 
-            opacity: 0; 
-            transform: scale(0.8) translateY(10px);
-          }
-          100% { 
-            opacity: 1; 
-            transform: scale(1) translateY(0);
-          }
-        }
-        
-        @keyframes shine {
-          0% { transform: translateX(-100%) skewX(-12deg); }
-          100% { transform: translateX(300%) skewX(-12deg); }
-        }
-        
-        @keyframes twinkle {
-          0%, 100% { 
-            opacity: 0; 
-            transform: scale(0);
-          }
-          50% { 
-            opacity: 1; 
-            transform: scale(1);
-          }
-        }
-        
-        @keyframes bounce-soft {
-          0%, 100% { transform: scale(1) rotate(0deg); }
-          25% { transform: scale(1.1) rotate(3deg); }
-          50% { transform: scale(1.05) rotate(-2deg); }
-          75% { transform: scale(1.08) rotate(1deg); }
-        }
-        
-        .animate-fadeIn {
-          animation: fadeIn 0.3s ease-out;
-        }
-        .animate-slideUp {
-          animation: slideUp 0.2s ease-out;
-        }
-        .animate-expandSidebar {
-          animation: expandSidebar 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        .animate-contractSidebar {
-          animation: contractSidebar 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-        .animate-expandGlow {
-          animation: expandGlow 0.6s ease-out;
-        }
-        .animate-contractGlow {
-          animation: contractGlow 0.6s ease-out;
-        }
-        .animate-bounce-soft {
-          animation: bounce-soft 0.6s ease-in-out;
-        }
-        .animate-pop-in {
-          animation: pop-in 0.3s ease-out;
-        }
-        .animate-shine {
-          animation: shine 0.8s ease-out;
-        }
-        .animate-twinkle {
-          animation: twinkle 2s infinite;
-        }
-        .animate-gradientFlow {
-          animation: gradientFlow 4s linear infinite;
-        }
-        .animate-gradientFlowReverse {
-          animation: gradientFlowReverse 4s linear infinite;
-        }
-        .active-gradient-item {
-          position: relative;
-        }
-        .transform-gpu {
-          transform: translateZ(0);
-          backface-visibility: hidden;
-          perspective: 1000px;
-        }
-        
-        /* Responsive breakpoints personalizados */
-        @media (max-width: 480px) {
-          .responsive-sidebar {
-            font-size: 0.7rem;
-          }
-        }
-        
-        @media (min-width: 481px) and (max-width: 768px) {
-          .responsive-sidebar {
-            font-size: 0.75rem;
-          }
-        }
-        
-        @media (min-width: 769px) and (max-width: 1024px) {
-          .responsive-sidebar {
-            font-size: 0.85rem;
-          }
-        }
-        
-        @media (min-width: 1025px) {
-          .responsive-sidebar {
-            font-size: 1rem;
-          }
-        }
-      `}</style>
-    </>
-  );
+            @keyframes slideUp {
+              from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+              }
+            }
+            
+            @keyframes expandSidebar {
+              0% { 
+                transform: scaleX(0.95) scaleY(0.98);
+                opacity: 0.9;
+                box-shadow: 0 0 0 rgba(6, 182, 212, 0);
+              }
+              30% {
+                transform: scaleX(1.03) scaleY(1.01);
+                opacity: 1;
+                box-shadow: 0 0 25px rgba(6, 182, 212, 0.2);
+              }
+              70% {
+                transform: scaleX(1.01) scaleY(1.005);
+                opacity: 1;
+                box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
+              }
+              100% { 
+                transform: scaleX(1) scaleY(1);
+                opacity: 1;
+                box-shadow: 0 0 0 rgba(6, 182, 212, 0);
+              }
+            }
+            
+            @keyframes contractSidebar {
+              0% { 
+                transform: scaleX(1) scaleY(1);
+                opacity: 1;
+                box-shadow: 0 0 0 rgba(107, 114, 128, 0);
+              }
+              30% {
+                transform: scaleX(0.97) scaleY(0.99);
+                opacity: 0.95;
+                box-shadow: 0 0 15px rgba(107, 114, 128, 0.15);
+              }
+              70% {
+                transform: scaleX(0.99) scaleY(1.005);
+                opacity: 0.98;
+                box-shadow: 0 0 8px rgba(107, 114, 128, 0.08);
+              }
+              100% { 
+                transform: scaleX(1) scaleY(1);
+                opacity: 1;
+                box-shadow: 0 0 0 rgba(107, 114, 128, 0);
+              }
+            }
+            
+            @keyframes expandGlow {
+              0% { 
+                opacity: 0;
+                transform: translateX(-100%);
+              }
+              20% {
+                opacity: 0.2;
+                transform: translateX(-50%);
+              }
+              50% {
+                opacity: 0.4;
+                transform: translateX(0%);
+              }
+              80% {
+                opacity: 0.2;
+                transform: translateX(50%);
+              }
+              100% { 
+                opacity: 0;
+                transform: translateX(100%);
+              }
+            }
+            
+            @keyframes contractGlow {
+              0% { 
+                opacity: 0;
+                transform: translateX(100%);
+              }
+              20% {
+                opacity: 0.15;
+                transform: translateX(50%);
+              }
+              50% {
+                opacity: 0.3;
+                transform: translateX(0%);
+              }
+              80% {
+                opacity: 0.15;
+                transform: translateX(-50%);
+              }
+              100% { 
+                opacity: 0;
+                transform: translateX(-100%);
+              }
+            }
+            
+            @keyframes gradientFlow {
+              0% { 
+                background-size: 200% 100%;
+                background-position: 0% 0%;
+              }
+              100% { 
+                background-size: 200% 100%;
+                background-position: 200% 0%;
+              }
+            }
+            
+            @keyframes gradientFlowReverse {
+              0% { 
+                background-size: 200% 100%;
+                background-position: 200% 0%;
+                opacity: 0.3;
+              }
+              100% { 
+                background-size: 200% 100%;
+                background-position: 0% 0%;
+                opacity: 0.7;
+              }
+            }
+            
+            @keyframes pop-in {
+              0% { 
+                opacity: 0; 
+                transform: scale(0.8) translateY(10px);
+              }
+              100% { 
+                opacity: 1; 
+                transform: scale(1) translateY(0);
+              }
+            }
+            
+            @keyframes shine {
+              0% { transform: translateX(-100%) skewX(-12deg); }
+              100% { transform: translateX(300%) skewX(-12deg); }
+            }
+            
+            @keyframes twinkle {
+              0%, 100% { 
+                opacity: 0; 
+                transform: scale(0);
+              }
+              50% { 
+                opacity: 1; 
+                transform: scale(1);
+              }
+            }
+            
+            @keyframes bounce-soft {
+              0%, 100% { transform: scale(1) rotate(0deg); }
+              25% { transform: scale(1.1) rotate(3deg); }
+              50% { transform: scale(1.05) rotate(-2deg); }
+              75% { transform: scale(1.08) rotate(1deg); }
+            }
+            
+            .animate-fadeIn {
+              animation: fadeIn 0.3s ease-out;
+            }
+            .animate-slideUp {
+              animation: slideUp 0.2s ease-out;
+            }
+            .animate-expandSidebar {
+              animation: expandSidebar 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            }
+            .animate-contractSidebar {
+              animation: contractSidebar 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            }
+            .animate-expandGlow {
+              animation: expandGlow 0.6s ease-out;
+            }
+            .animate-contractGlow {
+              animation: contractGlow 0.6s ease-out;
+            }
+            .animate-bounce-soft {
+              animation: bounce-soft 0.6s ease-in-out;
+            }
+            .animate-pop-in {
+              animation: pop-in 0.3s ease-out;
+            }
+            .animate-shine {
+              animation: shine 0.8s ease-out;
+            }
+            .animate-twinkle {
+              animation: twinkle 2s infinite;
+            }
+            .animate-gradientFlow {
+              animation: gradientFlow 4s linear infinite;
+            }
+            .animate-gradientFlowReverse {
+              animation: gradientFlowReverse 4s linear infinite;
+            }
+            .active-gradient-item {
+              position: relative;
+            }
+            .transform-gpu {
+              transform: translateZ(0);
+              backface-visibility: hidden;
+              perspective: 1000px;
+            }
+            
+            /* Responsive breakpoints personalizados */
+            @media (max-width: 480px) {
+              .responsive-sidebar {
+                font-size: 0.7rem;
+              }
+            }
+            
+            @media (min-width: 481px) and (max-width: 768px) {
+              .responsive-sidebar {
+                font-size: 0.75rem;
+              }
+            }
+            
+            @media (min-width: 769px) and (max-width: 1024px) {
+              .responsive-sidebar {
+                font-size: 0.85rem;
+              }
+            }
+            
+            @media (min-width: 1025px) {
+              .responsive-sidebar {
+                font-size: 1rem;
+              }
+            }
+          `}</style>
+        </>
+      );
 };
 
 export default Sidebar;

@@ -1,5 +1,36 @@
 import React, { useState } from 'react';
-import { config } from '../../config';
+import { API_CONFIG } from '../../config/api';
+
+// Helper fetch con fallback (localhost <-> producción)
+const fetchWithFallback = async (path, options = {}) => {
+  const buildUrl = (base) => `${base}${path}`;
+  const tryOnce = async (base) => {
+    const res = await fetch(buildUrl(base), {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options,
+    });
+    if (!res.ok) return res;
+    API_CONFIG.BASE_URL = base;
+    return res;
+  };
+
+  const primary = API_CONFIG.BASE_URL;
+  const secondary = primary.includes('localhost')
+    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    : 'http://localhost:4000/api';
+
+  try {
+    const r = await tryOnce(primary);
+    return r;
+  } catch (e1) {
+    const msg = e1?.message || '';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('ECONNREFUSED')) {
+      return await tryOnce(secondary);
+    }
+    throw e1;
+  }
+};
 
 const ForgotPassword = ({ onClose }) => {
   const [step, setStep] = useState(1);
@@ -23,25 +54,19 @@ const ForgotPassword = ({ onClose }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const normalizedEmail = (formData.email || '').trim().toLowerCase();
-    // Base de API dinámica sin exponer 'localhost' en mensajes al usuario
-    const apiBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
-      ? 'http://localhost:4000/api'
-      : config.api.baseUrl;
     if (step === 1) {
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch(`${apiBase}/clientes/forgot-password`, {
+        let res = await fetchWithFallback(`${API_CONFIG.ENDPOINTS.CLIENTES}/forgot-password`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ correo: normalizedEmail })
         });
         let data = await res.json();
         if (!res.ok && (data.message?.toLowerCase().includes('no existe') || data.message?.toLowerCase().includes('correo'))) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch(`${apiBase}/empleados/forgot-password`, {
+          res = await fetchWithFallback(`${API_CONFIG.ENDPOINTS.EMPLEADOS}/forgot-password`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ correo: normalizedEmail })
           });
           data = await res.json();
@@ -62,9 +87,8 @@ const ForgotPassword = ({ onClose }) => {
       setLoading(true);
       try {
         // Intentar en clientes
-        let res = await fetch(`${apiBase}/clientes/reset-password`, {
+        let res = await fetchWithFallback(`${API_CONFIG.ENDPOINTS.CLIENTES}/reset-password`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             correo: normalizedEmail,
             code: formData.code,
@@ -74,9 +98,8 @@ const ForgotPassword = ({ onClose }) => {
         let data = await res.json();
         if (!res.ok && data.message?.toLowerCase().includes('correo')) {
           // Si no existe en clientes, intentar en empleados
-          res = await fetch(`${apiBase}/empleados/reset-password`, {
+          res = await fetchWithFallback(`${API_CONFIG.ENDPOINTS.EMPLEADOS}/reset-password`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               correo: normalizedEmail,
               code: formData.code,

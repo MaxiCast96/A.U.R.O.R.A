@@ -1,6 +1,7 @@
 // src/pages/LentesContent.jsx
 import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../../config/api';
 import { useForm } from '../../../hooks/admin/useForm'; // Ajusta la ruta si es necesario
 import { usePagination } from '../../../hooks/admin/usePagination'; // Ajusta la ruta si es necesario
 
@@ -18,8 +19,10 @@ import LentesFormModal from '../management/lentes/LentesFormModal'; // Importa e
 // Iconos
 import { Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, Image as ImageIcon } from 'lucide-react';
 
-// URL base de tu API
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api'; // Asegúrate que el puerto sea el correcto
+// Helpers para usar BASE_URL dinámico + fallback per-request
+const getBase = () => API_CONFIG.BASE_URL;
+const PROD_FALLBACK = 'https://a-u-r-o-r-a.onrender.com/api';
+const withBase = (path, base = getBase()) => `${base}${path}`;
 
 const LentesContent = () => {
   // --- ESTADOS ---
@@ -41,14 +44,34 @@ const LentesContent = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await Promise.all([
-        axios.get(`${API_URL}/lentes`),
-        axios.get(`${API_URL}/categoria`), // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/marcas`),     // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/promociones`), // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/sucursales`), // Asumiendo que esta ruta existe en app.js
+      const baseNow = getBase();
+      const doFetch = async (base) => Promise.all([
+        axios.get(withBase('/lentes', base)),
+        axios.get(withBase('/categoria', base)),
+        axios.get(withBase('/marcas', base)),
+        axios.get(withBase('/promociones', base)),
+        axios.get(withBase('/sucursales', base)),
       ]);
-      setLentes(lentesRes.data);
+      let lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes;
+      try {
+        [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await doFetch(baseNow);
+      } catch (err) {
+        const isConnRefused = err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK';
+        const isLocal = baseNow.includes('localhost');
+        if (isConnRefused && isLocal) {
+          // Retry against PROD once
+          [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await doFetch(PROD_FALLBACK);
+          // Opcional: actualizar BASE_URL activa para el resto de la app
+          API_CONFIG.BASE_URL = PROD_FALLBACK;
+        } else {
+          throw err;
+        }
+      }
+      // Normaliza la respuesta a un arreglo para evitar errores en .filter/.reduce
+      const lentesData = Array.isArray(lentesRes.data)
+        ? lentesRes.data
+        : (Array.isArray(lentesRes.data?.data) ? lentesRes.data.data : []);
+      setLentes(lentesData);
       setCategorias(categoriasRes.data);
       setMarcas(marcasRes.data);
       setPromociones(promocionesRes.data);
@@ -192,19 +215,82 @@ const LentesContent = () => {
     }
 
     try {
-      const dataToSend = {
-        ...formData,
-        // Si tienes campos de selección con objetos completos en lugar de solo _id,
-        // asegúrate de enviar solo los _id. En este caso, useForm ya maneja esto.
+      // Normalizar payload para el backend
+      const medidas = formData.medidas || {};
+      let dataToSend = {
+        nombre: formData.nombre?.trim(),
+        descripcion: formData.descripcion?.trim(),
+        categoriaId: formData.categoriaId,
+        marcaId: formData.marcaId,
+        material: formData.material?.trim(),
+        color: formData.color?.trim(),
+        tipoLente: formData.tipoLente?.trim(),
+        precioBase: Number(formData.precioBase),
+        precioActual: Number(formData.precioActual),
+        linea: formData.linea?.trim(),
+        medidas: {
+          anchoPuente: Number(medidas.anchoPuente),
+          altura: Number(medidas.altura),
+          ancho: Number(medidas.ancho),
+        },
+        imagenes: Array.isArray(formData.imagenes) ? formData.imagenes : [],
+        enPromocion: !!formData.enPromocion,
+        promocionId: formData.enPromocion ? formData.promocionId : undefined,
+        fechaCreacion: formData.fechaCreacion,
+        sucursales: Array.isArray(formData.sucursales) ? formData.sucursales
+          .map(s => ({
+            sucursalId: typeof s.sucursalId === 'object' && s.sucursalId?._id ? s.sucursalId._id : s.sucursalId,
+            nombreSucursal: s.nombreSucursal || (sucursales.find(x => x._id === (typeof s.sucursalId === 'object' ? s.sucursalId?._id : s.sucursalId))?.nombre) || '',
+            stock: Number(s.stock ?? 0),
+          }))
+          .filter(s => typeof s.sucursalId === 'string' && /^[a-fA-F0-9]{24}$/.test(s.sucursalId))
+          : [],
+      };
+
+      // Prune invalid fields for update
+      const prune = (obj) => {
+        Object.keys(obj).forEach((k) => {
+          const v = obj[k];
+          if (v === undefined || v === null) {
+            delete obj[k];
+            return;
+          }
+          if (typeof v === 'string' && v.trim() === '') {
+            delete obj[k];
+            return;
+          }
+          if (typeof v === 'object' && !Array.isArray(v)) {
+            prune(v);
+          }
+        });
+      };
+      prune(dataToSend);
+
+      const baseNow = getBase();
+      const putUrl = withBase(`/lentes/${selectedLente?._id || ''}`, baseNow);
+      const postUrl = withBase('/lentes', baseNow);
+
+      const safeRequest = async (fn) => {
+        try {
+          return await fn(baseNow);
+        } catch (err) {
+          const isConnRefused = err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK';
+          const isLocal = baseNow.includes('localhost');
+          if (isConnRefused && isLocal) {
+            API_CONFIG.BASE_URL = PROD_FALLBACK;
+            return await fn(PROD_FALLBACK);
+          }
+          throw err;
+        }
       };
 
       if (selectedLente) {
         // Actualizar
-        await axios.put(`${API_URL}/lentes/${selectedLente._id}`, dataToSend);
+        await safeRequest((base) => axios.put(withBase(`/lentes/${selectedLente._id}`, base), dataToSend));
         showAlert('success', 'Lente actualizado exitosamente.');
       } else {
         // Crear
-        await axios.post(`${API_URL}/lentes`, dataToSend);
+        await safeRequest((base) => axios.post(withBase('/lentes', base), dataToSend));
         showAlert('success', 'Lente creado exitosamente.');
       }
       fetchData(); // Recargar datos después de la operación exitosa
@@ -228,7 +314,7 @@ const LentesContent = () => {
 
   // --- FILTRADO Y PAGINACIÓN ---
   const filteredLentes = useMemo(() => {
-    let currentLentes = lentes;
+    let currentLentes = Array.isArray(lentes) ? lentes : [];
 
     // Filtro por término de búsqueda
     if (searchTerm) {
@@ -268,25 +354,27 @@ const LentesContent = () => {
     return lente.sucursales ? lente.sucursales.reduce((sum, s) => sum + s.stock, 0) : 0;
   };
 
+  const lentesArr = Array.isArray(lentes) ? lentes : [];
   const stats = [
-    { id: 1, name: 'Total de Lentes', value: lentes.length, Icon: Glasses, color: 'text-blue-500' },
-    { id: 2, name: 'Lentes en Promoción', value: lentes.filter(l => l.enPromocion).length, Icon: TrendingUp, color: 'text-purple-500' },
-    { id: 3, name: 'Stock Total', value: lentes.reduce((sum, l) => sum + getTotalStock(l), 0), Icon: Package, color: 'text-green-500' },
-    { id: 4, name: 'Valor Inventario', value: lentes.reduce((sum, l) => sum + (l.precioActual * getTotalStock(l)), 0).toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), Icon: DollarSign, color: 'text-yellow-500' },
+    { id: 1, name: 'Total de Lentes', value: lentesArr.length, Icon: Glasses, color: 'text-blue-500' },
+    { id: 2, name: 'Lentes en Promoción', value: lentesArr.filter(l => l.enPromocion).length, Icon: TrendingUp, color: 'text-purple-500' },
+    { id: 3, name: 'Stock Total', value: lentesArr.reduce((sum, l) => sum + getTotalStock(l), 0), Icon: Package, color: 'text-green-500' },
+    { id: 4, name: 'Valor Inventario', value: lentesArr.reduce((sum, l) => sum + (l.precioActual * getTotalStock(l)), 0).toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), Icon: DollarSign, color: 'text-yellow-500' },
   ];
 
   // --- COLUMNAS DE LA TABLA ---
   const columns = [
-    { header: 'Nombre', accessor: 'nombre' },
-    { header: 'Línea', accessor: 'linea' },
-    { header: 'Tipo Lente', accessor: 'tipoLente' },
-    { header: 'Marca', accessor: 'marcaId.nombre' }, // Accede al nombre si está poblado
-    { header: 'Categoría', accessor: 'categoriaId.nombre' }, // Accede al nombre si está poblado
-    { header: 'Precio Actual', accessor: 'precioActual', render: (lente) => lente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) },
-    { header: 'Stock Total', accessor: 'stockTotal', render: (lente) => getTotalStock(lente) },
+    { label: 'Nombre', key: 'nombre' },
+    { label: 'Línea', key: 'linea' },
+    { label: 'Tipo Lente', key: 'tipoLente' },
+    // Mostrar nombre si viene poblado; de lo contrario, mostrar el ID o '-'
+    { label: 'Marca', key: 'marcaId', render: (lente) => lente.marcaId?.nombre || lente.marcaId || '-' },
+    { label: 'Categoría', key: 'categoriaId', render: (lente) => lente.categoriaId?.nombre || lente.categoriaId || '-' },
+    { label: 'Precio Actual', key: 'precioActual', render: (lente) => lente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }) },
+    { label: 'Stock Total', key: 'stockTotal', render: (lente) => getTotalStock(lente) },
     {
-      header: 'Promoción',
-      accessor: 'enPromocion',
+      label: 'Promoción',
+      key: 'enPromocion',
       render: (lente) => (
         <span className={`px-2 py-1 rounded-full text-xs font-medium ${lente.enPromocion ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
           {lente.enPromocion ? 'Sí' : 'No'}
@@ -294,8 +382,8 @@ const LentesContent = () => {
       ),
     },
     {
-      header: 'Acciones',
-      accessor: 'actions',
+      label: 'Acciones',
+      key: 'actions',
       render: (lente) => (
         <div className="flex space-x-2">
           <button onClick={() => handleOpenViewModal(lente)} className="text-blue-600 hover:text-blue-800">
@@ -379,9 +467,9 @@ const LentesContent = () => {
 
       <FilterBar
         searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        selectedFilter={selectedFilter}
-        setSelectedFilter={setSelectedFilter}
+        onSearchChange={(e) => setSearchTerm(e.target.value)}
+        activeFilter={selectedFilter}
+        onFilterChange={setSelectedFilter}
         filters={[
           { label: 'Todos', value: 'todos' },
           { label: 'En Promoción', value: 'enPromocion' },
@@ -391,7 +479,7 @@ const LentesContent = () => {
           { label: 'Ocupacional', value: 'ocupacional' },
           // Agrega más filtros según sea necesario (por ejemplo, por material, color, etc.)
         ]}
-        placeholder="Buscar lentes por nombre, descripción, material, etc."
+        searchPlaceholder="Buscar lentes por nombre, descripción, material, etc."
       />
 
       <div className="bg-white rounded-xl shadow-lg p-6">

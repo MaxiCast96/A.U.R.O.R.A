@@ -11,6 +11,7 @@ import {
   CreditCard, DollarSign, TrendingUp, TrendingDown, BarChart, PieChart, Activity,
   Droplet, Leaf, Flower, Bug, Fish, Dog, Cat, Bird, Rabbit
 } from 'lucide-react';
+import { API_CONFIG, buildApiUrl } from '../../../config/api';
 
 // Lista de iconos disponibles con sus nombres
 const availableIcons = [
@@ -362,7 +363,7 @@ const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChan
             <span>{submitLabel}</span>
           </button>
         </div>
-              </div>
+      </div>
     </div>
   );
 };
@@ -456,15 +457,63 @@ const CategoriasContent = () => {
   });
   const [formErrors, setFormErrors] = useState({});
 
-  // URL base de la API
-  const API_URL = 'http://localhost:4000/api/categoria';
+  // Endpoint
+  const ENDPOINT = API_CONFIG.ENDPOINTS.CATEGORIAS; // '/categoria'
+
+  // Helper: realizar fetch con fallback localhost <-> producción y actualizar BASE_URL activa
+  const requestWithFallback = async (path = '', options = {}) => {
+    const makeUrl = (base) => `${base}${ENDPOINT}${path}`;
+
+    const tryOnce = async (base) => {
+      const url = makeUrl(base);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUTS.REQUEST);
+      try {
+        const res = await fetch(url, { ...API_CONFIG.FETCH_CONFIG, ...options, signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(`HTTP ${res.status} ${res.statusText} - ${text}`);
+        }
+        // Si llega aquí, éxito: fijar BASE_URL
+        API_CONFIG.BASE_URL = base;
+        return await res.json();
+      } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+      }
+    };
+
+    // Intentar primero con la BASE_URL activa
+    const primaryBase = API_CONFIG.BASE_URL;
+    const secondaryBase = primaryBase.includes('localhost')
+      ? 'https://a-u-r-o-r-a.onrender.com/api'
+      : 'http://localhost:4000/api';
+
+    try {
+      return await tryOnce(primaryBase);
+    } catch (e1) {
+      // Fallback solo para errores de red/timeout/TypeError o abort
+      if (
+        e1.name === 'AbortError' ||
+        (e1 instanceof TypeError) ||
+        (e1.message && (e1.message.includes('Failed to fetch') || e1.message.includes('NetworkError')))
+      ) {
+        try {
+          return await tryOnce(secondaryBase);
+        } catch (e2) {
+          throw e2;
+        }
+      }
+      throw e1;
+    }
+  };
 
   // Función para obtener todas las categorías
   const fetchCategorias = async () => {
     try {
       setLoading(true);
-      const response = await fetch(API_URL);
-      const data = await response.json();
+      const data = await requestWithFallback('', { method: 'GET' });
       
       if (Array.isArray(data)) {
         setCategorias(data);
@@ -525,15 +574,10 @@ const CategoriasContent = () => {
     if (!validateForm()) return;
     
     try {
-      const response = await fetch(API_URL, {
+      const result = await requestWithFallback('', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
-      
-      const result = await response.json();
       
       if (result.message === 'categoria guardada') {
         await fetchCategorias();
@@ -555,15 +599,10 @@ const CategoriasContent = () => {
     if (!validateForm()) return;
     
     try {
-      const response = await fetch(`${API_URL}/${selectedCategoria._id}`, {
+      const result = await requestWithFallback(`/${selectedCategoria._id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(formData),
       });
-      
-      const result = await response.json();
       
       if (result.message === 'Categoria actualizada') {
         await fetchCategorias();
@@ -586,11 +625,9 @@ const CategoriasContent = () => {
     }
     
     try {
-      const response = await fetch(`${API_URL}/${id}`, {
+      const result = await requestWithFallback(`/${id}`, {
         method: 'DELETE',
       });
-      
-      const result = await response.json();
       
       if (result.message === 'Categoria eliminada') {
         await fetchCategorias();
