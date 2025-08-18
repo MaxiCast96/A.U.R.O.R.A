@@ -41,7 +41,7 @@ const LentesFormModal = ({
 
   // Ya no limpiamos promocionId por filtro, porque ahora se muestran todas
 
-  // Autocalcular precioActual cuando hay promoción seleccionada
+  // Autocalcular precioActual según promoción o igualar al precio base cuando no hay promoción
   useEffect(() => {
     if (!formData) return;
     const base = Number(formData.precioBase);
@@ -58,8 +58,8 @@ const LentesFormModal = ({
       }
       // Formatear a 2 decimales
       handleInputChange({ target: { name: 'precioActual', value: Number(newPrice.toFixed(2)) } });
-    } else if (!formData.enPromocion && (formData.precioActual === '' || formData.precioActual === null || formData.precioActual === undefined)) {
-      // Si no está en promoción y precioActual está vacío, inicializar con base
+    } else {
+      // Sin promoción o sin promoción seleccionada: precioActual = precioBase
       handleInputChange({ target: { name: 'precioActual', value: base } });
     }
   }, [formData?.enPromocion, formData?.promocionId, formData?.precioBase]);
@@ -125,8 +125,7 @@ const LentesFormModal = ({
     { name: 'material', label: 'Material', type: 'text', required: true, colSpan: 1 },
     { name: 'color', label: 'Color', type: 'text', required: true, colSpan: 1 },
     { name: 'tipoLente', label: 'Tipo de Lente', type: 'select', options: ['Monofocal', 'Bifocal', 'Progresivo', 'Ocupacional'], required: true, colSpan: 1 },
-    { name: 'precioBase', label: 'Precio Base', type: 'number', required: true, colSpan: 1, step: '0.01' },
-    { name: 'precioActual', label: 'Precio Actual', type: 'number', required: true, colSpan: 1, step: '0.01' },
+    { name: 'precioBase', label: 'Precio', type: 'number', required: true, colSpan: 1, step: '0.01' },
     { name: 'linea', label: 'Línea', type: 'text', required: true, colSpan: 1 },
 
     // Medidas (campos anidados)

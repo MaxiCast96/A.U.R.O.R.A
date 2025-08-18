@@ -2809,7 +2809,7 @@ const Producto = () => {
       </div>
 
       {showSolicitudModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/10 backdrop-blur-sm md:backdrop-blur"> 
           <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6">
             <h3 className="text-lg font-semibold mb-4">Solicitud de producto personalizado</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2920,7 +2920,7 @@ const Producto = () => {
     if (!selectedProduct) return null;
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-white/10 backdrop-blur-sm md:backdrop-blur">
         <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
           <div className="p-6">
             <div className="flex justify-between items-start mb-4">
