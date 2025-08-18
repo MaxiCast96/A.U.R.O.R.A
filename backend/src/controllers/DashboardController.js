@@ -33,7 +33,7 @@ const getDashboardStats = async (req, res) => {
       {
         $match: {
           fecha: { $gte: firstDayOfMonth },
-          estado: 'completada'
+          estado: { $in: ['completada', 'procesada'] }
         }
       },
       {
@@ -77,7 +77,7 @@ const getVentasMensuales = async (req, res) => {
             $gte: new Date(year, 0, 1),
             $lt: new Date(parseInt(year) + 1, 0, 1)
           },
-          estado: 'completada'
+          estado: { $in: ['completada', 'procesada'] }
         }
       },
       {
@@ -259,7 +259,7 @@ const getAllDashboardData = async (req, res) => {
                 $gte: new Date(year, 0, 1),
                 $lt: new Date(year + 1, 0, 1)
               },
-              estado: 'completada'
+              estado: { $in: ['completada', 'procesada'] }
             }
           },
           {
