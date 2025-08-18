@@ -4,6 +4,7 @@ import { useApiData } from '../../../hooks/useApiData';
 import { API_CONFIG, buildApiUrl } from '../../../config/api';
 import FormModal from '../ui/FormModal';
 import Alert, { ToastContainer, useAlert } from '../../ui/Alert';
+import DetailModal from '../ui/DetailModal';
 
 const PersonalizadosContent = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -12,6 +13,7 @@ const PersonalizadosContent = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
+
     const { data: apiData, loading, error } = useApiData('productosPersonalizados', { r: refreshKey });
     const { data: pedidosData } = useApiData('pedidos', { r: refreshKey });
     const { data: clientesData } = useApiData('clientes');
@@ -20,6 +22,9 @@ const PersonalizadosContent = () => {
     const [stats, setStats] = useState({ total: 0, enProceso: 0, completado: 0 });
     const [showRecentOnly, setShowRecentOnly] = useState(false);
     const { alertState, showSuccess, showError, hideAlert } = useAlert();
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
+
     const [formData, setFormData] = useState({
       clienteId: '',
       productoBaseId: '',
@@ -32,10 +37,7 @@ const PersonalizadosContent = () => {
       tipoLente: '',
       precioCalculado: null,
       fechaEntregaEstimada: '',
-      cotizacion: {
-        total: null,
-        validaHasta: ''
-      }
+      cotizacion: { total: null, validaHasta: '' }
     });
     const [errors, setErrors] = useState({});
     const estadoOptions = [
@@ -240,6 +242,11 @@ const PersonalizadosContent = () => {
       }
     };
 
+    const handleOpenViewModal = (item) => {
+      setSelectedItem(item);
+      setShowDetailModal(true);
+    };
+
     // Normalizar datos desde la API para la tabla
     const productosPersonalizados = useMemo(() => {
       if (!Array.isArray(apiData)) return [];
@@ -248,21 +255,21 @@ const PersonalizadosContent = () => {
         const createdAtDate = createdAtRaw ? new Date(createdAtRaw) : null;
         const isRecent = createdAtDate ? (Date.now() - createdAtDate.getTime()) <= (24 * 60 * 60 * 1000) : false;
         return {
-        id: p._id,
-        nombre: p.nombre,
-        descripcion: p.descripcion,
-        categoria: p.categoria,
-        color: p.color,
-        precio: formatPrice(p.precioCalculado),
-        cliente: typeof p.clienteId === 'object' && p.clienteId !== null ? (p.clienteId.nombre || p.clienteId.fullName || p.clienteId.razonSocial || p.clienteId.email || String(p.clienteId._id || '')) : String(p.clienteId || ''),
-        fechaCreacion: formatDate(createdAtRaw),
-        estado: estadoLabel(p.estado),
-        backendEstado: p.estado,
-        cotizacionId: p.cotizacionId || null,
-        pedidoId: p.pedidoId || null,
-        isRecent,
-        source: 'personalizado',
-      };
+          id: p._id,
+          nombre: p.nombre,
+          descripcion: p.descripcion,
+          categoria: p.categoria,
+          color: p.color,
+          precio: formatPrice(p.precioCalculado),
+          cliente: typeof p.clienteId === 'object' && p.clienteId !== null ? (p.clienteId.nombre || p.clienteId.fullName || p.clienteId.razonSocial || p.clienteId.email || String(p.clienteId._id || '')) : String(p.clienteId || ''),
+          fechaCreacion: formatDate(createdAtRaw),
+          estado: estadoLabel(p.estado),
+          backendEstado: p.estado,
+          cotizacionId: p.cotizacionId || null,
+          pedidoId: p.pedidoId || null,
+          isRecent,
+          source: 'personalizado',
+        };
       });
     }, [apiData]);
 
@@ -313,14 +320,18 @@ const PersonalizadosContent = () => {
       let cancelled = false;
       const loadStats = async () => {
         try {
-          const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/estadisticas`);
+          const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/estadisticas/resumen`);
           const res = await fetch(url, { credentials: API_CONFIG.FETCH_CONFIG.credentials });
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const json = await res.json().catch(() => ({}));
           const obj = (json && typeof json === 'object' && (json.data || json)) || {};
-          const enProceso = obj.en_proceso ?? obj.enProceso ?? 0;
-          const completado = obj.completado ?? 0;
-          const total = obj.total ?? Object.values(obj).filter(v => typeof v === 'number').reduce((a, b) => a + b, 0);
+          // Backend devuelve { totalProductos, estadisticas: [{ _id: 'en_proceso'|'completado'|..., count, totalVentas }] }
+          const lista = Array.isArray(obj.estadisticas) ? obj.estadisticas : [];
+          const enProceso = lista.find(e => e._id === 'en_proceso')?.count ?? 0;
+          const completado = lista.find(e => e._id === 'completado')?.count ?? 0;
+          const total = typeof obj.totalProductos === 'number' 
+            ? obj.totalProductos 
+            : lista.reduce((acc, e) => acc + (e.count || 0), 0);
           if (!cancelled) setStats({ total, enProceso, completado });
         } catch (err) {
           // Fallback a cálculo local
@@ -601,6 +612,7 @@ const PersonalizadosContent = () => {
                     <button
                       className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                       title="Ver detalles"
+                      onClick={() => handleOpenViewModal(producto)}
                     >
                       <Eye className="w-4 h-4" />
                     </button>
@@ -702,6 +714,31 @@ const PersonalizadosContent = () => {
           ]}
         />
       )}
+
+      {/* Modal Detalles */}
+      {showDetailModal && (
+        <DetailModal
+          isOpen={showDetailModal}
+          onClose={() => { setShowDetailModal(false); setSelectedItem(null); }}
+          title="Detalles del Personalizado"
+          item={selectedItem}
+          data={selectedItem ? [
+            { label: 'ID', value: selectedItem.id },
+            { label: 'Nombre', value: selectedItem.nombre },
+            { label: 'Descripción', value: selectedItem.descripcion || '-' },
+            { label: 'Cliente', value: selectedItem.cliente || '-' },
+            { label: 'Categoría', value: selectedItem.categoria || '-' },
+            { label: 'Color', value: selectedItem.color || '-' },
+            { label: 'Precio', value: selectedItem.precio || '-' },
+            { label: 'Fecha', value: selectedItem.fechaCreacion || '-' },
+            { label: 'Estado', value: selectedItem.estado || '-' },
+            selectedItem.cotizacionId ? { label: 'Cotización ID', value: selectedItem.cotizacionId } : null,
+            selectedItem.pedidoId ? { label: 'Pedido ID', value: selectedItem.pedidoId } : null,
+            { label: 'Origen', value: selectedItem.source === 'pedido' ? 'Pedido' : 'Personalizado' },
+          ].filter(Boolean) : []}
+        />
+      )}
+
 
       {/* Controles de paginación centrados */}
       <div className="mt-4 flex flex-col items-center gap-4 pb-6">

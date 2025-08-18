@@ -9,12 +9,6 @@ router.route("/")
     .get(recetasController.getRecetas) // GET /api/recetas - Obtener todas las recetas
     .post(recetasController.createReceta); // POST /api/recetas - Crear nueva receta
 
-// Rutas para manejo de receta específica por ID
-router.route("/:id")
-    .get(recetasController.getRecetaById) // GET /api/recetas/:id - Obtener receta por ID
-    .put(recetasController.updateReceta) // PUT /api/recetas/:id - Actualizar receta
-    .delete(recetasController.deleteReceta); // DELETE /api/recetas/:id - Eliminar receta
-
 // Rutas especiales para consultas específicas de recetas
 
 // GET /api/recetas/historial/:historialId - Recetas asociadas a un historial médico
@@ -28,5 +22,11 @@ router.route("/optometrista/:optometristaId")
 // GET /api/recetas/vigentes/activas - Recetas que aún están vigentes (no expiradas)
 router.route("/vigentes/activas")
     .get(recetasController.getRecetasVigentes);
+
+// Rutas para manejo de receta específica por ID (colocar al final para evitar colisiones)
+router.route("/:id")
+    .get(recetasController.getRecetaById) // GET /api/recetas/:id - Obtener receta por ID
+    .put(recetasController.updateReceta) // PUT /api/recetas/:id - Actualizar receta
+    .delete(recetasController.deleteReceta); // DELETE /api/recetas/:id - Eliminar receta
 
 export default router;

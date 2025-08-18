@@ -526,7 +526,8 @@ const LentesContent = () => {
         isOpen={showDetailModal}
         onClose={handleCloseModals}
         title="Detalles del Lente"
-        fields={detailFields}
+        item={selectedLente}
+        data={detailFields}
       />
 
       <ConfirmationModal

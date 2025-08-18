@@ -217,6 +217,20 @@ const Recetas = () => {
         const method = selectedReceta ? 'put' : 'post';
         
         try {
+            // Verificar existencia antes de actualizar
+            if (selectedReceta) {
+                try {
+                    await axios.get(`${API_URL}/recetas/${selectedReceta._id}`);
+                } catch (checkErr) {
+                    if (checkErr?.response?.status === 404) {
+                        showAlert('error', 'La receta seleccionada ya no existe (404). Se actualizará la lista.');
+                        await fetchRecetas();
+                        handleCloseModals();
+                        return;
+                    }
+                    // Si fue otro error (ej. red), continuamos y dejamos que el PUT maneje el error
+                }
+            }
             await axios[method](endpoint, formData);
             showAlert('success', `¡Receta ${selectedReceta ? 'actualizada' : 'creada'} exitosamente!`);
             fetchRecetas(); // Recargar recetas

@@ -41,7 +41,12 @@ const DetailModal = ({ isOpen, onClose, title, item, data = [], actions = [], ch
                     {field.value}
                   </span>
                 ) : (
-                  <p className="text-gray-800 text-left sm:text-right break-words">{field.value}</p>
+                  // Evitar anidar elementos de bloque dentro de <p>
+                  React.isValidElement(field.value) ? (
+                    <div className="text-gray-800 text-left sm:text-right break-words">{field.value}</div>
+                  ) : (
+                    <p className="text-gray-800 text-left sm:text-right break-words">{field.value}</p>
+                  )
                 )}
               </div>
             ))}

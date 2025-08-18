@@ -113,6 +113,17 @@ const availableIcons = [
   { name: 'Rabbit', component: Rabbit, category: 'Animales' }
 ];
 
+// Helper global para obtener el componente de icono por nombre
+const getIconComponent = (iconName) => {
+  if (!iconName) return <Tags className="w-6 h-6" />;
+  const iconData = availableIcons.find(icon => icon.name === iconName);
+  if (iconData) {
+    const IconComponent = iconData.component;
+    return <IconComponent className="w-6 h-6" />;
+  }
+  return <Tags className="w-6 h-6" />;
+};
+
 // Componente para el selector de iconos
 const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
   const [searchIcon, setSearchIcon] = useState('');
@@ -696,17 +707,7 @@ const CategoriasContent = () => {
   const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   const goToLastPage = () => setCurrentPage(totalPages - 1);
 
-  // Función para obtener icono
-  const getIconComponent = (iconName) => {
-    if (!iconName) return <Tags className="w-6 h-6" />;
-    
-    const iconData = availableIcons.find(icon => icon.name === iconName);
-    if (iconData) {
-      const IconComponent = iconData.component;
-      return <IconComponent className="w-6 h-6" />;
-    }
-    return <Tags className="w-6 h-6" />;
-  };
+  // getIconComponent ahora está definido a nivel de módulo
 
   // Estadísticas
   const totalCategorias = categorias.length;

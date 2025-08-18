@@ -102,6 +102,8 @@ recetasController.deleteReceta = async (req, res) => {
 
 // UPDATE - Actualizar receta
 recetasController.updateReceta = async (req, res) => {
+    console.log('[Recetas] updateReceta called with id:', req.params.id);
+
     const {
         historialMedicoId,
         optometristaId,
@@ -141,15 +143,17 @@ recetasController.updateReceta = async (req, res) => {
         );
 
         if (!updatedReceta) {
+            console.log('[Recetas] updateReceta not found id:', req.params.id);
             return res.status(404).json({ message: "Receta no encontrada" });
         }
 
+        console.log('[Recetas] updateReceta success id:', req.params.id);
         res.status(200).json({ 
             message: "Receta actualizada exitosamente",
             receta: updatedReceta
         });
     } catch (error) {
-        console.log("Error: " + error);
+        console.log("[Recetas] updateReceta error:", error?.message || error);
         res.status(500).json({ message: "Error actualizando receta: " + error.message });
     }
 };
