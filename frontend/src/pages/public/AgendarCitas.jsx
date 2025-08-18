@@ -30,28 +30,112 @@ const AgendarCitas = () => {
   const [optometristas, setOptometristas] = useState([]);
   const { user } = useAuth?.() || {};
 
-  const horarios = {
-    Lun: ["9:00", "10:00", "11:00", "12:00"],
-    Mar: ["9:00", "11:00", "13:00"],
-    Mie: ["10:00", "12:00"],
-    Jue: ["9:00", "11:00"],
-    Vie: ["10:00", "12:00"],
+  const [horarios, setHorarios] = useState({ Lun: [], Mar: [], Mie: [], Jue: [], Vie: [], Sab: [], Dom: [] });
+  const [horasGrid, setHorasGrid] = useState(["9:00", "10:00", "11:00", "12:00", "13:00"]);
+
+  // Helper para mostrar nombre de optometrista con fallback legible
+  const getOptometristaNombre = (o) => {
+    if (!o) return "Optometrista";
+    const emp = o.empleadoId;
+    const nombre = emp?.nombre?.trim?.() || "";
+    const apellido = emp?.apellido?.trim?.() || "";
+    const full = `${nombre} ${apellido}`.trim();
+    if (full) return full;
+    const suffix = (o._id || "").slice(-6).toUpperCase();
+    return `Optometrista ${suffix || o._id || ""}`.trim();
   };
 
-  const dayNames = ["Lun", "Mar", "Mie", "Jue", "Vie"];
-  const getWeekDays = () => {
-    const now = new Date();
+  const getMonday = (date) => {
+    const now = new Date(date);
     const day = now.getDay(); // 0=Sun..6=Sat
     const mondayOffset = (day + 6) % 7; // days since Monday
     const monday = new Date(now);
     monday.setDate(now.getDate() - mondayOffset);
     monday.setHours(0, 0, 0, 0);
+    return monday;
+  };
+  const [weekStart, setWeekStart] = useState(getMonday(new Date()));
+
+  const dayNames = ["Lun", "Mar", "Mie", "Jue", "Vie", "Sab", "Dom"];
+  const getWeekDays = () => {
     return dayNames.map((_, idx) => {
-      const d = new Date(monday);
-      d.setDate(monday.getDate() + idx);
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + idx);
       return d;
     });
   };
+
+  // Helpers para manejar horas y disponibilidad
+  const toMinutes = (str) => {
+    if (!str) return null;
+    const [h, m] = String(str).split(":").map((n) => parseInt(n, 10));
+    if (Number.isNaN(h) || Number.isNaN(m)) return null;
+    return h * 60 + m;
+  };
+  const toHourStr = (mins) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${h}:${String(m).padStart(2, "0")}`;
+  };
+  // Genera slots cada 60 minutos entre inicio (incl) y fin (excl)
+  const generarSlots = (horaInicio, horaFin) => {
+    const start = toMinutes(horaInicio);
+    const end = toMinutes(horaFin);
+    if (start == null || end == null || end <= start) return [];
+    const out = [];
+    for (let t = start; t < end; t += 60) out.push(toHourStr(t));
+    return out;
+  };
+  // Normaliza día del backend a claves usadas en UI: Lun, Mar, Mie, Jue, Vie, Sab, Dom
+  const normalizeDia = (raw) => {
+    if (raw === undefined || raw === null) return null;
+    const map = {
+      lun: "Lun", lunes: "Lun", mon: "Lun", monday: "Lun",
+      mar: "Mar", martes: "Mar", tue: "Mar", tuesday: "Mar",
+      mie: "Mie", miércoles: "Mie", miercoles: "Mie", wed: "Mie", wednesday: "Mie",
+      jue: "Jue", jueves: "Jue", thu: "Jue", thursday: "Jue",
+      vie: "Vie", viernes: "Vie", fri: "Vie", friday: "Vie",
+      sab: "Sab", sábado: "Sab", sabado: "Sab", sat: "Sab", saturday: "Sab",
+      dom: "Dom", domingo: "Dom", sun: "Dom", sunday: "Dom",
+    };
+    if (typeof raw === 'number') {
+      // 1..7 => Lun..Dom (1=Lun)
+      return ["Lun","Mar","Mie","Jue","Vie","Sab","Dom"][Math.max(1, Math.min(7, raw)) - 1] || null;
+    }
+    const key = String(raw).trim().toLowerCase();
+    return map[key] || null;
+  };
+
+  // Recalcular horarios y grid de horas cuando cambia el optometrista
+  useEffect(() => {
+    const empty = { Lun: [], Mar: [], Mie: [], Jue: [], Vie: [], Sab: [], Dom: [] };
+    if (!formData.optometristaId) {
+      setHorarios(empty);
+      setHorasGrid(["9:00", "10:00", "11:00", "12:00", "13:00"]);
+      return;
+    }
+    const opt = optometristas.find((o) => o._id === formData.optometristaId);
+    if (!opt) {
+      setHorarios(empty);
+      setHorasGrid(["9:00", "10:00", "11:00", "12:00", "13:00"]);
+      return;
+    }
+    const map = { ...empty };
+    (opt.disponibilidad || []).forEach((d) => {
+      const dia = normalizeDia(d?.dia);
+      if (!dia || !map[dia]) return;
+      const slots = generarSlots(d?.horaInicio, d?.horaFin);
+      if (!slots.length) return;
+      const uniq = new Set([...(map[dia] || []), ...slots]);
+      map[dia] = Array.from(uniq).sort((a, b) => toMinutes(a) - toMinutes(b));
+    });
+    // Construir grid de filas como la unión ordenada de todas las horas de la semana
+    const union = new Set();
+    Object.values(map).forEach((arr) => arr.forEach((h) => union.add(h)));
+    const grid = Array.from(union).sort((a, b) => toMinutes(a) - toMinutes(b));
+    setHorarios(map);
+    setHorasGrid(grid.length ? grid : ["9:00", "10:00", "11:00", "12:00", "13:00"]);
+  }, [formData.optometristaId, optometristas]);
 
   // Cargar opciones de sucursales y optometristas
   useEffect(() => {
@@ -239,7 +323,7 @@ const AgendarCitas = () => {
                 <option value="">Seleccionar optometrista</option>
                 {optometristas.map(o => (
                   <option key={o._id} value={o._id}>
-                    {o.empleadoId ? `${o.empleadoId.nombre || ''} ${o.empleadoId.apellido || ''}`.trim() : `Optometrista ${o._id}`}
+                    {getOptometristaNombre(o)}
                   </option>
                 ))}
               </select>
@@ -272,13 +356,55 @@ const AgendarCitas = () => {
         return (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <h3 className="text-sm font-medium mb-3">Selecciona una hora</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                <h3 className="text-sm font-medium">Selecciona una hora</h3>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date(weekStart);
+                      d.setDate(weekStart.getDate() - 7);
+                      setWeekStart(d);
+                    }}
+                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                  >
+                    ◀ Semana anterior
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWeekStart(getMonday(new Date()))}
+                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                  >
+                    Esta semana
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const d = new Date(weekStart);
+                      d.setDate(weekStart.getDate() + 7);
+                      setWeekStart(d);
+                    }}
+                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                  >
+                    Semana siguiente ▶
+                  </button>
+                </div>
+              </div>
               <div className="overflow-x-auto">
                 {(() => {
                   const weekDays = getWeekDays();
                   const formatDM = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-                  const hours = ["9:00", "10:00", "11:00", "12:00", "13:00"];
+                  const hours = horasGrid;
+                  const opt = optometristas.find(o => o._id === formData.optometristaId);
+                  const sucMismatch = opt && formData.sucursalId && !(opt.sucursalesAsignadas || []).some(s => (s._id || s) === formData.sucursalId);
+                  const now = new Date();
                   return (
+                    <>
+                    {sucMismatch && (
+                      <div className="mb-3 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                        El optometrista seleccionado no atiende en la sucursal elegida. Cambia de sucursal u optometrista.
+                      </div>
+                    )}
                     <table className="w-full text-xs sm:text-sm md:text-base">
                       <thead>
                         <tr>
@@ -301,10 +427,16 @@ const AgendarCitas = () => {
                               iso.setHours(0, 0, 0, 0);
                               const isoStr = iso.toISOString();
                               const available = horarios[dia]?.includes(hora);
-                              const selected = available && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
+                              // Calcular si el slot ya pasó
+                              const [hh, mm] = hora.split(":").map((x) => parseInt(x, 10));
+                              const slotDate = new Date(dayDate.getTime());
+                              slotDate.setHours(hh || 0, mm || 0, 0, 0);
+                              const isPast = slotDate.getTime() < now.getTime();
+                              const disabled = !available || isPast;
+                              const selected = !disabled && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
                               return (
                                 <td key={`${dia}-${hora}`} className="p-2 text-center">
-                                  {available ? (
+                                  {!disabled ? (
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -325,6 +457,7 @@ const AgendarCitas = () => {
                         ))}
                       </tbody>
                     </table>
+                    </>
                   );
                 })()}
               </div>

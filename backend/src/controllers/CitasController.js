@@ -11,7 +11,10 @@ citasController.getCitas = async (req, res) => {
         // Busca todas las citas y puebla cliente, optometrista y sucursal
         const citas = await Citas.find()
             .populate("clienteId") // Datos completos del cliente
-            .populate("optometristaId") // Datos del optometrista
+            .populate({
+                path: "optometristaId",
+                populate: { path: "empleadoId" }
+            }) // Datos del optometrista + empleado
             .populate("sucursalId"); // Datos de la sucursal
 
         res.status(200).json(citas);
@@ -27,8 +30,12 @@ citasController.getCitaById = async (req, res) => {
         // Busca cita por ID y puebla todas las referencias
         const cita = await Citas.findById(req.params.id)
             .populate("clienteId")
-            .populate("optometristaId")
+            .populate({
+                path: "optometristaId",
+                populate: { path: "empleadoId" }
+            })
             .populate("sucursalId");
+
         if (!cita) {
             return res.status(404).json({ message: "Cita no encontrada" });
         }

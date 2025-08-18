@@ -53,7 +53,7 @@ app.use(cookieParser());
 app.use(cors({
     origin: ['http://localhost:5173', 'https://a-u-r-o-r-a.onrender.com'],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());

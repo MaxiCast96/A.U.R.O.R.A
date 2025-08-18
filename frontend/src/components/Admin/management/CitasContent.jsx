@@ -42,6 +42,45 @@ const CitasContent = () => {
   const [notification, setNotification] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, cita: null });
 
+  // Nombre de optometrista con fallback amigable
+  const getOptometristaNombre = (opt) => {
+    if (!opt) return 'N/A';
+    const emp = opt.empleadoId;
+    if (emp && (emp.nombre || emp.apellido)) {
+      return `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'N/A';
+    }
+    // Si no hay empleado poblado, mostrar identificador corto legible
+    const id = opt._id || opt.id || '';
+    if (id) {
+      const shortId = String(id).slice(-6).toUpperCase();
+      return `Optometrista ${shortId}`;
+    }
+    return 'Optometrista';
+  };
+
+  // Resolver robusto: si en la cita viene solo el ID o no viene poblado, busca en la lista cargada
+  const resolveOptometristaNombre = (optFromCita) => {
+    if (!optFromCita) return 'N/A';
+    // Caso 1: objeto con posible empleadoId
+    if (typeof optFromCita === 'object') {
+      const name = getOptometristaNombre(optFromCita);
+      if (!/^Optometrista\s/i.test(name)) return name; // ya es nombre real
+      // intentar mejorar con lista cargada
+      const oid = optFromCita._id || optFromCita.id;
+      if (oid) {
+        const found = optometristas.find(o => o._id === oid);
+        if (found) return getOptometristaNombre(found);
+      }
+      return name;
+    }
+    // Caso 2: string ID -> buscar en lista
+    const idStr = String(optFromCita);
+    const found = optometristas.find(o => o._id === idStr);
+    if (found) return getOptometristaNombre(found);
+    const shortId = idStr.slice(-6).toUpperCase();
+    return `Optometrista ${shortId}`;
+  };
+
   // Fetch datos
   useEffect(() => {
     const fetchData = async () => {
@@ -116,7 +155,7 @@ const CitasContent = () => {
   }));
   const optometristaOptions = optometristas.map(o => ({
     value: o._id,
-    label: o.empleadoId ? `${o.empleadoId.nombre} ${o.empleadoId.apellido}` : `Optometrista ${o._id}`
+    label: getOptometristaNombre(o)
   }));
   const sucursalOptions = sucursales.map(s => ({
     value: s._id,
@@ -462,7 +501,8 @@ const CitasContent = () => {
                 // Obtener nombres de los campos populados
                 const clienteNombre = cita.clienteId ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.trim() : '';
                 const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
-                const optometristaNombre = cita.optometristaId && cita.optometristaId.empleadoId ? `${cita.optometristaId.empleadoId.nombre || ''} ${cita.optometristaId.empleadoId.apellido || ''}`.trim() : (cita.optometristaId?.nombre || 'N/A');
+                const optometristaNombre = resolveOptometristaNombre(cita.optometristaId);
+
                 // Motivo de la cita como servicio
                 const servicio = cita.motivoCita || '';
                   return (
@@ -474,7 +514,7 @@ const CitasContent = () => {
                         </div>
                       </td>
                     <td className="px-6 py-4 text-gray-600">{servicio || 'N/A'}</td>
-                    <td className="px-6 py-4 text-gray-600">{optometristaNombre || 'N/A'}</td>
+                    <td className="px-6 py-4 text-gray-600">{optometristaNombre}</td>
                       <td className="px-6 py-4">
                         <div className="flex items-center space-x-2">
                           <Clock className="w-5 h-5 text-gray-400" />
@@ -577,7 +617,7 @@ const CitasContent = () => {
       item={detailCita}
       data={[
         { label: 'Cliente', value: detailCita && detailCita.clienteId ? `${detailCita.clienteId.nombre || ''} ${detailCita.clienteId.apellido || ''}`.trim() : 'N/A' },
-        { label: 'Optometrista', value: detailCita && detailCita.optometristaId && detailCita.optometristaId.empleadoId ? `${detailCita.optometristaId.empleadoId.nombre || ''} ${detailCita.optometristaId.empleadoId.apellido || ''}`.trim() : (detailCita?.optometristaId?.nombre || 'N/A') },
+        { label: 'Optometrista', value: detailCita ? resolveOptometristaNombre(detailCita.optometristaId) : 'N/A' },
         { label: 'Sucursal', value: detailCita && detailCita.sucursalId ? detailCita.sucursalId.nombre : 'N/A' },
         { label: 'Fecha', value: detailCita && detailCita.fecha ? (new Date(detailCita.fecha)).toLocaleDateString() : 'N/A' },
         { label: 'Hora', value: detailCita && detailCita.hora ? detailCita.hora : 'N/A' },
