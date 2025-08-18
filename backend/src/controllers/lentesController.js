@@ -143,6 +143,7 @@ async function deleteLentes(req, res) {
 
 // UPDATE - Actualiza lentes existentes con nuevos datos e imágenes
 async function updateLentes(req, res) {
+
     // Parsear sucursales si viene como string (form-data)
     let sucursales = req.body.sucursales;
     if (typeof sucursales === "string") {
@@ -185,8 +186,8 @@ async function updateLentes(req, res) {
             }
         }
 
-        // Prepara objeto con datos a actualizar
-        const updateData = {
+        // Construir documento de actualización con operadores atómicos
+        const setData = {
             nombre,
             descripcion,
             categoriaId,
@@ -199,33 +200,31 @@ async function updateLentes(req, res) {
             linea,
             medidas,
             imagenes: imagenesURLs,
-            enPromocion: enPromocion || false,
+            enPromocion: !!enPromocion,
             fechaCreacion,
             sucursales: sucursales || []
         };
 
-        // Maneja promoción: agrega o elimina según el estado
-        if (enPromocion && promocionId) {
-            updateData.promocionId = promocionId; // Asigna promoción
-        } else {
-            updateData.$unset = { promocionId: "" }; // Elimina promoción
-        }
+        const updateDoc = (enPromocion && promocionId)
+            ? { $set: { ...setData, promocionId } }
+            : { $set: setData, $unset: { promocionId: "" } };
 
-        // Actualiza el documento y retorna la versión nueva
+        // Actualiza el documento y retorna la versión nueva, validando esquema
         const updatedLentes = await lentesModel.findByIdAndUpdate(
             req.params.id,
-            updateData,
-            { new: true } // Retorna documento actualizado
+            updateDoc,
+            { new: true, runValidators: true }
         );
 
         if (!updatedLentes) {
-            return res.json({ message: "Lentes no encontrados" });
+            return res.status(404).json({ success: false, message: "Lentes no encontrados" });
         }
 
-        res.json({ message: "Lentes actualizado" });
+        res.json({ success: true, message: "Lentes actualizado", data: updatedLentes });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error actualizando lentes: " + error.message });
+        console.log("Error actualizando lentes: ", error);
+        const status = error.name === 'ValidationError' ? 400 : 500;
+        res.status(status).json({ success: false, message: "Error actualizando lentes: " + error.message });
     }
 }
 

@@ -1087,7 +1087,7 @@ const OptometristasFormModal = ({
             </FormModal>
 
             {/* Estilos CSS para animaciones */}
-            <style jsx>{`
+            <style>{`
                 @keyframes slideInDown {
                     from {
                         opacity: 0;
