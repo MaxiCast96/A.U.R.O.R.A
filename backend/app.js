@@ -32,6 +32,8 @@ import registroClientesRoutes from "./src/routes/registroClientes.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import authRoutes from "./src/routes/auth.js";
 import pedidosRoutes from "./src/routes/pedidos.js";
+import auditoriaRoutes from "./src/routes/auditoria.js";
+import { auditLogger } from "./src/middlewares/audit.js";
 
 // Mantener viva la BD
 function keepDatabaseAlive() {
@@ -57,6 +59,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
+
+// Auditoría: registrar después de json, antes de rutas
+app.use(auditLogger);
 
 // Servir archivos estáticos de uploads (imágenes)
 const __filename = fileURLToPath(import.meta.url);
@@ -86,6 +91,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/recetas", recetasRoutes);
 app.use("/api/registroClientes", registroClientesRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/auditoria", auditoriaRoutes);
 
 // ================= Helpers =================
 const getFetch = async () => {

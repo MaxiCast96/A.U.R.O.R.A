@@ -221,21 +221,23 @@ const VentasContent = () => {
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <PageHeader title="Gestión de Ventas" buttonLabel={null} onButtonClick={null} />
 
-        <div className="px-4 pt-3 grid grid-cols-1 lg:grid-cols-3 gap-2">
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2">
+        <div className="px-3 pt-2 flex flex-wrap items-center gap-2">
+          {/* Búsqueda */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-2 py-1 w-full sm:w-72">
             <Search className="w-4 h-4 text-gray-400" />
             <input
-              className="ml-2 bg-transparent outline-none w-full"
-              placeholder="Buscar por número, cliente, sucursal o empleado..."
+              className="ml-2 bg-transparent outline-none w-full text-sm"
+              placeholder="Buscar factura/cliente/sucursal"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
             />
           </div>
 
-          <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2">
+          {/* Estado */}
+          <div className="flex items-center bg-gray-50 rounded-lg px-2 py-1 w-auto">
             <Filter className="w-4 h-4 text-gray-400" />
             <select
-              className="ml-2 bg-transparent outline-none w-full"
+              className="ml-2 bg-transparent outline-none text-sm w-36"
               value={estadoFilter}
               onChange={e => setEstadoFilter(e.target.value)}
             >
@@ -245,17 +247,18 @@ const VentasContent = () => {
             </select>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 w-full">
+          {/* Fechas */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center bg-gray-50 rounded-lg px-2 py-1 w-40">
               <Calendar className="w-4 h-4 text-gray-400" />
-              <input type="date" className="ml-2 bg-transparent outline-none w-full" value={dateRange.inicio} onChange={e => setDateRange(d => ({ ...d, inicio: e.target.value }))} />
+              <input type="date" className="ml-2 bg-transparent outline-none text-sm w-full" value={dateRange.inicio} onChange={e => setDateRange(d => ({ ...d, inicio: e.target.value }))} />
             </div>
-            <div className="flex items-center bg-gray-50 rounded-lg px-3 py-2 w-full">
+            <div className="flex items-center bg-gray-50 rounded-lg px-2 py-1 w-40">
               <Calendar className="w-4 h-4 text-gray-400" />
-              <input type="date" className="ml-2 bg-transparent outline-none w-full" value={dateRange.fin} onChange={e => setDateRange(d => ({ ...d, fin: e.target.value }))} />
+              <input type="date" className="ml-2 bg-transparent outline-none text-sm w-full" value={dateRange.fin} onChange={e => setDateRange(d => ({ ...d, fin: e.target.value }))} />
             </div>
-            <button onClick={applyDateRange} className="px-3 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">Aplicar</button>
-            <button onClick={clearDateRange} className="px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Limpiar</button>
+            <button onClick={applyDateRange} className="px-2 py-1 text-xs bg-cyan-600 text-white rounded-lg hover:bg-cyan-700">Aplicar</button>
+            <button onClick={clearDateRange} className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">Limpiar</button>
           </div>
         </div>
 
@@ -293,7 +296,6 @@ const VentasContent = () => {
             { label: 'Cliente', value: selectedVenta?.facturaDatos?.nombreCliente || '—' },
             { label: 'DUI Cliente', value: selectedVenta?.facturaDatos?.duiCliente || '—' },
             { label: 'Sucursal', value: selectedVenta?.sucursalId?.nombre || '—' },
-            { label: 'Empleado', value: `${selectedVenta?.empleadoId?.nombre || ''} ${selectedVenta?.empleadoId?.apellido || ''}`.trim() || '—' },
             { label: 'Estado', value: selectedVenta?.estado || '—', color: mapEstadoBadge(selectedVenta?.estado) },
             { label: 'Subtotal', value: `$${(selectedVenta?.facturaDatos?.subtotal ?? 0).toFixed(2)}` },
             { label: 'Total', value: `$${(selectedVenta?.facturaDatos?.total ?? 0).toFixed(2)}` },

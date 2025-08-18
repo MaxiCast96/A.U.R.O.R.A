@@ -353,24 +353,41 @@ const Empleados = () => {
         setLoading(true);
         setCreationStep('employee');
         setCreationProgress(25);
-        
-        // 1. CREAR EL EMPLEADO PRIMERO
-        console.log('📄 Creando empleado...');
-        const employeeResponse = await axiosWithFallback('post', EMPLEADOS_EP, tempEmployeeData);
-        
-        // CORRECCIÓN: El backend retorna { message: ..., empleado: {...} }
-        const newEmployee = employeeResponse.data.empleado || employeeResponse.data;
-        const newEmployeeId = newEmployee._id;
 
-        console.log('✅ Empleado creado exitosamente:', employeeResponse.data);
-        console.log('👤 Datos del empleado:', newEmployee);
-        console.log('🆔 Nuevo empleadoId:', newEmployeeId);
+        // 1. OBTENER EMPLEADO ID: si estamos editando, usar el existente; si no, crear
+        let newEmployeeId = null;
+        if (selectedEmpleado && selectedEmpleado._id) {
+            console.log('🔁 Flujo edición: usando empleado existente');
+            newEmployeeId = selectedEmpleado._id;
+        } else {
+            console.log('📄 Creando empleado...');
+            const employeeResponse = await axiosWithFallback('post', EMPLEADOS_EP, tempEmployeeData);
+            // Backend retorna { message, empleado }
+            const newEmployee = employeeResponse.data.empleado || employeeResponse.data;
+            newEmployeeId = newEmployee._id;
+            console.log('✅ Empleado creado exitosamente:', employeeResponse.data);
+            console.log('👤 Datos del empleado:', newEmployee);
+            console.log('🆔 Nuevo empleadoId:', newEmployeeId);
+            // VALIDAR QUE OBTUVIMOS EL ID
+            if (!newEmployeeId) {
+                console.error('❌ No se pudo extraer el ID del empleado creado');
+                console.error('📋 Estructura de respuesta:', employeeResponse.data);
+                throw new Error('No se pudo obtener el ID del empleado creado. Verifique la respuesta del servidor.');
+            }
+        }
 
-        // VALIDAR QUE OBTUVIMOS EL ID
-        if (!newEmployeeId) {
-            console.error('❌ No se pudo extraer el ID del empleado creado');
-            console.error('📋 Estructura de respuesta:', employeeResponse.data);
-            throw new Error('No se pudo obtener el ID del empleado creado. Verifique la respuesta del servidor.');
+        // Asegurar que el cargo del empleado sea 'Optometrista'
+        try {
+            const mustSetCargo = (selectedEmpleado && selectedEmpleado.cargo !== 'Optometrista') || (!selectedEmpleado && tempEmployeeData?.cargo !== 'Optometrista');
+            if (mustSetCargo) {
+                console.log("🔧 Ajustando cargo del empleado a 'Optometrista'...");
+                await axiosWithFallback('put', `${EMPLEADOS_EP}/${newEmployeeId}`, { cargo: 'Optometrista' });
+                console.log('✅ Cargo del empleado actualizado a Optometrista');
+            } else {
+                console.log('ℹ️ Cargo ya establecido como Optometrista');
+            }
+        } catch (e) {
+            console.warn('⚠️ No se pudo actualizar el cargo a Optometrista antes de crear/actualizar el optometrista:', e?.response?.data || e.message);
         }
 
         // ACTUALIZAR PROGRESO
@@ -379,7 +396,7 @@ const Empleados = () => {
 
         // 2. PREPARAR DATOS DEL OPTOMETRISTA CON EL ID DEL EMPLEADO RECIÉN CREADO
         const finalOptometristaPayload = {
-            empleadoId: newEmployeeId, // ✅ Usar el ID real del empleado creado
+            empleadoId: newEmployeeId, // ✅ ID de empleado (existente o recién creado)
             especialidad: dataToUse.especialidad?.trim(),
             licencia: dataToUse.licencia?.trim(),
             experiencia: parseInt(dataToUse.experiencia) || 0,
@@ -399,11 +416,19 @@ const Empleados = () => {
         
         console.log('📋 Datos finales para optometrista:', finalOptometristaPayload);
         
-        // 3. CREAR EL OPTOMETRISTA
-        console.log('📄 Creando optometrista...');
-        const optometristaResponse = await axiosWithFallback('post', OPTOMETRISTAS_EP, finalOptometristaPayload);
-        
-        console.log('✅ Optometrista creado exitosamente:', optometristaResponse.data);
+        // 3. CREAR/ACTUALIZAR EL OPTOMETRISTA SEGÚN EXISTA
+        console.log('🔎 Verificando si ya existe optometrista para este empleado...');
+        let optometristaResponse;
+        const existingOpt = await checkIfOptometrista(newEmployeeId);
+        if (existingOpt && existingOpt._id) {
+            console.log('⚠️ Ya existe optometrista, actualizando...');
+            optometristaResponse = await axiosWithFallback('put', `${OPTOMETRISTAS_EP}/${existingOpt._id}`, finalOptometristaPayload);
+            console.log('✅ Optometrista actualizado exitosamente:', optometristaResponse.data);
+        } else {
+            console.log('📄 Creando optometrista...');
+            optometristaResponse = await axiosWithFallback('post', OPTOMETRISTAS_EP, finalOptometristaPayload);
+            console.log('✅ Optometrista creado exitosamente:', optometristaResponse.data);
+        }
 
         // COMPLETAR PROGRESO
         setCreationProgress(100);

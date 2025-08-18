@@ -72,8 +72,23 @@ export const authorizeRoles = (allowedRoles) => {
 
 /**
  * Middleware para verificar que el usuario sea administrador
+ * Acepta tanto rol=Administrador como cargo=Administrador
  */
-export const requireAdmin = authorizeRoles(['Administrador']);
+export const requireAdmin = (req, res, next) => {
+    if (!req.user) {
+        return res.status(401).json({ 
+            message: 'Acceso denegado. Autenticación requerida.' 
+        });
+    }
+    const rol = req.user.rol;
+    const cargo = req.user.cargo || req.user.Cargo;
+    if (rol === 'Administrador' || cargo === 'Administrador') {
+        return next();
+    }
+    return res.status(403).json({ 
+        message: 'Acceso denegado. No tiene permisos para acceder a este recurso.' 
+    });
+};
 
 /**
  * Middleware para verificar que el usuario sea empleado (cualquier rol excepto Cliente)
