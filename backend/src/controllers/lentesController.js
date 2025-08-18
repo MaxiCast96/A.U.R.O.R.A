@@ -4,6 +4,7 @@ import "../models/Categoria.js";
 import lentesModel from "../models/Lentes.js";
 import { v2 as cloudinary } from "cloudinary";
 import Lentes from '../models/Lentes.js';
+import Promociones from '../models/Promociones.js';
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -214,12 +215,36 @@ async function updateLentes(req, res) {
             }
         }
 
+        // Normalizar y validar IDs que pueden venir como objetos poblados
+        const normalizeId = (val) => {
+            try {
+                const maybe = (val && typeof val === 'object' && val._id) ? val._id : val;
+                const str = typeof maybe === 'string' ? maybe : '';
+                return /^[a-fA-F0-9]{24}$/.test(str) ? str : undefined;
+            } catch (_) {
+                return undefined;
+            }
+        };
+
+        const categoriaIdNorm = normalizeId(categoriaId);
+        const marcaIdNorm = normalizeId(marcaId);
+        const promocionIdNorm = normalizeId(promocionId);
+
+        // Obtener estado actual (para precio base o categoría si no vienen en body)
+        const currentDoc = await lentesModel.findById(req.params.id).select('categoriaId precioBase');
+        if (!currentDoc) {
+            return res.status(404).json({ success: false, message: "Lentes no encontrados" });
+        }
+
+        const basePrice = (typeof precioBase === 'number') ? precioBase : (currentDoc.precioBase || 0);
+        const categoriaParaPromo = categoriaIdNorm || (currentDoc.categoriaId ? String(currentDoc.categoriaId) : undefined);
+
         // Construir documento de actualización con operadores atómicos
         const setData = {
             nombre,
             descripcion,
-            categoriaId,
-            marcaId,
+            categoriaId: categoriaIdNorm,
+            marcaId: marcaIdNorm,
             material,
             color,
             tipoLente,
@@ -233,9 +258,59 @@ async function updateLentes(req, res) {
             sucursales: sucursalesLimpias
         };
 
-        const updateDoc = (enPromocion && promocionId)
-            ? { $set: { ...setData, promocionId } }
-            : { $set: setData, $unset: { promocionId: "" } };
+        // Eliminar claves undefined para no pisar con valores inválidos
+        Object.keys(setData).forEach((k) => {
+            if (typeof setData[k] === 'undefined') delete setData[k];
+        });
+
+        // Aplicar promoción si corresponde: activa, en rango de fechas y aplicable
+        let shouldUnsetPromo = true;
+        if (enPromocion && promocionIdNorm) {
+            try {
+                const promo = await Promociones.findById(promocionIdNorm).lean();
+                const now = new Date();
+                const inRange = promo && promo.fechaInicio && promo.fechaFin && new Date(promo.fechaInicio) <= now && now <= new Date(promo.fechaFin);
+                const isActive = promo && promo.activo === true;
+                let applies = false;
+                if (promo && isActive && inRange) {
+                    if (promo.aplicaA === 'todos') {
+                        applies = true;
+                    } else if (promo.aplicaA === 'categoria' && categoriaParaPromo) {
+                        const ids = (promo.categoriasAplicables || []).map(String);
+                        applies = ids.includes(String(categoriaParaPromo));
+                    } else if (promo.aplicaA === 'lente') {
+                        const ids = (promo.lentesAplicables || []).map(String);
+                        applies = ids.includes(String(req.params.id));
+                    }
+                }
+                if (applies) {
+                    let nuevoPrecio = basePrice;
+                    if (promo.tipoDescuento === 'porcentaje') {
+                        nuevoPrecio = Math.max(0, Math.round((basePrice * (100 - (promo.valorDescuento || 0))) / 100));
+                    } else if (promo.tipoDescuento === 'monto_fijo') {
+                        nuevoPrecio = Math.max(0, basePrice - (promo.valorDescuento || 0));
+                    }
+                    setData.precioActual = nuevoPrecio;
+                    setData.enPromocion = true;
+                    setData.promocionId = promocionIdNorm;
+                    shouldUnsetPromo = false;
+                } else {
+                    // No aplicable: desactivar
+                    setData.enPromocion = false;
+                }
+            } catch (e) {
+                console.warn('[updateLentes] Error evaluando promoción:', e?.message);
+                setData.enPromocion = false;
+            }
+        } else if (enPromocion === false) {
+            setData.enPromocion = false;
+        }
+
+        const updateDoc = { $set: setData };
+        if (shouldUnsetPromo || !setData.enPromocion) {
+            updateDoc.$unset = { ...(updateDoc.$unset || {}), promocionId: "" };
+            delete setData.promocionId; // evitar validar id inválido
+        }
 
         try {
             console.log('[updateLentes] updateDoc.$set.sucursales length:', Array.isArray(updateDoc.$set.sucursales) ? updateDoc.$set.sucursales.length : 'N/A');
