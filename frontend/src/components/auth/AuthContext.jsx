@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_CONFIG } from '../../config/api';
 
 const AuthContext = createContext();
-const API_BASE_URL = 'https://a-u-r-o-r-a.onrender.com/api';
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (credentials) => {
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials, {
+            const response = await axios.post(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.AUTH}/login`, credentials, {
                 withCredentials: true,
             });
 
