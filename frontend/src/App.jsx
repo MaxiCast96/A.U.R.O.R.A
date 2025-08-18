@@ -31,6 +31,8 @@ import VerCotizacionPage from "./pages/public/VerCotizacionPage";
 
 // Importación de la página de recuperación de contraseña
 import RecuperarPassword from "./pages/auth/RecuperarPassword";
+import NotFound from "./pages/public/NotFound";
+import AccessDenied from "./pages/public/AccessDenied";
 
 // Componente separado para las rutas con AnimatePresence
 function AnimatedRoutes() {
@@ -94,6 +96,12 @@ function AnimatedRoutes() {
             <PerfilPage />
           </PrivateRoute>
         } />
+
+        {/* Acceso denegado */}
+        <Route path="/acceso-denegado" element={<AccessDenied />} />
+
+        {/* 404 Not Found - catch-all */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </AnimatePresence>
   );

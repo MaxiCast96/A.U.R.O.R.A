@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
 import BrandsCarousel from "../../components/Home/BrandCarousel";
@@ -52,6 +52,55 @@ const Home = () => {
 
   // Aseguro que los datos sean arrays aunque data sea null
   const safePromociones = promociones || [];
+  const getPromoTitle = (p) => {
+    if (!p) return "";
+    const base = p.nombre || p.titulo;
+    if (base && base.trim()) return base;
+    // Derivar del descuento si no hay título
+    const tipo = p.tipoDescuento;
+    const valor = p.valorDescuento;
+    if (tipo === 'porcentaje' && typeof valor === 'number') return `-${valor}% en óptica`;
+    if (tipo === 'monto_fijo' && typeof valor === 'number') return `Ahorra $${valor}`;
+    return "";
+  };
+  const getPromoDesc = (p) => {
+    if (!p) return "";
+    if (p.descripcion && p.descripcion.trim()) return p.descripcion;
+    // Descripción derivada
+    if (p.aplicaA === 'categoria') return 'Válido en categorías seleccionadas';
+    if (p.aplicaA === 'lente') return 'Aplicable a lentes seleccionados';
+    return 'Promoción por tiempo limitado';
+  };
+  const getPromoImage = (p) => p?.imagen || p?.bannerUrl || p?.imagenUrl || null;
+  const heroPromos = React.useMemo(() => {
+    const now = new Date();
+    const list = Array.isArray(safePromociones) ? safePromociones.slice() : [];
+    const active = list.filter(p => {
+      const inicio = p?.fechaInicio ? new Date(p.fechaInicio) : null;
+      const fin = p?.fechaFin ? new Date(p.fechaFin) : null;
+      const isActiveFlag = p?.activo !== false; // default true if undefined
+      const inWindow = (!inicio || inicio <= now) && (!fin || fin >= now);
+      return isActiveFlag && inWindow;
+    });
+    const base = active.length > 0 ? active : list;
+    return base.sort((a, b) => {
+      const aDate = a?.fechaInicio ? new Date(a.fechaInicio).getTime() : 0;
+      const bDate = b?.fechaInicio ? new Date(b.fechaInicio).getTime() : 0;
+      return bDate - aDate;
+    });
+  }, [safePromociones]);
+
+  // Promo actual clamped por longitud para evitar índices fuera de rango
+  const currentPromo = heroPromos.length > 0
+    ? heroPromos[promoIndex % heroPromos.length]
+    : null;
+
+  // Asegurar que el índice no se salga cuando cambia el número de promos
+  useEffect(() => {
+    if (promoIndex > 0 && promoIndex >= heroPromos.length) {
+      setPromoIndex(0);
+    }
+  }, [heroPromos.length]);
   const safeBrands = brands || [];
   const safePopulars = populars || [];
 
@@ -64,7 +113,7 @@ const Home = () => {
     if (!isAnimating) {
       setIsAnimating(true);
       setPromoIndex((prev) =>
-        prev === 0 ? safePromociones.length - 1 : prev - 1
+        prev === 0 ? heroPromos.length - 1 : prev - 1
       );
       setTimeout(() => setIsAnimating(false), 1000);
     }
@@ -74,7 +123,7 @@ const Home = () => {
     if (!isAnimating) {
       setIsAnimating(true);
       setPromoIndex((prev) =>
-        prev === safePromociones.length - 1 ? 0 : prev + 1
+        prev === heroPromos.length - 1 ? 0 : prev + 1
       );
       setTimeout(() => setIsAnimating(false), 1000);
     }
@@ -182,97 +231,49 @@ const Home = () => {
                 <div className="grid lg:grid-cols-2 h-full">
                   {/* Sección de contenido (lado izquierdo) */}
                   <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 xl:p-20 bg-gray-50 lg:bg-transparent relative">
-                    {safePromociones.length > 0 ? (
-                      <motion.div
-                        key={`content-${promoIndex}`}
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: 50 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        className="space-y-6"
-                      >
-                        {/* Badge de promoción */}
+                    <AnimatePresence mode="wait">
+                      {heroPromos.length > 0 ? (
                         <motion.div
-                          initial={{ scale: 0, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{
-                            delay: 0.2,
-                            type: "spring",
-                            stiffness: 300,
-                          }}
-                          className="inline-flex items-center px-4 py-2 bg-[#0097c2] text-white text-sm font-semibold rounded-full w-fit"
+                          key={`content-${promoIndex}`}
+                          initial={{ opacity: 0, x: -50 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          exit={{ opacity: 0, x: 50 }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="space-y-6"
                         >
-                          ¡OFERTA ESPECIAL!
+                          {/* Título principal */}
+                          <motion.h1
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.5 }}
+                            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 leading-tight"
+                          >
+                            {getPromoTitle(currentPromo)}
+                          </motion.h1>
+
+                          {/* Descripción */}
+                          <motion.p
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            transition={{ delay: 0.3, duration: 0.5 }}
+                            className="text-lg md:text-xl lg:text-2xl text-gray-600 font-light max-w-lg"
+                          >
+                            {getPromoDesc(currentPromo)}
+                          </motion.p>
                         </motion.div>
-
-                        {/* Título principal */}
-                        <motion.h1
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3, duration: 0.6 }}
-                          className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 leading-tight"
+                      ) : (
+                        <motion.div
+                          key="content-empty"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="space-y-2"
                         >
-                          {safePromociones[promoIndex]?.titulo || (
-                            <>
-                              Súper precios
-                              <br />
-                              en tus lentes
-                              <br />
-                              favoritos
-                            </>
-                          )}
-                        </motion.h1>
-
-                        {/* Descripción */}
-                        <motion.p
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.4, duration: 0.6 }}
-                          className="text-lg md:text-xl lg:text-2xl text-gray-600 font-light max-w-lg"
-                        >
-                          {safePromociones[promoIndex]?.descripcion ||
-                            "Tu visión es nuestra prioridad"}
-                        </motion.p>
-
-                        {/* Botón de acción */}
-                        <motion.button
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.5, duration: 0.6 }}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="bg-[#0097c2] hover:bg-[#0083a8] text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 w-fit"
-                        >
-                          Ver Oferta
-                        </motion.button>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        className="space-y-6"
-                      >
-                        <div className="inline-flex items-center px-4 py-2 bg-[#0097c2] text-white text-sm font-semibold rounded-full w-fit">
-                          ¡OFERTA ESPECIAL!
-                        </div>
-
-                        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 leading-tight">
-                          Súper precios
-                          <br />
-                          en tus lentes
-                          <br />
-                          favoritos
-                        </h1>
-
-                        <p className="text-lg md:text-xl lg:text-2xl text-gray-600 font-light max-w-lg">
-                          Tu visión es nuestra prioridad
-                        </p>
-
-                        <button className="bg-[#0097c2] hover:bg-[#0083a8] text-white px-8 py-4 rounded-full font-semibold text-lg transition-all duration-300 w-fit">
-                          Explorar productos
-                        </button>
-                      </motion.div>
-                    )}
+                          <p className="text-base text-gray-500">Sin promociones activas por ahora.</p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
 
                   {/* Sección de imagen (lado derecho) */}
@@ -311,53 +312,45 @@ const Home = () => {
                     </div>
 
                     {/* Imagen del producto */}
-                    {safePromociones.length > 0 ? (
-                      <motion.div
-                        key={`image-${promoIndex}`}
-                        initial={{ opacity: 0, scale: 0.8, y: 50 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.8, y: -50 }}
-                        transition={{ duration: 0.7, ease: "easeOut" }}
-                        className="relative z-10"
-                      >
-                        <motion.img
-                          animate={{
-                            y: [0, -8, 0],
-                          }}
-                          transition={{
-                            duration: 4,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                          }}
-                          src={safePromociones[promoIndex]?.imagen || Lente1}
-                          alt={safePromociones[promoIndex]?.titulo}
-                          className="w-80 h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] xl:w-[500px] xl:h-[500px] object-contain"
-                        />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        animate={{
-                          y: [0, -8, 0],
-                        }}
-                        transition={{
-                          duration: 4,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                        className="relative z-10"
-                      >
-                        <img
-                          src={Lente1}
-                          alt="Lentes de la óptica"
-                          className="w-80 h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] xl:w-[500px] xl:h-[500px] object-contain"
-                        />
-                      </motion.div>
-                    )}
+                    <AnimatePresence mode="wait">
+                      {heroPromos.length > 0 ? (
+                        <motion.div
+                          key={`image-${promoIndex}`}
+                          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.9, y: -30 }}
+                          transition={{ duration: 0.4, ease: "easeOut" }}
+                          className="relative z-10"
+                        >
+                          <motion.img
+                            animate={{ y: [0, -8, 0] }}
+                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                            src={getPromoImage(currentPromo) || Lente1}
+                            alt={getPromoTitle(currentPromo)}
+                            className="w-80 h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] xl:w-[500px] xl:h-[500px] object-contain"
+                          />
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="image-empty"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="relative z-10"
+                        >
+                          <img
+                            src={Lente1}
+                            alt="Lentes de la óptica"
+                            className="w-80 h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] xl:w-[500px] xl:h-[500px] object-contain"
+                          />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
                 </div>
 
                 {/* Controles de navegación minimalistas */}
-                {safePromociones.length > 1 && (
+                {heroPromos.length > 1 && (
                   <>
                     <motion.button
                       whileHover={{ scale: 1.1, backgroundColor: "#0083a8" }}
@@ -405,7 +398,7 @@ const Home = () => {
 
                     {/* Indicadores minimalistas */}
                     <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                      {safePromociones.map((_, index) => (
+                      {heroPromos.map((_, index) => (
                         <motion.button
                           key={index}
                           whileHover={{ scale: 1.2 }}
