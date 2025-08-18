@@ -6,6 +6,12 @@ const router = express.Router();
 
 // Solo admin puede ver auditoría
 router.get('/', authenticateToken, requireAdmin, listLogs);
-router.get('/stream', authenticateToken, requireAdmin, streamLogs);
+// Permitir token por query en SSE (EventSource no permite headers)
+router.get('/stream', (req, _res, next) => {
+  if (!req.headers.authorization && req.query.token) {
+    req.headers.authorization = `Bearer ${req.query.token}`;
+  }
+  next();
+}, authenticateToken, requireAdmin, streamLogs);
 
 export default router;

@@ -21,6 +21,7 @@ import HistorialMedico from '../../components/Admin/management/HistorialMedicoCo
 import Sucursales from '../../components/Admin/management/SucursalesContent';
 import Ventas from '../../components/Admin/management/VentasContent';
 import { useAuth } from '../../components/auth/AuthContext';
+import Auditoria from '../../components/Admin/management/Auditoria';
 
 const OpticaDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -83,6 +84,7 @@ const OpticaDashboard = () => {
     { id: 'recetas', icon: Receipt, label: 'Recetas', section: 'Médico', allowedRoles: ['Administrador', 'Gerente', 'Optometrista'] },
     { id: 'sucursales', icon: MapPin, label: 'Sucursales', section: 'Administración', allowedRoles: ['Administrador', 'Gerente'] },
     { id: 'promociones', icon: Percent, label: 'Promociones', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Vendedor'] }
+    ,{ id: 'auditoria', icon: Settings, label: 'Auditoría', section: 'Administración', allowedRoles: ['Administrador'] }
   ];
 
   // Normalización y aliasado de roles para comparación robusta
@@ -276,6 +278,8 @@ const OpticaDashboard = () => {
         return <Sucursales />;
       case 'promociones':
         return <Promociones />;
+      case 'auditoria':
+        return <Auditoria />;
       default:
         return (
           <div className="bg-white rounded-xl shadow-lg p-8 text-center">

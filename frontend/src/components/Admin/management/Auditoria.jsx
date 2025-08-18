@@ -58,7 +58,8 @@ const Auditoria = () => {
   // SSE stream for live updates
   useEffect(() => {
     try {
-      const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.AUDITORIA + '/stream';
+      const qs = token ? (`?token=${encodeURIComponent(token)}`) : '';
+      const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.AUDITORIA + '/stream' + qs;
       const es = new EventSource(url, { withCredentials: true });
       sseRef.current = es;
       es.onmessage = (ev) => {
