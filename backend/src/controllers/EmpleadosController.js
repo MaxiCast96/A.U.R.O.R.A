@@ -484,7 +484,7 @@ empleadosController.forgotPassword = async (req, res) => {
                 <div class="header">
                     <div class="logo-container">
                         <div class="logo">
-                            <span class="glasses-icon">👓</span>
+                            <span class="glasses-icon"></span>
                         </div>
                     </div>
                     <h1 class="company-name">Óptica La Inteligente</h1>
