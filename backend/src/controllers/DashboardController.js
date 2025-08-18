@@ -33,18 +33,18 @@ const getDashboardStats = async (req, res) => {
       {
         $match: {
           fecha: { $gte: firstDayOfMonth },
-          estado: 'Completada'
+          estado: 'completada'
         }
       },
       {
         $group: {
           _id: null,
-          totalIngresos: { $sum: '$total' }
+          totalIngresos: { $sum: '$facturaDatos.total' }
         }
       }
     ]);
 
-    const totalIngresos = ventasIngresos.length > 0 ? ventasIngresos[0].totalIngresos : 0;
+    const totalIngresos = ventasIngresos.length > 0 ? Math.round(ventasIngresos[0].totalIngresos * 100) / 100 : 0;
 
     res.json({
       success: true,
@@ -52,7 +52,7 @@ const getDashboardStats = async (req, res) => {
         totalClientes,
         citasHoy,
         ventasDelMes,
-        totalIngresos: Math.round(totalIngresos * 100) / 100
+        totalIngresos
       }
     });
   } catch (error) {
@@ -77,14 +77,14 @@ const getVentasMensuales = async (req, res) => {
             $gte: new Date(year, 0, 1),
             $lt: new Date(parseInt(year) + 1, 0, 1)
           },
-          estado: 'Completada'
+          estado: 'completada'
         }
       },
       {
         $group: {
           _id: { $month: '$fecha' },
           ventas: { $sum: 1 },
-          ingresos: { $sum: '$total' }
+          ingresos: { $sum: '$facturaDatos.total' }
         }
       },
       {
@@ -138,6 +138,10 @@ const getEstadoCitas = async (req, res) => {
 
     // Mapear estados a español para mejor presentación
     const estadosMap = {
+      'confirmada': 'Confirmadas',
+      'pendiente': 'Pendientes',
+      'cancelada': 'Canceladas',
+      'completada': 'Completadas',
       'Confirmada': 'Confirmadas',
       'Pendiente': 'Pendientes',
       'Cancelada': 'Canceladas',
@@ -226,7 +230,7 @@ const getAllDashboardData = async (req, res) => {
           {
             $match: {
               fecha: { $gte: firstDayOfMonth },
-              estado: 'Completada'
+              estado: 'completada'
             }
           },
           {
@@ -255,7 +259,7 @@ const getAllDashboardData = async (req, res) => {
                 $gte: new Date(year, 0, 1),
                 $lt: new Date(year + 1, 0, 1)
               },
-              estado: 'Completada'
+              estado: 'completada'
             }
           },
           {
@@ -291,6 +295,10 @@ const getAllDashboardData = async (req, res) => {
         ]);
 
         const estadosMap = {
+          'confirmada': 'Confirmadas',
+          'pendiente': 'Pendientes',
+          'cancelada': 'Canceladas',
+          'completada': 'Completadas',
           'Confirmada': 'Confirmadas',
           'Pendiente': 'Pendientes',
           'Cancelada': 'Canceladas',

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../components/auth/AuthContext';
+import { API_CONFIG } from '../config/api';
 
-const API_BASE_URL = 'https://a-u-r-o-r-a.onrender.com/api';
+// Base URL y endpoints centralizados
+const { BASE_URL, ENDPOINTS } = API_CONFIG;
 
 export const useDashboard = () => {
     const { user, token } = useAuth();
@@ -21,11 +23,12 @@ export const useDashboard = () => {
             setLoading(true);
             setError(null);
 
-            const response = await axios.get(`${API_BASE_URL}/dashboard/all`, {
+            const response = await axios.get(`${BASE_URL}${ENDPOINTS.DASHBOARD}/all`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                withCredentials: true
             });
 
             if (response.data.success) {

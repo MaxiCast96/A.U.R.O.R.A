@@ -62,7 +62,9 @@ const OpticaDashboard = () => {
     const renderContent = () => {
     switch(activeSection) {
       case 'dashboard':
-        return <Dashboard />;
+        // Pasamos un callback para permitir que el Dashboard cambie la sección activa
+        return <Dashboard onNavigate={setActiveSection} />;
+
       case 'clientes':
         return <Clientes/>;
       case 'empleados':  

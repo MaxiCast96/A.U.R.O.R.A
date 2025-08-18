@@ -24,7 +24,7 @@ import {
 import { useDashboard } from '../../../hooks/useDashboard';
 import { useAuth } from '../../../components/auth/AuthContext';
 
-const DashboardContent = () => {
+const DashboardContent = ({ onNavigate }) => {
   const { 
     dashboardData, 
     loading, 
@@ -42,22 +42,22 @@ const DashboardContent = () => {
     {
       title: 'Crear Lentes',
       icon: Eye,
-      onClick: () => console.log('Crear Lentes')
+      onClick: () => onNavigate ? onNavigate('lentes') : console.log('Crear Lentes')
     },
     {
       title: 'Crear Cita',
       icon: Calendar,
-      onClick: () => console.log('Crear Cita')
+      onClick: () => onNavigate ? onNavigate('citas') : console.log('Crear Cita')
     },
     {
       title: 'Crear Receta',
       icon: Stethoscope,
-      onClick: () => console.log('Crear Receta')
+      onClick: () => onNavigate ? onNavigate('recetas') : console.log('Crear Receta')
     },
     {
       title: 'Crear Promoción',
       icon: Tag,
-      onClick: () => console.log('Crear Promoción')
+      onClick: () => onNavigate ? onNavigate('promociones') : console.log('Crear Promoción')
     }
   ];
 
@@ -94,7 +94,7 @@ const DashboardContent = () => {
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Total Clientes</p>
                 <p className="text-xl sm:text-2xl font-bold text-[#3C3C3B]">
-                  {dashboardData.stats.totalClientes.toLocaleString()}
+                  {dashboardData?.stats?.totalClientes?.toLocaleString?.() || 0}
                 </p>
               </div>
             </div>
@@ -108,7 +108,7 @@ const DashboardContent = () => {
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Citas Hoy</p>
                 <p className="text-xl sm:text-2xl font-bold text-[#3C3C3B]">
-                  {dashboardData.stats.citasHoy}
+                  {dashboardData?.stats?.citasHoy ?? 0}
                 </p>
               </div>
             </div>
@@ -122,7 +122,7 @@ const DashboardContent = () => {
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Ventas del Mes</p>
                 <p className="text-xl sm:text-2xl font-bold text-[#3C3C3B]">
-                  {dashboardData.stats.ventasDelMes}
+                  {dashboardData?.stats?.ventasDelMes ?? 0}
                 </p>
               </div>
             </div>
@@ -136,7 +136,7 @@ const DashboardContent = () => {
               <div className="ml-3 sm:ml-4">
                 <p className="text-xs sm:text-sm font-medium text-gray-600">Ingresos del Mes</p>
                 <p className="text-xl sm:text-2xl font-bold text-[#3C3C3B]">
-                  ${dashboardData.stats.totalIngresos.toLocaleString()}
+                  ${dashboardData?.stats?.totalIngresos?.toLocaleString?.() || 0}
                 </p>
               </div>
             </div>
@@ -151,7 +151,7 @@ const DashboardContent = () => {
           <h3 className="text-base sm:text-lg font-semibold text-[#3C3C3B] mb-4">Ventas Mensuales</h3>
           <div className="h-48 sm:h-56 md:h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dashboardData.ventasMensuales}>
+              <BarChart data={dashboardData?.ventasMensuales || []}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="mes" 
@@ -189,7 +189,7 @@ const DashboardContent = () => {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={dashboardData.estadoCitas}
+                  data={dashboardData?.estadoCitas || []}
                   cx="50%"
                   cy="50%"
                   labelLine={false}
@@ -198,7 +198,7 @@ const DashboardContent = () => {
                   fill="#009BBF"
                   dataKey="cantidad"
                 >
-                  {dashboardData.estadoCitas.map((entry, index) => (
+                  {((dashboardData?.estadoCitas) || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
