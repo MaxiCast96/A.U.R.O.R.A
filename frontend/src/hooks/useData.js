@@ -1,15 +1,12 @@
 import useFetch from './useFetch';
+import { API_CONFIG, buildApiUrl } from '../config/api';
 
 // resource: string, params: objeto de query opcional
-const API_BASE = 'https://a-u-r-o-r-a.onrender.com/api'; // Ahora incluye /api
 
 const buildUrl = (resource, params) => {
-  let url = `${API_BASE}/${resource}`;
-  if (params && Object.keys(params).length > 0) {
-    const query = new URLSearchParams(params).toString();
-    url += `?${query}`;
-  }
-  return url;
+  // Asegura que el resource comience con '/'
+  const endpoint = resource.startsWith('/') ? resource : `/${resource}`;
+  return buildApiUrl(endpoint, params);
 };
 
 const useData = (resource, params, options) => {
@@ -17,4 +14,4 @@ const useData = (resource, params, options) => {
   return useFetch(url, options);
 };
 
-export default useData; 
+export default useData;

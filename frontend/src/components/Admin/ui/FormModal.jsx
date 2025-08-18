@@ -38,6 +38,46 @@ const InputField = ({ name, label, error, formData, handleInputChange, nested, .
   );
 };
 
+const CheckboxField = ({ name, label, error, formData, handleInputChange, nested, ...props }) => {
+  const getChecked = () => {
+    if (nested) {
+      const keys = name.split('.');
+      const val = keys.reduce((obj, key) => obj?.[key], formData);
+      return Boolean(val);
+    }
+    return Boolean(formData[name]);
+  };
+
+  const onChange = (e) => {
+    handleInputChange({
+      target: {
+        name,
+        value: e.target.checked
+      }
+    });
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        name={name}
+        type="checkbox"
+        checked={getChecked()}
+        onChange={onChange}
+        className={`h-4 w-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500 ${error ? 'border-red-500 animate-shake' : ''}`}
+        {...props}
+      />
+      <label className="text-xs sm:text-sm font-medium text-gray-700">{label}</label>
+      {error && (
+        <div className="mt-1 text-red-500 text-xs sm:text-sm flex items-center space-x-1 animate-slideInDown">
+          <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4" />
+          <span>{error}</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const SelectField = ({ name, label, error, formData, handleInputChange, options, placeholder, nested, ...props }) => {
   const getValue = () => {
     if (nested) {
@@ -239,7 +279,8 @@ const FormModal = ({
   if (!isOpen) return null;
 
   const renderField = (field, index) => {
-    const { name, label, type, options, required, colSpan = 1, nested, ...fieldProps } = field;
+    const { name, label, type, options, required, colSpan = 1, nested, hidden, ...fieldProps } = field;
+    if (hidden) return null;
     const displayLabel = required ? `${label} *` : label;
     const error = errors[name];
 
@@ -264,6 +305,12 @@ const FormModal = ({
 
     const fieldElement = (() => {
       switch (type) {
+        case 'checkbox':
+          return (
+            <CheckboxField
+              {...commonProps}
+            />
+          );
         case 'select':
           return (
             <SelectField

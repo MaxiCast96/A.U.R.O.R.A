@@ -2,7 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ForgotPassword from './ForgotPassword'; // Importa el componente de recuperación de contraseña
 import { useAuth } from './AuthContext';
-import { config } from '../../config';
+import { API_CONFIG } from '../../config/api';
+
+// Helper fetch con fallback (localhost <-> producción)
+const fetchWithFallback = async (path, options = {}) => {
+  const buildUrl = (base) => `${base}${path}`;
+  const tryOnce = async (base) => {
+    const res = await fetch(buildUrl(base), {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+      ...options,
+    });
+    if (!res.ok) return res; // devolver para que el caller maneje mensajes
+    API_CONFIG.BASE_URL = base; // recordar base exitoso
+    return res;
+  };
+
+  const primary = API_CONFIG.BASE_URL;
+  const secondary = primary.includes('localhost')
+    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    : 'http://localhost:4000/api';
+
+  // Primer intento
+  try {
+    const r = await tryOnce(primary);
+    // Si fallo por red, intentamos fallback
+    if (r.type === 'opaque') return r;
+    return r;
+  } catch (e1) {
+    const msg = e1?.message || '';
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('ECONNREFUSED')) {
+      const r2 = await tryOnce(secondary);
+      return r2;
+    }
+    throw e1;
+  }
+};
 
 const AuthModal = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -79,13 +114,8 @@ const AuthModal = ({ isOpen, onClose }) => {
     } else {
       // Registro real
       try {
-        const apiBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
-          ? 'http://localhost:4000/api'
-          : config.api.baseUrl;
-        const res = await fetch(`${apiBase}/registroClientes`, {
+        const res = await fetchWithFallback(`${API_CONFIG.ENDPOINTS.REGISTRO_CLIENTES}`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
           body: JSON.stringify({
             nombre: formData.nombre,
             apellido: formData.apellido,
@@ -343,13 +373,8 @@ const AuthModal = ({ isOpen, onClose }) => {
             e.preventDefault();
             setVerifyMsg(null);
             try {
-              const apiBase = (typeof window !== 'undefined' && window.location.hostname === 'localhost')
-                ? 'http://localhost:4000/api'
-                : config.api.baseUrl;
-              const res = await fetch(`${apiBase}/registroClientes/verifyCodeEmail`, {
+              const res = await fetchWithFallback(`${API_CONFIG.ENDPOINTS.REGISTRO_CLIENTES}/verifyCodeEmail`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                credentials: 'include',
                 body: JSON.stringify({ verificationCodeRequest: verifyCode })
               });
               const data = await res.json();

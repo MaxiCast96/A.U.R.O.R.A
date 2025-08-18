@@ -27,6 +27,43 @@ const LentesFormModal = ({
     }
   }, [isOpen]);
 
+  // Mostrar todas las promociones existentes (sin filtrar por vigencia ni aplicabilidad)
+  const allPromociones = Array.isArray(promociones) ? promociones : [];
+
+  // Limpiar promoción si se desmarca "enPromocion"
+  useEffect(() => {
+    if (!formData?.enPromocion && formData?.promocionId) {
+      handleInputChange({ target: { name: 'promocionId', value: '' } });
+    }
+  }, [formData?.enPromocion]);
+
+  // Nota: No desmarcar automáticamente enPromocion si no hay promociones para evitar cierre abrupto del selector
+
+  // Ya no limpiamos promocionId por filtro, porque ahora se muestran todas
+
+  // Autocalcular precioActual cuando hay promoción seleccionada
+  useEffect(() => {
+    if (!formData) return;
+    const base = Number(formData.precioBase);
+    if (!base || isNaN(base)) return;
+
+    if (formData.enPromocion && formData.promocionId) {
+      const promo = allPromociones.find(p => String(p._id) === String(formData.promocionId));
+      if (!promo) return;
+      let newPrice = base;
+      if (promo.tipoDescuento === 'porcentaje') {
+        newPrice = base * (1 - (Number(promo.valorDescuento || 0) / 100));
+      } else if (promo.tipoDescuento === 'monto_fijo') {
+        newPrice = Math.max(0, base - Number(promo.valorDescuento || 0));
+      }
+      // Formatear a 2 decimales
+      handleInputChange({ target: { name: 'precioActual', value: Number(newPrice.toFixed(2)) } });
+    } else if (!formData.enPromocion && (formData.precioActual === '' || formData.precioActual === null || formData.precioActual === undefined)) {
+      // Si no está en promoción y precioActual está vacío, inicializar con base
+      handleInputChange({ target: { name: 'precioActual', value: base } });
+    }
+  }, [formData?.enPromocion, formData?.promocionId, formData?.precioBase]);
+
   // Manejar la adición de una nueva URL de imagen
   const handleAddImageUrl = () => {
     if (newImageUrl.trim() && !formData.imagenes.includes(newImageUrl.trim())) {
@@ -75,6 +112,11 @@ const LentesFormModal = ({
     });
   };
 
+  // Mensaje informativo para el selector de promociones
+  const showPromoSection = !!formData?.enPromocion;
+  const noPromos = allPromociones.length === 0;
+  const promoHintMessage = !showPromoSection ? '' : (noPromos ? 'No hay promociones registradas.' : '');
+
   const fields = [
     { name: 'nombre', label: 'Nombre del Lente', type: 'text', required: true, colSpan: 1 },
     { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
@@ -93,15 +135,31 @@ const LentesFormModal = ({
     { name: 'medidas.ancho', label: 'Ancho (mm)', type: 'text', required: false, colSpan: 1, nested: true, step: '0.01' },
 
     // Promoción
-    { name: 'enPromocion', label: '¿En Promoción?', type: 'checkbox', required: false, colSpan: 2 },
+    { name: 'enPromocion', label: '¿En promoción?', type: 'checkbox', required: false, colSpan: 2 },
     {
       name: 'promocionId',
-      label: 'Seleccionar Promoción',
+      label: 'Selecciona una promoción',
       type: 'select',
-      options: promociones.map(p => ({ value: p._id, label: p.nombre })),
-      required: formData.enPromocion,
+      options: allPromociones.map(p => {
+        const isPct = p.tipoDescuento === 'porcentaje';
+        const val = Number(p.valorDescuento || 0);
+        const fin = p.fechaFin ? new Date(p.fechaFin) : null;
+        const finTxt = fin ? fin.toLocaleDateString('es-SV') : '';
+        const desc = isPct ? `${val}%` : `$${val}`;
+        return { value: p._id, label: `${p.nombre} (${desc}${finTxt ? ` · hasta ${finTxt}` : ''})` };
+      }),
+      required: formData.enPromocion && allPromociones.length > 0,
       colSpan: 2,
       hidden: !formData.enPromocion, // Se oculta si no está en promoción
+      disabled: allPromociones.length === 0,
+      placeholder: allPromociones.length === 0 ? 'No hay promociones disponibles' : 'Selecciona una promoción',
+    },
+    {
+      name: 'promoHint',
+      label: '',
+      type: 'text',
+      colSpan: 2,
+      hidden: !showPromoSection || !promoHintMessage,
     },
     { name: 'fechaCreacion', label: 'Fecha de Creación', type: 'date', required: true, colSpan: 2 },
   ];
@@ -199,6 +257,13 @@ const LentesFormModal = ({
       errors={errors}
       submitLabel={submitLabel}
       fields={fields}
+      customFields={{
+        promoHint: (
+          <div className="text-sm text-gray-600 bg-yellow-50 border border-yellow-200 rounded-md px-3 py-2">
+            {promoHintMessage}
+          </div>
+        )
+      }}
       gridCols={2}
     >
       {customSections}

@@ -264,50 +264,19 @@ async function updateLentes(req, res) {
             if (typeof setData[k] === 'undefined') delete setData[k];
         });
 
-        // Aplicar promoción si corresponde: activa, en rango de fechas y aplicable
-        // Regla: si el cliente envía enPromocion=true y promocionId válido, persistimos promocionId.
-        // Ajustamos enPromocion según aplicabilidad; solo desasociamos si explícitamente enPromocion === false o no hay promocionId.
+        // Respetar la elección del cliente: no forzar enPromocion=false por vigencia/aplicabilidad.
+        // Confiamos en el precioActual calculado en el frontend.
         let shouldUnsetPromo = false;
-        if (enPromocion && promocionIdNorm) {
-            try {
-                const promo = await Promociones.findById(promocionIdNorm).lean();
-                const now = new Date();
-                const inRange = promo && promo.fechaInicio && promo.fechaFin && new Date(promo.fechaInicio) <= now && now <= new Date(promo.fechaFin);
-                const isActive = promo && promo.activo === true;
-                let applies = false;
-                if (promo && isActive && inRange) {
-                    if (promo.aplicaA === 'todos') {
-                        applies = true;
-                    } else if (promo.aplicaA === 'categoria' && categoriaParaPromo) {
-                        const ids = (promo.categoriasAplicables || []).map(String);
-                        applies = ids.includes(String(categoriaParaPromo));
-                    } else if (promo.aplicaA === 'lente') {
-                        const ids = (promo.lentesAplicables || []).map(String);
-                        applies = ids.includes(String(req.params.id));
-                    }
-                }
-                if (applies) {
-                    let nuevoPrecio = basePrice;
-                    if (promo.tipoDescuento === 'porcentaje') {
-                        nuevoPrecio = Math.max(0, Math.round((basePrice * (100 - (promo.valorDescuento || 0))) / 100));
-                    } else if (promo.tipoDescuento === 'monto_fijo') {
-                        nuevoPrecio = Math.max(0, basePrice - (promo.valorDescuento || 0));
-                    }
-                    setData.precioActual = nuevoPrecio;
-                    setData.enPromocion = true;
-                    setData.promocionId = promocionIdNorm; // redundante pero explícito
-                } else {
-                    // No aplicable: mantener link de promocionId pero desactivar enPromocion
-                    setData.enPromocion = false;
-                }
-            } catch (e) {
-                console.warn('[updateLentes] Error evaluando promoción:', e?.message);
-                setData.enPromocion = false;
-            }
-        } else if (enPromocion === false) {
+        if (enPromocion === false) {
             setData.enPromocion = false;
             // Usuario desactiva explícitamente la promoción: desasociar
             shouldUnsetPromo = true;
+        } else if (enPromocion === true) {
+            // Si el usuario marcó enPromocion, aseguramos que quede activo y preservamos el promocionId si es válido
+            setData.enPromocion = true;
+            if (promocionIdNorm) {
+                setData.promocionId = promocionIdNorm;
+            }
         }
 
         const updateDoc = { $set: setData };

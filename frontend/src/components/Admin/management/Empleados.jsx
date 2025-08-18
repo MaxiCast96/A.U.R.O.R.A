@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import axios from 'axios';
 import { useForm } from '../../../hooks/admin/useForm';
 import { usePagination } from '../../../hooks/admin/usePagination';
+import { API_CONFIG } from '../../../config/api';
 
 // Componentes de UI (sin cambios)
 import PageHeader from '../ui/PageHeader';
@@ -19,10 +20,50 @@ import OptometristasFormModal from '../management/optometristas/OptometristasFor
 // Iconos (sin cambios)
 import { Users, UserCheck, Building2, DollarSign, Trash2, Eye, Edit, Phone, Mail, Calendar } from 'lucide-react';
 
-// URL base de tu API
-const API_URL = 'http://localhost:4000/api/empleados';
-const SUCURSALES_URL = 'http://localhost:4000/api/sucursales';
-const OPTOMETRISTAS_URL = 'http://localhost:4000/api/optometrista'; // CORRECCIÓN: URL correcta
+// Endpoints
+const EMPLEADOS_EP = API_CONFIG.ENDPOINTS.EMPLEADOS; // '/empleados'
+const SUCURSALES_EP = API_CONFIG.ENDPOINTS.SUCURSALES; // '/sucursales'
+const OPTOMETRISTAS_EP = API_CONFIG.ENDPOINTS.OPTOMETRISTAS; // '/optometrista'
+
+// Axios helper con fallback (localhost <-> producción)
+const axiosWithFallback = async (method, path, data, config = {}) => {
+  const makeUrl = (base) => `${base}${path}`;
+
+  const tryOnce = async (base) => {
+    const url = makeUrl(base);
+    try {
+      const res = await axios({
+        url,
+        method,
+        data,
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json', ...(config.headers || {}) },
+        ...config,
+      });
+      // Éxito: fijar BASE_URL activa
+      API_CONFIG.BASE_URL = base;
+      return res;
+    } catch (err) {
+      throw err;
+    }
+  };
+
+  const primaryBase = API_CONFIG.BASE_URL;
+  const secondaryBase = primaryBase.includes('localhost')
+    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    : 'http://localhost:4000/api';
+
+  try {
+    return await tryOnce(primaryBase);
+  } catch (e1) {
+    // fallback para errores de red/timeout
+    const msg = e1?.message || '';
+    if (e1.code === 'ECONNABORTED' || msg.includes('Network Error') || msg.includes('ECONNREFUSED')) {
+      return await tryOnce(secondaryBase);
+    }
+    throw e1;
+  }
+};
 
 const Empleados = () => {
     // --- ESTADOS ---
@@ -51,8 +92,8 @@ const Empleados = () => {
         setLoading(true);
         try {
             const [empleadosRes, sucursalesRes] = await Promise.all([
-                axios.get(`${API_URL}`),
-                axios.get(`${SUCURSALES_URL}`)
+                axiosWithFallback('get', EMPLEADOS_EP),
+                axiosWithFallback('get', SUCURSALES_EP)
             ]);
             setEmpleados(empleadosRes.data);
             setSucursales(sucursalesRes.data);
@@ -315,7 +356,7 @@ const Empleados = () => {
         
         // 1. CREAR EL EMPLEADO PRIMERO
         console.log('📄 Creando empleado...');
-        const employeeResponse = await axios.post(API_URL, tempEmployeeData);
+        const employeeResponse = await axiosWithFallback('post', EMPLEADOS_EP, tempEmployeeData);
         
         // CORRECCIÓN: El backend retorna { message: ..., empleado: {...} }
         const newEmployee = employeeResponse.data.empleado || employeeResponse.data;
@@ -360,7 +401,7 @@ const Empleados = () => {
         
         // 3. CREAR EL OPTOMETRISTA
         console.log('📄 Creando optometrista...');
-        const optometristaResponse = await axios.post(OPTOMETRISTAS_URL, finalOptometristaPayload);
+        const optometristaResponse = await axiosWithFallback('post', OPTOMETRISTAS_EP, finalOptometristaPayload);
         
         console.log('✅ Optometrista creado exitosamente:', optometristaResponse.data);
 
@@ -625,7 +666,7 @@ const handleCloseModals = () => {
     // NUEVO: Función para verificar si un empleado es optometrista
     const checkIfOptometrista = async (empleadoId) => {
         try {
-            const response = await axios.get(`${OPTOMETRISTAS_URL}/empleado/${empleadoId}`);
+            const response = await axiosWithFallback('get', `${OPTOMETRISTAS_EP}/empleado/${empleadoId}`);
             return response.data; // Retorna el optometrista si existe
         } catch (error) {
             return null; // No existe como optometrista
@@ -637,7 +678,7 @@ const handleCloseModals = () => {
         try {
             const optometrista = await checkIfOptometrista(empleadoId);
             if (optometrista) {
-                await axios.delete(`${OPTOMETRISTAS_URL}/${optometrista._id}`);
+                await axiosWithFallback('delete', `${OPTOMETRISTAS_EP}/${optometrista._id}`);
                 console.log('✅ Optometrista eliminado exitosamente');
             }
         } catch (error) {
@@ -698,11 +739,11 @@ const handleCloseModals = () => {
 
         if (selectedEmpleado) {
             // UPDATE
-            await axios.put(`${API_URL}/${selectedEmpleado._id}`, dataToSend);
+            await axiosWithFallback('put', `${EMPLEADOS_EP}/${selectedEmpleado._id}`, dataToSend);
             showAlert('success', '¡Empleado actualizado exitosamente!');
         } else {
             // CREATE
-            await axios.post(`${API_URL}`, dataToSend);
+            await axiosWithFallback('post', `${EMPLEADOS_EP}`, dataToSend);
             showAlert('success', '¡Empleado creado exitosamente!');
         }
         
@@ -740,7 +781,7 @@ const handleCloseModals = () => {
                 await deleteOptometrista(selectedEmpleado._id);
             }
             
-            await axios.delete(`${API_URL}/${selectedEmpleado._id}`);
+            await axiosWithFallback('delete', `${EMPLEADOS_EP}/${selectedEmpleado._id}`);
             showAlert('success', '¡Empleado eliminado exitosamente!');
             fetchData();
             handleCloseModals();

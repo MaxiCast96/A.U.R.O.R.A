@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useForm } from '../../../hooks/admin/useForm';
 import { usePagination } from '../../../hooks/admin/usePagination';
 import HorariosVisualizacion from './optometristas/HorariosVisualizacion';
+import { API_CONFIG } from '../../../config/api';
 
 // Componentes de UI
 import PageHeader from '../ui/PageHeader';
@@ -19,10 +20,44 @@ import { useNavigate, useLocation } from 'react-router-dom';
 // Iconos
 import { Eye, Plus, Edit, Trash2, UserCheck, UserX, Search, Award, Clock, MapPin, Phone, Mail, Building2 } from 'lucide-react';
 
-// URLs de la API
-const OPTOMETRISTAS_URL = 'http://localhost:4000/api/optometrista';
-const EMPLEADOS_URL = 'http://localhost:4000/api/empleados';
-const SUCURSALES_URL = 'http://localhost:4000/api/sucursales';
+// Endpoints de la API
+const OPTOMETRISTAS_EP = API_CONFIG.ENDPOINTS.OPTOMETRISTAS; // '/optometrista'
+const EMPLEADOS_EP = API_CONFIG.ENDPOINTS.EMPLEADOS; // '/empleados'
+const SUCURSALES_EP = API_CONFIG.ENDPOINTS.SUCURSALES; // '/sucursales'
+
+// Axios helper con fallback (localhost <-> producción)
+const axiosWithFallback = async (method, path, data, config = {}) => {
+  const buildUrl = (base) => `${base}${path}`;
+
+  const tryOnce = async (base) => {
+    const url = buildUrl(base);
+    const res = await axios({
+      url,
+      method,
+      data,
+      withCredentials: true,
+      headers: { 'Content-Type': 'application/json', ...(config.headers || {}) },
+      ...config,
+    });
+    API_CONFIG.BASE_URL = base;
+    return res;
+  };
+
+  const primary = API_CONFIG.BASE_URL;
+  const secondary = primary.includes('localhost')
+    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    : 'http://localhost:4000/api';
+
+  try {
+    return await tryOnce(primary);
+  } catch (e1) {
+    const msg = e1?.message || '';
+    if (e1.code === 'ECONNABORTED' || msg.includes('Network Error') || msg.includes('ECONNREFUSED')) {
+      return await tryOnce(secondary);
+    }
+    throw e1;
+  }
+};
 
 const Optometristas = () => {
     // --- ESTADOS ---
@@ -60,8 +95,6 @@ const Optometristas = () => {
         navigate('/empleados', { state: { editEmployeeId: empleadoId } });
     };
 
-
-
     // --- FORMULARIO ---
     const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm({
         empleadoId: '',
@@ -86,9 +119,9 @@ const Optometristas = () => {
         setLoading(true);
         try {
             const [optometristasRes, empleadosRes, sucursalesRes] = await Promise.all([
-                axios.get(OPTOMETRISTAS_URL),
-                axios.get(EMPLEADOS_URL),
-                axios.get(SUCURSALES_URL)
+                axiosWithFallback('get', OPTOMETRISTAS_EP),
+                axiosWithFallback('get', EMPLEADOS_EP),
+                axiosWithFallback('get', SUCURSALES_EP)
             ]);
             
             setOptometristas(optometristasRes.data);
@@ -205,11 +238,11 @@ const Optometristas = () => {
 
             if (selectedOptometrista) {
                 // UPDATE
-                await axios.put(`${OPTOMETRISTAS_URL}/${selectedOptometrista._id}`, dataToSend);
+                await axiosWithFallback('put', `${OPTOMETRISTAS_EP}/${selectedOptometrista._id}`, dataToSend);
                 showAlert('success', '¡Optometrista actualizado exitosamente!');
             } else {
                 // CREATE
-                await axios.post(OPTOMETRISTAS_URL, dataToSend);
+                await axiosWithFallback('post', OPTOMETRISTAS_EP, dataToSend);
                 showAlert('success', '¡Optometrista creado exitosamente!');
             }
             
@@ -224,7 +257,7 @@ const Optometristas = () => {
         if (!selectedOptometrista) return;
         
         try {
-            await axios.delete(`${OPTOMETRISTAS_URL}/${selectedOptometrista._id}`);
+            await axiosWithFallback('delete', `${OPTOMETRISTAS_EP}/${selectedOptometrista._id}`);
             showAlert('success', '¡Optometrista eliminado exitosamente!');
             fetchData(); // Recargar datos
             handleCloseModals();
