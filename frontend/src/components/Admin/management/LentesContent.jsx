@@ -19,8 +19,10 @@ import LentesFormModal from '../management/lentes/LentesFormModal'; // Importa e
 // Iconos
 import { Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, Image as ImageIcon } from 'lucide-react';
 
-// URL base de tu API (centralizada)
-const API_URL = API_CONFIG.BASE_URL;
+// Helpers para usar BASE_URL dinámico + fallback per-request
+const getBase = () => API_CONFIG.BASE_URL;
+const PROD_FALLBACK = 'https://a-u-r-o-r-a.onrender.com/api';
+const withBase = (path, base = getBase()) => `${base}${path}`;
 
 const LentesContent = () => {
   // --- ESTADOS ---
@@ -42,13 +44,29 @@ const LentesContent = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await Promise.all([
-        axios.get(`${API_URL}/lentes`),
-        axios.get(`${API_URL}/categoria`), // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/marcas`),     // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/promociones`), // Asumiendo que esta ruta existe en app.js
-        axios.get(`${API_URL}/sucursales`), // Asumiendo que esta ruta existe en app.js
+      const baseNow = getBase();
+      const doFetch = async (base) => Promise.all([
+        axios.get(withBase('/lentes', base)),
+        axios.get(withBase('/categoria', base)),
+        axios.get(withBase('/marcas', base)),
+        axios.get(withBase('/promociones', base)),
+        axios.get(withBase('/sucursales', base)),
       ]);
+      let lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes;
+      try {
+        [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await doFetch(baseNow);
+      } catch (err) {
+        const isConnRefused = err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK';
+        const isLocal = baseNow.includes('localhost');
+        if (isConnRefused && isLocal) {
+          // Retry against PROD once
+          [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await doFetch(PROD_FALLBACK);
+          // Opcional: actualizar BASE_URL activa para el resto de la app
+          API_CONFIG.BASE_URL = PROD_FALLBACK;
+        } else {
+          throw err;
+        }
+      }
       // Normaliza la respuesta a un arreglo para evitar errores en .filter/.reduce
       const lentesData = Array.isArray(lentesRes.data)
         ? lentesRes.data
@@ -248,13 +266,31 @@ const LentesContent = () => {
       };
       prune(dataToSend);
 
+      const baseNow = getBase();
+      const putUrl = withBase(`/lentes/${selectedLente?._id || ''}`, baseNow);
+      const postUrl = withBase('/lentes', baseNow);
+
+      const safeRequest = async (fn) => {
+        try {
+          return await fn(baseNow);
+        } catch (err) {
+          const isConnRefused = err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK';
+          const isLocal = baseNow.includes('localhost');
+          if (isConnRefused && isLocal) {
+            API_CONFIG.BASE_URL = PROD_FALLBACK;
+            return await fn(PROD_FALLBACK);
+          }
+          throw err;
+        }
+      };
+
       if (selectedLente) {
         // Actualizar
-        await axios.put(`${API_URL}/lentes/${selectedLente._id}`, dataToSend);
+        await safeRequest((base) => axios.put(withBase(`/lentes/${selectedLente._id}`, base), dataToSend));
         showAlert('success', 'Lente actualizado exitosamente.');
       } else {
         // Crear
-        await axios.post(`${API_URL}/lentes`, dataToSend);
+        await safeRequest((base) => axios.post(withBase('/lentes', base), dataToSend));
         showAlert('success', 'Lente creado exitosamente.');
       }
       fetchData(); // Recargar datos después de la operación exitosa

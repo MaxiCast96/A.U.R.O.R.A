@@ -5,7 +5,9 @@ const ENV_BASE = (typeof import.meta !== 'undefined' && import.meta.env && impor
   ? String(import.meta.env.VITE_API_BASE_URL).trim()
   : '';
 
-let ACTIVE_BASE = ENV_BASE || (typeof window !== 'undefined' && window.location && window.location.hostname === 'localhost' ? LOCAL_BASE : PROD_BASE);
+// Para evitar errores iniciales si el backend local no está arriba aún,
+// empezar en PROD y cambiar a LOCAL cuando el ping confirme disponibilidad.
+let ACTIVE_BASE = ENV_BASE || PROD_BASE;
 
 // Ping con timeout corto para decidir en runtime
 const ping = async (url, path = '/health', timeoutMs = 1200) => {

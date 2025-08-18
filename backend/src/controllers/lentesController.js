@@ -254,6 +254,7 @@ async function updateLentes(req, res) {
             medidas,
             imagenes: imagenesURLs,
             enPromocion: !!enPromocion,
+            promocionId: promocionIdNorm,
             fechaCreacion,
             sucursales: sucursalesLimpias
         };
@@ -264,7 +265,9 @@ async function updateLentes(req, res) {
         });
 
         // Aplicar promoción si corresponde: activa, en rango de fechas y aplicable
-        let shouldUnsetPromo = true;
+        // Regla: si el cliente envía enPromocion=true y promocionId válido, persistimos promocionId.
+        // Ajustamos enPromocion según aplicabilidad; solo desasociamos si explícitamente enPromocion === false o no hay promocionId.
+        let shouldUnsetPromo = false;
         if (enPromocion && promocionIdNorm) {
             try {
                 const promo = await Promociones.findById(promocionIdNorm).lean();
@@ -292,10 +295,9 @@ async function updateLentes(req, res) {
                     }
                     setData.precioActual = nuevoPrecio;
                     setData.enPromocion = true;
-                    setData.promocionId = promocionIdNorm;
-                    shouldUnsetPromo = false;
+                    setData.promocionId = promocionIdNorm; // redundante pero explícito
                 } else {
-                    // No aplicable: desactivar
+                    // No aplicable: mantener link de promocionId pero desactivar enPromocion
                     setData.enPromocion = false;
                 }
             } catch (e) {
@@ -304,10 +306,12 @@ async function updateLentes(req, res) {
             }
         } else if (enPromocion === false) {
             setData.enPromocion = false;
+            // Usuario desactiva explícitamente la promoción: desasociar
+            shouldUnsetPromo = true;
         }
 
         const updateDoc = { $set: setData };
-        if (shouldUnsetPromo || !setData.enPromocion) {
+        if (shouldUnsetPromo) {
             updateDoc.$unset = { ...(updateDoc.$unset || {}), promocionId: "" };
             delete setData.promocionId; // evitar validar id inválido
         }
