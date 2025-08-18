@@ -1,12 +1,15 @@
 import { defineConfig } from 'vite'
-import wasm from 'vite-plugin-wasm'
-import topLevelAwait from 'vite-plugin-top-level-await'
+import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
-
+// https://vite.dev/config/
 export default defineConfig({
-  plugins: [wasm(), topLevelAwait(), tailwindcss(),],
-  css: {
-    transformer: 'lightningcss-wasm'
-  }
+  plugins: [react(),
+    tailwindcss()
+  ],
+  server: {
+    proxy: {
+      '/api': 'https://a-u-r-o-r-a.onrender.com',
+    },
+  },
 })
