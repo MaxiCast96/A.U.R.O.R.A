@@ -1,592 +1,286 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
-import { Camera, Upload, X, User, Edit3, Eye, EyeOff, Lock, Unlock, Check, AlertCircle, Phone as PhoneIcon, ArrowRight, Save } from 'lucide-react';
+import { Camera, Upload, X, User, Edit3, Eye, EyeOff, Lock, Unlock, Check, AlertCircle, Phone as PhoneIcon, ArrowRight, Save, Loader } from 'lucide-react';
 import { EL_SALVADOR_DATA } from '../../constants/ElSalvadorData';
+import axios from 'axios';
+
+// URL base de tu API
+const API_URL = 'http://localhost:4000/api/empleados';
 
 // Componente de subida de foto profesional
-const PhotoUploadComponent = ({ 
-  currentPhoto, 
-  onPhotoChange, 
-  uploading = false,
-  employeeName = '',
-  size = 'large'
-}) => {
+const PhotoUploadComponent = ({ currentPhoto, onPhotoChange, employeeName = '' }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
 
-  const sizeConfigs = {
-    small: { container: 'w-16 h-16', overlay: 'w-16 h-16', icon: 'w-4 h-4', text: 'text-xs' },
-    medium: { container: 'w-24 h-24', overlay: 'w-24 h-24', icon: 'w-5 h-5', text: 'text-sm' },
-    large: { container: 'w-32 h-32', overlay: 'w-32 h-32', icon: 'w-6 h-6', text: 'text-base' }
-  };
-
-  const config = sizeConfigs[size];
-
   const handleOpenWidget = () => {
-    if (!window.cloudinary) {
-      console.error("Cloudinary script not loaded");
-      return;
-    }
-
+    if (!window.cloudinary) return;
     const widget = window.cloudinary.createUploadWidget({
       cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
       uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
-      sources: ['local', 'camera', 'url'],
-      folder: "empleados_perfil",
-      multiple: false,
-      maxFiles: 1,
-      cropping: true,
-      croppingAspectRatio: 1,
-      croppingShowBackButton: true,
-      croppingCoordinatesMode: 'custom',
-      showAdvancedOptions: false,
-      maxImageFileSize: 5000000,
-      maxVideoFileSize: 10000000,
-      clientAllowedFormats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-      styles: {
-        palette: {
-          window: "#FFFFFF",
-          windowBorder: "#0891B2",
-          tabIcon: "#0891B2",
-          menuIcons: "#5A616A",
-          textDark: "#000000",
-          textLight: "#FFFFFF",
-          link: "#0891B2",
-          action: "#0891B2",
-          inactiveTabIcon: "#0E2F5A",
-          error: "#F44235",
-          inProgress: "#0891B2",
-          complete: "#20B832",
-          sourceBg: "#E4EBF1"
-        }
-      },
-      text: {
-        es: {
-          "queue.title": "Subir Foto de Perfil",
-          "queue.title_uploading_with_counter": "Subiendo {{num}} archivo",
-          "queue.title_uploading_processing_complete": "Procesando...",
-          "local.browse": "Seleccionar archivo",
-          "local.dd_title_single": "Arrastra tu foto aquí",
-          "camera.capture": "Tomar foto",
-          "camera.cancel": "Cancelar",
-          "camera.take_pic": "Tomar foto",
-          "camera.explanation": "Asegúrate de permitir el acceso a la cámara",
-          "crop.title": "Recortar foto",
-          "crop.crop_btn": "Recortar",
-          "crop.skip_btn": "Usar original",
-          "crop.reset_btn": "Restablecer"
-        }
-      }
+      sources: ['local', 'camera', 'url'], folder: "empleados_perfil", multiple: false,
+      cropping: true, croppingAspectRatio: 1, maxImageFileSize: 5000000,
+      clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+      styles: { palette: { window: "#FFFFFF", windowBorder: "#0891B2", tabIcon: "#0891B2", link: "#0891B2", action: "#0891B2" } },
+      text: { es: { "queue.title": "Subir Foto", "local.browse": "Seleccionar", "camera.capture": "Tomar foto", "crop.title": "Recortar foto" } }
     }, (error, result) => {
-      if (error) {
-        console.error('Error uploading:', error);
-        setIsUploading(false);
-        return;
-      }
-
-      if (result && result.event === "upload-added") {
-        setIsUploading(true);
-        setUploadProgress(10);
-      }
-      if (result && result.event === "upload-progress") {
-        setUploadProgress(result.info.progress || 50);
-      }
+      if (error) { setIsUploading(false); return; }
+      if (result && result.event === "upload-added") setIsUploading(true);
       if (result && result.event === "success") {
-        console.log('Upload successful:', result.info);
-        setUploadProgress(100);
         onPhotoChange(result.info.secure_url);
-        setTimeout(() => {
-          setUploadProgress(0);
-          setIsUploading(false);
-        }, 1000);
+        setIsUploading(false);
       }
     });
-
     widget.open();
   };
 
   const getInitials = (name) => {
-    if (!name) return 'U';
-    const parts = name.split(' ');
-    return parts.length > 1 ? 
-      `${parts[0][0]}${parts[1][0]}` : 
-      parts[0][0];
+    if (!name || name.trim() === '') return null;
+    const cleanName = name.trim();
+    const parts = cleanName.split(' ').filter(part => part.length > 0);
+    if (parts.length === 0) return null;
+    return parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : parts[0][0];
   };
+
+  const initials = getInitials(employeeName);
 
   return (
     <div className="flex flex-col items-center space-y-3">
-      <div 
-        className={`relative ${config.container} group cursor-pointer`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        onClick={handleOpenWidget}
-      >
-        <div className={`${config.container} rounded-full overflow-hidden bg-gradient-to-br from-cyan-100 to-blue-100 border-4 border-white shadow-lg transition-all duration-300 group-hover:shadow-xl`}>
+      <div className="relative w-32 h-32 group cursor-pointer" onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)} onClick={handleOpenWidget}>
+        <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-4 border-white shadow-lg">
           {currentPhoto ? (
-            <img 
-              src={currentPhoto} 
-              alt={employeeName || 'Foto de perfil'} 
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-          ) : (
+            <img src={currentPhoto} alt={employeeName} className="w-full h-full object-cover" />
+          ) : initials ? (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-cyan-200 to-blue-200">
-              {employeeName ? (
-                <span className="text-cyan-800 font-bold text-xl select-none">
-                  {getInitials(employeeName)}
-                </span>
-              ) : (
-                <User className="w-8 h-8 text-cyan-600" />
-              )}
+              <span className="text-cyan-800 font-bold text-2xl">{initials}</span>
+            </div>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+              <User className="w-12 h-12 text-gray-500" />
             </div>
           )}
         </div>
-
-        <div className={`absolute inset-0 ${config.container} rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center`}>
+        <div className="absolute inset-0 rounded-full bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
           <div className="text-white text-center">
-            {isUploading ? (
-              <div className="flex flex-col items-center space-y-1">
-                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-xs">Subiendo...</span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center space-y-1">
-                <Edit3 className={config.icon} />
-                <span className="text-xs font-medium">
-                  {currentPhoto ? 'Cambiar' : 'Subir'}
-                </span>
-              </div>
-            )}
+            {isUploading ? <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div> : <><Edit3 className="w-6 h-6" /><span className="text-xs font-medium">{currentPhoto ? 'Cambiar' : 'Subir'}</span></>}
           </div>
         </div>
-
-        <button
-          type="button"
-          className={`absolute -bottom-1 -right-1 w-8 h-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full shadow-lg transition-all duration-200 flex items-center justify-center border-2 border-white ${isHovered ? 'scale-110' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleOpenWidget();
-          }}
-        >
-          <Camera className="w-4 h-4" />
-        </button>
-
-        {uploadProgress > 0 && uploadProgress < 100 && (
-          <div className="absolute inset-0 rounded-full border-4 border-transparent">
-            <div 
-              className="absolute inset-0 rounded-full border-4 border-cyan-500 border-t-transparent animate-spin"
-              style={{
-                background: `conic-gradient(from 0deg, #0891B2 ${uploadProgress * 3.6}deg, transparent ${uploadProgress * 3.6}deg)`
-              }}
-            />
-          </div>
-        )}
+        <button type="button" className={`absolute -bottom-1 -right-1 w-8 h-8 bg-cyan-500 hover:bg-cyan-600 text-white rounded-full shadow-lg flex items-center justify-center border-2 border-white transition-transform ${isHovered ? 'scale-110' : ''}`} onClick={(e) => { e.stopPropagation(); handleOpenWidget(); }}><Camera className="w-4 h-4" /></button>
       </div>
-
       <div className="text-center">
-        <p className="text-sm font-medium text-gray-700">
-          {currentPhoto ? 'Cambiar foto de perfil' : 'Agregar foto de perfil'}
-        </p>
-        <p className="text-xs text-gray-500 mt-1">
-          Haz clic para {currentPhoto ? 'cambiar' : 'subir'} una foto
-        </p>
+        <p className="text-sm font-medium text-gray-700">{currentPhoto ? 'Cambiar foto de perfil' : 'Agregar foto de perfil'}</p>
+        <p className="text-xs text-gray-500 mt-1">Haz clic en la imagen para {currentPhoto ? 'cambiar' : 'subir'}</p>
       </div>
-
-      <button
-        type="button"
-        onClick={handleOpenWidget}
-        disabled={isUploading}
-        className="sm:hidden w-full px-4 py-2 bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-300 text-white rounded-lg transition-all duration-200 flex items-center justify-center space-x-2"
-      >
-        {isUploading ? (
-          <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span>Subiendo...</span>
-          </>
-        ) : (
-          <>
-            <Upload className="w-4 h-4" />
-            <span>{currentPhoto ? 'Cambiar foto' : 'Subir foto'}</span>
-          </>
-        )}
-      </button>
     </div>
   );
 };
 
-// Componente mejorado para manejo de contraseñas
-const PasswordField = ({ 
-  value, 
-  onChange, 
-  error, 
-  isEditing = false, 
-  currentPassword = null,
-  placeholder = "Ingrese la contraseña"
-}) => {
+const PasswordField = ({ value, onChange, error, isEditing = false }) => {
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [tempPassword, setTempPassword] = useState('');
-
-  useEffect(() => {
-    if (isEditing && currentPassword) {
-      setTempPassword(currentPassword);
-    }
-  }, [isEditing, currentPassword]);
-
-  const handleEditPassword = () => {
-    setIsEditingPassword(true);
-    setTempPassword('');
-  };
-
-  const handleCancelEdit = () => {
-    setIsEditingPassword(false);
-    setTempPassword(currentPassword || '');
-    setShowPassword(false);
-    onChange({ target: { name: 'password', value: currentPassword || '' } });
-  };
-
-  const handleSavePassword = () => {
-    setIsEditingPassword(false);
-    setShowPassword(false);
-    onChange({ target: { name: 'password', value: tempPassword } });
-  };
-
-  const handlePasswordChange = (e) => {
-    const newPassword = e.target.value;
-    setTempPassword(newPassword);
-    onChange({ target: { name: 'password', value: newPassword } });
-  };
 
   if (isEditing && !isEditingPassword) {
     return (
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Contraseña
-        </label>
-        <div className="relative">
-          <div className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <Lock className="w-5 h-5 text-gray-400" />
-              <div className="text-gray-500 select-none tracking-widest">
-                ••••••••••••
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleEditPassword}
-              className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded-lg transition-colors flex items-center space-x-2"
-            >
-              <Edit3 className="w-4 h-4" />
-              <span>Cambiar</span>
-            </button>
-          </div>
+        <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+        <div className="w-full px-4 py-3 bg-gray-50 border rounded-lg flex items-center justify-between">
+            <div className="flex items-center space-x-3"><Lock className="w-5 h-5 text-gray-400" /><span>••••••••</span></div>
+            <button type="button" onClick={() => setIsEditingPassword(true)} className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded-lg flex items-center space-x-2"><Edit3 className="w-4 h-4" /><span>Cambiar</span></button>
         </div>
-        <p className="text-xs text-gray-500 flex items-center space-x-1">
-          <AlertCircle className="w-3 h-3" />
-          <span>La contraseña actual se mantendrá sin cambios</span>
-        </p>
-      </div>
-    );
-  }
-
-  if (isEditing && isEditingPassword) {
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Nueva Contraseña
-        </label>
-        <div className="relative">
-          <input
-            type={showPassword ? 'text' : 'password'}
-            name="password"
-            value={tempPassword}
-            onChange={handlePasswordChange}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all text-base ${
-              error ? 'border-red-500' : 'border-gray-300'
-            }`}
-            placeholder="Ingrese la nueva contraseña"
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-          >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-          </button>
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1">
-            <button
-              type="button"
-              onClick={handleSavePassword}
-              className="p-1 text-green-600 hover:text-green-800 transition-colors"
-              title="Guardar contraseña"
-            >
-              <Check className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={handleCancelEdit}
-              className="p-1 text-red-600 hover:text-red-800 transition-colors"
-              title="Cancelar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        {error && (
-          <p className="text-red-500 text-sm flex items-center space-x-1">
-            <AlertCircle className="w-4 h-4" />
-            <span>{error}</span>
-          </p>
-        )}
-        <p className="text-xs text-gray-500 flex items-center space-x-1">
-          <AlertCircle className="w-3 h-3" />
-          <span>Ingrese una nueva contraseña segura</span>
-        </p>
       </div>
     );
   }
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        Contraseña *
-      </label>
+      <label className="block text-sm font-medium text-gray-700">{isEditing ? 'Nueva Contraseña' : 'Contraseña *'}</label>
       <div className="relative">
-        <input
-          type={showPassword ? 'text' : 'password'}
-          name="password"
-          value={value}
-          onChange={onChange}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all text-base ${
-            error ? 'border-red-500' : 'border-gray-300'
-          }`}
-          placeholder={placeholder}
-          autoComplete="new-password"
-        />
-        <button
-          type="button"
-          onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-        >
-          {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-        </button>
+        <input type={showPassword ? 'text' : 'password'} name="password" value={value} onChange={onChange}
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
+            placeholder="Ingrese la contraseña" autoComplete="new-password" />
+        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}</button>
       </div>
-      {error && (
-        <p className="text-red-500 text-sm flex items-center space-x-1">
-          <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
-        </p>
-      )}
-      <p className="text-xs text-gray-500 flex items-center space-x-1">
-        <AlertCircle className="w-3 h-3" />
-        <span>Debe tener al menos 6 caracteres</span>
-      </p>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
 };
 
-// Componente para campos de entrada mejorados
-const EnhancedField = ({ 
-  field, 
-  value, 
-  onChange, 
-  error, 
-  nested = false,
-  placeholder,
-  formData
-}) => {
-  const [isFocused, setIsFocused] = useState(false);
+// NUEVO: Componente para mostrar validaciones en tiempo real
+const ValidationAlert = ({ type, message, isVisible }) => {
+  if (!isVisible) return null;
+  
+  const bgColor = type === 'error' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200';
+  const textColor = type === 'error' ? 'text-red-800' : 'text-green-800';
+  const icon = type === 'error' ? <AlertCircle className="w-4 h-4" /> : <Check className="w-4 h-4" />;
+  
+  return (
+    <div className={`${bgColor} border rounded-lg p-3 flex items-center space-x-2 transition-all duration-300`}>
+      <div className={textColor}>{icon}</div>
+      <p className={`text-sm ${textColor}`}>{message}</p>
+    </div>
+  );
+};
+
+const EnhancedField = ({ field, value, onChange, error, formData, selectedEmpleado, onValidationChange }) => {
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState(null);
+
+  // Función para validar DUI y correo duplicados
+  const validateUniqueness = async (fieldValue, fieldType) => {
+    if (!fieldValue || fieldValue.trim() === '') {
+      setValidationResult(null);
+      return;
+    }
+
+    // No validar si estamos editando y el valor no ha cambiado
+    if (selectedEmpleado && selectedEmpleado[fieldType] === fieldValue) {
+      setValidationResult({ type: 'success', message: 'Campo actual' });
+      return;
+    }
+
+    setIsValidating(true);
+    setValidationResult(null);
+
+    try {
+      const response = await axios.get(`${API_URL}/validate`, {
+        params: { 
+          field: fieldType, 
+          value: fieldValue,
+          excludeId: selectedEmpleado?._id // Excluir el ID actual si estamos editando
+        }
+      });
+
+      if (response.data.exists) {
+        setValidationResult({ 
+          type: 'error', 
+          message: `Este ${fieldType === 'dui' ? 'DUI' : 'correo'} ya está registrado` 
+        });
+        onValidationChange?.(fieldType, false);
+      } else {
+        setValidationResult({ 
+          type: 'success', 
+          message: `${fieldType === 'dui' ? 'DUI' : 'Correo'} disponible` 
+        });
+        onValidationChange?.(fieldType, true);
+      }
+    } catch (error) {
+      console.error(`Error validating ${fieldType}:`, error);
+      setValidationResult(null);
+      onValidationChange?.(fieldType, true); // Asumir válido si hay error de red
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Efecto para validar DUI y correo con debounce
+  useEffect(() => {
+    if (field.name === 'dui' || field.name === 'correo') {
+      const timeoutId = setTimeout(() => {
+        validateUniqueness(value, field.name);
+      }, 500); // Debounce de 500ms
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [value, field.name]);
 
   const getFieldValue = () => {
-    if (nested) {
+    if (field.nested) {
       const keys = field.name.split('.');
-      return formData?.direccion?.[keys[1]] || ''; 
+      return formData?.direccion?.[keys[1]] || '';
     }
     return value || '';
   };
 
   const handleFieldChange = (e) => {
-    const { name, value: inputValue } = e.target;
-
-    if (nested) {
-      const keys = name.split('.');
-      onChange({
-        target: {
-          name: keys[0],
-          value: {
-            ...formData.direccion,
-            [keys[1]]: inputValue
-          }
+    if (field.nested) {
+        const keys = e.target.name.split('.');
+        const newDireccion = { ...formData.direccion, [keys[1]]: e.target.value };
+        onChange({ target: { name: keys[0], value: newDireccion } });
+        
+        // Si cambia el departamento, resetear municipio
+        if (keys[1] === 'departamento') {
+            onChange({ target: { name: 'direccion', value: { ...newDireccion, municipio: '' } } });
         }
-      });
-      
-      if (keys[1] === 'departamento' && inputValue !== formData.direccion?.departamento) {
-        onChange({
-          target: {
-            name: 'direccion',
-            value: {
-              ...formData.direccion,
-              departamento: inputValue,
-              municipio: ''
-            }
-          }
-        });
-      }
     } else {
-      onChange(e);
+        onChange(e);
+        
+        // Limpiar validación anterior al cambiar el campo
+        if (field.name === 'dui' || field.name === 'correo') {
+          setValidationResult(null);
+        }
     }
   };
 
-  const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all text-base ${
-    error ? 'border-red-500 bg-red-50' : isFocused ? 'border-cyan-500' : 'border-gray-300 bg-white'
-  }`;
+  const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 ${
+    error || (validationResult?.type === 'error') ? 'border-red-500' : 
+    validationResult?.type === 'success' ? 'border-green-500' : 'border-gray-300'
+  } ${field.disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`;
 
-  if (field.type === 'select') {
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {field.label} {field.required && <span className="text-red-500">*</span>}
-        </label>
-        <select
-          name={field.name}
-          value={getFieldValue()}
-          onChange={handleFieldChange}
-          className={inputClasses}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+  if (field.type === 'select') return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+      <div className="relative">
+        <select 
+          name={field.name} 
+          value={getFieldValue()} 
+          onChange={handleFieldChange} 
+          className={inputClasses} 
+          disabled={field.disabled}
         >
-          <option value="">
-            {field.placeholder || `Seleccione ${field.label.toLowerCase()}`}
-          </option>
-          {Array.isArray(field.options) && field.options.map((option, index) => {
-            if (typeof option === 'string') {
-              return (
-                <option key={`${field.name}-${index}-${option}`} value={option}>
-                  {option}
-                </option>
-              );
-            } else if (typeof option === 'object' && option.value && option.label) {
-              return (
-                <option key={`${field.name}-${index}-${option.value}`} value={option.value}>
-                  {option.label}
-                </option>
-              );
-            }
-            return null;
-          })}
+          <option value="">{field.placeholder || 'Seleccione'}</option>
+          {field.options?.map((opt, idx) => typeof opt === 'object' ? <option key={idx} value={opt.value}>{opt.label}</option> : <option key={idx} value={opt}>{opt}</option>)}
         </select>
-        {error && (
-          <p className="text-red-500 text-sm flex items-center space-x-1">
-            <AlertCircle className="w-4 h-4" />
-            <span>{error}</span>
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (field.type === 'textarea') {
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {field.label} {field.required && <span className="text-red-500">*</span>}
-        </label>
-        <textarea
-          name={field.name}
-          value={getFieldValue()}
-          onChange={handleFieldChange}
-          placeholder={placeholder || field.placeholder}
-          className={`${inputClasses} resize-none`}
-          rows={3}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-        />
-        {error && (
-          <p className="text-red-500 text-sm flex items-center space-x-1">
-            <AlertCircle className="w-4 h-4" />
-            <span>{error}</span>
-          </p>
-        )}
-      </div>
-    );
-  }
-
-  if (field.name === 'telefono') {
-    return (
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {field.label} {field.required && <span className="text-red-500">*</span>}
-        </label>
-        <div className="flex items-center">
-          <div className="px-4 py-3 bg-gray-100 border border-gray-300 rounded-l-lg flex items-center space-x-2 text-gray-600">
-            <PhoneIcon className="w-5 h-5 text-gray-500" />
-            <span>+503</span>
+        {field.disabled && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <Lock className="w-4 h-4 text-gray-400" />
           </div>
-          <input
-            type="tel"
-            name={field.name}
-            value={value}
-            onChange={onChange}
-            placeholder="78901234"
-            className={`flex-1 px-4 py-3 border-t border-b border-r rounded-r-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all text-base ${
-              error ? 'border-red-500 bg-red-50' : 'border-gray-300'
-            }`}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            maxLength="8"
-            inputMode="numeric"
-          />
-        </div>
-        {error && (
-          <p className="text-red-500 text-sm flex items-center space-x-1">
-            <AlertCircle className="w-4 h-4" />
-            <span>{error}</span>
-          </p>
         )}
-        <p className="text-xs text-gray-500 flex items-center space-x-1">
-          <AlertCircle className="w-3 h-3" />
-          <span>Ingrese 8 dígitos. Ej: 78901234</span>
-        </p>
       </div>
-    );
-  }
+      {field.disabled && !formData?.direccion?.departamento && (
+        <p className="text-gray-500 text-xs">Primero selecciona un departamento</p>
+      )}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+    </div>
+  );
+
+  if (field.type === 'textarea') return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+      <textarea name={field.name} value={getFieldValue()} onChange={handleFieldChange} placeholder={field.placeholder} className={`${inputClasses} resize-none`} rows={3} />
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+    </div>
+  );
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {field.label} {field.required && <span className="text-red-500">*</span>}
-      </label>
-      <input
-        type={field.type}
-        name={field.name}
-        value={getFieldValue()}
-        onChange={handleFieldChange}
-        placeholder={placeholder || field.placeholder}
-        className={inputClasses}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        step={field.type === 'number' ? '0.01' : undefined}
-        min={field.type === 'number' ? '0' : undefined}
-      />
-      {error && (
-        <p className="text-red-500 text-sm flex items-center space-x-1">
-          <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
-        </p>
+      <label className="block text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+      <div className="relative">
+        <input 
+          type={field.type} 
+          name={field.name} 
+          value={getFieldValue()} 
+          onChange={handleFieldChange} 
+          placeholder={field.placeholder} 
+          className={inputClasses} 
+          step={field.type === 'number' ? '0.01' : undefined} 
+          min={field.type === 'number' ? '0' : undefined} 
+        />
+        {isValidating && (field.name === 'dui' || field.name === 'correo') && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <Loader className="w-4 h-4 text-gray-400 animate-spin" />
+          </div>
+        )}
+      </div>
+      
+      {/* Mostrar resultado de validación */}
+      {(field.name === 'dui' || field.name === 'correo') && (
+        <ValidationAlert 
+          type={validationResult?.type} 
+          message={validationResult?.message} 
+          isVisible={!!validationResult}
+        />
       )}
-      {field.type === 'email' && (
-        <p className="text-xs text-gray-500 flex items-center space-x-1">
-          <AlertCircle className="w-3 h-3" />
-          <span>Ejemplo: empleado@empresa.com</span>
-        </p>
-      )}
-      {field.name === 'dui' && (
-        <p className="text-xs text-gray-500 flex items-center space-x-1">
-          <AlertCircle className="w-3 h-3" />
-          <span>Formato: 12345678-9</span>
-        </p>
-      )}
+      
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
 };
@@ -600,263 +294,210 @@ const EmpleadosFormModal = ({
     handleInputChange, 
     errors, 
     submitLabel, 
-    sucursales,
-    setFormData,
-    selectedEmpleado = null,
-    onReturnToOptometristaEdit
+    sucursales, 
+    setFormData, 
+    selectedEmpleado, 
+    onReturnToOptometristaEdit 
 }) => {
-    const [uploading, setUploading] = useState(false);
-    const [currentPassword, setCurrentPassword] = useState('');
-    const isEditing = !!selectedEmpleado;
+    const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
+    const municipalities = useMemo(() => formData?.direccion?.departamento ? EL_SALVADOR_DATA[formData.direccion.departamento] : [], [formData?.direccion?.departamento]);
+    
+    // NUEVO: Estado para manejar validaciones de unicidad
+    const [validationStatus, setValidationStatus] = useState({
+      dui: true,
+      correo: true
+    });
+    const [canSubmit, setCanSubmit] = useState(true);
 
+    // NUEVO: Función para manejar cambios en validación
+    const handleValidationChange = (field, isValid) => {
+      setValidationStatus(prev => ({
+        ...prev,
+        [field]: isValid
+      }));
+    };
+
+    // NUEVO: Efecto para determinar si se puede enviar el formulario
     useEffect(() => {
-        if (isEditing && selectedEmpleado) {
-            setCurrentPassword(selectedEmpleado.password || '');
-        }
-    }, [isEditing, selectedEmpleado]);
+      const allValid = Object.values(validationStatus).every(status => status === true);
+      setCanSubmit(allValid);
+    }, [validationStatus]);
 
-    // Función corregida para manejar cambios de foto
-    const handlePhotoChange = (photoUrl) => {
-        console.log('Nueva foto URL:', photoUrl);
-        setFormData(prev => ({ ...prev, fotoPerfil: photoUrl }));
+    const sections = [
+        { title: "📋 Información Personal", fields: [
+            { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Juan Carlos', required: true },
+            { name: 'apellido', label: 'Apellido', type: 'text', placeholder: 'García López', required: true },
+            { name: 'dui', label: 'DUI', type: 'text', placeholder: '12345678-9', required: true },
+            { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: '78901234', required: true },
+            { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'juan.garcia@email.com', required: true },
+        ]},
+        { title: "🏠 Información de Residencia", fields: [
+            { name: 'direccion.departamento', label: 'Departamento', type: 'select', options: departments, placeholder: 'Seleccione departamento', nested: true, required: true },
+            { name: 'direccion.municipio', label: 'Municipio', type: 'select', options: municipalities, placeholder: 'Seleccione municipio', nested: true, disabled: !formData?.direccion?.departamento, required: true },
+            { name: 'direccion.direccionDetallada', label: 'Dirección Completa', type: 'textarea', placeholder: 'Colonia, calle, # de casa', nested: true, className: 'md:col-span-2', required: true },
+        ]},
+        { title: "💼 Información Laboral", fields: [
+            { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursales?.map(s => ({ value: s._id, label: s.nombre })) || [], required: true },
+            { name: 'cargo', label: 'Puesto', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
+            { name: 'salario', label: 'Salario (USD)', type: 'number', placeholder: '500.00', required: true },
+            { name: 'fechaContratacion', label: 'Fecha de Contratación', type: 'date', required: true },
+            { name: 'estado', label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
+        ]}
+    ];
+
+    // CORRECCIÓN: Función para determinar el ícono del botón
+    const getSubmitIcon = () => {
+        if (selectedEmpleado) return <Save className="w-4 h-4" />;
+        if (formData?.cargo === 'Optometrista') return <ArrowRight className="w-4 h-4" />;
+        return <Save className="w-4 h-4" />;
     };
 
-    // NUEVO: Función personalizada para manejar cambios en campos (especialmente cargo)
-    const handleCustomInputChange = (e) => {
-        const { name, value } = e.target;
-        
-        // Log para debugging del cambio de cargo
-        if (name === 'cargo') {
-            console.log('🔄 Cambio de cargo detectado:', {
-                anterior: formData.cargo,
-                nuevo: value,
-                esEdicion: isEditing,
-                cargoOriginal: selectedEmpleado?.cargo
-            });
+    // CORRECCIÓN: Función para determinar el label del botón
+    const getSubmitLabel = () => {
+        if (selectedEmpleado) {
+            // Si estamos editando y cambiamos a optometrista
+            if (selectedEmpleado.cargo !== 'Optometrista' && formData?.cargo === 'Optometrista') {
+                return 'Continuar';
+            }
+            return 'Actualizar Empleado';
         }
-        
-        // Llamar al handleInputChange original
-        handleInputChange(e);
+        // Si estamos creando y es optometrista
+        if (formData?.cargo === 'Optometrista') {
+            return 'Continuar';
+        }
+        return 'Guardar Empleado';
     };
 
-    // Función de envío que maneja correctamente la lógica
+    // NUEVO: Función para manejar el envío del formulario
     const handleFormSubmit = (e) => {
         e.preventDefault();
         
-        // Si estamos editando y no hay contraseña, usar la actual
-        if (isEditing && !formData.password) {
-            setFormData(prev => ({ ...prev, password: currentPassword }));
+        // Verificar validaciones de unicidad antes de enviar
+        if (!canSubmit) {
+            // Mostrar alerta sobre campos duplicados
+            const duplicateFields = Object.entries(validationStatus)
+                .filter(([key, value]) => !value)
+                .map(([key]) => key === 'dui' ? 'DUI' : 'Correo');
+            
+            alert(`No se puede guardar el empleado. Los siguientes campos ya están registrados: ${duplicateFields.join(', ')}`);
+            return;
         }
         
-        // Llamar a la función onSubmit pasada desde el componente padre
         onSubmit();
-    };
-
-    // Obtener los departamentos y municipios dinámicamente
-    const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
-    const municipalities = useMemo(() => {
-        const selectedDepartment = formData?.direccion?.departamento;
-        return selectedDepartment ? EL_SALVADOR_DATA[selectedDepartment] : [];
-    }, [formData?.direccion?.departamento]);
-
-    const sections = [
-        {
-            title: "📋 Información Personal",
-            fields: [
-                { name: 'nombre', label: 'Nombre Completo', type: 'text', placeholder: 'Ej: Juan Carlos', required: true },
-                { name: 'apellido', label: 'Apellidos', type: 'text', placeholder: 'Ej: García López', required: true },
-                { name: 'dui', label: 'Número de DUI', type: 'text', placeholder: '12345678-9', required: true },
-                { name: 'telefono', label: 'Teléfono', type: 'text', required: true },
-                { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'juan.garcia@empresa.com', required: true },
-            ]
-        },
-        {
-            title: "🏠 Información de Residencia",
-            fields: [
-                { 
-                    name: 'direccion.departamento', 
-                    label: 'Departamento', 
-                    type: 'select', 
-                    options: departments, 
-                    placeholder: 'Seleccione un departamento',
-                    nested: true 
-                },
-                { 
-                    name: 'direccion.municipio', 
-                    label: 'Municipio', 
-                    type: 'select', 
-                    options: municipalities, 
-                    placeholder: 'Seleccione un municipio',
-                    nested: true,
-                    disabled: !formData?.direccion?.departamento || municipalities.length === 0
-                },
-                { name: 'direccion.direccionDetallada', label: 'Dirección Completa', type: 'textarea', placeholder: 'Colonia Las Flores, Calle Principal #123, Casa azul con portón blanco', nested: true },
-            ]
-        },
-        {
-            title: "💼 Información Laboral",
-            fields: [
-                { 
-                    name: 'sucursalId', 
-                    label: 'Sucursal de Trabajo', 
-                    type: 'select', 
-                    options: sucursales ? sucursales.map(s => ({ value: s._id, label: s.nombre })) : [], 
-                    required: true 
-                },
-                { 
-                    name: 'cargo', 
-                    label: 'Puesto de Trabajo', 
-                    type: 'select', 
-                    options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], 
-                    required: true,
-                    // NUEVO: Indicador visual para optometrista
-                    highlighted: formData?.cargo === 'Optometrista'
-                },
-                { name: 'salario', label: 'Salario Mensual (USD)', type: 'number', placeholder: '500.00', required: true },
-                { name: 'fechaContratacion', label: 'Fecha de Contratación', type: 'date', required: true },
-                { name: 'estado', label: 'Estado del Empleado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
-            ]
-        }
-    ];
-
-    // Función para determinar el ícono correcto del botón
-    const getSubmitIcon = () => {
-        if (isEditing) {
-            return <Save className="w-4 h-4" />;
-        }
-        if (formData?.cargo === 'Optometrista') {
-            return <ArrowRight className="w-4 h-4" />;
-        }
-        return <Save className="w-4 h-4" />;
     };
 
     const customContent = (
         <div className="space-y-8">
-          <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-6 rounded-2xl border-2 border-cyan-100">
-            <div className="text-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">📸 Foto de Perfil</h3>
-              <p className="text-sm text-gray-600">Sube una foto clara del rostro del empleado</p>
-            </div>
-            <div className="flex justify-center">
-              <PhotoUploadComponent
-                currentPhoto={formData?.fotoPerfil}
-                onPhotoChange={handlePhotoChange}
-                uploading={uploading}
-                employeeName={`${formData?.nombre || ''} ${formData?.apellido || ''}`.trim()}
-                size="large"
-              />
-            </div>
-          </div>
-
-          {sections.map((section, sectionIndex) => (
-            <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                {section.title}
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {section.fields.map((field, fieldIndex) => (
-                  <div key={`field-${sectionIndex}-${fieldIndex}`} 
-                       className={`${field.type === 'textarea' ? 'md:col-span-2' : ''} ${
-                         field.highlighted ? 'relative' : ''
-                       }`}>
-                    
-                    {/* NUEVO: Indicador especial para el campo cargo cuando es Optometrista */}
-                    {field.name === 'cargo' && formData?.cargo === 'Optometrista' && (
-                      <div className="absolute -top-2 -right-2 z-10">
-                        <div className="bg-cyan-500 text-white text-xs px-2 py-1 rounded-full font-medium shadow-lg">
-                          ✨ Especialista
-                        </div>
-                      </div>
-                    )}
-                    
-                    <EnhancedField
-                      field={field}
-                      value={formData?.[field.name]}
-                      onChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
-                      error={errors?.[field.name] || (field.nested && errors?.[field.name.split('.')[1]])}
-                      nested={field.nested}
-                      placeholder={field.placeholder}
-                      formData={formData}
+            <div className="bg-gray-50 p-6 rounded-2xl border">
+                <div className="flex justify-center">
+                    <PhotoUploadComponent 
+                        currentPhoto={formData?.fotoPerfil} 
+                        onPhotoChange={(url) => setFormData(prev => ({ ...prev, fotoPerfil: url }))} 
+                        employeeName={`${formData?.nombre || ''} ${formData?.apellido || ''}`.trim()} 
                     />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-
-          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-              🔒 Acceso y Seguridad
-            </h3>
-            <div className="max-w-md">
-              <PasswordField
-                value={formData?.password || ''}
-                onChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
-                error={errors?.password}
-                isEditing={isEditing}
-                currentPassword={currentPassword}
-                placeholder="Contraseña para acceder al sistema"
-              />
-            </div>
-          </div>
-
-          {/* NUEVO: Indicador visual cuando se selecciona Optometrista */}
-          {formData?.cargo === 'Optometrista' && !isEditing && (
-            <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border-2 border-cyan-200 rounded-xl p-4">
-              <div className="flex items-center space-x-3">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
                 </div>
-                <div className="flex-1">
-                  <h4 className="text-lg font-semibold text-cyan-800">¡Perfil de Optometrista Seleccionado!</h4>
-                  <p className="text-sm text-cyan-600 mt-1">
-                    Después de guardar la información básica, podrás configurar los horarios, especialidades y sucursales asignadas.
-                  </p>
-                </div>
-                <div className="flex-shrink-0">
-                  <ArrowRight className="w-8 h-8 text-cyan-500" />
-                </div>
-              </div>
             </div>
-          )}
-
-          {/* Footer personalizado para flujos especiales */}
-          {formData?.fromOptometristaPage && onReturnToOptometristaEdit && (
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h4 className="text-sm font-semibold text-blue-800">Edición desde Optometrista</h4>
-                  <p className="text-xs text-blue-600">Puedes regresar a editar la información específica del optometrista</p>
+            
+            {/* NUEVO: Alerta de validación global */}
+            {!canSubmit && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-center space-x-3">
+                    <AlertCircle className="w-6 h-6 text-red-500 shrink-0" />
+                    <div>
+                        <h4 className="font-semibold text-red-800">Datos duplicados detectados</h4>
+                        <p className="text-sm text-red-600 mt-1">
+                            Corrige los campos marcados antes de continuar.
+                        </p>
+                    </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onReturnToOptometristaEdit(selectedEmpleado?._id)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all text-sm"
-                >
-                  Editar Optometrista
-                </button>
-              </div>
+            )}
+            
+            {sections.map((section, idx) => (
+                <div key={idx} className="bg-white border rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">{section.title}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {section.fields.map((field, fIdx) => (
+                            <div key={fIdx} className={field.className || ''}>
+                                <EnhancedField 
+                                    field={field} 
+                                    value={formData?.[field.name]} 
+                                    onChange={handleInputChange} 
+                                    error={field.nested ? errors?.[field.name.split('.')[1]] : errors?.[field.name]} 
+                                    formData={formData}
+                                    selectedEmpleado={selectedEmpleado}
+                                    onValidationChange={handleValidationChange}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            ))}
+            
+            <div className="bg-white border rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">🔐 Acceso y Seguridad</h3>
+                <PasswordField 
+                    value={formData?.password || ''} 
+                    onChange={handleInputChange} 
+                    error={errors?.password} 
+                    isEditing={!!selectedEmpleado} 
+                />
             </div>
-          )}
+            
+            {formData?.cargo === 'Optometrista' && !selectedEmpleado && (
+                <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-4 flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center shrink-0">
+                        <User className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-semibold text-cyan-800">¡Perfil de Optometrista Seleccionado!</h4>
+                        <p className="text-sm text-cyan-600 mt-1">Al continuar, configurarás horarios y especialidades.</p>
+                    </div>
+                    <ArrowRight className="w-8 h-8 text-cyan-500 shrink-0" />
+                </div>
+            )}
+            
+            {/* CORRECCIÓN: Mostrar alerta también para empleados existentes que cambian a optometrista */}
+            {formData?.cargo === 'Optometrista' && selectedEmpleado && selectedEmpleado.cargo !== 'Optometrista' && (
+                <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-4 flex items-center space-x-3">
+                    <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center shrink-0">
+                        <User className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="flex-1">
+                        <h4 className="font-semibold text-cyan-800">¡Cambio a Optometrista Detectado!</h4>
+                        <p className="text-sm text-cyan-600 mt-1">Al continuar, configurarás los detalles del optometrista.</p>
+                    </div>
+                    <ArrowRight className="w-8 h-8 text-cyan-500 shrink-0" />
+                </div>
+            )}
+            
+            {formData?.fromOptometristaPage && onReturnToOptometristaEdit && (
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+                    <div>
+                        <h4 className="text-sm font-semibold text-blue-800">Editando desde Optometrista</h4>
+                        <p className="text-xs text-blue-600">Puedes regresar a editar los detalles del optometrista.</p>
+                    </div>
+                    <button type="button" onClick={() => onReturnToOptometristaEdit(selectedEmpleado?._id)} className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm">
+                        Editar Optometrista
+                    </button>
+                </div>
+            )}
         </div>
     );
 
     return (
-        <FormModal
-            isOpen={isOpen}
-            onClose={onClose}
-            onSubmit={handleFormSubmit}
+        <FormModal 
+            isOpen={isOpen} 
+            onClose={onClose} 
+            onSubmit={handleFormSubmit} // CORRECCIÓN: Usar nuestra función personalizada
             title={title}
-            formData={formData}
-            handleInputChange={handleCustomInputChange} // CORRECCIÓN: Usar la función personalizada
-            errors={errors}
-            submitLabel={submitLabel}
-            submitIcon={getSubmitIcon()}
-            fields={[]}
-            gridCols={1}
+            formData={formData} 
+            handleInputChange={handleInputChange} 
+            errors={errors} 
+            submitLabel={getSubmitLabel()} // CORRECCIÓN: Usar función dinámica
+            submitIcon={getSubmitIcon()} 
+            fields={[]} 
+            gridCols={1} 
             size="xl"
+            submitDisabled={!canSubmit} // NUEVO: Deshabilitar botón si hay validaciones pendientes
         >
             {customContent}
         </FormModal>

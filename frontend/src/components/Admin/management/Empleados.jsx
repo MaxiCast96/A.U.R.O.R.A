@@ -22,7 +22,7 @@ import { Users, UserCheck, Building2, DollarSign, Trash2, Eye, Edit, Phone, Mail
 // URL base de tu API
 const API_URL = 'http://localhost:4000/api/empleados';
 const SUCURSALES_URL = 'http://localhost:4000/api/sucursales';
-const OPTOMETRISTAS_URL = 'http://localhost:4000/api/optometrista'; // CORECCIÓN: URL correcta
+const OPTOMETRISTAS_URL = 'http://localhost:4000/api/optometrista'; // CORRECCIÓN: URL correcta
 
 const Empleados = () => {
     // --- ESTADOS ---
@@ -40,6 +40,8 @@ const Empleados = () => {
     const [tempEmployeeData, setTempEmployeeData] = useState(null);
     const [showOptometristaModal, setShowOptometristaModal] = useState(false);
     const [showCargoChangeWarning, setShowCargoChangeWarning] = useState(false); // NUEVO: Para advertencia de cambio de cargo
+    const [creationStep, setCreationStep] = useState(''); // 'employee', 'optometrista', ''
+    const [creationProgress, setCreationProgress] = useState(0);
 
     const location = useLocation();
     const navigate = useNavigate();
@@ -129,6 +131,7 @@ const Empleados = () => {
         if (!data.licencia) newErrors.licencia = 'La licencia es requerida';
         if (!data.experiencia || data.experiencia < 0) newErrors.experiencia = 'La experiencia debe ser un número positivo';
         if (!data.sucursalesAsignadas || data.sucursalesAsignadas.length === 0) newErrors.sucursalesAsignadas = 'Debe asignar al menos una sucursal';
+        if (!data.disponibilidad || data.disponibilidad.length === 0) newErrors.disponibilidad = 'Debe configurar al menos una hora de disponibilidad';
         return newErrors;
     });
 
@@ -210,7 +213,7 @@ const Empleados = () => {
         const isValid = Object.keys(newErrors).length === 0;
         console.log('✅ Validación resultado:', isValid ? 'VÁLIDO' : 'INVÁLIDO');
         if (!isValid) {
-            console.log('❌ Errores encontrados:', newErrors);
+            console.log('⌛ Errores encontrados:', newErrors);
         }
         
         return isValid;
@@ -219,7 +222,7 @@ const Empleados = () => {
     // Step 1: Called from EmpleadosFormModal when "Siguiente" is clicked
     const handleProceedToOptometristaForm = () => {
         if (!validateForm()) {
-            console.log('❌ Validación del formulario de empleado falló');
+            console.log('⌛ Validación del formulario de empleado falló');
             return;
         }
         
@@ -266,72 +269,223 @@ const Empleados = () => {
     };
     
     // CORRECCIÓN: Step 2: Finalizar creación de empleado + optometrista
-    const handleFinalizeCreation = async () => {
-        if (!validateOptometristaForm()) {
-            console.log('❌ Validación del formulario de optometrista falló');
+    const handleFinalizeCreation = async (finalOptometristaData = null) => {
+    try {
+        // Usar los datos que vienen del modal o los del estado
+        const dataToUse = finalOptometristaData || optometristaFormData;
+        
+        console.log('=== INICIO DE CREACIÓN EMPLEADO + OPTOMETRISTA ===');
+        console.log('Datos del empleado (tempEmployeeData):', tempEmployeeData);
+        console.log('Datos del optometrista recibidos:', dataToUse);
+        
+        // Validar que tempEmployeeData existe
+        if (!tempEmployeeData) {
+            console.error('❌ No hay datos del empleado para crear');
+            showAlert('error', 'Error: No se encontraron los datos del empleado');
+            return;
+        }
+        
+        // Validar datos del optometrista más estricta
+        if (!dataToUse.especialidad || !dataToUse.licencia) {
+            console.error('❌ Faltan campos requeridos en optometrista:', {
+                especialidad: dataToUse.especialidad,
+                licencia: dataToUse.licencia,
+                experiencia: dataToUse.experiencia
+            });
+            showAlert('error', 'Faltan campos requeridos: especialidad y licencia son obligatorios');
+            return;
+        }
+        
+        if (!dataToUse.sucursalesAsignadas || dataToUse.sucursalesAsignadas.length === 0) {
+            console.error('❌ Faltan sucursales asignadas');
+            showAlert('error', 'Debe asignar al menos una sucursal');
+            return;
+        }
+        
+        if (!dataToUse.disponibilidad || dataToUse.disponibilidad.length === 0) {
+            console.error('❌ Falta disponibilidad');
+            showAlert('error', 'Debe configurar al menos una hora de disponibilidad');
             return;
         }
 
-        try {
-            setLoading(true);
-            
-            console.log('=== INICIO DE CREACIÓN EMPLEADO + OPTOMETRISTA ===');
-            console.log('Datos del empleado (tempEmployeeData):', tempEmployeeData);
-            console.log('Datos del optometrista (optometristaFormData):', optometristaFormData);
-            
-            // 1. CREAR EL EMPLEADO PRIMERO
-            const employeeResponse = await axios.post(API_URL, tempEmployeeData);
-            const newEmployeeId = employeeResponse.data._id;
+        // INICIAR PROCESO DE CARGA
+        setLoading(true);
+        setCreationStep('employee');
+        setCreationProgress(25);
+        
+        // 1. CREAR EL EMPLEADO PRIMERO
+        console.log('📄 Creando empleado...');
+        const employeeResponse = await axios.post(API_URL, tempEmployeeData);
+        
+        // CORRECCIÓN: El backend retorna { message: ..., empleado: {...} }
+        const newEmployee = employeeResponse.data.empleado || employeeResponse.data;
+        const newEmployeeId = newEmployee._id;
 
-            console.log('✅ Empleado creado exitosamente:', employeeResponse.data);
-            console.log('🆔 Nuevo empleadoId:', newEmployeeId);
+        console.log('✅ Empleado creado exitosamente:', employeeResponse.data);
+        console.log('👤 Datos del empleado:', newEmployee);
+        console.log('🆔 Nuevo empleadoId:', newEmployeeId);
 
-            // 2. CREAR EL OPTOMETRISTA CON EL ID DEL EMPLEADO RECIÉN CREADO
-            const finalOptometristaData = {
-                ...optometristaFormData,
-                empleadoId: newEmployeeId,
-                // Asegurar que los arrays estén bien formateados
-                disponibilidad: Array.isArray(optometristaFormData.disponibilidad) 
-                    ? optometristaFormData.disponibilidad 
-                    : [],
-                sucursalesAsignadas: Array.isArray(optometristaFormData.sucursalesAsignadas) 
-                    ? optometristaFormData.sucursalesAsignadas 
-                    : []
-            };
-            
-            console.log('📋 Datos finales para optometrista:', finalOptometristaData);
-            
-            const optometristaResponse = await axios.post(OPTOMETRISTAS_URL, finalOptometristaData);
-            
-            console.log('✅ Optometrista creado exitosamente:', optometristaResponse.data);
-
-            showAlert('success', '¡Empleado y Optometrista creados exitosamente!');
-            handleCloseModals();
-            
-            // Recargar datos antes de navegar
-            await fetchData();
-            
-            // Navegar a la página de optometristas
-            navigate('/optometristas');
-
-        } catch (error) {
-            console.error('❌ Error en la creación:', error);
-            console.error('📄 Respuesta del servidor:', error.response?.data);
-            
-            let errorMessage = 'Error en la creación: ';
-            if (error.response?.data?.message) {
-                errorMessage += error.response.data.message;
-            } else if (error.message) {
-                errorMessage += error.message;
-            } else {
-                errorMessage += 'Error desconocido';
-            }
-            
-            showAlert('error', errorMessage);
-        } finally {
-            setLoading(false);
+        // VALIDAR QUE OBTUVIMOS EL ID
+        if (!newEmployeeId) {
+            console.error('❌ No se pudo extraer el ID del empleado creado');
+            console.error('📋 Estructura de respuesta:', employeeResponse.data);
+            throw new Error('No se pudo obtener el ID del empleado creado. Verifique la respuesta del servidor.');
         }
+
+        // ACTUALIZAR PROGRESO
+        setCreationProgress(60);
+        setCreationStep('optometrista');
+
+        // 2. PREPARAR DATOS DEL OPTOMETRISTA CON EL ID DEL EMPLEADO RECIÉN CREADO
+        const finalOptometristaPayload = {
+            empleadoId: newEmployeeId, // ✅ Usar el ID real del empleado creado
+            especialidad: dataToUse.especialidad?.trim(),
+            licencia: dataToUse.licencia?.trim(),
+            experiencia: parseInt(dataToUse.experiencia) || 0,
+            disponibilidad: Array.isArray(dataToUse.disponibilidad) 
+                ? dataToUse.disponibilidad.map(item => ({
+                    dia: item.dia,
+                    hora: item.hora,
+                    horaInicio: item.horaInicio || item.hora,
+                    horaFin: item.horaFin || getNextHour(item.hora)
+                }))
+                : [],
+            sucursalesAsignadas: Array.isArray(dataToUse.sucursalesAsignadas) 
+                ? dataToUse.sucursalesAsignadas 
+                : [],
+            disponible: dataToUse.disponible !== false && dataToUse.disponible !== 'false'
+        };
+        
+        console.log('📋 Datos finales para optometrista:', finalOptometristaPayload);
+        
+        // 3. CREAR EL OPTOMETRISTA
+        console.log('📄 Creando optometrista...');
+        const optometristaResponse = await axios.post(OPTOMETRISTAS_URL, finalOptometristaPayload);
+        
+        console.log('✅ Optometrista creado exitosamente:', optometristaResponse.data);
+
+        // COMPLETAR PROGRESO
+        setCreationProgress(100);
+
+        showAlert('success', '¡Empleado y Optometrista creados exitosamente!');
+        
+        // Pequeña pausa para mostrar el 100%
+        setTimeout(() => {
+            handleCloseModals();
+            // Recargar datos y navegar
+            fetchData().then(() => {
+                navigate('/dashboard');
+            });
+        }, 1000);
+
+    } catch (error) {
+        console.error('❌ Error en la creación:', error);
+        console.error('📄 Respuesta del servidor:', error.response?.data);
+        
+        let errorMessage = 'Error en la creación: ';
+        
+        // Manejar diferentes tipos de errores
+        if (error.response?.data?.message) {
+            errorMessage += error.response.data.message;
+        } else if (error.response?.data?.error) {
+            errorMessage += error.response.data.error;
+        } else if (error.message) {
+            errorMessage += error.message;
+        } else {
+            errorMessage += 'Error desconocido';
+        }
+        
+        // Si el error incluye información de campos faltantes, mostrarla
+        if (error.response?.data?.missing) {
+            errorMessage += `. Campos faltantes: ${error.response.data.missing.join(', ')}`;
+        }
+        
+        showAlert('error', errorMessage);
+        
+    } finally {
+        setLoading(false);
+        setCreationStep('');
+        setCreationProgress(0);
+    }
+};
+
+// CORRECCIÓN EN OptometristasFormModal.jsx - función handleFormSubmit
+
+const handleFormSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('=== ENVÍO DEL FORMULARIO OPTOMETRISTA ===');
+    console.log('isCreationFlow:', isCreationFlow);
+    console.log('formData actual:', formData);
+    console.log('preloadedEmployeeData:', preloadedEmployeeData);
+    
+    // CORRECCIÓN: Validar campos requeridos antes de enviar
+    const requiredFields = {
+        especialidad: formData.especialidad,
+        licencia: formData.licencia,
+        experiencia: formData.experiencia,
+        sucursalesAsignadas: formData.sucursalesAsignadas,
+        disponibilidad: formData.disponibilidad
     };
+    
+    const missingFields = [];
+    Object.entries(requiredFields).forEach(([key, value]) => {
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+            missingFields.push(key);
+        }
+    });
+    
+    if (missingFields.length > 0) {
+        console.error('❌ Campos faltantes en frontend:', missingFields);
+        console.error('🔍 Valores actuales:', requiredFields);
+        return; // No enviar si faltan campos
+    }
+    
+    // CORRECCIÓN: Preparar datos finales - NO incluir empleadoId en creationFlow
+    const finalFormData = {
+        especialidad: formData.especialidad?.trim(),
+        licencia: formData.licencia?.trim(),
+        experiencia: parseInt(formData.experiencia) || 0,
+        disponibilidad: Array.isArray(formData.disponibilidad) 
+            ? formData.disponibilidad.map(item => ({
+                dia: item.dia,
+                hora: item.hora,
+                horaInicio: item.horaInicio || item.hora,
+                horaFin: item.horaFin || getNextHour(item.hora)
+            }))
+            : [],
+        sucursalesAsignadas: Array.isArray(formData.sucursalesAsignadas) 
+            ? formData.sucursalesAsignadas 
+            : [],
+        disponible: formData.disponible !== false && formData.disponible !== 'false'
+    };
+    
+    // CORRECCIÓN: Solo agregar empleadoId si NO estamos en flujo de creación
+    if (!isCreationFlow && formData.empleadoId) {
+        finalFormData.empleadoId = formData.empleadoId;
+    }
+    
+    console.log('📦 Datos finales para envío:', finalFormData);
+    
+    // Llamar a onSubmit con los datos corregidos
+    onSubmit(finalFormData);
+};
+
+// HELPER FUNCTION para obtener la siguiente hora
+const getNextHour = (hora) => {
+    const horasDisponibles = [
+        '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'
+    ];
+    
+    const currentIndex = horasDisponibles.indexOf(hora);
+    if (currentIndex >= 0 && currentIndex < horasDisponibles.length - 1) {
+        return horasDisponibles[currentIndex + 1];
+    }
+    // Para la última hora, agregar :59 para indicar el final de la hora
+    const [hourPart] = hora.split(':');
+    return `${hourPart}:59`;
+};
 
     // NUEVO: Función para regresar del modal de optometrista al de empleado
     const handleBackToEmployeeForm = () => {
@@ -369,7 +523,7 @@ const Empleados = () => {
         const optometrista = optometristas?.find(o => o.empleadoId._id === empleadoId);
         if (optometrista) {
             handleCloseModals();
-            navigate('/optometristas', { state: { editOptometristaId: optometrista._id } });
+            navigate('/dashboard', { state: { editOptometristaId: optometrista._id } });
         }
     };
 
@@ -379,18 +533,24 @@ const Empleados = () => {
         setAlert({ type, message });
         setTimeout(() => setAlert(null), 5000);
     };
+    
 
-    const handleCloseModals = () => {
-        setShowAddEditModal(false);
-        setShowDetailModal(false);
-        setShowDeleteModal(false);
-        setShowOptometristaModal(false);
-        setShowCargoChangeWarning(false); // NUEVO
-        setSelectedEmpleado(null);
-        setTempEmployeeData(null);
-        resetForm();
-        resetOptometristaForm();
-    };
+const handleCloseModals = () => {
+    setShowAddEditModal(false);
+    setShowDetailModal(false);
+    setShowDeleteModal(false);
+    setShowOptometristaModal(false);
+    setShowCargoChangeWarning(false);
+    setSelectedEmpleado(null);
+    setTempEmployeeData(null);
+    
+    // LIMPIAR ESTADOS DE CARGA
+    setCreationStep('');
+    setCreationProgress(0);
+    
+    resetForm();
+    resetOptometristaForm();
+};
     
     const handleOpenAddModal = () => {
         resetForm();
@@ -481,7 +641,7 @@ const Empleados = () => {
                 console.log('✅ Optometrista eliminado exitosamente');
             }
         } catch (error) {
-            console.error('❌ Error al eliminar optometrista:', error);
+            console.error('⌛ Error al eliminar optometrista:', error);
             throw error;
         }
     };
@@ -499,7 +659,7 @@ const Empleados = () => {
 
         // NUEVO: Verificar si cambió de NO optometrista a optometrista
         if (selectedEmpleado && selectedEmpleado.cargo !== 'Optometrista' && formData.cargo === 'Optometrista') {
-            // El empleado NO era optometrista y ahora SÍ es optometrista
+            // El empleado NO era optometrista y ahora SI es optometrista
             // Proceder al flujo de optometrista
             handleProceedToOptometristaForm();
             return;
@@ -590,25 +750,38 @@ const Empleados = () => {
     };
 
     // Función para determinar el botón de acción correcto
-    const getSubmitHandler = () => {
-        // Si estamos creando un optometrista, usar el flujo de 2 pasos
-        if (!selectedEmpleado && formData.cargo === 'Optometrista') {
-            return handleProceedToOptometristaForm;
-        }
-        // Si estamos editando o creando un empleado regular, usar el submit normal
-        return handleSubmit;
-    };
+   const getSubmitHandler = () => {
+    // CORRECCIÓN: Verificar también si estamos editando un empleado y cambiándolo a optometrista
+    const isChangingToOptometrista = selectedEmpleado && 
+        selectedEmpleado.cargo !== 'Optometrista' && 
+        formData.cargo === 'Optometrista';
+    
+    const isCreatingOptometrista = !selectedEmpleado && formData.cargo === 'Optometrista';
+    
+    if (isCreatingOptometrista || isChangingToOptometrista) {
+        return handleProceedToOptometristaForm;
+    }
+    
+    // Para cualquier otro caso (crear empleado regular, editar cualquier empleado)
+    return handleSubmit;
+};
 
     // Función para determinar el texto del botón
-    const getSubmitLabel = () => {
-        if (selectedEmpleado) {
-            return 'Actualizar Empleado';
-        }
-        if (formData.cargo === 'Optometrista') {
+   const getSubmitLabel = () => {
+    if (selectedEmpleado) {
+        // Si estamos editando y cambiamos de NO optometrista a optometrista
+        if (selectedEmpleado.cargo !== 'Optometrista' && formData.cargo === 'Optometrista') {
             return 'Continuar';
         }
-        return 'Guardar Empleado';
-    };
+        return 'Actualizar Empleado';
+    }
+    // Si estamos creando un nuevo empleado
+    if (formData.cargo === 'Optometrista') {
+        return 'Continuar';
+    }
+    return 'Guardar Empleado';
+};
+
 
     // --- RENDERIZADO DE TABLA ---
     const getEstadoColor = (estado) => (estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
@@ -738,40 +911,44 @@ const Empleados = () => {
             
             {/* Modal principal de empleados */}
             <EmpleadosFormModal
-                isOpen={showAddEditModal}
-                onClose={handleCloseModals}
-                onSubmit={getSubmitHandler()}
-                title={selectedEmpleado ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}
-                formData={formData}
-                setFormData={setFormData}
-                handleInputChange={handleInputChange}
-                errors={errors}
-                submitLabel={getSubmitLabel()}
-                sucursales={sucursales}
-                selectedEmpleado={selectedEmpleado}
-                onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
-            />
+            isOpen={showAddEditModal}
+            onClose={handleCloseModals}
+            onSubmit={getSubmitHandler()} // CORRECCIÓN: Pasar la función, no ejecutarla
+            title={selectedEmpleado ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}
+            formData={formData}
+            setFormData={setFormData}
+            handleInputChange={handleInputChange}
+            errors={errors}
+            submitLabel={getSubmitLabel()} // CORRECCIÓN: Pasar la función, no ejecutarla
+            sucursales={sucursales}
+            selectedEmpleado={selectedEmpleado}
+            onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
+        />
 
             {/* Modal de optometrista (paso 2) */}
             {showOptometristaModal && (
-                <OptometristasFormModal
-                    isOpen={showOptometristaModal}
-                    onClose={handleCloseModals}
-                    onSubmit={handleFinalizeCreation}
-                    title="Añadir Detalles del Optometrista (Paso 2 de 2)"
-                    submitLabel="Finalizar y Guardar"
-                    isCreationFlow={true}
-                    preloadedEmployeeData={tempEmployeeData}
-                    sucursales={sucursales}
-                    formData={optometristaFormData}
-                    setFormData={setOptometristaFormData}
-                    handleInputChange={handleOptometristaInputChange}
-                    errors={optometristaErrors}
-                    empleados={[]}
-                    selectedOptometrista={null}
-                    onBackToEmployeeForm={handleBackToEmployeeForm} // NUEVO: Botón de regresar
-                />
-            )}
+    <OptometristasFormModal
+        isOpen={showOptometristaModal}
+        onClose={handleCloseModals}
+        onSubmit={handleFinalizeCreation}
+        title="Añadir Detalles del Optometrista (Paso 2 de 2)"
+        submitLabel={creationStep ? 'Creando...' : 'Finalizar y Guardar'}
+        isCreationFlow={true}
+        preloadedEmployeeData={tempEmployeeData}
+        sucursales={sucursales}
+        formData={optometristaFormData}
+        setFormData={setOptometristaFormData}
+        handleInputChange={handleOptometristaInputChange}
+        errors={optometristaErrors}
+        empleados={[]}
+        selectedOptometrista={null}
+        onBackToEmployeeForm={handleBackToEmployeeForm}
+        // NUEVAS PROPS PARA ESTADO DE CARGA
+        isCreating={!!creationStep}
+        creationStep={creationStep}
+        creationProgress={creationProgress}
+    />
+)}
 
             {/* NUEVO: Modal de confirmación para cambio de cargo */}
             <ConfirmationModal
