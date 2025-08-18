@@ -7,10 +7,11 @@ import Recetas from '../models/Recetas.js';
 // SELECT - Obtiene estadísticas generales del dashboard
 const getDashboardStats = async (req, res) => {
   try {
-    // Obtener fecha actual y primer día del mes
+    // Obtener fecha actual y primer día del mes (normalizado a UTC para evitar desfases de zona horaria)
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const firstDayOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const firstDayOfNextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
     // Contar total de clientes activos
     const totalClientes = await Clientes.countDocuments({ estado: 'Activo' });
@@ -18,23 +19,23 @@ const getDashboardStats = async (req, res) => {
     // Contar citas de hoy
     const citasHoy = await Citas.countDocuments({
       fecha: {
-        $gte: today,
-        $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+        $gte: todayStart,
+        $lt: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
       }
     });
 
     // Contar ventas del mes actual (solo finalizadas)
     const ventasDelMes = await Ventas.countDocuments({
-      fecha: { $gte: firstDayOfMonth },
-      estado: { $in: ['completada', 'procesada'] }
+      fecha: { $gte: firstDayOfMonth, $lt: firstDayOfNextMonth },
+      estado: { $in: ['completada', 'procesada', 'Completada', 'Procesada'] }
     });
 
     // Calcular ingresos del mes usando agregación
     const ventasIngresos = await Ventas.aggregate([
       {
         $match: {
-          fecha: { $gte: firstDayOfMonth },
-          estado: { $in: ['completada', 'procesada'] }
+          fecha: { $gte: firstDayOfMonth, $lt: firstDayOfNextMonth },
+          estado: { $in: ['completada', 'procesada', 'Completada', 'Procesada'] }
         }
       },
       {
@@ -68,17 +69,17 @@ const getDashboardStats = async (req, res) => {
 // SELECT - Obtiene datos para gráfico de ventas mensuales
 const getVentasMensuales = async (req, res) => {
   try {
-    const { year = new Date().getFullYear() } = req.query;
+    const { year = new Date().getUTCFullYear() } = req.query;
     
     // Busca ventas del año específico usando agregación
     const ventasMensuales = await Ventas.aggregate([
       {
         $match: {
           fecha: {
-            $gte: new Date(year, 0, 1),
-            $lt: new Date(parseInt(year) + 1, 0, 1)
+            $gte: new Date(Date.UTC(parseInt(year), 0, 1)),
+            $lt: new Date(Date.UTC(parseInt(year) + 1, 0, 1))
           },
-          estado: { $in: ['completada', 'procesada'] }
+          estado: { $in: ['completada', 'procesada', 'Completada', 'Procesada'] }
         }
       },
       {
@@ -213,14 +214,14 @@ const getAllDashboardData = async (req, res) => {
       // Stats básicos
       (async () => {
         const now = new Date();
-        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const firstDayOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        const todayStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
         const totalClientes = await Clientes.countDocuments({ estado: 'Activo' });
         const citasHoy = await Citas.countDocuments({
           fecha: {
-            $gte: today,
-            $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+            $gte: todayStart,
+            $lt: new Date(todayStart.getTime() + 24 * 60 * 60 * 1000)
           }
         });
         const ventasDelMes = await Ventas.countDocuments({
@@ -253,15 +254,15 @@ const getAllDashboardData = async (req, res) => {
 
       // Ventas mensuales del año actual
       (async () => {
-        const year = new Date().getFullYear();
+        const year = new Date().getUTCFullYear();
         const ventasMensuales = await Ventas.aggregate([
           {
             $match: {
               fecha: {
-                $gte: new Date(year, 0, 1),
-                $lt: new Date(year + 1, 0, 1)
+                $gte: new Date(Date.UTC(year, 0, 1)),
+                $lt: new Date(Date.UTC(year + 1, 0, 1))
               },
-              estado: { $in: ['completada', 'procesada'] }
+              estado: { $in: ['completada', 'procesada', 'Completada', 'Procesada'] }
             }
           },
           {
