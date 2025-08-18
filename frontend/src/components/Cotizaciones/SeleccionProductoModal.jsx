@@ -36,7 +36,7 @@ export default function SeleccionProductoModal({ open, onClose, onSelect }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 flex items-center justify-center z-50 bg-white/10 backdrop-blur-sm md:backdrop-blur">
       <div className="bg-white rounded-xl p-6 max-w-3xl w-full mx-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Seleccionar Producto</h3>

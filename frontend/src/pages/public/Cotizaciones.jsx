@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import PageTransition from "../../components/transition/PageTransition.jsx";
 import Navbar from "../../components/layout/Navbar";
 import useData from '../../hooks/useData';
@@ -7,7 +7,6 @@ import { useAuth } from '../../components/auth/AuthContext';
 import API_CONFIG, { buildApiUrl } from '../../config/api';
 
 const Cotizaciones = () => {
-  const location = useLocation();
   const { user } = useAuth();
   const [showLoginMsg, setShowLoginMsg] = useState(false);
   // Mover TODOS los hooks al tope del componente para respetar las reglas de hooks
@@ -466,7 +465,7 @@ const Cotizaciones = () => {
         )}
 
         {modalEliminar.abierto && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-white/10 backdrop-blur-sm md:backdrop-blur">
             <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-lg">
               <h3 className="text-xl font-semibold mb-4">Confirmar Eliminación</h3>
               <p className="text-gray-600 mb-6">

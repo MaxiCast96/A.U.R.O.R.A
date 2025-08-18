@@ -846,7 +846,6 @@ const Producto = () => {
     }
     
     // Aquí podrías abrir un modal de comparación o navegar a una página de comparación
-    console.log('Productos para comparar:', productsToCompare);
   };
 
   // Función para cambiar modo de vista

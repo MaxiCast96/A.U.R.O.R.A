@@ -77,7 +77,7 @@ const Cart = () => {
           },
         }));
       } catch (e) {
-        console.error('Error precargando datos de cliente', e);
+        if (!import.meta.env.PROD) console.error('Error precargando datos de cliente', e);
       }
     };
 
@@ -101,11 +101,11 @@ const Cart = () => {
             body: JSON.stringify({ pedidoId }),
           });
         } catch (e) {
-          console.warn('No se pudo vincular pedidoId al personalizado', id, e);
+          if (!import.meta.env.PROD) console.warn('No se pudo vincular pedidoId al personalizado', id, e);
         }
       }));
     } catch (e) {
-      console.warn('Fallo al procesar vinculación de pedidoId en personalizados', e);
+      if (!import.meta.env.PROD) console.warn('Fallo al procesar vinculación de pedidoId en personalizados', e);
     }
   };
     cargarCliente();
@@ -130,7 +130,7 @@ const Cart = () => {
           setForm((f) => ({ ...f, sucursalId: list[0]._id }));
         }
       } catch (e) {
-        console.error('Error cargando sucursales', e);
+        if (!import.meta.env.PROD) console.error('Error cargando sucursales', e);
       }
     };
     fetchSucursales();
@@ -234,9 +234,11 @@ const Cart = () => {
 
     setCreating(true);
     try {
-      console.groupCollapsed('[Ventas] Payload enviado a /ventas');
-      console.log(JSON.stringify(payload, null, 2));
-      console.groupEnd();
+      if (!import.meta.env.PROD) {
+        console.groupCollapsed('[Ventas] Payload enviado a /ventas');
+        console.log(JSON.stringify(payload, null, 2));
+        console.groupEnd();
+      }
       const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.VENTAS}`, {
         method: 'POST',
         headers: authHeaders,
@@ -260,7 +262,7 @@ const Cart = () => {
         setError(data?.message || 'Error creando la venta.');
       }
     } catch (e) {
-      console.error('Error creando venta', e);
+      if (!import.meta.env.PROD) console.error('Error creando venta', e);
       setError('Error de red creando la venta.');
     } finally {
       setCreating(false);
@@ -344,7 +346,7 @@ const Cart = () => {
           body: JSON.stringify({ estado: 'en_proceso', cotizacionId: cot._id }),
         });
       } catch (e) {
-        console.warn('No se pudo actualizar personalizado', id, e);
+        if (!import.meta.env.PROD) console.warn('No se pudo actualizar personalizado', id, e);
       }
     }));
 
@@ -375,13 +377,12 @@ const Cart = () => {
       try {
         await createCotizacionAndPatchPersonalizados();
       } catch (e) {
-        // Si falla la cotización, no bloquear la venta, pero informar
-        console.error('Fallo creando cotización', e);
+        if (!import.meta.env.PROD) console.error('Fallo creando cotización', e);
       }
       // Luego crear la venta
       await handleCreateVenta();
     } catch (e) {
-      console.error('Error en flujo de pago y creación', e);
+      if (!import.meta.env.PROD) console.error('Error en flujo de pago y creación', e);
       setError('Ocurrió un error procesando el pago.');
     } finally {
       setCreating(false);

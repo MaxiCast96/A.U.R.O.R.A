@@ -25,12 +25,12 @@ export const useApiData = (resource, params = {}) => {
         
         // Construir URL usando la configuración centralizada
         const url = buildApiUrl(`/${resource}`, params);
-        console.log(`Fetching data from: ${url}`);
+        if (!import.meta.env.PROD) console.log(`Fetching data from: ${url}`);
 
         // Configurar timeout
         const controller = new AbortController();
         timeoutId = setTimeout(() => {
-          console.log(`Timeout para ${resource} después de ${API_CONFIG.TIMEOUTS.REQUEST}ms`);
+          if (!import.meta.env.PROD) console.log(`Timeout para ${resource} después de ${API_CONFIG.TIMEOUTS.REQUEST}ms`);
           controller.abort();
         }, API_CONFIG.TIMEOUTS.REQUEST);
 
@@ -47,9 +47,11 @@ export const useApiData = (resource, params = {}) => {
         }
 
         const result = await response.json();
-        console.log(`API Response for ${resource}:`, result);
-        console.log(`Response status: ${response.status}`);
-        console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+        if (!import.meta.env.PROD) {
+          console.log(`API Response for ${resource}:`, result);
+          console.log(`Response status: ${response.status}`);
+          console.log(`Response headers:`, Object.fromEntries(response.headers.entries()));
+        }
 
         if (isMounted) {
           // Validar la respuesta usando la función centralizada
@@ -69,8 +71,10 @@ export const useApiData = (resource, params = {}) => {
             setSuccess(true);
             setError(null);
           } else {
-            console.warn(`API response for ${resource} validation failed:`, validation.error);
-            console.warn(`Raw response:`, result);
+            if (!import.meta.env.PROD) {
+              console.warn(`API response for ${resource} validation failed:`, validation.error);
+              console.warn(`Raw response:`, result);
+            }
             setData([]);
             setSuccess(false);
             setError(validation.error);
@@ -81,7 +85,7 @@ export const useApiData = (resource, params = {}) => {
         
         if (err.name === 'AbortError') {
           if (isMounted) {
-            console.warn(`Request aborted for ${resource} due to timeout`);
+            if (!import.meta.env.PROD) console.warn(`Request aborted for ${resource} due to timeout`);
             setError('La solicitud tardó demasiado. Por favor, intenta nuevamente.');
             setSuccess(false);
             setData([]);
@@ -92,7 +96,7 @@ export const useApiData = (resource, params = {}) => {
         // Intentar reintentar si es un error de red o timeout y no hemos excedido el máximo de reintentos
         if (retryCount < API_CONFIG.TIMEOUTS.MAX_RETRIES && 
             (err.name === 'AbortError' || err.message.includes('fetch') || err.message.includes('network'))) {
-          console.log(`Retrying ${resource} (attempt ${retryCount + 1}/${API_CONFIG.TIMEOUTS.MAX_RETRIES})`);
+          if (!import.meta.env.PROD) console.log(`Retrying ${resource} (attempt ${retryCount + 1}/${API_CONFIG.TIMEOUTS.MAX_RETRIES})`);
           
           // Esperar un poco más antes de reintentar
           const delay = API_CONFIG.TIMEOUTS.RETRY_DELAY * Math.pow(2, retryCount); // Backoff exponencial

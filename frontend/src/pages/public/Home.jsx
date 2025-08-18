@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
@@ -8,25 +7,11 @@ import PopularCarousel from "../../components/Home/PopularCarousel";
 import useData from "../../hooks/useData";
 
 //imagenes
-import Converse from "../public/img/Converse.png";
-import Puma from "../public/img/Puma.png";
-import True from "../public/img/True.png";
-
 import Lente1 from "../public/img/Lente1.png";
-import Lente2 from "../public/img/Lente2.png";
-import Lente3 from "../public/img/Lente3.png";
-import Lente4 from "../public/img/Lente4.png";
-import Lente5 from "../public/img/Lente5.png";
-import Lente6 from "../public/img/Lente6.png";
-
-import Hombre from "../public/img/Hombre.png";
-import Mujer from "../public/img/Mujer.png";
-import Nino from "../public/img/Niño.png";
-import Accesorios from "../public/img/Accesorio.png";
+// Nota: solo se usa Lente1 como imagen de respaldo en el hero
 
 const Home = () => {
-  const location = useLocation();
-  const [isProductMenuOpen, setIsProductMenuOpen] = useState(false);
+  // Eliminado useLocation y estado no utilizado
   const [currentPopularSlide, setCurrentPopularSlide] = useState(0);
   const brandsVisibleItems = 5;
 
