@@ -75,7 +75,7 @@ const login = async (req, res) => {
     res.cookie('aurora_auth_token', token, {
       httpOnly: true, // No accesible desde JavaScript del cliente
       secure: process.env.NODE_ENV === 'production' ? true : false, // HTTPS en producción
-      sameSite: 'lax', // Permitir cross-origin seguro
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // Permitir cross-site en producción
       maxAge: 24 * 60 * 60 * 1000 // 24 horas en milisegundos
       // domain eliminado para compatibilidad con Render
     });
