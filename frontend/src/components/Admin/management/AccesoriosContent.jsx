@@ -13,10 +13,10 @@ import Alert from '../ui/Alert';
 import AccesoriosFormModal from '../management/employees/AccesoriosFormModal';
 import { Search, Plus, Trash2, Eye, Edit, ShoppingBag, Tags, Package, DollarSign, Clock, ImageIcon, Building2, Palette, Layers } from 'lucide-react';
 
-const API_URL = 'http://localhost:4000/api/accesorios';
-const MARCAS_URL = 'http://localhost:4000/api/marcas';
-const CATEGORIAS_URL = 'http://localhost:4000/api/categoria';
-const SUCURSALES_URL = 'http://localhost:4000/api/sucursales';
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/accesorios';
+const MARCAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/marcas';
+const CATEGORIAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/categoria';
+const SUCURSALES_URL = 'https://a-u-r-o-r-a.onrender.com/api/sucursales';
 
 const AccesoriosContent = () => {
   // Estados principales

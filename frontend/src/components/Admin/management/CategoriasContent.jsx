@@ -499,7 +499,7 @@ const CategoriasContent = () => {
     const primaryBase = API_CONFIG.BASE_URL;
     const secondaryBase = primaryBase.includes('localhost')
       ? 'https://a-u-r-o-r-a.onrender.com/api'
-      : 'http://localhost:4000/api';
+      : 'https://a-u-r-o-r-a.onrender.com/api/api';
 
     try {
       return await tryOnce(primaryBase);

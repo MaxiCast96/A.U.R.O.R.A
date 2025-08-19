@@ -5,7 +5,7 @@ import { EL_SALVADOR_DATA } from '../../constants/ElSalvadorData';
 import axios from 'axios';
 
 // URL base de tu API
-const API_URL = 'http://localhost:4000/api/empleados';
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/empleados';
 
 // Componente de subida de foto profesional
 const PhotoUploadComponent = ({ currentPhoto, onPhotoChange, employeeName = '' }) => {
