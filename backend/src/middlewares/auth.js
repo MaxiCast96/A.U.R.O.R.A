@@ -13,7 +13,11 @@ import empleadosModel from '../models/Empleados.js';
 export const authenticateToken = async (req, res, next) => {
     try {
         const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
+        let token = authHeader && authHeader.split(' ')[1];
+        // Fallback: usar cookie HTTPOnly si no hay Authorization
+        if (!token && req.cookies) {
+            token = req.cookies.aurora_auth_token || req.cookies.token || null;
+        }
 
         if (!token) {
             return res.status(401).json({ 

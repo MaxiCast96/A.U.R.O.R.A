@@ -50,7 +50,10 @@ export const auditLogger = async (req, res, next) => {
         if (!user || (!user.id && !user._id)) {
           try {
             const authHeader = req.headers['authorization'];
-            const tok = authHeader && authHeader.split(' ')[1];
+            let tok = authHeader && authHeader.split(' ')[1];
+            if (!tok && req.cookies) {
+              tok = req.cookies.aurora_auth_token || req.cookies.token || null;
+            }
             if (tok) {
               const decoded = jwt.verify(tok, config.jwt.secret);
               user = { ...decoded };
