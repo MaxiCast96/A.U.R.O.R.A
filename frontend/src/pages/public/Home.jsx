@@ -785,7 +785,7 @@ const Home = () => {
               <motion.img
                 whileHover={{ scale: 1.1, rotate: 10 }}
                 transition={{ duration: 0.3 }}
-                src="/img/cliente1.jpg"
+                src="https://i.pravatar.cc/56?img=1"
                 alt="Cliente 1"
                 className="w-14 h-14 rounded-full mb-2 object-cover"
               />
@@ -819,7 +819,7 @@ const Home = () => {
               className="bg-white rounded-2xl shadow-md p-6"
             >
               <img
-                src="/img/cliente2.jpg"
+                src="https://i.pravatar.cc/56?img=2"
                 alt="Cliente 2"
                 className="w-14 h-14 rounded-full mb-2 object-cover"
               />
@@ -851,7 +851,7 @@ const Home = () => {
               className="bg-white rounded-2xl shadow-md p-6"
             >
               <img
-                src="/img/cliente3.jpg"
+                src="https://i.pravatar.cc/56?img=3"
                 alt="Cliente 3"
                 className="w-14 h-14 rounded-full mb-2 object-cover"
               />
