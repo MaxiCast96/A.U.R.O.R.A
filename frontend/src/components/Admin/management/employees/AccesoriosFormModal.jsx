@@ -2,25 +2,52 @@ import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
 import { Camera, Upload, X, Package, Edit3, Eye, EyeOff, Plus, Trash2, AlertCircle, Check, Loader, DollarSign, Tag } from 'lucide-react';
 
-// Componente de subida de imágenes profesional con fix para imágenes negras
+// Componente de subida de imágenes CORREGIDO
 const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 5 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
-  const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
-  const [imageLoadStates, setImageLoadStates] = useState(new Map()); // Nuevo estado para tracking
+
+  // Verificar si Cloudinary está disponible
+  useEffect(() => {
+    if (!window.cloudinary) {
+      const script = document.createElement('script');
+      script.src = "https://widget.cloudinary.com/v2.0/global/all.js";
+      script.async = true;
+      script.onload = () => {
+        console.log('Cloudinary script loaded successfully');
+      };
+      script.onerror = () => {
+        console.error('Failed to load Cloudinary script');
+      };
+      document.head.appendChild(script);
+
+      return () => {
+        if (document.head.contains(script)) {
+          document.head.removeChild(script);
+        }
+      };
+    }
+  }, []);
 
   const handleOpenWidget = () => {
-    if (!window.cloudinary) return;
+    if (!window.cloudinary) {
+      alert('El sistema de carga de imágenes no está disponible. Por favor, recarga la página.');
+      return;
+    }
+
     const widget = window.cloudinary.createUploadWidget({
       cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
       uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
       sources: ['local', 'camera', 'url'],
       folder: "accesorios",
       multiple: true,
-      maxFiles: maxImages - currentImages.length,
+      maxFiles: Math.max(1, maxImages - currentImages.length),
       cropping: false,
       maxImageFileSize: 10000000,
       clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+      transformation: [
+        { quality: 'auto', fetch_format: 'auto' }
+      ],
       styles: {
         palette: {
           window: "#FFFFFF",
@@ -34,8 +61,7 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
         es: {
           "queue.title": "Subir Imágenes",
           "local.browse": "Seleccionar",
-          "camera.capture": "Tomar foto",
-          "crop.title": "Recortar imagen"
+          "camera.capture": "Tomar foto"
         }
       }
     }, (error, result) => {
@@ -48,12 +74,14 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
       
       if (result && result.event === "queues-start") {
         setIsUploading(true);
-        setUploadingCount(result.info.files.length);
+        setUploadingCount(result.info.files?.length || 1);
       }
       
       if (result && result.event === "success") {
-        const newImages = [...currentImages, result.info.secure_url];
+        const newImageUrl = result.info.secure_url;
+        const newImages = [...currentImages, newImageUrl];
         onImagesChange(newImages);
+        console.log('Image uploaded successfully:', newImageUrl);
       }
       
       if (result && result.event === "queues-end") {
@@ -61,23 +89,13 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
         setUploadingCount(0);
       }
     });
+
     widget.open();
   };
 
   const removeImage = (index) => {
     const newImages = currentImages.filter((_, i) => i !== index);
     onImagesChange(newImages);
-    // Limpiar estados relacionados con la imagen eliminada
-    setImageLoadErrors(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(index);
-      return newSet;
-    });
-    setImageLoadStates(prev => {
-      const newMap = new Map(prev);
-      newMap.delete(index);
-      return newMap;
-    });
   };
 
   const moveImage = (fromIndex, toIndex) => {
@@ -87,274 +105,181 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
     onImagesChange(newImages);
   };
 
-  const handleImageError = (index, imageUrl) => {
-    console.error(`Error loading image at index ${index}:`, imageUrl);
-    setImageLoadErrors(prev => new Set([...prev, index]));
-    setImageLoadStates(prev => new Map([...prev, [index, 'error']]));
-  };
-
-  const handleImageLoad = (index) => {
-    setImageLoadErrors(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(index);
-      return newSet;
-    });
-    setImageLoadStates(prev => new Map([...prev, [index, 'loaded']]));
-  };
-
-  const handleImageLoadStart = (index) => {
-    setImageLoadStates(prev => new Map([...prev, [index, 'loading']]));
-  };
-
-  // Función para normalizar URLs de Cloudinary
-  const normalizeImageUrl = (imageUrl) => {
-    if (!imageUrl) return null;
+  // Función para normalizar URLs de imágenes - CORREGIDA
+  const normalizeImageUrl = (image) => {
+    if (!image) return null;
     
-    // Si es una URL de Cloudinary, asegurar que use HTTPS
-    if (imageUrl.includes('cloudinary.com')) {
-      return imageUrl.replace('http://', 'https://');
-    }
-    
-    // Si es un objeto con propiedades de imagen
-    if (typeof imageUrl === 'object') {
-      return imageUrl.secure_url || imageUrl.url || null;
-    }
-    
-    return imageUrl;
-  };
-
-  // Función para generar URL alternativa en caso de error
-  const getAlternativeImageUrl = (originalUrl) => {
-    if (!originalUrl || !originalUrl.includes('cloudinary.com')) {
-      return originalUrl;
-    }
-    
-    try {
-      // Intentar transformar la URL para forzar regeneración
-      const url = new URL(originalUrl);
-      const pathParts = url.pathname.split('/');
-      
-      // Buscar el índice donde están los parámetros de transformación
-      const uploadIndex = pathParts.findIndex(part => part === 'upload');
-      if (uploadIndex !== -1 && uploadIndex < pathParts.length - 1) {
-        // Insertar parámetros de transformación básicos
-        pathParts.splice(uploadIndex + 1, 0, 'f_auto,q_auto');
-        url.pathname = pathParts.join('/');
-        return url.toString();
+    // Si es string, verificar que sea una URL válida
+    if (typeof image === 'string') {
+      if (image.startsWith('http://') || image.startsWith('https://')) {
+        return image.replace('http://', 'https://'); // Asegurar HTTPS
       }
-    } catch (error) {
-      console.error('Error processing Cloudinary URL:', error);
+      // Si es un public_id de Cloudinary
+      if (image.includes('cloudinary') || !image.startsWith('http')) {
+        return `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${image}`;
+      }
+      return image;
     }
     
-    return originalUrl;
+    // Si es objeto, extraer la URL
+    if (typeof image === 'object' && image !== null) {
+      return image.secure_url || image.url || null;
+    }
+    
+    return null;
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900">Imágenes del Producto</h3>
-        {currentImages.length > 0 && (
-          <span className="text-sm text-gray-500">{currentImages.length}/{maxImages} imágenes</span>
-        )}
-      </div>
-      
-      {/* Botón para agregar imágenes */}
-      {currentImages.length > 0 && (
-  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-    {currentImages.map((image, index) => {
-      const hasError = imageLoadErrors.has(index);
-      const imageUrl = typeof image === 'string' ? image : image?.secure_url || image?.url;
-      
-      return (
-        <div key={`${imageUrl}-${index}`} className="relative bg-white rounded-lg shadow-sm border">
-          {/* IMAGEN LIMPIA */}
-          <div className={`aspect-square rounded-t-lg overflow-hidden ${
-            index === 0 ? 'ring-2 ring-cyan-500' : ''
-          }`}>
-            {hasError ? (
-              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                <div className="text-center">
-                  <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <span className="text-xs text-gray-500">Error al cargar</span>
-                </div>
-              </div>
+        <div className="flex items-center space-x-3">
+          {currentImages.length > 0 && (
+            <span className="text-sm text-gray-500">{currentImages.length}/{maxImages}</span>
+          )}
+          <button
+            type="button"
+            onClick={handleOpenWidget}
+            disabled={isUploading || currentImages.length >= maxImages}
+            className="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isUploading ? (
+              <>
+                <Loader className="w-4 h-4 mr-2 animate-spin" />
+                Subiendo {uploadingCount > 1 ? `${uploadingCount} imágenes` : 'imagen'}...
+              </>
             ) : (
-              <img
-                src={imageUrl}
-                alt={`Imagen ${index + 1}`}
-                className="w-full h-full object-cover"
-                onError={() => handleImageError(index)}
-                onLoad={() => handleImageLoad(index)}
-                loading="lazy"
-                crossOrigin="anonymous"
-              />
+              <>
+                <Upload className="w-4 h-4 mr-2" />
+                {currentImages.length === 0 ? 'Subir Imágenes' : 'Agregar Más'}
+              </>
             )}
-          </div>
-          
-          {/* CONTROLES EN BARRA INFERIOR */}
-          <div className="p-2 flex items-center justify-between bg-gray-50 rounded-b-lg">
-            <span className="text-xs text-gray-600">
-              {index === 0 ? '🏷️ Principal' : `Imagen ${index + 1}`}
-            </span>
-            
-            <div className="flex space-x-1">
-              {index > 0 && (
-                <button
-                  type="button"
-                  onClick={() => moveImage(index, 0)}
-                  className="p-1 text-cyan-600 hover:bg-cyan-100 rounded transition-colors"
-                  title="Hacer principal"
-                >
-                  <Tag className="w-3 h-3" />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => removeImage(index)}
-                className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
-                title="Eliminar imagen"
-              >
-                <Trash2 className="w-3 h-3" />
-              </button>
-            </div>
-          </div>
+          </button>
         </div>
-      );
-    })}
-  </div>
-)}
+      </div>
 
-      {/* Grid de imágenes con fix mejorado */}
+      {/* Área de drop o mensaje inicial */}
+      {currentImages.length === 0 && !isUploading && (
+        <div 
+          onClick={handleOpenWidget}
+          className="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-colors"
+        >
+          <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+            <Upload className="w-8 h-8 text-gray-400" />
+          </div>
+          <h4 className="text-lg font-medium text-gray-700 mb-2">
+            Sube las imágenes del producto
+          </h4>
+          <p className="text-gray-500 mb-4">
+            Arrastra imágenes aquí o haz clic para seleccionar archivos
+          </p>
+          <p className="text-xs text-gray-400">
+            Formatos: JPG, PNG, WEBP • Máximo {maxImages} imágenes • Hasta 10MB cada una
+          </p>
+        </div>
+      )}
+
+      {/* Grid de imágenes - SIN OVERLAYS QUE BLOQUEEN */}
       {currentImages.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {currentImages.map((image, index) => {
-            const hasError = imageLoadErrors.has(index);
-            const loadState = imageLoadStates.get(index);
-            const normalizedUrl = normalizeImageUrl(image);
-            const alternativeUrl = getAlternativeImageUrl(normalizedUrl);
-            const imageKey = `image-${index}-${normalizedUrl}`; // Key único para forzar re-render
+            const imageUrl = normalizeImageUrl(image);
             
             return (
-              <div key={imageKey} className="relative group">
+              <div key={`image-${index}-${imageUrl}`} className="relative group">
+                {/* Contenedor de imagen - SIN OVERLAY BLOQUEANTE */}
                 <div className={`aspect-square rounded-lg overflow-hidden border-2 ${
-                  index === 0 ? 'border-cyan-500' : 'border-gray-200'
-                } bg-gray-100`}>
-                  {hasError ? (
-                    <div className="w-full h-full bg-gray-200 flex flex-col items-center justify-center p-2">
-                      <AlertCircle className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-xs text-gray-500 text-center">Error al cargar imagen</span>
-                      <button 
-                        onClick={() => {
-                          // Intentar recargar la imagen
-                          setImageLoadErrors(prev => {
-                            const newSet = new Set(prev);
-                            newSet.delete(index);
-                            return newSet;
-                          });
-                          setImageLoadStates(prev => {
-                            const newMap = new Map(prev);
-                            newMap.delete(index);
-                            return newMap;
-                          });
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-800 mt-1"
-                      >
-                        Reintentar
-                      </button>
-                    </div>
+                  index === 0 ? 'border-cyan-500 shadow-lg' : 'border-gray-200'
+                } bg-gray-100 relative`}>
+                  
+                  {/* Imagen principal */}
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={`Imagen ${index + 1}`}
+                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                      onError={(e) => {
+                        console.error('Error loading image:', imageUrl);
+                        e.target.style.display = 'none';
+                        e.target.nextElementSibling.style.display = 'flex';
+                      }}
+                      onLoad={(e) => {
+                        console.log('Image loaded successfully:', imageUrl);
+                        // Asegurar que la imagen sea visible
+                        e.target.style.display = 'block';
+                        if (e.target.nextElementSibling) {
+                          e.target.nextElementSibling.style.display = 'none';
+                        }
+                      }}
+                      loading="lazy"
+                      style={{ display: 'block', zIndex: 1 }}
+                    />
                   ) : (
-                    <div className="relative w-full h-full">
-                      {loadState === 'loading' && (
-                        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center z-10">
-                          <Loader className="w-6 h-6 text-gray-400 animate-spin" />
-                        </div>
-                      )}
-                      
-                      <img
-                        src={alternativeUrl || normalizedUrl}
-                        alt={`Imagen ${index + 1}`}
-                        className={`w-full h-full object-cover transition-opacity duration-300 ${
-                          loadState === 'loaded' ? 'opacity-100' : 'opacity-0'
-                        }`}
-                        onLoadStart={() => handleImageLoadStart(index)}
-                        onLoad={() => handleImageLoad(index)}
-                        onError={() => handleImageError(index, normalizedUrl)}
-                        loading="lazy"
-                        crossOrigin="anonymous"
-                        // Atributos adicionales para debugging
-                        data-original-url={normalizedUrl}
-                        data-alternative-url={alternativeUrl}
-                      />
+                    <div className="w-full h-full flex items-center justify-center bg-gray-200">
+                      <Package className="w-8 h-8 text-gray-400" />
                     </div>
                   )}
+                  
+                  {/* Fallback para imágenes que fallan - OCULTO POR DEFECTO */}
+                  <div 
+                    className="w-full h-full absolute inset-0 items-center justify-center bg-gray-200"
+                    style={{ display: 'none', zIndex: 2 }}
+                  >
+                    <div className="text-center">
+                      <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <span className="text-xs text-gray-500">Error al cargar</span>
+                    </div>
+                  </div>
+                  
+                  {/* Badge principal - POSICIONADO FUERA DE LA IMAGEN */}
+                  {index === 0 && (
+                    <div className="absolute -top-2 -left-2 bg-cyan-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg z-20">
+                      Principal
+                    </div>
+                  )}
+                  
+                  {/* Número de imagen - POSICIONADO EN ESQUINA */}
+                  <div className="absolute bottom-2 left-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-gray-700 z-10">
+                    {index + 1}
+                  </div>
                 </div>
                 
-                {/* Badge de imagen principal */}
-                {index === 0 && (
-                  <div className="absolute top-2 left-2 bg-cyan-500 text-white px-2 py-1 rounded-full text-xs font-medium z-20">
-                    Principal
-                  </div>
-                )}
-                
-                {/* Indicador de estado de carga */}
-                {loadState === 'loading' && (
-                  <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full z-20">
-                    <Loader className="w-3 h-3 animate-spin" />
-                  </div>
-                )}
-                
-                {/* Controles de imagen */}
-                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center">
-                  <div className="opacity-0 group-hover:opacity-100 flex space-x-2 z-30">
-                    {index > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => moveImage(index, 0)}
-                        className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all"
-                        title="Hacer principal"
-                      >
-                        <Tag className="w-4 h-4 text-cyan-600" />
-                      </button>
-                    )}
+                {/* Controles - POSICIONADOS FUERA DEL CONTENEDOR DE IMAGEN */}
+                <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-1 z-30">
+                  {index > 0 && (
                     <button
                       type="button"
-                      onClick={() => removeImage(index)}
-                      className="p-2 bg-white rounded-full shadow-lg hover:bg-red-50 transition-all"
-                      title="Eliminar imagen"
+                      onClick={() => moveImage(index, 0)}
+                      className="p-2 bg-white rounded-full shadow-lg hover:bg-cyan-50 transition-colors border"
+                      title="Hacer principal"
                     >
-                      <Trash2 className="w-4 h-4 text-red-600" />
+                      <Tag className="w-3 h-3 text-cyan-600" />
                     </button>
-                  </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    className="p-2 bg-white rounded-full shadow-lg hover:bg-red-50 transition-colors border"
+                    title="Eliminar"
+                  >
+                    <Trash2 className="w-3 h-3 text-red-600" />
+                  </button>
                 </div>
-                
-                {/* Debug info (solo en desarrollo) */}
-                {process.env.NODE_ENV === 'development' && (
-                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-1 truncate">
-                    {loadState || 'unknown'} - {normalizedUrl?.substring(0, 30)}...
-                  </div>
-                )}
               </div>
             );
           })}
-        </div>
-      )}
-      
-      {currentImages.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-xs text-gray-500">
-            <span className="font-medium">Nota:</span> La primera imagen será la imagen principal del producto. 
-            Puedes reordenar haciendo clic en "Hacer principal".
-          </p>
           
-          {/* Información de debug para desarrollo */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs">
-              <strong>Debug Info:</strong>
-              <ul className="mt-1 space-y-1">
-                <li>Total imágenes: {currentImages.length}</li>
-                <li>Errores de carga: {imageLoadErrors.size}</li>
-                <li>Estados de carga: {JSON.stringify(Object.fromEntries(imageLoadStates))}</li>
-              </ul>
+          {/* Botón para agregar más imágenes */}
+          {currentImages.length < maxImages && (
+            <div 
+              onClick={handleOpenWidget}
+              className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-cyan-500 hover:bg-cyan-50 transition-colors"
+            >
+              <div className="text-center">
+                <Plus className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <span className="text-xs text-gray-500">Agregar más</span>
+              </div>
             </div>
           )}
         </div>
@@ -530,7 +455,7 @@ const PromocionSelector = ({ promociones, selectedPromocion, onPromocionChange, 
   
   // Filtrar promociones activas
   const promocionesActivas = promociones.filter(promo => {
-    if (!promo.fechaFin) return true; // Sin fecha de fin, siempre activa
+    if (!promo.fechaFin) return true;
     const fechaFin = new Date(promo.fechaFin);
     const hoy = new Date();
     return fechaFin >= hoy;
@@ -626,16 +551,17 @@ const AccesoriosFormModal = ({
   onSubmit,
   title,
   formData,
+  setFormData, // Agregar esta prop
   handleInputChange,
   errors,
   isEditing = false,
   marcas = [],
   categorias = [],
   sucursales = [],
-  promociones = [], // Nueva prop para promociones
+  promociones = [],
   selectedAccesorio = null
 }) => {
-  // Estados locales para manejo de imágenes y líneas
+  // Estados locales para manejo de líneas
   const [lineasDisponibles, setLineasDisponibles] = useState([]);
   const [loadingLineas, setLoadingLineas] = useState(false);
 
@@ -643,10 +569,8 @@ const AccesoriosFormModal = ({
   useEffect(() => {
     if (formData.marcaId) {
       setLoadingLineas(true);
-      // Simular carga de líneas desde la marca
       setTimeout(() => {
         const lineasPorMarca = {
-          // Esto debería venir del backend, pero por ahora simulo datos
           default: ['Económica', 'Estándar', 'Premium', 'Luxury']
         };
         setLineasDisponibles(lineasPorMarca.default || []);
@@ -659,63 +583,93 @@ const AccesoriosFormModal = ({
 
   // Manejar cambio de imágenes
   const handleImagesChange = (newImages) => {
-    handleInputChange({
-      target: {
-        name: 'imagenes',
-        value: newImages
-      }
-    });
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        imagenes: newImages
+      }));
+    } else {
+      handleInputChange({
+        target: {
+          name: 'imagenes',
+          value: newImages
+        }
+      });
+    }
   };
 
   // Manejar cambio de sucursales
   const handleSucursalesChange = (newSucursales) => {
-    handleInputChange({
-      target: {
-        name: 'sucursales',
-        value: newSucursales
-      }
-    });
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        sucursales: newSucursales
+      }));
+    } else {
+      handleInputChange({
+        target: {
+          name: 'sucursales',
+          value: newSucursales
+        }
+      });
+    }
   };
 
   // Manejar cambio de precio base
   const handlePrecioBaseChange = (newPrice) => {
-    handleInputChange({
-      target: {
-        name: 'precioBase',
-        value: newPrice
-      }
-    });
-    
-    // Si no está en promoción, el precio actual es igual al precio base
-    if (!formData.enPromocion) {
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        precioBase: newPrice,
+        precioActual: prev.enPromocion ? prev.precioActual : newPrice
+      }));
+    } else {
       handleInputChange({
         target: {
-          name: 'precioActual',
+          name: 'precioBase',
           value: newPrice
         }
       });
+      
+      if (!formData.enPromocion) {
+        handleInputChange({
+          target: {
+            name: 'precioActual',
+            value: newPrice
+          }
+        });
+      }
     }
   };
 
   // Manejar cambio de estado de promoción
   const handlePromocionChange = (e) => {
     const enPromocion = e.target.checked;
-    handleInputChange(e);
     
-    // Si se desactiva la promoción, el precio actual vuelve a ser el precio base
-    if (!enPromocion) {
-      handleInputChange({
-        target: {
-          name: 'precioActual',
-          value: formData.precioBase || 0
-        }
-      });
-      handleInputChange({
-        target: {
-          name: 'promocionId',
-          value: ''
-        }
-      });
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        enPromocion,
+        precioActual: enPromocion ? prev.precioActual : prev.precioBase,
+        promocionId: enPromocion ? prev.promocionId : ''
+      }));
+    } else {
+      handleInputChange(e);
+      
+      if (!enPromocion) {
+        handleInputChange({
+          target: {
+            name: 'precioActual',
+            value: formData.precioBase || 0
+          }
+        });
+        handleInputChange({
+          target: {
+            name: 'promocionId',
+            value: ''
+          }
+        });
+      }
     }
   };
 
@@ -723,30 +677,54 @@ const AccesoriosFormModal = ({
   const handlePromocionSelectChange = (e) => {
     const promocionId = e.target.value;
     
-    handleInputChange({
-      target: {
-        name: 'promocionId',
-        value: promocionId
-      }
-    });
-
-    // Calcular precio automáticamente
-    if (promocionId && formData.precioBase) {
-      const promo = promociones.find(p => p._id === promocionId);
-      if (promo) {
-        let newPrice = formData.precioBase;
-        if (promo.tipoDescuento === 'porcentaje') {
-          newPrice = formData.precioBase * (1 - (promo.valorDescuento / 100));
-        } else if (promo.tipoDescuento === 'monto_fijo') {
-          newPrice = Math.max(0, formData.precioBase - promo.valorDescuento);
+    if (setFormData) {
+      setFormData(prev => {
+        let newPrecioActual = prev.precioBase;
+        
+        if (promocionId && prev.precioBase) {
+          const promo = promociones.find(p => p._id === promocionId);
+          if (promo) {
+            if (promo.tipoDescuento === 'porcentaje') {
+              newPrecioActual = prev.precioBase * (1 - (promo.valorDescuento / 100));
+            } else if (promo.tipoDescuento === 'monto_fijo') {
+              newPrecioActual = Math.max(0, prev.precioBase - promo.valorDescuento);
+            }
+            newPrecioActual = parseFloat(newPrecioActual.toFixed(2));
+          }
         }
         
-        handleInputChange({
-          target: {
-            name: 'precioActual',
-            value: parseFloat(newPrice.toFixed(2))
+        return {
+          ...prev,
+          promocionId,
+          precioActual: newPrecioActual
+        };
+      });
+    } else {
+      handleInputChange({
+        target: {
+          name: 'promocionId',
+          value: promocionId
+        }
+      });
+
+      // Calcular precio automáticamente
+      if (promocionId && formData.precioBase) {
+        const promo = promociones.find(p => p._id === promocionId);
+        if (promo) {
+          let newPrice = formData.precioBase;
+          if (promo.tipoDescuento === 'porcentaje') {
+            newPrice = formData.precioBase * (1 - (promo.valorDescuento / 100));
+          } else if (promo.tipoDescuento === 'monto_fijo') {
+            newPrice = Math.max(0, formData.precioBase - promo.valorDescuento);
           }
-        });
+          
+          handleInputChange({
+            target: {
+              name: 'precioActual',
+              value: parseFloat(newPrice.toFixed(2))
+            }
+          });
+        }
       }
     }
   };
@@ -911,9 +889,18 @@ const AccesoriosFormModal = ({
                 <PriceField
                   label="Precio con Promoción (ajustar manualmente si es necesario)"
                   value={formData?.precioActual}
-                  onChange={(value) => handleInputChange({
-                    target: { name: 'precioActual', value }
-                  })}
+                  onChange={(value) => {
+                    if (setFormData) {
+                      setFormData(prev => ({
+                        ...prev,
+                        precioActual: value
+                      }));
+                    } else {
+                      handleInputChange({
+                        target: { name: 'precioActual', value }
+                      });
+                    }
+                  }}
                   error={errors?.precioActual}
                   required={true}
                   placeholder="0.00"
@@ -957,7 +944,7 @@ const AccesoriosFormModal = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p><span className="font-medium">Producto:</span> {formData.nombre}</p>
-              <p><span className="font-medium">Precio:</span> ${formData.precioActual || formData.precioBase || 0}</p>
+              <p><span className="font-medium">Precio:</span> ${(formData.precioActual || formData.precioBase || 0).toFixed(2)}</p>
               {formData.enPromocion && formData.promocionId && (
                 <p className="text-green-600">
                   <span className="font-medium">🏷️ En promoción:</span> {

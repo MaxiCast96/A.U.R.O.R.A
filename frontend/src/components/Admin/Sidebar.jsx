@@ -1,4 +1,4 @@
-// Sidebar.jsx - Versión corregida sin errores de JSX
+// Sidebar.jsx - Versión corregida sin errores de JSX y problemas de outline/scrollbar
 
 import React, { useState } from 'react';
 import Alert from './ui/Alert';
@@ -159,7 +159,7 @@ const Sidebar = ({
       {/* Botón de menú hamburguesa flotante para móvil - NUEVA FUNCIONALIDAD */}
       <button
         onClick={() => setMobileMenuOpen(true)}
-        className="fixed top-4 left-4 z-50 md:hidden bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-110 active:scale-95"
+        className="fixed top-4 left-4 z-50 md:hidden bg-cyan-500 hover:bg-cyan-600 text-white p-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-300"
         aria-label="Abrir menú"
       >
         <Menu className="w-6 h-6" />
@@ -198,7 +198,7 @@ const Sidebar = ({
             {/* Botón de expandir/contraer - Con medidas originales */}
             <button
               onClick={() => window.innerWidth >= 768 && setSidebarOpen(!sidebarOpen)}
-              className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 bg-white rounded-lg shadow-md flex items-center justify-center p-1 flex-shrink-0 hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-110 hover:rotate-3 active:scale-95 active:rotate-0 group"
+              className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 lg:w-10 lg:h-10 bg-white rounded-lg shadow-md flex items-center justify-center p-1 flex-shrink-0 hover:shadow-lg transition-all duration-300 cursor-pointer hover:scale-110 hover:rotate-3 active:scale-95 active:rotate-0 group focus:outline-none focus:ring-2 focus:ring-cyan-300"
               title={sidebarOpen ? "Contraer menú" : "Expandir menú"}
             >
               <div className={`transform transition-all duration-700 ease-in-out group-hover:scale-125 ${
@@ -225,7 +225,7 @@ const Sidebar = ({
             {/* Botón de cerrar en móvil */}
             <button
               onClick={closeMobileMenu}
-              className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 hover:rotate-90 active:scale-90"
+              className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all duration-200 hover:scale-110 hover:rotate-90 active:scale-90 focus:outline-none focus:ring-2 focus:ring-cyan-300"
               aria-label="Cerrar menú"
             >
               <X className="w-5 h-5" />
@@ -235,7 +235,7 @@ const Sidebar = ({
         
         {/* Contenedor principal - Padding móvil aumentado */}
         <div 
-          className="py-2 sm:py-3 md:py-2 overflow-y-auto custom-scrollbar" 
+          className="py-2 sm:py-3 md:py-2 overflow-y-auto custom-scrollbar-hidden" 
           style={{ height: contentHeight ? `${contentHeight}px` : undefined }}
         >
           {['Principal', 'Personal', 'Productos', 'Médico', 'Administración'].map((section, sectionIndex) => {
@@ -260,7 +260,7 @@ const Sidebar = ({
                       setActiveSection(item.id);
                       setTimeout(() => closeMobileMenu(), 0);
                     }}
-                    className={`w-full flex items-center px-3 sm:px-4 md:px-3 lg:px-4 py-2 sm:py-3 md:py-2 lg:py-2.5 text-left bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 hover:text-cyan-700 transition-all duration-300 group relative transform hover:scale-105 hover:translate-x-1 active:scale-95 active:translate-x-0 overflow-hidden ${
+                    className={`w-full flex items-center px-3 sm:px-4 md:px-3 lg:px-4 py-2 sm:py-3 md:py-2 lg:py-2.5 text-left bg-white hover:bg-gradient-to-r hover:from-cyan-50 hover:to-blue-50 hover:text-cyan-700 transition-all duration-300 group relative transform hover:scale-105 hover:translate-x-1 active:scale-95 active:translate-x-0 overflow-hidden focus:outline-none focus:ring-0 outline-none ${
                       activeSection === item.id 
                         ? 'active-gradient-item text-cyan-700 border-r-4 border-cyan-500 shadow-sm' 
                         : 'text-gray-600'
@@ -328,7 +328,7 @@ const Sidebar = ({
                   setProfileMenuOpen(!profileMenuOpen);
                 }
               }}
-              className={`w-full flex items-center bg-white hover:bg-white rounded-lg transition-all duration-300 group hover:shadow-md transform hover:scale-105 active:scale-95 ${
+              className={`w-full flex items-center bg-white hover:bg-white rounded-lg transition-all duration-300 group hover:shadow-md transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-cyan-300 ${
                 sidebarOpen || window.innerWidth < 768 ? 'p-2 sm:p-3 md:p-1.5' : 'p-1 justify-center'
               }`}
             >
@@ -382,7 +382,7 @@ const Sidebar = ({
               <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-xl border border-gray-200 py-2 animate-slideUp z-[60]">
                 <button
                   onClick={handleViewProfile}
-                  className="w-full bg-white flex items-center px-3 sm:px-4 md:px-3 py-2 sm:py-3 md:py-1.5 text-sm sm:text-base md:text-xs text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-all duration-200 group"
+                  className="w-full bg-white flex items-center px-3 sm:px-4 md:px-3 py-2 sm:py-3 md:py-1.5 text-sm sm:text-base md:text-xs text-gray-700 hover:bg-gray-50 hover:text-cyan-600 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-cyan-300"
                 >
                   <User className="w-5 h-5 sm:w-6 sm:h-6 md:w-5 md:h-5 mr-3 sm:mr-4 md:mr-2 text-gray-400 group-hover:text-cyan-500 transition-colors" />
                   Ver Perfil
@@ -390,7 +390,7 @@ const Sidebar = ({
                 <div className="border-t border-gray-100 my-1"></div>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex bg-white items-center px-3 sm:px-4 md:px-3 py-2 sm:py-3 md:py-1.5 text-sm sm:text-base md:text-xs text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group"
+                  className="w-full flex bg-white items-center px-3 sm:px-4 md:px-3 py-2 sm:py-3 md:py-1.5 text-sm sm:text-base md:text-xs text-red-600 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-red-300"
                 >
                   <LogOut className="w-5 h-5 sm:w-6 sm:h-6 md:w-5 md:h-5 mr-3 sm:mr-4 md:mr-2 text-red-500 group-hover:text-red-600 transition-colors" />
                   Cerrar Sesión
@@ -415,28 +415,66 @@ const Sidebar = ({
 
       {/* Estilos CSS personalizados con breakpoints de la versión antigua */}
       <style>{`
-        /* Custom scrollbar mejorado */
-        .custom-scrollbar {
+        /* Custom scrollbar OCULTO - Solo aparece al hacer scroll */
+        .custom-scrollbar-hidden {
+          scrollbar-width: none; /* Firefox - ocultar completamente */
+          -ms-overflow-style: none; /* IE/Edge - ocultar completamente */
+        }
+        
+        .custom-scrollbar-hidden::-webkit-scrollbar {
+          width: 0px; /* Chrome, Safari, Opera - ocultar completamente */
+          background: transparent;
+        }
+        
+        /* Si quisieras que aparezca solo al hover (opcional, comentado por defecto) */
+        /*
+        .custom-scrollbar-hidden:hover {
           scrollbar-width: thin;
           scrollbar-color: #06b6d4 #f1f5f9;
         }
         
-        .custom-scrollbar::-webkit-scrollbar {
+        .custom-scrollbar-hidden:hover::-webkit-scrollbar {
           width: 6px;
         }
         
-        .custom-scrollbar::-webkit-scrollbar-track {
+        .custom-scrollbar-hidden:hover::-webkit-scrollbar-track {
           background: #f1f5f9;
           border-radius: 10px;
         }
         
-        .custom-scrollbar::-webkit-scrollbar-thumb {
+        .custom-scrollbar-hidden:hover::-webkit-scrollbar-thumb {
           background: linear-gradient(180deg, #06b6d4, #0891b2);
           border-radius: 10px;
         }
         
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        .custom-scrollbar-hidden:hover::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(180deg, #0891b2, #0e7490);
+        }
+        */
+        
+        /* ELIMINACIÓN DE OUTLINE/FOCUS VISIBLE EN BOTONES */
+        button:focus {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        button:focus-visible {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        button:active {
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        
+        /* Asegurar que no hay outline en ningún elemento clickeable */
+        *:focus {
+          outline: none !important;
+        }
+        
+        *:focus-visible {
+          outline: none !important;
         }
         
         /* Animaciones de la versión antigua */
@@ -584,14 +622,18 @@ const Sidebar = ({
           }
         }
         
-        /* Focus styles mejorados */
+        /* Asegurar que no hay ring o focus visible */
         .focus\\:outline-none:focus {
-          outline: 2px solid transparent;
-          outline-offset: 2px;
+          outline: none !important;
+          box-shadow: none !important;
         }
         
         .focus\\:ring-2:focus {
-          box-shadow: 0 0 0 2px #06b6d4;
+          box-shadow: none !important;
+        }
+        
+        .focus\\:ring-0:focus {
+          box-shadow: none !important;
         }
         
         /* High contrast mode support */

@@ -13,7 +13,6 @@ const categoriaController = {};
 // SELECT - Obtiene todas las categorías
 categoriaController.getCategoria = async (req, res) => {
     try {
-        // Busca y retorna todas las categorías
         const categoria = await categoriaModel.find();
         res.json(categoria);
     } catch (error) {
@@ -24,19 +23,25 @@ categoriaController.getCategoria = async (req, res) => {
 
 // INSERT - Crea nueva categoría con icono opcional
 categoriaController.createCategoria = async (req, res) => {
-    const { nombre, descripcion } = req.body;
-    let iconoUrl = ""; // Variable para URL del icono
+    const { nombre, descripcion, icono } = req.body; // ✅ Ahora extrae 'icono'
+    let iconoUrl = "";
 
     try {
-        // Sube imagen a Cloudinary si se envió archivo
+        // Prioridad 1: Imagen subida a Cloudinary
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "categoria", // Carpeta específica en Cloudinary
-                allowed_formats: ["png", "jpg", "jpeg", "webp"] // Formatos permitidos
+                folder: "categoria",
+                allowed_formats: ["png", "jpg", "jpeg", "webp"]
             });
-            iconoUrl = result.secure_url; // Obtiene URL segura
-        } else if (req.body.logo) {
-            iconoUrl = req.body.logo; // Usa URL proporcionada directamente
+            iconoUrl = result.secure_url;
+        } 
+        // Prioridad 2: Nombre de icono de Lucide React
+        else if (icono) {
+            iconoUrl = icono; // ✅ Guarda directamente el nombre del icono
+        }
+        // Prioridad 3: URL proporcionada directamente (compatibilidad)
+        else if (req.body.logo) {
+            iconoUrl = req.body.logo;
         }
 
         // Verificar si ya existe una categoria con el mismo nombre
@@ -63,7 +68,6 @@ categoriaController.createCategoria = async (req, res) => {
 // DELETE - Elimina una categoría por ID
 categoriaController.deleteCategoria = async (req, res) => {
     try {
-        // Busca y elimina categoría por ID
         const deleteCategoria = await categoriaModel.findByIdAndDelete(req.params.id);
 
         if (!deleteCategoria) {
@@ -78,24 +82,36 @@ categoriaController.deleteCategoria = async (req, res) => {
 
 // UPDATE - Actualiza categoría existente con nuevos datos
 categoriaController.updateCategoria = async (req, res) => {
-    const { nombre, descripcion } = req.body;
-    let iconoUrl = req.body.logo; // Mantiene logo existente por defecto
+    const { nombre, descripcion, icono } = req.body; // ✅ Ahora extrae 'icono'
+    let iconoUrl = "";
 
     try {
-        // Sube nueva imagen a Cloudinary si se envió archivo
+        // Prioridad 1: Nueva imagen subida a Cloudinary
         if (req.file) {
             const result = await cloudinary.uploader.upload(req.file.path, {
-                folder: "marcas", // Nota: debería ser "categoria" para consistencia
+                folder: "categoria", // ✅ Corregido: era "marcas"
                 allowed_formats: ["png", "jpg", "jpeg", "webp"]
             });
             iconoUrl = result.secure_url;
+        } 
+        // Prioridad 2: Nombre de icono de Lucide React
+        else if (icono) {
+            iconoUrl = icono; // ✅ Guarda directamente el nombre del icono
+        }
+        // Prioridad 3: URL proporcionada directamente (compatibilidad)
+        else if (req.body.logo) {
+            iconoUrl = req.body.logo;
+        }
+        // Prioridad 4: Mantener el icono existente
+        else {
+            const existingCategoria = await categoriaModel.findById(req.params.id);
+            iconoUrl = existingCategoria?.icono || "";
         }
 
-
-         // Verifica que no exista otra categoría con el mismo nombre
+        // Verifica que no exista otra categoría con el mismo nombre
         const exitsCategoria = await categoriaModel.findOne({
             nombre,
-            _id: { $ne: req.params.id } // Excluye el documento actual
+            _id: { $ne: req.params.id }
         });
         if (exitsCategoria) {
             return res.json({ message: "Ya existe otra categoria con este nombre" });
@@ -109,7 +125,7 @@ categoriaController.updateCategoria = async (req, res) => {
                 descripcion,
                 icono: iconoUrl,
             },
-            { new: true } // Retorna documento actualizado
+            { new: true }
         );
 
         if (!updateCategoria) {
@@ -126,7 +142,6 @@ categoriaController.updateCategoria = async (req, res) => {
 // GET by ID - Obtiene una categoría específica por ID
 categoriaController.getCategoriaById = async (req, res) => {
     try {
-        // Busca categoría por ID
         const categoria = await categoriaModel.findById(req.params.id);
         if (!categoria) {
             return res.json({ message: "Categoria no encontrada" });
