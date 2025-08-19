@@ -22,7 +22,6 @@ import Cotizaciones from "./pages/public/Cotizaciones";
 import Servicio from "./pages/public/Servicio";
 import AgendarCitas from "./pages/public/AgendarCitas";
 import Nosotros from "./pages/public/Nosotros";
-import PerfilPage from './pages/private/PerfilPage';
 import Cart from "./pages/public/Cart";
 
 //Importacion de paginas extra de publicas
@@ -90,12 +89,7 @@ function AnimatedRoutes() {
           </PrivateRoute>
         } />
         
-        {/* Ruta de perfil - accesible para todos los usuarios autenticados */}
-        <Route path="/perfil" element={
-          <PrivateRoute>
-            <PerfilPage />
-          </PrivateRoute>
-        } />
+       
 
         {/* Acceso denegado */}
         <Route path="/acceso-denegado" element={<AccessDenied />} />
