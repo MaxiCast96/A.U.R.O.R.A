@@ -55,7 +55,7 @@ const SucursalesContent = () => {
   const fetchSucursales = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/sucursales');
+      const response = await fetch('https://a-u-r-o-r-a.onrender.com/api/sucursales');
       const data = await response.json();
       
       if (Array.isArray(data)) {
@@ -73,7 +73,7 @@ const SucursalesContent = () => {
 
   const createSucursal = async (sucursalData) => {
     try {
-      const response = await fetch('/api/sucursales', {
+      const response = await fetch('https://a-u-r-o-r-a.onrender.com/api/sucursales', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +100,7 @@ const SucursalesContent = () => {
 
   const updateSucursal = async (id, sucursalData) => {
     try {
-      const response = await fetch(`/api/sucursales/${id}`, {
+      const response = await fetch(`https://a-u-r-o-r-a.onrender.com/api/sucursales/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -131,7 +131,7 @@ const SucursalesContent = () => {
     }
 
     try {
-      const response = await fetch(`/api/sucursales/${id}`, {
+      const response = await fetch(`https://a-u-r-o-r-a.onrender.com/api/sucursales/${id}`, {
         method: 'DELETE'
       });
       

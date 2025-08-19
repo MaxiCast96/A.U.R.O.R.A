@@ -14,6 +14,7 @@ import { CartProvider } from "./context/CartContext";
 import LoadingSpinner from "./components/auth/LoadingSpinner";
 import OpticaDashboard from "./pages/private/OpticaDashboard";
 import PrivateRoute from "./components/auth/PrivateRoute";
+import PerfilPage from "./pages/private/PerfilPage";
 
 // Importación de las páginas públicas
 import Home from "./pages/public/Home";
@@ -89,7 +90,12 @@ function AnimatedRoutes() {
           </PrivateRoute>
         } />
         
-       
+        {/* Ruta de perfil - accesible para todos los usuarios autenticados */}
+        <Route path="/perfil" element={
+          <PrivateRoute>
+            <PerfilPage />
+          </PrivateRoute>
+        } />
 
         {/* Acceso denegado */}
         <Route path="/acceso-denegado" element={<AccessDenied />} />
