@@ -23,6 +23,7 @@ import Ventas from '../../components/Admin/management/VentasContent';
 import { useAuth } from '../../components/auth/AuthContext';
 import Auditoria from '../../components/Admin/management/Auditoria';
 
+
 const OpticaDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(true);

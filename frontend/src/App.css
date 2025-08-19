@@ -172,8 +172,7 @@
   
   
   
-  /* src/styles/animations.css */
-  /* O puedes agregarlo a tu App.css o index.css */
+
   
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes slideInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
@@ -275,3 +274,363 @@
       scroll-behavior: auto !important;
     }
   }
+
+
+
+
+
+
+
+
+  * {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) - Aplicación global */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin: 2px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+  transform: scale(1.05);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #0e7490, #155e75);
+}
+
+/* Corner donde se cruzan scrollbars horizontal y vertical */
+*::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+/* ===== VARIANTES POR CONTEXTO ===== */
+
+/* 2. Scrollbar para body principal */
+body {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f8fafc;
+}
+
+body::-webkit-scrollbar {
+  width: 12px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2, #0e7490);
+  border-radius: 12px;
+  border: 2px solid #f8fafc;
+  box-shadow: 0 2px 10px rgba(6, 182, 212, 0.2);
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490, #155e75);
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+}
+
+/* 3. Scrollbar para modales y popups */
+.modal-scrollbar, .popup-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #ffffff;
+}
+
+.modal-scrollbar::-webkit-scrollbar,
+.popup-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track,
+.popup-scrollbar::-webkit-scrollbar-track {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb,
+.popup-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 4. Scrollbar para tablas y contenido de datos */
+.table-scrollbar, .data-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.table-scrollbar::-webkit-scrollbar,
+.data-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-scrollbar::-webkit-scrollbar-track,
+.data-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb,
+.data-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #06b6d4, #0891b2);
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb:hover,
+.data-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #0891b2, #0e7490);
+}
+
+/* 5. Scrollbar para áreas de texto y campos de input */
+textarea, 
+.text-input-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f8fafc;
+}
+
+textarea::-webkit-scrollbar,
+.text-input-scrollable::-webkit-scrollbar {
+  width: 5px;
+}
+
+textarea::-webkit-scrollbar-track,
+.text-input-scrollable::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb,
+.text-input-scrollable::-webkit-scrollbar-thumb {
+  background: #06b6d4;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+textarea::-webkit-scrollbar-thumb:hover,
+.text-input-scrollable::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  background: #0891b2;
+}
+
+/* ===== SCROLLBAR ANIMADA CON EFECTOS ===== */
+.animated-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.animated-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.animated-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+  position: relative;
+}
+
+.animated-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animated-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490);
+  box-shadow: 
+    0 0 10px rgba(6, 182, 212, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.animated-scrollbar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #0e7490, #155e75);
+  transform: scale(0.95);
+}
+
+/* ===== CLASES UTILITARIAS PARA TAILWIND ===== */
+
+/* Scrollbar invisible pero funcional */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scrollbar delgada celeste */
+.scrollbar-thin-cyan {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 8px;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490);
+}
+
+/* Scrollbar gruesa para mejor accesibilidad */
+.scrollbar-thick-cyan {
+  scrollbar-width: auto;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #06b6d4, #0891b2, #0e7490);
+  border-radius: 12px;
+  border: 2px solid #f1f5f9;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0891b2, #0e7490, #155e75);
+  box-shadow: 
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 0 15px rgba(6, 182, 212, 0.3);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Mobile - Scrollbar más delgada */
+@media (max-width: 768px) {
+  * {
+    scrollbar-width: thin;
+  }
+  
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  body::-webkit-scrollbar {
+    width: 6px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  body::-webkit-scrollbar {
+    width: 10px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1025px) {
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  body::-webkit-scrollbar {
+    width: 12px;
+  }
+}
+
+/* ===== ACCESIBILIDAD ===== */
+
+/* Respetar preferencias de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+  
+  .animated-scrollbar::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}
+
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  * {
+    scrollbar-color: #000000 #ffffff;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: #000000;
+    border: 1px solid #ffffff;
+  }
+}
+
+/* Modo oscuro */
+@media (prefers-color-scheme: dark) {
+  * {
+    scrollbar-color: #22d3ee #1e293b;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #22d3ee, #0891b2);
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #67e8f9, #22d3ee);
+  }
+}
