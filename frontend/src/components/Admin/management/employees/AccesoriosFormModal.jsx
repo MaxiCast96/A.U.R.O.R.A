@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
 import { Camera, Upload, X, Package, Edit3, Eye, EyeOff, Plus, Trash2, AlertCircle, Check, Loader, DollarSign, Tag } from 'lucide-react';
 
-// Componente de subida de imágenes profesional
+// Componente de subida de imágenes profesional con fix para imágenes negras
 const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 5 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [imageLoadErrors, setImageLoadErrors] = useState(new Set());
+  const [imageLoadStates, setImageLoadStates] = useState(new Map()); // Nuevo estado para tracking
 
   const handleOpenWidget = () => {
     if (!window.cloudinary) return;
@@ -65,6 +67,17 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
   const removeImage = (index) => {
     const newImages = currentImages.filter((_, i) => i !== index);
     onImagesChange(newImages);
+    // Limpiar estados relacionados con la imagen eliminada
+    setImageLoadErrors(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
+    setImageLoadStates(prev => {
+      const newMap = new Map(prev);
+      newMap.delete(index);
+      return newMap;
+    });
   };
 
   const moveImage = (fromIndex, toIndex) => {
@@ -72,6 +85,68 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
     const movedImage = newImages.splice(fromIndex, 1)[0];
     newImages.splice(toIndex, 0, movedImage);
     onImagesChange(newImages);
+  };
+
+  const handleImageError = (index, imageUrl) => {
+    console.error(`Error loading image at index ${index}:`, imageUrl);
+    setImageLoadErrors(prev => new Set([...prev, index]));
+    setImageLoadStates(prev => new Map([...prev, [index, 'error']]));
+  };
+
+  const handleImageLoad = (index) => {
+    setImageLoadErrors(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(index);
+      return newSet;
+    });
+    setImageLoadStates(prev => new Map([...prev, [index, 'loaded']]));
+  };
+
+  const handleImageLoadStart = (index) => {
+    setImageLoadStates(prev => new Map([...prev, [index, 'loading']]));
+  };
+
+  // Función para normalizar URLs de Cloudinary
+  const normalizeImageUrl = (imageUrl) => {
+    if (!imageUrl) return null;
+    
+    // Si es una URL de Cloudinary, asegurar que use HTTPS
+    if (imageUrl.includes('cloudinary.com')) {
+      return imageUrl.replace('http://', 'https://');
+    }
+    
+    // Si es un objeto con propiedades de imagen
+    if (typeof imageUrl === 'object') {
+      return imageUrl.secure_url || imageUrl.url || null;
+    }
+    
+    return imageUrl;
+  };
+
+  // Función para generar URL alternativa en caso de error
+  const getAlternativeImageUrl = (originalUrl) => {
+    if (!originalUrl || !originalUrl.includes('cloudinary.com')) {
+      return originalUrl;
+    }
+    
+    try {
+      // Intentar transformar la URL para forzar regeneración
+      const url = new URL(originalUrl);
+      const pathParts = url.pathname.split('/');
+      
+      // Buscar el índice donde están los parámetros de transformación
+      const uploadIndex = pathParts.findIndex(part => part === 'upload');
+      if (uploadIndex !== -1 && uploadIndex < pathParts.length - 1) {
+        // Insertar parámetros de transformación básicos
+        pathParts.splice(uploadIndex + 1, 0, 'f_auto,q_auto');
+        url.pathname = pathParts.join('/');
+        return url.toString();
+      }
+    } catch (error) {
+      console.error('Error processing Cloudinary URL:', error);
+    }
+    
+    return originalUrl;
   };
 
   return (
@@ -84,85 +159,205 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
       </div>
       
       {/* Botón para agregar imágenes */}
-      {currentImages.length < maxImages && (
-        <button
-          type="button"
-          onClick={handleOpenWidget}
-          disabled={isUploading}
-          className="w-full h-32 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:border-cyan-400 hover:text-cyan-500 transition-all duration-200 bg-gray-50 hover:bg-cyan-50"
-        >
-          {isUploading ? (
-            <div className="flex flex-col items-center space-y-2">
-              <Loader className="w-8 h-8 animate-spin text-cyan-500" />
-              <span className="text-sm">Subiendo {uploadingCount} imagen(es)...</span>
+      {currentImages.length > 0 && (
+  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+    {currentImages.map((image, index) => {
+      const hasError = imageLoadErrors.has(index);
+      const imageUrl = typeof image === 'string' ? image : image?.secure_url || image?.url;
+      
+      return (
+        <div key={`${imageUrl}-${index}`} className="relative bg-white rounded-lg shadow-sm border">
+          {/* IMAGEN LIMPIA */}
+          <div className={`aspect-square rounded-t-lg overflow-hidden ${
+            index === 0 ? 'ring-2 ring-cyan-500' : ''
+          }`}>
+            {hasError ? (
+              <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                <div className="text-center">
+                  <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                  <span className="text-xs text-gray-500">Error al cargar</span>
+                </div>
+              </div>
+            ) : (
+              <img
+                src={imageUrl}
+                alt={`Imagen ${index + 1}`}
+                className="w-full h-full object-cover"
+                onError={() => handleImageError(index)}
+                onLoad={() => handleImageLoad(index)}
+                loading="lazy"
+                crossOrigin="anonymous"
+              />
+            )}
+          </div>
+          
+          {/* CONTROLES EN BARRA INFERIOR */}
+          <div className="p-2 flex items-center justify-between bg-gray-50 rounded-b-lg">
+            <span className="text-xs text-gray-600">
+              {index === 0 ? '🏷️ Principal' : `Imagen ${index + 1}`}
+            </span>
+            
+            <div className="flex space-x-1">
+              {index > 0 && (
+                <button
+                  type="button"
+                  onClick={() => moveImage(index, 0)}
+                  className="p-1 text-cyan-600 hover:bg-cyan-100 rounded transition-colors"
+                  title="Hacer principal"
+                >
+                  <Tag className="w-3 h-3" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => removeImage(index)}
+                className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                title="Eliminar imagen"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
             </div>
-          ) : (
-            <div className="flex flex-col items-center space-y-2">
-              <Camera className="w-8 h-8" />
-              <span className="text-sm font-medium">
-                {currentImages.length === 0 ? 'Agregar imágenes del producto' : 'Agregar más imágenes'}
-              </span>
-              <span className="text-xs text-gray-400">
-                Haz clic para seleccionar o tomar fotos
-              </span>
-            </div>
-          )}
-        </button>
-      )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
 
-      {/* Grid de imágenes */}
+      {/* Grid de imágenes con fix mejorado */}
       {currentImages.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {currentImages.map((image, index) => (
-            <div key={index} className="relative group">
-              <div className={`aspect-square rounded-lg overflow-hidden border-2 ${index === 0 ? 'border-cyan-500' : 'border-gray-200'}`}>
-                <img
-                  src={image}
-                  alt={`Imagen ${index + 1}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              
-              {/* Badge de imagen principal */}
-              {index === 0 && (
-                <div className="absolute top-2 left-2 bg-cyan-500 text-white px-2 py-1 rounded-full text-xs font-medium">
-                  Principal
+          {currentImages.map((image, index) => {
+            const hasError = imageLoadErrors.has(index);
+            const loadState = imageLoadStates.get(index);
+            const normalizedUrl = normalizeImageUrl(image);
+            const alternativeUrl = getAlternativeImageUrl(normalizedUrl);
+            const imageKey = `image-${index}-${normalizedUrl}`; // Key único para forzar re-render
+            
+            return (
+              <div key={imageKey} className="relative group">
+                <div className={`aspect-square rounded-lg overflow-hidden border-2 ${
+                  index === 0 ? 'border-cyan-500' : 'border-gray-200'
+                } bg-gray-100`}>
+                  {hasError ? (
+                    <div className="w-full h-full bg-gray-200 flex flex-col items-center justify-center p-2">
+                      <AlertCircle className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-xs text-gray-500 text-center">Error al cargar imagen</span>
+                      <button 
+                        onClick={() => {
+                          // Intentar recargar la imagen
+                          setImageLoadErrors(prev => {
+                            const newSet = new Set(prev);
+                            newSet.delete(index);
+                            return newSet;
+                          });
+                          setImageLoadStates(prev => {
+                            const newMap = new Map(prev);
+                            newMap.delete(index);
+                            return newMap;
+                          });
+                        }}
+                        className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                      >
+                        Reintentar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="relative w-full h-full">
+                      {loadState === 'loading' && (
+                        <div className="absolute inset-0 bg-gray-200 flex items-center justify-center z-10">
+                          <Loader className="w-6 h-6 text-gray-400 animate-spin" />
+                        </div>
+                      )}
+                      
+                      <img
+                        src={alternativeUrl || normalizedUrl}
+                        alt={`Imagen ${index + 1}`}
+                        className={`w-full h-full object-cover transition-opacity duration-300 ${
+                          loadState === 'loaded' ? 'opacity-100' : 'opacity-0'
+                        }`}
+                        onLoadStart={() => handleImageLoadStart(index)}
+                        onLoad={() => handleImageLoad(index)}
+                        onError={() => handleImageError(index, normalizedUrl)}
+                        loading="lazy"
+                        crossOrigin="anonymous"
+                        // Atributos adicionales para debugging
+                        data-original-url={normalizedUrl}
+                        data-alternative-url={alternativeUrl}
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-              
-              {/* Controles de imagen */}
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center">
-                <div className="opacity-0 group-hover:opacity-100 flex space-x-2">
-                  {index > 0 && (
+                
+                {/* Badge de imagen principal */}
+                {index === 0 && (
+                  <div className="absolute top-2 left-2 bg-cyan-500 text-white px-2 py-1 rounded-full text-xs font-medium z-20">
+                    Principal
+                  </div>
+                )}
+                
+                {/* Indicador de estado de carga */}
+                {loadState === 'loading' && (
+                  <div className="absolute top-2 right-2 bg-blue-500 text-white p-1 rounded-full z-20">
+                    <Loader className="w-3 h-3 animate-spin" />
+                  </div>
+                )}
+                
+                {/* Controles de imagen */}
+                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all duration-200 rounded-lg flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 flex space-x-2 z-30">
+                    {index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => moveImage(index, 0)}
+                        className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all"
+                        title="Hacer principal"
+                      >
+                        <Tag className="w-4 h-4 text-cyan-600" />
+                      </button>
+                    )}
                     <button
                       type="button"
-                      onClick={() => moveImage(index, 0)}
-                      className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-50 transition-all"
-                      title="Hacer principal"
+                      onClick={() => removeImage(index)}
+                      className="p-2 bg-white rounded-full shadow-lg hover:bg-red-50 transition-all"
+                      title="Eliminar imagen"
                     >
-                      <Tag className="w-4 h-4 text-cyan-600" />
+                      <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => removeImage(index)}
-                    className="p-2 bg-white rounded-full shadow-lg hover:bg-red-50 transition-all"
-                    title="Eliminar imagen"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
+                  </div>
                 </div>
+                
+                {/* Debug info (solo en desarrollo) */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-75 text-white text-xs p-1 truncate">
+                    {loadState || 'unknown'} - {normalizedUrl?.substring(0, 30)}...
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       
       {currentImages.length > 0 && (
-        <p className="text-xs text-gray-500 mt-2">
-          <span className="font-medium">Nota:</span> La primera imagen será la imagen principal del producto. 
-          Puedes reordenar haciendo clic en "Hacer principal".
-        </p>
+        <div className="space-y-2">
+          <p className="text-xs text-gray-500">
+            <span className="font-medium">Nota:</span> La primera imagen será la imagen principal del producto. 
+            Puedes reordenar haciendo clic en "Hacer principal".
+          </p>
+          
+          {/* Información de debug para desarrollo */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded p-2 text-xs">
+              <strong>Debug Info:</strong>
+              <ul className="mt-1 space-y-1">
+                <li>Total imágenes: {currentImages.length}</li>
+                <li>Errores de carga: {imageLoadErrors.size}</li>
+                <li>Estados de carga: {JSON.stringify(Object.fromEntries(imageLoadStates))}</li>
+              </ul>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
@@ -329,6 +524,102 @@ const PriceField = ({ label, value, onChange, error, required = false, placehold
   );
 };
 
+// Componente para selector de promociones mejorado
+const PromocionSelector = ({ promociones, selectedPromocion, onPromocionChange, precioBase, error }) => {
+  const [calculatedPrice, setCalculatedPrice] = useState(null);
+  
+  // Filtrar promociones activas
+  const promocionesActivas = promociones.filter(promo => {
+    if (!promo.fechaFin) return true; // Sin fecha de fin, siempre activa
+    const fechaFin = new Date(promo.fechaFin);
+    const hoy = new Date();
+    return fechaFin >= hoy;
+  });
+
+  // Calcular precio con descuento cuando cambie la selección
+  useEffect(() => {
+    if (selectedPromocion && precioBase) {
+      const promo = promocionesActivas.find(p => p._id === selectedPromocion);
+      if (promo) {
+        let newPrice = precioBase;
+        if (promo.tipoDescuento === 'porcentaje') {
+          newPrice = precioBase * (1 - (promo.valorDescuento / 100));
+        } else if (promo.tipoDescuento === 'monto_fijo') {
+          newPrice = Math.max(0, precioBase - promo.valorDescuento);
+        }
+        setCalculatedPrice(newPrice.toFixed(2));
+      }
+    } else {
+      setCalculatedPrice(null);
+    }
+  }, [selectedPromocion, precioBase, promocionesActivas]);
+
+  return (
+    <div className="space-y-3">
+      <label className="block text-sm font-medium text-gray-700">
+        Promoción Disponible *
+      </label>
+      
+      {promocionesActivas.length === 0 ? (
+        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
+            <span className="text-sm text-yellow-800">
+              No hay promociones activas disponibles
+            </span>
+          </div>
+        </div>
+      ) : (
+        <>
+          <select
+            value={selectedPromocion || ''}
+            onChange={onPromocionChange}
+            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 ${
+              error ? 'border-red-500' : 'border-gray-300'
+            }`}
+          >
+            <option value="">Seleccionar promoción...</option>
+            {promocionesActivas.map((promo) => {
+              const descuento = promo.tipoDescuento === 'porcentaje' 
+                ? `${promo.valorDescuento}% OFF`
+                : `$${promo.valorDescuento} OFF`;
+              const fechaFin = promo.fechaFin 
+                ? new Date(promo.fechaFin).toLocaleDateString('es-ES')
+                : null;
+              
+              return (
+                <option key={promo._id} value={promo._id}>
+                  {promo.nombre} - {descuento}
+                  {fechaFin && ` (Hasta ${fechaFin})`}
+                </option>
+              );
+            })}
+          </select>
+          
+          {/* Vista previa del precio con descuento */}
+          {calculatedPrice && precioBase && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-green-800">
+                  <span className="font-medium">Precio original:</span> ${precioBase.toFixed(2)}
+                </span>
+                <span className="text-lg font-bold text-green-600">
+                  ${calculatedPrice}
+                </span>
+              </div>
+              <div className="text-xs text-green-600 mt-1">
+                Ahorro: ${(precioBase - parseFloat(calculatedPrice)).toFixed(2)}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+    </div>
+  );
+};
+
 const AccesoriosFormModal = ({
   isOpen,
   onClose,
@@ -341,6 +632,7 @@ const AccesoriosFormModal = ({
   marcas = [],
   categorias = [],
   sucursales = [],
+  promociones = [], // Nueva prop para promociones
   selectedAccesorio = null
 }) => {
   // Estados locales para manejo de imágenes y líneas
@@ -424,6 +716,38 @@ const AccesoriosFormModal = ({
           value: ''
         }
       });
+    }
+  };
+
+  // Manejar selección de promoción específica
+  const handlePromocionSelectChange = (e) => {
+    const promocionId = e.target.value;
+    
+    handleInputChange({
+      target: {
+        name: 'promocionId',
+        value: promocionId
+      }
+    });
+
+    // Calcular precio automáticamente
+    if (promocionId && formData.precioBase) {
+      const promo = promociones.find(p => p._id === promocionId);
+      if (promo) {
+        let newPrice = formData.precioBase;
+        if (promo.tipoDescuento === 'porcentaje') {
+          newPrice = formData.precioBase * (1 - (promo.valorDescuento / 100));
+        } else if (promo.tipoDescuento === 'monto_fijo') {
+          newPrice = Math.max(0, formData.precioBase - promo.valorDescuento);
+        }
+        
+        handleInputChange({
+          target: {
+            name: 'precioActual',
+            value: parseFloat(newPrice.toFixed(2))
+          }
+        });
+      }
     }
   };
 
@@ -542,7 +866,7 @@ const AccesoriosFormModal = ({
         />
       </div>
 
-      {/* Sección de precios */}
+      {/* Sección de precios mejorada */}
       <div className="bg-white border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
           💰 Información de Precios
@@ -574,8 +898,18 @@ const AccesoriosFormModal = ({
             
             {formData?.enPromocion && (
               <div className="space-y-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                {/* Selector de promoción */}
+                <PromocionSelector
+                  promociones={promociones}
+                  selectedPromocion={formData?.promocionId}
+                  onPromocionChange={handlePromocionSelectChange}
+                  precioBase={formData?.precioBase}
+                  error={errors?.promocionId}
+                />
+                
+                {/* Campo manual de precio promocional */}
                 <PriceField
-                  label="Precio con Promoción"
+                  label="Precio con Promoción (ajustar manualmente si es necesario)"
                   value={formData?.precioActual}
                   onChange={(value) => handleInputChange({
                     target: { name: 'precioActual', value }
@@ -624,13 +958,20 @@ const AccesoriosFormModal = ({
             <div>
               <p><span className="font-medium">Producto:</span> {formData.nombre}</p>
               <p><span className="font-medium">Precio:</span> ${formData.precioActual || formData.precioBase || 0}</p>
-              {formData.enPromocion && (
-                <p className="text-green-600"><span className="font-medium">🏷️ En promoción</span></p>
+              {formData.enPromocion && formData.promocionId && (
+                <p className="text-green-600">
+                  <span className="font-medium">🏷️ En promoción:</span> {
+                    promociones.find(p => p._id === formData.promocionId)?.nombre || 'Promoción seleccionada'
+                  }
+                </p>
               )}
             </div>
             <div>
               <p><span className="font-medium">Sucursales:</span> {formData.sucursales?.length || 0}</p>
               <p><span className="font-medium">Imágenes:</span> {formData.imagenes?.length || 0}</p>
+              <p><span className="font-medium">Stock total:</span> {
+                formData.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0
+              } unidades</p>
             </div>
           </div>
         </div>

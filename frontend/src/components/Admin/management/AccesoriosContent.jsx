@@ -17,6 +17,7 @@ const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/accesorios';
 const MARCAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/marcas';
 const CATEGORIAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/categoria';
 const SUCURSALES_URL = 'https://a-u-r-o-r-a.onrender.com/api/sucursales';
+const PROMOCIONES_URL = 'https://a-u-r-o-r-a.onrender.com/api/promociones'; // Nueva URL para promociones
 
 const AccesoriosContent = () => {
   // Estados principales
@@ -34,6 +35,7 @@ const AccesoriosContent = () => {
   const [marcas, setMarcas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [sucursales, setSucursales] = useState([]);
+  const [promociones, setPromociones] = useState([]); // Nuevo estado para promociones
 
   // Estados de filtrado
   const [searchTerm, setSearchTerm] = useState('');
@@ -72,6 +74,10 @@ const AccesoriosContent = () => {
     }
     
     if (data.enPromocion) {
+      if (!data.promocionId) {
+        newErrors.promocionId = 'Debe seleccionar una promoción';
+      }
+      
       if (!data.precioActual || data.precioActual <= 0) {
         newErrors.precioActual = 'El precio promocional debe ser mayor a 0';
       } else if (data.precioActual >= data.precioBase) {
@@ -88,6 +94,11 @@ const AccesoriosContent = () => {
     const hasInvalidStock = data.sucursales?.some(s => s.stock < 0);
     if (hasInvalidStock) {
       newErrors.sucursales = 'El stock no puede ser negativo';
+    }
+    
+    // Validación de imágenes
+    if (!data.imagenes || data.imagenes.length === 0) {
+      newErrors.imagenes = 'Debe agregar al menos una imagen';
     }
     
     return newErrors;
@@ -148,30 +159,34 @@ const AccesoriosContent = () => {
 
   const fetchDependencies = async () => {
     try {
-      const [marcasRes, categoriasRes, sucursalesRes] = await Promise.all([
+      const [marcasRes, categoriasRes, sucursalesRes, promocionesRes] = await Promise.all([
         axios.get(MARCAS_URL),
         axios.get(CATEGORIAS_URL),
-        axios.get(SUCURSALES_URL)
+        axios.get(SUCURSALES_URL),
+        axios.get(PROMOCIONES_URL) // Nueva llamada para promociones
       ]);
       
       console.log('Dependencies loaded:', {
         marcas: marcasRes.data,
         categorias: categoriasRes.data,
-        sucursales: sucursalesRes.data
+        sucursales: sucursalesRes.data,
+        promociones: promocionesRes.data
       });
       
       setMarcas(Array.isArray(marcasRes.data) ? marcasRes.data : marcasRes.data.data || []);
       setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : categoriasRes.data.data || []);
       setSucursales(Array.isArray(sucursalesRes.data) ? sucursalesRes.data : sucursalesRes.data.data || []);
+      setPromociones(Array.isArray(promocionesRes.data) ? promocionesRes.data : promocionesRes.data.data || []); // Nuevas promociones
       
     } catch (error) {
       console.error("Error fetching dependencies:", error);
-      showAlert('error', 'Error al cargar marcas, categorías o sucursales: ' + (error.response?.data?.message || error.message));
+      showAlert('error', 'Error al cargar marcas, categorías, sucursales o promociones: ' + (error.response?.data?.message || error.message));
       
       // Establecer arrays vacíos en caso de error
       setMarcas([]);
       setCategorias([]);
       setSucursales([]);
+      setPromociones([]); // Nuevo estado por defecto
     }
   };
 
@@ -227,33 +242,99 @@ const AccesoriosContent = () => {
   };
 
   const handleOpenEditModal = (accesorio) => {
-    setSelectedAccesorio(accesorio);
+  setSelectedAccesorio(accesorio);
+  
+  // Función para normalizar las imágenes
+  const normalizeImages = (images) => {
+    if (!images || !Array.isArray(images)) return [];
     
-    // Preparar datos para edición
-    const editData = {
-      nombre: accesorio.nombre || '',
-      descripcion: accesorio.descripcion || '',
-      tipo: accesorio.tipo?._id || accesorio.tipo || '',
-      marcaId: accesorio.marcaId?._id || accesorio.marcaId || '',
-      linea: accesorio.linea || '',
-      material: accesorio.material || '',
-      color: accesorio.color || '',
-      precioBase: accesorio.precioBase || 0,
-      precioActual: accesorio.precioActual || accesorio.precioBase || 0,
-      imagenes: accesorio.imagenes || [],
-      enPromocion: accesorio.enPromocion || false,
-      promocionId: accesorio.promocionId?._id || accesorio.promocionId || '',
-      sucursales: accesorio.sucursales?.map(s => ({
-        sucursalId: s.sucursalId?._id || s.sucursalId || '',
-        nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || '',
-        stock: s.stock || 0
-      })) || []
-    };
-    
-    console.log('Datos para edición:', editData);
-    setFormData(editData);
-    setShowAddEditModal(true);
+    return images.map(img => {
+      // Si es un string (URL directa)
+      if (typeof img === 'string') {
+        return img.startsWith('http') ? img : `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img}`;
+      }
+      
+      // Si es un objeto con propiedades
+      if (typeof img === 'object' && img !== null) {
+        // Priorizar secure_url, luego url, luego public_id
+        return img.secure_url || img.url || (img.public_id ? `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img.public_id}` : '');
+      }
+      
+      return '';
+    }).filter(url => url && url.length > 0); // Filtrar URLs vacías
   };
+
+  // Función para normalizar sucursales
+  const normalizeSucursales = (sucursales) => {
+    if (!sucursales || !Array.isArray(sucursales)) return [];
+    
+    return sucursales.map(s => ({
+      sucursalId: s.sucursalId?._id || s.sucursalId || s._id || '',
+      nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || s.nombre || '',
+      stock: parseInt(s.stock) || 0
+    }));
+  };
+
+  // Preparar datos para edición con normalización mejorada
+  const editData = {
+    nombre: accesorio.nombre || '',
+    descripcion: accesorio.descripcion || '',
+    tipo: accesorio.tipo?._id || accesorio.tipo || '',
+    marcaId: accesorio.marcaId?._id || accesorio.marcaId || '',
+    linea: accesorio.linea || '',
+    material: accesorio.material || '',
+    color: accesorio.color || '',
+    precioBase: parseFloat(accesorio.precioBase) || 0,
+    precioActual: parseFloat(accesorio.precioActual || accesorio.precioBase) || 0,
+    imagenes: normalizeImages(accesorio.imagenes),
+    enPromocion: Boolean(accesorio.enPromocion),
+    promocionId: accesorio.promocionId?._id || accesorio.promocionId || '',
+    sucursales: normalizeSucursales(accesorio.sucursales)
+  };
+  
+  console.log('Datos originales del accesorio:', {
+    imagenes_originales: accesorio.imagenes,
+    sucursales_originales: accesorio.sucursales
+  });
+  
+  console.log('Datos normalizados para edición:', editData);
+  
+  setFormData(editData);
+  setShowAddEditModal(true);
+};
+
+
+  const debugImageUrls = (images) => {
+  if (!Array.isArray(images)) {
+    console.warn('Images is not an array:', images);
+    return;
+  }
+  
+  images.forEach((img, index) => {
+    console.log(`Image ${index}:`, {
+      type: typeof img,
+      value: img,
+      isString: typeof img === 'string',
+      isObject: typeof img === 'object',
+      hasSecureUrl: img?.secure_url,
+      hasUrl: img?.url,
+      hasPublicId: img?.public_id
+    });
+  });
+};
+
+// Función adicional para validar URLs de imágenes
+const validateImageUrl = async (url) => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve(true);
+    img.onerror = () => resolve(false);
+    img.src = url;
+    
+    // Timeout después de 5 segundos
+    setTimeout(() => resolve(false), 5000);
+  });
+};
 
   const handleOpenDetailModal = (accesorio) => {
     setSelectedAccesorio(accesorio);
@@ -286,8 +367,12 @@ const AccesoriosContent = () => {
       } else if (key === 'imagenes') {
         // Las imágenes ya son URLs de Cloudinary, enviarlas como JSON
         dataToSend.append('imagenes', JSON.stringify(formData.imagenes));
-      } else if (key !== 'promocionId' || formData.enPromocion) {
+      } else if (key === 'promocionId') {
         // Solo enviar promocionId si está en promoción
+        if (formData.enPromocion && formData.promocionId) {
+          dataToSend.append(key, formData[key]);
+        }
+      } else {
         dataToSend.append(key, formData[key]);
       }
     });
@@ -365,7 +450,7 @@ const AccesoriosContent = () => {
     },
     { 
       title: "Precio Promedio", 
-      value: `${precioPromedio.toFixed(2)}`, 
+      value: `$${precioPromedio.toFixed(2)}`, 
       Icon: DollarSign,
       color: "bg-yellow-500" 
     },
@@ -470,6 +555,11 @@ const AccesoriosContent = () => {
                 <div className="text-sm text-gray-500 line-through">
                   ${(accesorio.precioBase || 0).toFixed(2)}
                 </div>
+                {accesorio.promocionId?.nombre && (
+                  <div className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full inline-block">
+                    {accesorio.promocionId.nombre}
+                  </div>
+                )}
               </div>
             ) : (
               <span className="text-lg font-semibold text-gray-900">
@@ -581,7 +671,7 @@ const AccesoriosContent = () => {
         <Pagination {...paginationProps} />
       </div>
 
-      {/* Modal de formulario */}
+      {/* Modal de formulario mejorado con soporte para promociones */}
       <AccesoriosFormModal
         isOpen={showAddEditModal}
         onClose={handleCloseModals}
@@ -595,10 +685,11 @@ const AccesoriosContent = () => {
         marcas={marcas}
         categorias={categorias}
         sucursales={sucursales}
+        promociones={promociones} // Nueva prop para promociones
         selectedAccesorio={selectedAccesorio}
       />
 
-      {/* Modal de detalles */}
+      {/* Modal de detalles mejorado */}
       <DetailModal
         isOpen={showDetailModal}
         onClose={handleCloseModals}
@@ -623,6 +714,11 @@ const AccesoriosContent = () => {
             value: selectedAccesorio.enPromocion ? 'En Promoción' : 'Precio Normal',
             color: selectedAccesorio.enPromocion ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
           },
+          ...(selectedAccesorio.enPromocion && selectedAccesorio.promocionId ? [{
+            label: "Promoción Aplicada",
+            value: selectedAccesorio.promocionId?.nombre || 'Promoción sin nombre',
+            color: 'text-orange-600'
+          }] : []),
           { 
             label: "Stock Total", 
             value: `${selectedAccesorio.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0} unidades`

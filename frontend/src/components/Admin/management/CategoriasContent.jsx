@@ -138,7 +138,7 @@ const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
   });
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-60 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
         <div className="bg-cyan-500 text-white p-4 rounded-t-xl flex justify-between items-center">
           <h3 className="text-lg font-bold">Seleccionar Icono</h3>
@@ -146,15 +146,6 @@ const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
             ×
           </button>
         </div>
-
-        {/* Selector de iconos */}
-        {showIconSelector && (
-          <IconSelector
-            selectedIcon={formData.icono}
-            onIconSelect={handleIconSelect}
-            onClose={() => setShowIconSelector(false)}
-          />
-        )}
 
         <div className="p-4 border-b bg-gray-50">
           <div className="flex flex-col sm:flex-row gap-3">
@@ -221,7 +212,6 @@ const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
           </button>
           <button 
             onClick={() => {
-              onIconSelect(selectedIcon);
               onClose();
             }}
             className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
@@ -234,7 +224,7 @@ const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
   );
 };
 
-// Componente FormModal simplificado para las categorías
+// Componente FormModal arreglado
 const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChange, errors, submitLabel = 'Guardar', isEditing = false }) => {
   const [showIconSelector, setShowIconSelector] = useState(false);
 
@@ -267,115 +257,126 @@ const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChan
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale">
-        <div className="bg-cyan-500 text-white p-6 rounded-t-xl sticky top-0 z-10">
-          <div className="flex justify-between items-center">
-            <h3 className="text-xl font-bold">{title}</h3>
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale">
+          <div className="bg-cyan-500 text-white p-6 rounded-t-xl sticky top-0 z-10">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold">{title}</h3>
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-2 transition-all duration-200 hover:scale-110"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+              <input
+                name="nombre"
+                value={formData.nombre || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
+                  errors.nombre ? 'border-red-500' : 'border-gray-300 hover:border-cyan-300'
+                }`}
+                placeholder="Ingrese el nombre de la categoría"
+              />
+              {errors.nombre && (
+                <div className="mt-1 text-red-500 text-sm flex items-center space-x-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{errors.nombre}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none ${
+                  errors.descripcion ? 'border-red-500' : 'border-gray-300 hover:border-cyan-300'
+                }`}
+                rows="3"
+                placeholder="Ingrese la descripción de la categoría"
+              />
+              {errors.descripcion && (
+                <div className="mt-1 text-red-500 text-sm flex items-center space-x-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{errors.descripcion}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Icono</label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowIconSelector(true)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg hover:border-cyan-300 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 flex items-center justify-between text-left"
+                  >
+                    <div className="flex items-center space-x-2">
+                      {getSelectedIconComponent()}
+                      <span className="text-gray-700">
+                        {formData.icono ? `${formData.icono}` : 'Seleccionar icono'}
+                      </span>
+                    </div>
+                    <Search className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+                {formData.icono && (
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange({ target: { name: 'icono', value: '' } })}
+                    className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                    title="Limpiar icono"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Haz clic para seleccionar un icono de la librería
+              </p>
+            </div>
+          </div>
+
+          <div className="p-6 bg-gray-50 rounded-b-xl flex justify-end space-x-3 sticky bottom-0 z-10">
             <button 
               type="button" 
               onClick={onClose} 
-              className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-2 transition-all duration-200 hover:scale-110"
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105"
             >
-              ×
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              onClick={handleSubmit}
+              className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+            >
+              <Save className="w-4 h-4" />
+              <span>{submitLabel}</span>
             </button>
           </div>
         </div>
-        
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
-            <input
-              name="nombre"
-              value={formData.nombre || ''}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
-                errors.nombre ? 'border-red-500' : 'border-gray-300 hover:border-cyan-300'
-              }`}
-              placeholder="Ingrese el nombre de la categoría"
-            />
-            {errors.nombre && (
-              <div className="mt-1 text-red-500 text-sm flex items-center space-x-1">
-                <AlertTriangle className="w-4 h-4" />
-                <span>{errors.nombre}</span>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
-            <textarea
-              name="descripcion"
-              value={formData.descripcion || ''}
-              onChange={handleInputChange}
-              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none ${
-                errors.descripcion ? 'border-red-500' : 'border-gray-300 hover:border-cyan-300'
-              }`}
-              rows="3"
-              placeholder="Ingrese la descripción de la categoría"
-            />
-            {errors.descripcion && (
-              <div className="mt-1 text-red-500 text-sm flex items-center space-x-1">
-                <AlertTriangle className="w-4 h-4" />
-                <span>{errors.descripcion}</span>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Icono</label>
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <button
-                  type="button"
-                  onClick={() => setShowIconSelector(true)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg hover:border-cyan-300 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 flex items-center justify-between text-left"
-                >
-                  <div className="flex items-center space-x-2">
-                    {getSelectedIconComponent()}
-                    <span className="text-gray-700">
-                      {formData.icono ? `${formData.icono}` : 'Seleccionar icono'}
-                    </span>
-                  </div>
-                  <Search className="w-4 h-4 text-gray-400" />
-                </button>
-              </div>
-              {formData.icono && (
-                <button
-                  type="button"
-                  onClick={() => handleInputChange({ target: { name: 'icono', value: '' } })}
-                  className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
-                  title="Limpiar icono"
-                >
-                  ×
-                </button>
-              )}
-            </div>
-            <p className="text-xs text-gray-500 mt-1">
-              Haz clic para seleccionar un icono de la librería
-            </p>
-          </div>
-        </div>
-
-        <div className="p-6 bg-gray-50 rounded-b-xl flex justify-end space-x-3 sticky bottom-0 z-10">
-          <button 
-            type="button" 
-            onClick={onClose} 
-            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105"
-          >
-            Cancelar
-          </button>
-          <button 
-            type="submit" 
-            onClick={handleSubmit}
-            className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center space-x-2"
-          >
-            <Save className="w-4 h-4" />
-            <span>{submitLabel}</span>
-          </button>
-        </div>
       </div>
-    </div>
+
+      {/* Selector de iconos - Renderizado por separado con z-index más alto */}
+      {showIconSelector && (
+        <IconSelector
+          selectedIcon={formData.icono}
+          onIconSelect={handleIconSelect}
+          onClose={() => setShowIconSelector(false)}
+        />
+      )}
+    </>
   );
 };
 
@@ -706,8 +707,6 @@ const CategoriasContent = () => {
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(0, prev - 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   const goToLastPage = () => setCurrentPage(totalPages - 1);
-
-  // getIconComponent ahora está definido a nivel de módulo
 
   // Estadísticas
   const totalCategorias = categorias.length;
