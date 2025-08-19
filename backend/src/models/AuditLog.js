@@ -20,11 +20,8 @@ const AuditLogSchema = new mongoose.Schema({
   response: {
     status: Number,
   },
-  action: {
-    entity: String, // e.g., empleados, clientes, ventas
-    type: String,   // create, update, delete, read, login, logout
-    summary: String,
-  },
+  // action may be stored as an object (entity/type/summary) or as a string in older records/deploys
+  action: mongoose.Schema.Types.Mixed,
   payload: {
     body: Object,
   }

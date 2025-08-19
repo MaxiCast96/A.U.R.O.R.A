@@ -22,7 +22,7 @@ export const authenticateToken = async (req, res, next) => {
             });
         }
 
-        jwt.verify(token, config.jwt.secret, (err, user) => {
+        jwt.verify(token, config.jwt.secret, async (err, user) => {
             if (err) {
                 return res.status(401).json({
                     success: false,
@@ -30,7 +30,35 @@ export const authenticateToken = async (req, res, next) => {
                 });
             }
 
-            req.user = user;
+            // Enriquecer el usuario con datos desde BD para auditoría (nombre/correo/cargo)
+            try {
+                let enriched = { ...user };
+                if (user?.id) {
+                    if (user.rol === 'Cliente') {
+                        const cli = await clientesModel.findById(user.id).lean();
+                        if (cli) {
+                            enriched = {
+                                ...enriched,
+                                nombre: [cli.nombre, cli.apellido].filter(Boolean).join(' ') || cli.nombre || enriched.nombre,
+                                correo: cli.correo || enriched.correo,
+                            };
+                        }
+                    } else {
+                        const emp = await empleadosModel.findById(user.id).lean();
+                        if (emp) {
+                            enriched = {
+                                ...enriched,
+                                nombre: [emp.nombre, emp.apellido].filter(Boolean).join(' ') || emp.nombre || enriched.nombre,
+                                correo: emp.correo || enriched.correo,
+                                cargo: emp.cargo || enriched.cargo,
+                            };
+                        }
+                    }
+                }
+                req.user = enriched;
+            } catch {
+                req.user = user;
+            }
             next();
         });
     } catch (error) {
@@ -74,20 +102,39 @@ export const authorizeRoles = (allowedRoles) => {
  * Middleware para verificar que el usuario sea administrador
  * Acepta tanto rol=Administrador como cargo=Administrador
  */
-export const requireAdmin = (req, res, next) => {
-    if (!req.user) {
-        return res.status(401).json({ 
-            message: 'Acceso denegado. Autenticación requerida.' 
+export const requireAdmin = async (req, res, next) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ 
+                message: 'Acceso denegado. Autenticación requerida.' 
+            });
+        }
+
+        const rol = req.user.rol;
+        const cargo = req.user.cargo || req.user.Cargo;
+        if (rol === 'Administrador' || cargo === 'Administrador') {
+            return next();
+        }
+
+        // Fallback: si el token no trae rol/cargo admin, verificar en BD (Empleados)
+        if (req.user.id) {
+            try {
+                const empleado = await empleadosModel.findById(req.user.id).lean();
+                if (empleado && empleado.cargo === 'Administrador') {
+                    return next();
+                }
+            } catch (e) {
+                // continuar a denegar si hay error de DB
+            }
+        }
+
+        return res.status(403).json({ 
+            message: 'Acceso denegado. No tiene permisos para acceder a este recurso.' 
         });
+    } catch (error) {
+        console.error('Error en requireAdmin:', error);
+        return res.status(500).json({ message: 'Error verificando permisos de administrador' });
     }
-    const rol = req.user.rol;
-    const cargo = req.user.cargo || req.user.Cargo;
-    if (rol === 'Administrador' || cargo === 'Administrador') {
-        return next();
-    }
-    return res.status(403).json({ 
-        message: 'Acceso denegado. No tiene permisos para acceder a este recurso.' 
-    });
 };
 
 /**
