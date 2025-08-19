@@ -112,7 +112,7 @@ function App() {
   return (
     <AuthProvider>
       <CartProvider>
-        <Router>
+        <Router basename="/A.U.R.O.R.A">
           <AnimatedRoutes />
         </Router>
       </CartProvider>
