@@ -55,7 +55,7 @@ const cleanupTempFiles = (req, res, next) => {
     const originalEnd = res.end;
     res.end = function(...args) {
         // Limpiar archivos temporales
-        if (req.files && req.files.length > 0) {
+        if (req.files && Array.isArray(req.files) && req.files.length > 0) {
             req.files.forEach(file => {
                 fs.unlink(file.path, (err) => {
                     if (err) console.warn('Error eliminando archivo temporal:', err.message);
@@ -76,6 +76,16 @@ const validateAccesorioId = (req, res, next) => {
             message: "ID de accesorio inválido"
         });
     }
+    next();
+};
+
+// Middleware para debug de req.files - AGREGADO PARA DEBUGGING
+const debugFiles = (req, res, next) => {
+    console.log('=== DEBUG MIDDLEWARE ===');
+    console.log('req.files:', req.files);
+    console.log('req.body:', req.body);
+    console.log('Content-Type:', req.get('Content-Type'));
+    console.log('========================');
     next();
 };
 
@@ -103,6 +113,7 @@ router.get("/marca/:marcaId", validateAccesorioId, accesoriosController.getAcces
 router.route("/")
     .get(accesoriosController.getAccesorios)
     .post(
+        debugFiles, // Middleware de debug
         upload.array('imagenes', 5), // Máximo 5 imágenes
         cleanupTempFiles,
         accesoriosController.createAccesorios
@@ -117,6 +128,7 @@ router.route("/:id")
     .get(validateAccesorioId, accesoriosController.getAccesorioById)
     .put(
         validateAccesorioId,
+        debugFiles, // Middleware de debug
         upload.array('imagenes', 5), // Máximo 5 imágenes
         cleanupTempFiles,
         accesoriosController.updateAccesorios
@@ -125,6 +137,8 @@ router.route("/:id")
 
 // ===== MIDDLEWARE DE MANEJO DE ERRORES ESPECÍFICO PARA MULTER =====
 router.use((error, req, res, next) => {
+    console.error('Error en middleware:', error);
+    
     if (error instanceof multer.MulterError) {
         let message = "Error en la subida de archivos";
         
@@ -158,7 +172,11 @@ router.use((error, req, res, next) => {
     }
     
     // Otros errores
-    next(error);
+    return res.status(500).json({
+        success: false,
+        message: error.message || "Error interno del servidor",
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
 });
 
 export default router;

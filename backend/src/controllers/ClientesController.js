@@ -60,9 +60,7 @@ clientesController.updateClientes = async (req, res) => {
         dui,
         telefono,
         correo,
-        calle,
-        ciudad,
-        departamento,
+        direccion,  // ← Recibir direccion como objeto
         estado
     } = req.body;
 
@@ -73,9 +71,10 @@ clientesController.updateClientes = async (req, res) => {
     if (!dui) return res.status(400).json({ message: "El DUI es obligatorio" });
     if (!telefono) return res.status(400).json({ message: "El teléfono es obligatorio" });
     if (!correo) return res.status(400).json({ message: "El correo es obligatorio" });
-    if (!calle) return res.status(400).json({ message: "La calle es obligatoria" });
-    if (!ciudad) return res.status(400).json({ message: "La ciudad es obligatoria" });
-    if (!departamento) return res.status(400).json({ message: "El departamento es obligatorio" });
+    if (!direccion) return res.status(400).json({ message: "La dirección es obligatoria" });
+    if (!direccion.calle) return res.status(400).json({ message: "La calle es obligatoria" });
+    if (!direccion.ciudad) return res.status(400).json({ message: "La ciudad es obligatoria" });
+    if (!direccion.departamento) return res.status(400).json({ message: "El departamento es obligatorio" });
     if (!estado) return res.status(400).json({ message: "El estado es obligatorio" });
 
     try {
@@ -108,9 +107,9 @@ clientesController.updateClientes = async (req, res) => {
                 telefono,
                 correo: correo.trim().toLowerCase(),
                 direccion: {
-                    calle,
-                    ciudad,
-                    departamento
+                    calle: direccion.calle,
+                    ciudad: direccion.ciudad,
+                    departamento: direccion.departamento
                 },
                 estado
             },
@@ -142,17 +141,20 @@ clientesController.createClientes = async (req, res) => {
         dui,
         telefono,
         correo,
-        calle, // Recibimos los campos de dirección de forma plana
-        ciudad,
-        departamento,
+        direccion,  // ← Recibir direccion como objeto
         password,
         estado
     } = req.body;
     correo = correo.trim().toLowerCase();
 
     // Validación básica de campos obligatorios
-    if (!nombre || !apellido || !edad || !dui || !telefono || !correo || !calle || !ciudad || !departamento || !password || !estado) {
+    if (!nombre || !apellido || !edad || !dui || !telefono || !correo || !direccion || !password || !estado) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
+    }
+
+    // Validar que direccion tenga las propiedades necesarias
+    if (!direccion.calle || !direccion.ciudad || !direccion.departamento) {
+        return res.status(400).json({ message: "La dirección debe incluir calle, ciudad y departamento" });
     }
 
     try {
@@ -180,9 +182,9 @@ clientesController.createClientes = async (req, res) => {
             telefono,
             correo,
             direccion: {
-                calle,
-                ciudad,
-                departamento
+                calle: direccion.calle,
+                ciudad: direccion.ciudad,
+                departamento: direccion.departamento
             },
             password: passwordHash,
             estado
@@ -196,7 +198,6 @@ clientesController.createClientes = async (req, res) => {
         res.status(500).json({ message: "Error creando cliente: " + error.message });
     }
 };
-
 /**
  * Elimina un cliente de la base de datos
  * @param {Object} req - Objeto de solicitud Express con params.id
