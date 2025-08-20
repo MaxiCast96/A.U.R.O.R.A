@@ -69,7 +69,10 @@ const Clientes = () => {
 
     // --- MANEJO DEL FORMULARIO Y VALIDACIÓN ---
     const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm({
-        nombre: '', apellido: '', edad: '', dui: '', telefono: '', correo: '', calle: '', ciudad: '', departamento: '', estado: 'Activo', password: ''
+        nombre: '', apellido: '', edad: '', dui: '', telefono: '', correo: '', 
+        // CORREGIDO: Cambiar estructura para coincidir con el backend
+        departamento: '', ciudad: '', calle: '', 
+        estado: 'Activo', password: ''
     }, (data, isEditing) => {
         const newErrors = {};
         if (!data.nombre.trim()) newErrors.nombre = 'El nombre es requerido';
@@ -107,23 +110,31 @@ const Clientes = () => {
         setShowAddEditModal(true);
     };
     
-    // CAMBIO: Función handleOpenEditModal corregida
+    // CORREGIDO: Función handleOpenEditModal para manejar la estructura correcta
     const handleOpenEditModal = (cliente) => {
+        console.log('Cliente a editar:', cliente); // Debug
+        
         setSelectedCliente(cliente);
-        setFormData({
-            nombre: cliente.nombre,
-            apellido: cliente.apellido,
-            edad: cliente.edad.toString(),
-            dui: cliente.dui,
-            telefono: cliente.telefono,
-            correo: cliente.correo,
-            calle: cliente.direccion.calle,
-            ciudad: cliente.direccion.ciudad,
-            departamento: cliente.direccion.departamento,
-            estado: cliente.estado,
-            // CAMBIO: Establecer la contraseña actual en lugar de string vacío
-            password: cliente.password || '' // Esto permitirá que se pase al modal
-        });
+        
+        // CORREGIDO: Mapear correctamente los datos del cliente
+        const formDataToSet = {
+            nombre: cliente.nombre || '',
+            apellido: cliente.apellido || '',
+            edad: cliente.edad?.toString() || '',
+            dui: cliente.dui || '',
+            telefono: cliente.telefono || '',
+            correo: cliente.correo || '',
+            // CORREGIDO: Manejar ambas estructuras posibles de dirección
+            departamento: cliente.direccion?.departamento || cliente.departamento || '',
+            ciudad: cliente.direccion?.ciudad || cliente.ciudad || cliente.direccion?.municipio || cliente.municipio || '',
+            calle: cliente.direccion?.calle || cliente.calle || cliente.direccion?.direccionDetallada || cliente.direccionDetallada || '',
+            estado: cliente.estado || 'Activo',
+            password: cliente.password || ''
+        };
+        
+        console.log('Datos del formulario a establecer:', formDataToSet); // Debug
+        
+        setFormData(formDataToSet);
         setErrors({});
         setShowAddEditModal(true);
     };
@@ -142,13 +153,31 @@ const Clientes = () => {
         if (!validateForm(!!selectedCliente)) return;
     
         try {
+            // CORREGIDO: Preparar datos en el formato correcto para el backend
+            const dataToSend = {
+                ...formData,
+                // Asegurar que la dirección se envíe en el formato correcto
+                direccion: {
+                    departamento: formData.departamento,
+                    ciudad: formData.ciudad,
+                    calle: formData.calle
+                }
+            };
+
+            // Remover campos individuales si existen
+            delete dataToSend.departamento;
+            delete dataToSend.ciudad;
+            delete dataToSend.calle;
+
+            console.log('Datos a enviar al backend:', dataToSend); // Debug
+
             if (selectedCliente) {
                 // --- LÓGICA DE ACTUALIZACIÓN ---
-                await axios.put(`${API_URL}/${selectedCliente._id}`, formData);
+                await axios.put(`${API_URL}/${selectedCliente._id}`, dataToSend);
                 showAlert('success', '¡Cliente actualizado exitosamente!');
             } else {
                 // --- LÓGICA DE CREACIÓN ---
-                await axios.post(API_URL, formData);
+                await axios.post(API_URL, dataToSend);
                 showAlert('success', '¡Cliente agregado exitosamente!');
             }
             fetchClientes(); // Recargar datos

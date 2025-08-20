@@ -1,4 +1,4 @@
-// ===== RUTAS PROMOCIONES =====
+// ===== RUTAS PROMOCIONES MEJORADAS =====
 import express from 'express';
 import promocionesController from '../controllers/PromocionesController.js';
 
@@ -15,9 +15,17 @@ router.route("/")
 router.route("/activas")
     .get(promocionesController.getPromocionesActivas);
 
+// NUEVO: GET /api/promociones/carrusel - Obtener promociones para el carrusel principal
+router.route("/carrusel")
+    .get(promocionesController.getPromocionesCarrusel);
+
 // GET /api/promociones/codigo/:codigo - Buscar promoción por código específico
 router.route("/codigo/:codigo")
     .get(promocionesController.getPromocionByCodigo);
+
+// NUEVO: POST /api/promociones/usar/:codigo - Usar promoción (incrementar contador)
+router.route("/usar/:codigo")
+    .post(promocionesController.usarPromocion);
 
 // Rutas para manejo de promoción específica por ID
 router.route("/:id")

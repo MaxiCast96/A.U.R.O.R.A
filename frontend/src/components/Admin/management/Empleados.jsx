@@ -77,11 +77,12 @@ const Empleados = () => {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedFilter, setSelectedFilter] = useState('todos');
+    const [selectedSucursal, setSelectedSucursal] = useState('todas'); // NUEVO: Estado para filtro de sucursal
     const [isOptometristaFlow, setIsOptometristaFlow] = useState(false);
     const [tempEmployeeData, setTempEmployeeData] = useState(null);
     const [showOptometristaModal, setShowOptometristaModal] = useState(false);
-    const [showCargoChangeWarning, setShowCargoChangeWarning] = useState(false); // NUEVO: Para advertencia de cambio de cargo
-    const [creationStep, setCreationStep] = useState(''); // 'employee', 'optometrista', ''
+    const [showCargoChangeWarning, setShowCargoChangeWarning] = useState(false);
+    const [creationStep, setCreationStep] = useState('');
     const [creationProgress, setCreationProgress] = useState(0);
 
     const location = useLocation();
@@ -130,7 +131,6 @@ const Empleados = () => {
         if (!data.apellido.trim()) newErrors.apellido = 'El apellido es requerido';
         if (!/^\d{8}-\d$/.test(data.dui)) newErrors.dui = 'DUI inválido (formato: 12345678-9)';
         
-        // Validar solo los 8 dígitos del teléfono (el +503 se añade al enviar)
         if (!/^\d{8}$/.test(data.telefono)) newErrors.telefono = 'Teléfono inválido (8 dígitos requeridos)';
         
         if (!/\S+@\S+\.\S+/.test(data.correo)) newErrors.correo = 'Email inválido';
@@ -139,7 +139,6 @@ const Empleados = () => {
         if (!data.salario || data.salario <= 0) newErrors.salario = 'Salario inválido';
         if (!selectedEmpleado && !data.password) newErrors.password = 'La contraseña es requerida para nuevos empleados';
 
-        // Validar campos de dirección si están presentes
         if (data.direccion.departamento && !data.direccion.municipio) {
             newErrors['direccion.municipio'] = 'El municipio es requerido si el departamento está seleccionado';
         }
@@ -176,7 +175,7 @@ const Empleados = () => {
         return newErrors;
     });
 
-    // --- FILTRADO Y PAGINACIÓN ---
+    // --- FILTRADO Y PAGINACIÓN MEJORADO ---
     const filteredEmpleados = useMemo(() => empleados.filter(empleado => {
         const search = searchTerm.toLowerCase();
         const matchesSearch = `${empleado.nombre} ${empleado.apellido}`.toLowerCase().includes(search) ||
@@ -184,34 +183,66 @@ const Empleados = () => {
             empleado.correo.toLowerCase().includes(search) ||
             empleado.cargo.toLowerCase().includes(search);
 
-        let matchesFilter = true;
-        const sucursalPrincipalId = sucursales.find(s => s.nombre === 'Principal')?._id;
-        const sucursalQuezaltepequeId = sucursales.find(s => s.nombre === 'Quezaltepeque')?._id;
+        // Filtro por estado
+        let matchesStateFilter = true;
+        if (selectedFilter === 'activos') matchesStateFilter = empleado.estado === 'Activo';
+        else if (selectedFilter === 'inactivos') matchesStateFilter = empleado.estado === 'Inactivo';
 
-        if (selectedFilter === 'principal') matchesFilter = empleado.sucursalId?._id === sucursalPrincipalId;
-        else if (selectedFilter === 'quezaltepeque') matchesFilter = empleado.sucursalId?._id === sucursalQuezaltepequeId;
-        else if (selectedFilter === 'activos') matchesFilter = empleado.estado === 'Activo';
-        else if (selectedFilter === 'inactivos') matchesFilter = empleado.estado === 'Inactivo';
+        // NUEVO: Filtro por sucursal dinámico
+        let matchesSucursalFilter = true;
+        if (selectedSucursal !== 'todas') {
+            matchesSucursalFilter = empleado.sucursalId?._id === selectedSucursal;
+        }
 
-        return matchesSearch && matchesFilter;
-    }), [empleados, searchTerm, selectedFilter, sucursales]);
+        return matchesSearch && matchesStateFilter && matchesSucursalFilter;
+    }), [empleados, searchTerm, selectedFilter, selectedSucursal]);
 
     const { paginatedData: currentEmpleados, ...paginationProps } = usePagination(filteredEmpleados, 5);
 
-    // --- ESTADÍSTICAS ---
+    // --- ESTADÍSTICAS MEJORADAS ---
     const totalEmpleados = empleados.length;
     const empleadosActivos = empleados.filter(e => e.estado === 'Activo').length;
-    const sucursalPrincipalId = sucursales.find(s => s.nombre === 'Principal')?._id;
-    const empleadosPrincipal = empleados.filter(e => e.sucursalId?._id === sucursalPrincipalId).length;
+    
+    // MEJORADO: Estadísticas dinámicas por sucursal
+    const getEmpleadosPorSucursal = (sucursalId) => {
+        return empleados.filter(e => e.sucursalId?._id === sucursalId).length;
+    };
+    
+    // Usar la primera sucursal para mostrar en estadísticas, o crear estadística más general
+    const sucursalPrincipalStats = sucursales.length > 0 ? getEmpleadosPorSucursal(sucursales[0]._id) : 0;
     const nominaTotal = empleados.filter(e => e.estado === 'Activo').reduce((sum, e) => sum + parseFloat(e.salario || 0), 0);
     const formatSalario = (salario) => `$${Number(salario).toFixed(2)}`;
     
     const employeeStats = [
         { title: 'Total Empleados', value: totalEmpleados, Icon: Users },
         { title: 'Empleados Activos', value: empleadosActivos, Icon: UserCheck },
-        { title: 'Sucursal Principal', value: empleadosPrincipal, Icon: Building2 },
+        { 
+            title: sucursales.length > 0 ? sucursales[0].nombre : 'Sucursal Principal', 
+            value: sucursalPrincipalStats, 
+            Icon: Building2 
+        },
         { title: 'Nómina Total (Activos)', value: formatSalario(nominaTotal), Icon: DollarSign }
     ];
+
+    // NUEVO: Generar opciones de filtro dinámicamente
+    const filterOptions = useMemo(() => {
+        const baseFilters = [
+            { label: 'Todos los estados', value: 'todos' },
+            { label: 'Activos', value: 'activos' },
+            { label: 'Inactivos', value: 'inactivos' }
+        ];
+        return baseFilters;
+    }, []);
+
+    // NUEVO: Generar opciones de sucursal dinámicamente
+    const sucursalOptions = useMemo(() => {
+        const baseSucursales = [{ label: 'Todas las sucursales', value: 'todas' }];
+        const sucursalesOptions = sucursales.map(sucursal => ({
+            label: sucursal.nombre,
+            value: sucursal._id
+        }));
+        return [...baseSucursales, ...sucursalesOptions];
+    }, [sucursales]);
 
     // --- EFFECT TO HANDLE REDIRECT FOR EDITING ---
     useEffect(() => {
@@ -225,8 +256,6 @@ const Empleados = () => {
     }, [location.state, empleados, navigate]);
 
     // --- HANDLERS FOR THE NEW FLOW ---
-
-    // CORRECCIÓN: Función para validar el formulario de optometrista
     const validateOptometristaForm = () => {
         const newErrors = {};
         
@@ -254,7 +283,7 @@ const Empleados = () => {
         const isValid = Object.keys(newErrors).length === 0;
         console.log('✅ Validación resultado:', isValid ? 'VÁLIDO' : 'INVÁLIDO');
         if (!isValid) {
-            console.log('⌛ Errores encontrados:', newErrors);
+            console.log('❌ Errores encontrados:', newErrors);
         }
         
         return isValid;
@@ -263,7 +292,7 @@ const Empleados = () => {
     // Step 1: Called from EmpleadosFormModal when "Siguiente" is clicked
     const handleProceedToOptometristaForm = () => {
         if (!validateForm()) {
-            console.log('⌛ Validación del formulario de empleado falló');
+            console.log('❌ Validación del formulario de empleado falló');
             return;
         }
         
@@ -309,251 +338,188 @@ const Empleados = () => {
         console.log('✅ Transición al modal de optometrista completada');
     };
     
-    // CORRECCIÓN: Step 2: Finalizar creación de empleado + optometrista
+    // Step 2: Finalizar creación de empleado + optometrista
     const handleFinalizeCreation = async (finalOptometristaData = null) => {
-    try {
-        // Usar los datos que vienen del modal o los del estado
-        const dataToUse = finalOptometristaData || optometristaFormData;
-        
-        console.log('=== INICIO DE CREACIÓN EMPLEADO + OPTOMETRISTA ===');
-        console.log('Datos del empleado (tempEmployeeData):', tempEmployeeData);
-        console.log('Datos del optometrista recibidos:', dataToUse);
-        
-        // Validar que tempEmployeeData existe
-        if (!tempEmployeeData) {
-            console.error('❌ No hay datos del empleado para crear');
-            showAlert('error', 'Error: No se encontraron los datos del empleado');
-            return;
-        }
-        
-        // Validar datos del optometrista más estricta
-        if (!dataToUse.especialidad || !dataToUse.licencia) {
-            console.error('❌ Faltan campos requeridos en optometrista:', {
-                especialidad: dataToUse.especialidad,
-                licencia: dataToUse.licencia,
-                experiencia: dataToUse.experiencia
-            });
-            showAlert('error', 'Faltan campos requeridos: especialidad y licencia son obligatorios');
-            return;
-        }
-        
-        if (!dataToUse.sucursalesAsignadas || dataToUse.sucursalesAsignadas.length === 0) {
-            console.error('❌ Faltan sucursales asignadas');
-            showAlert('error', 'Debe asignar al menos una sucursal');
-            return;
-        }
-        
-        if (!dataToUse.disponibilidad || dataToUse.disponibilidad.length === 0) {
-            console.error('❌ Falta disponibilidad');
-            showAlert('error', 'Debe configurar al menos una hora de disponibilidad');
-            return;
-        }
-
-        // INICIAR PROCESO DE CARGA
-        setLoading(true);
-        setCreationStep('employee');
-        setCreationProgress(25);
-
-        // 1. OBTENER EMPLEADO ID: si estamos editando, usar el existente; si no, crear
-        let newEmployeeId = null;
-        if (selectedEmpleado && selectedEmpleado._id) {
-            console.log('🔁 Flujo edición: usando empleado existente');
-            newEmployeeId = selectedEmpleado._id;
-        } else {
-            console.log('📄 Creando empleado...');
-            const employeeResponse = await axiosWithFallback('post', EMPLEADOS_EP, tempEmployeeData);
-            // Backend retorna { message, empleado }
-            const newEmployee = employeeResponse.data.empleado || employeeResponse.data;
-            newEmployeeId = newEmployee._id;
-            console.log('✅ Empleado creado exitosamente:', employeeResponse.data);
-            console.log('👤 Datos del empleado:', newEmployee);
-            console.log('🆔 Nuevo empleadoId:', newEmployeeId);
-            // VALIDAR QUE OBTUVIMOS EL ID
-            if (!newEmployeeId) {
-                console.error('❌ No se pudo extraer el ID del empleado creado');
-                console.error('📋 Estructura de respuesta:', employeeResponse.data);
-                throw new Error('No se pudo obtener el ID del empleado creado. Verifique la respuesta del servidor.');
-            }
-        }
-
-        // Asegurar que el cargo del empleado sea 'Optometrista'
         try {
-            const mustSetCargo = (selectedEmpleado && selectedEmpleado.cargo !== 'Optometrista') || (!selectedEmpleado && tempEmployeeData?.cargo !== 'Optometrista');
-            if (mustSetCargo) {
-                console.log("🔧 Ajustando cargo del empleado a 'Optometrista'...");
-                await axiosWithFallback('put', `${EMPLEADOS_EP}/${newEmployeeId}`, { cargo: 'Optometrista' });
-                console.log('✅ Cargo del empleado actualizado a Optometrista');
-            } else {
-                console.log('ℹ️ Cargo ya establecido como Optometrista');
+            // Usar los datos que vienen del modal o los del estado
+            const dataToUse = finalOptometristaData || optometristaFormData;
+            
+            console.log('=== INICIO DE CREACIÓN EMPLEADO + OPTOMETRISTA ===');
+            console.log('Datos del empleado (tempEmployeeData):', tempEmployeeData);
+            console.log('Datos del optometrista recibidos:', dataToUse);
+            
+            // Validar que tempEmployeeData existe
+            if (!tempEmployeeData) {
+                console.error('❌ No hay datos del empleado para crear');
+                showAlert('error', 'Error: No se encontraron los datos del empleado');
+                return;
             }
-        } catch (e) {
-            console.warn('⚠️ No se pudo actualizar el cargo a Optometrista antes de crear/actualizar el optometrista:', e?.response?.data || e.message);
+            
+            // Validar datos del optometrista más estricta
+            if (!dataToUse.especialidad || !dataToUse.licencia) {
+                console.error('❌ Faltan campos requeridos en optometrista:', {
+                    especialidad: dataToUse.especialidad,
+                    licencia: dataToUse.licencia,
+                    experiencia: dataToUse.experiencia
+                });
+                showAlert('error', 'Faltan campos requeridos: especialidad y licencia son obligatorios');
+                return;
+            }
+            
+            if (!dataToUse.sucursalesAsignadas || dataToUse.sucursalesAsignadas.length === 0) {
+                console.error('❌ Faltan sucursales asignadas');
+                showAlert('error', 'Debe asignar al menos una sucursal');
+                return;
+            }
+            
+            if (!dataToUse.disponibilidad || dataToUse.disponibilidad.length === 0) {
+                console.error('❌ Falta disponibilidad');
+                showAlert('error', 'Debe configurar al menos una hora de disponibilidad');
+                return;
+            }
+
+            // INICIAR PROCESO DE CARGA
+            setLoading(true);
+            setCreationStep('employee');
+            setCreationProgress(25);
+
+            // 1. OBTENER EMPLEADO ID: si estamos editando, usar el existente; si no, crear
+            let newEmployeeId = null;
+            if (selectedEmpleado && selectedEmpleado._id) {
+                console.log('🔍 Flujo edición: usando empleado existente');
+                newEmployeeId = selectedEmpleado._id;
+            } else {
+                console.log('📄 Creando empleado...');
+                const employeeResponse = await axiosWithFallback('post', EMPLEADOS_EP, tempEmployeeData);
+                // Backend retorna { message, empleado }
+                const newEmployee = employeeResponse.data.empleado || employeeResponse.data;
+                newEmployeeId = newEmployee._id;
+                console.log('✅ Empleado creado exitosamente:', employeeResponse.data);
+                console.log('👤 Datos del empleado:', newEmployee);
+                console.log('🆔 Nuevo empleadoId:', newEmployeeId);
+                // VALIDAR QUE OBTUVIMOS EL ID
+                if (!newEmployeeId) {
+                    console.error('❌ No se pudo extraer el ID del empleado creado');
+                    console.error('📋 Estructura de respuesta:', employeeResponse.data);
+                    throw new Error('No se pudo obtener el ID del empleado creado. Verifique la respuesta del servidor.');
+                }
+            }
+
+            // Asegurar que el cargo del empleado sea 'Optometrista'
+            try {
+                const mustSetCargo = (selectedEmpleado && selectedEmpleado.cargo !== 'Optometrista') || (!selectedEmpleado && tempEmployeeData?.cargo !== 'Optometrista');
+                if (mustSetCargo) {
+                    console.log("🔧 Ajustando cargo del empleado a 'Optometrista'...");
+                    await axiosWithFallback('put', `${EMPLEADOS_EP}/${newEmployeeId}`, { cargo: 'Optometrista' });
+                    console.log('✅ Cargo del empleado actualizado a Optometrista');
+                } else {
+                    console.log('ℹ️ Cargo ya establecido como Optometrista');
+                }
+            } catch (e) {
+                console.warn('⚠️ No se pudo actualizar el cargo a Optometrista antes de crear/actualizar el optometrista:', e?.response?.data || e.message);
+            }
+
+            // ACTUALIZAR PROGRESO
+            setCreationProgress(60);
+            setCreationStep('optometrista');
+
+            // 2. PREPARAR DATOS DEL OPTOMETRISTA CON EL ID DEL EMPLEADO RECIÉN CREADO
+            const finalOptometristaPayload = {
+                empleadoId: newEmployeeId, // ✅ ID de empleado (existente o recién creado)
+                especialidad: dataToUse.especialidad?.trim(),
+                licencia: dataToUse.licencia?.trim(),
+                experiencia: parseInt(dataToUse.experiencia) || 0,
+                disponibilidad: Array.isArray(dataToUse.disponibilidad) 
+                    ? dataToUse.disponibilidad.map(item => ({
+                        dia: item.dia,
+                        hora: item.hora,
+                        horaInicio: item.horaInicio || item.hora,
+                        horaFin: item.horaFin || getNextHour(item.hora)
+                    }))
+                    : [],
+                sucursalesAsignadas: Array.isArray(dataToUse.sucursalesAsignadas) 
+                    ? dataToUse.sucursalesAsignadas 
+                    : [],
+                disponible: dataToUse.disponible !== false && dataToUse.disponible !== 'false'
+            };
+            
+            console.log('📋 Datos finales para optometrista:', finalOptometristaPayload);
+            
+            // 3. CREAR/ACTUALIZAR EL OPTOMETRISTA SEGÚN EXISTA
+            console.log('🔎 Verificando si ya existe optometrista para este empleado...');
+            let optometristaResponse;
+            const existingOpt = await checkIfOptometrista(newEmployeeId);
+            if (existingOpt && existingOpt._id) {
+                console.log('⚠️ Ya existe optometrista, actualizando...');
+                optometristaResponse = await axiosWithFallback('put', `${OPTOMETRISTAS_EP}/${existingOpt._id}`, finalOptometristaPayload);
+                console.log('✅ Optometrista actualizado exitosamente:', optometristaResponse.data);
+            } else {
+                console.log('📄 Creando optometrista...');
+                optometristaResponse = await axiosWithFallback('post', OPTOMETRISTAS_EP, finalOptometristaPayload);
+                console.log('✅ Optometrista creado exitosamente:', optometristaResponse.data);
+            }
+
+            // COMPLETAR PROGRESO
+            setCreationProgress(100);
+
+            showAlert('success', '¡Empleado y Optometrista creados exitosamente!');
+            
+            // Pequeña pausa para mostrar el 100%
+            setTimeout(() => {
+                handleCloseModals();
+                // Recargar datos y navegar
+                fetchData().then(() => {
+                    navigate('/dashboard');
+                });
+            }, 1000);
+
+        } catch (error) {
+            console.error('❌ Error en la creación:', error);
+            console.error('📄 Respuesta del servidor:', error.response?.data);
+            
+            let errorMessage = 'Error en la creación: ';
+            
+            // Manejar diferentes tipos de errores
+            if (error.response?.data?.message) {
+                errorMessage += error.response.data.message;
+            } else if (error.response?.data?.error) {
+                errorMessage += error.response.data.error;
+            } else if (error.message) {
+                errorMessage += error.message;
+            } else {
+                errorMessage += 'Error desconocido';
+            }
+            
+            // Si el error incluye información de campos faltantes, mostrarla
+            if (error.response?.data?.missing) {
+                errorMessage += `. Campos faltantes: ${error.response.data.missing.join(', ')}`;
+            }
+            
+            showAlert('error', errorMessage);
+            
+        } finally {
+            setLoading(false);
+            setCreationStep('');
+            setCreationProgress(0);
         }
-
-        // ACTUALIZAR PROGRESO
-        setCreationProgress(60);
-        setCreationStep('optometrista');
-
-        // 2. PREPARAR DATOS DEL OPTOMETRISTA CON EL ID DEL EMPLEADO RECIÉN CREADO
-        const finalOptometristaPayload = {
-            empleadoId: newEmployeeId, // ✅ ID de empleado (existente o recién creado)
-            especialidad: dataToUse.especialidad?.trim(),
-            licencia: dataToUse.licencia?.trim(),
-            experiencia: parseInt(dataToUse.experiencia) || 0,
-            disponibilidad: Array.isArray(dataToUse.disponibilidad) 
-                ? dataToUse.disponibilidad.map(item => ({
-                    dia: item.dia,
-                    hora: item.hora,
-                    horaInicio: item.horaInicio || item.hora,
-                    horaFin: item.horaFin || getNextHour(item.hora)
-                }))
-                : [],
-            sucursalesAsignadas: Array.isArray(dataToUse.sucursalesAsignadas) 
-                ? dataToUse.sucursalesAsignadas 
-                : [],
-            disponible: dataToUse.disponible !== false && dataToUse.disponible !== 'false'
-        };
-        
-        console.log('📋 Datos finales para optometrista:', finalOptometristaPayload);
-        
-        // 3. CREAR/ACTUALIZAR EL OPTOMETRISTA SEGÚN EXISTA
-        console.log('🔎 Verificando si ya existe optometrista para este empleado...');
-        let optometristaResponse;
-        const existingOpt = await checkIfOptometrista(newEmployeeId);
-        if (existingOpt && existingOpt._id) {
-            console.log('⚠️ Ya existe optometrista, actualizando...');
-            optometristaResponse = await axiosWithFallback('put', `${OPTOMETRISTAS_EP}/${existingOpt._id}`, finalOptometristaPayload);
-            console.log('✅ Optometrista actualizado exitosamente:', optometristaResponse.data);
-        } else {
-            console.log('📄 Creando optometrista...');
-            optometristaResponse = await axiosWithFallback('post', OPTOMETRISTAS_EP, finalOptometristaPayload);
-            console.log('✅ Optometrista creado exitosamente:', optometristaResponse.data);
-        }
-
-        // COMPLETAR PROGRESO
-        setCreationProgress(100);
-
-        showAlert('success', '¡Empleado y Optometrista creados exitosamente!');
-        
-        // Pequeña pausa para mostrar el 100%
-        setTimeout(() => {
-            handleCloseModals();
-            // Recargar datos y navegar
-            fetchData().then(() => {
-                navigate('/dashboard');
-            });
-        }, 1000);
-
-    } catch (error) {
-        console.error('❌ Error en la creación:', error);
-        console.error('📄 Respuesta del servidor:', error.response?.data);
-        
-        let errorMessage = 'Error en la creación: ';
-        
-        // Manejar diferentes tipos de errores
-        if (error.response?.data?.message) {
-            errorMessage += error.response.data.message;
-        } else if (error.response?.data?.error) {
-            errorMessage += error.response.data.error;
-        } else if (error.message) {
-            errorMessage += error.message;
-        } else {
-            errorMessage += 'Error desconocido';
-        }
-        
-        // Si el error incluye información de campos faltantes, mostrarla
-        if (error.response?.data?.missing) {
-            errorMessage += `. Campos faltantes: ${error.response.data.missing.join(', ')}`;
-        }
-        
-        showAlert('error', errorMessage);
-        
-    } finally {
-        setLoading(false);
-        setCreationStep('');
-        setCreationProgress(0);
-    }
-};
-
-// CORRECCIÓN EN OptometristasFormModal.jsx - función handleFormSubmit
-
-const handleFormSubmit = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log('=== ENVÍO DEL FORMULARIO OPTOMETRISTA ===');
-    console.log('isCreationFlow:', isCreationFlow);
-    console.log('formData actual:', formData);
-    console.log('preloadedEmployeeData:', preloadedEmployeeData);
-    
-    // CORRECCIÓN: Validar campos requeridos antes de enviar
-    const requiredFields = {
-        especialidad: formData.especialidad,
-        licencia: formData.licencia,
-        experiencia: formData.experiencia,
-        sucursalesAsignadas: formData.sucursalesAsignadas,
-        disponibilidad: formData.disponibilidad
     };
-    
-    const missingFields = [];
-    Object.entries(requiredFields).forEach(([key, value]) => {
-        if (!value || (Array.isArray(value) && value.length === 0)) {
-            missingFields.push(key);
+
+    // HELPER FUNCTION para obtener la siguiente hora
+    const getNextHour = (hora) => {
+        const horasDisponibles = [
+            '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'
+        ];
+        
+        const currentIndex = horasDisponibles.indexOf(hora);
+        if (currentIndex >= 0 && currentIndex < horasDisponibles.length - 1) {
+            return horasDisponibles[currentIndex + 1];
         }
-    });
-    
-    if (missingFields.length > 0) {
-        console.error('❌ Campos faltantes en frontend:', missingFields);
-        console.error('🔍 Valores actuales:', requiredFields);
-        return; // No enviar si faltan campos
-    }
-    
-    // CORRECCIÓN: Preparar datos finales - NO incluir empleadoId en creationFlow
-    const finalFormData = {
-        especialidad: formData.especialidad?.trim(),
-        licencia: formData.licencia?.trim(),
-        experiencia: parseInt(formData.experiencia) || 0,
-        disponibilidad: Array.isArray(formData.disponibilidad) 
-            ? formData.disponibilidad.map(item => ({
-                dia: item.dia,
-                hora: item.hora,
-                horaInicio: item.horaInicio || item.hora,
-                horaFin: item.horaFin || getNextHour(item.hora)
-            }))
-            : [],
-        sucursalesAsignadas: Array.isArray(formData.sucursalesAsignadas) 
-            ? formData.sucursalesAsignadas 
-            : [],
-        disponible: formData.disponible !== false && formData.disponible !== 'false'
+        // Para la última hora, agregar :59 para indicar el final de la hora
+        const [hourPart] = hora.split(':');
+        return `${hourPart}:59`;
     };
-    
-    // CORRECCIÓN: Solo agregar empleadoId si NO estamos en flujo de creación
-    if (!isCreationFlow && formData.empleadoId) {
-        finalFormData.empleadoId = formData.empleadoId;
-    }
-    
-    console.log('📦 Datos finales para envío:', finalFormData);
-    
-    // Llamar a onSubmit con los datos corregidos
-    onSubmit(finalFormData);
-};
 
-// HELPER FUNCTION para obtener la siguiente hora
-const getNextHour = (hora) => {
-    const horasDisponibles = [
-        '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'
-    ];
-    
-    const currentIndex = horasDisponibles.indexOf(hora);
-    if (currentIndex >= 0 && currentIndex < horasDisponibles.length - 1) {
-        return horasDisponibles[currentIndex + 1];
-    }
-    // Para la última hora, agregar :59 para indicar el final de la hora
-    const [hourPart] = hora.split(':');
-    return `${hourPart}:59`;
-};
-
-    // NUEVO: Función para regresar del modal de optometrista al de empleado
+    // Función para regresar del modal de optometrista al de empleado
     const handleBackToEmployeeForm = () => {
         console.log('🔙 Regresando al formulario de empleado');
         setShowOptometristaModal(false);
@@ -600,23 +566,22 @@ const getNextHour = (hora) => {
         setTimeout(() => setAlert(null), 5000);
     };
     
-
-const handleCloseModals = () => {
-    setShowAddEditModal(false);
-    setShowDetailModal(false);
-    setShowDeleteModal(false);
-    setShowOptometristaModal(false);
-    setShowCargoChangeWarning(false);
-    setSelectedEmpleado(null);
-    setTempEmployeeData(null);
-    
-    // LIMPIAR ESTADOS DE CARGA
-    setCreationStep('');
-    setCreationProgress(0);
-    
-    resetForm();
-    resetOptometristaForm();
-};
+    const handleCloseModals = () => {
+        setShowAddEditModal(false);
+        setShowDetailModal(false);
+        setShowDeleteModal(false);
+        setShowOptometristaModal(false);
+        setShowCargoChangeWarning(false);
+        setSelectedEmpleado(null);
+        setTempEmployeeData(null);
+        
+        // LIMPIAR ESTADOS DE CARGA
+        setCreationStep('');
+        setCreationProgress(0);
+        
+        resetForm();
+        resetOptometristaForm();
+    };
     
     const handleOpenAddModal = () => {
         resetForm();
@@ -707,7 +672,7 @@ const handleCloseModals = () => {
                 console.log('✅ Optometrista eliminado exitosamente');
             }
         } catch (error) {
-            console.error('⌛ Error al eliminar optometrista:', error);
+            console.error('❌ Error al eliminar optometrista:', error);
             throw error;
         }
     };
@@ -817,37 +782,36 @@ const handleCloseModals = () => {
 
     // Función para determinar el botón de acción correcto
    const getSubmitHandler = () => {
-    // CORRECCIÓN: Verificar también si estamos editando un empleado y cambiándolo a optometrista
-    const isChangingToOptometrista = selectedEmpleado && 
-        selectedEmpleado.cargo !== 'Optometrista' && 
-        formData.cargo === 'Optometrista';
-    
-    const isCreatingOptometrista = !selectedEmpleado && formData.cargo === 'Optometrista';
-    
-    if (isCreatingOptometrista || isChangingToOptometrista) {
-        return handleProceedToOptometristaForm;
-    }
-    
-    // Para cualquier otro caso (crear empleado regular, editar cualquier empleado)
-    return handleSubmit;
-};
+        // CORRECCIÓN: Verificar también si estamos editando un empleado y cambiándolo a optometrista
+        const isChangingToOptometrista = selectedEmpleado && 
+            selectedEmpleado.cargo !== 'Optometrista' && 
+            formData.cargo === 'Optometrista';
+        
+        const isCreatingOptometrista = !selectedEmpleado && formData.cargo === 'Optometrista';
+        
+        if (isCreatingOptometrista || isChangingToOptometrista) {
+            return handleProceedToOptometristaForm;
+        }
+        
+        // Para cualquier otro caso (crear empleado regular, editar cualquier empleado)
+        return handleSubmit;
+    };
 
     // Función para determinar el texto del botón
    const getSubmitLabel = () => {
-    if (selectedEmpleado) {
-        // Si estamos editando y cambiamos de NO optometrista a optometrista
-        if (selectedEmpleado.cargo !== 'Optometrista' && formData.cargo === 'Optometrista') {
+        if (selectedEmpleado) {
+            // Si estamos editando y cambiamos de NO optometrista a optometrista
+            if (selectedEmpleado.cargo !== 'Optometrista' && formData.cargo === 'Optometrista') {
+                return 'Continuar';
+            }
+            return 'Actualizar Empleado';
+        }
+        // Si estamos creando un nuevo empleado
+        if (formData.cargo === 'Optometrista') {
             return 'Continuar';
         }
-        return 'Actualizar Empleado';
-    }
-    // Si estamos creando un nuevo empleado
-    if (formData.cargo === 'Optometrista') {
-        return 'Continuar';
-    }
-    return 'Guardar Empleado';
-};
-
+        return 'Guardar Empleado';
+    };
 
     // --- RENDERIZADO DE TABLA ---
     const getEstadoColor = (estado) => (estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
@@ -952,18 +916,95 @@ const handleCloseModals = () => {
             
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <PageHeader title="Gestión de Empleados" buttonLabel="Añadir Empleado" onButtonClick={handleOpenAddModal} />
-                <FilterBar
-                    searchTerm={searchTerm}
-                    onSearchChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por nombre, DUI, email o cargo..."
-                    filters={[
-                        { label: 'Todos', value: 'todos' }, { label: 'Activos', value: 'activos' }, 
-                        { label: 'Inactivos', value: 'inactivos' }, { label: 'Principal', value: 'principal' },
-                        { label: 'Quezaltepeque', value: 'quezaltepeque' }
-                    ]}
-                    activeFilter={selectedFilter}
-                    onFilterChange={setSelectedFilter}
-                />
+                
+                {/* NUEVO: Filtros mejorados con dropdown de sucursales dinámico */}
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                        {/* Barra de búsqueda */}
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <input
+                                    type="text"
+                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                    placeholder="Buscar por nombre, DUI, email o cargo..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Filtros por estado y sucursal */}
+                        <div className="flex flex-col sm:flex-row gap-3 min-w-fit">
+                            {/* Filtro por estado */}
+                            <div className="min-w-[180px]">
+                                <select
+                                    value={selectedFilter}
+                                    onChange={(e) => setSelectedFilter(e.target.value)}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                >
+                                    {filterOptions.map((filter) => (
+                                        <option key={filter.value} value={filter.value}>
+                                            {filter.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* NUEVO: Filtro dinámico por sucursal */}
+                            <div className="min-w-[200px]">
+                                <select
+                                    value={selectedSucursal}
+                                    onChange={(e) => setSelectedSucursal(e.target.value)}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                >
+                                    {sucursalOptions.map((sucursal) => (
+                                        <option key={sucursal.value} value={sucursal.value}>
+                                            {sucursal.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* NUEVO: Indicadores de filtros activos */}
+                    {(searchTerm || selectedFilter !== 'todos' || selectedSucursal !== 'todas') && (
+                        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                            <span className="text-gray-500">Filtros activos:</span>
+                            {searchTerm && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800">
+                                    Búsqueda: "{searchTerm}"
+                                </span>
+                            )}
+                            {selectedFilter !== 'todos' && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Estado: {filterOptions.find(f => f.value === selectedFilter)?.label}
+                                </span>
+                            )}
+                            {selectedSucursal !== 'todas' && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Sucursal: {sucursalOptions.find(s => s.value === selectedSucursal)?.label}
+                                </span>
+                            )}
+                            <button
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setSelectedFilter('todos');
+                                    setSelectedSucursal('todas');
+                                }}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                            >
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 <DataTable
                     columns={tableColumns}
                     data={currentEmpleados}
@@ -977,44 +1018,44 @@ const handleCloseModals = () => {
             
             {/* Modal principal de empleados */}
             <EmpleadosFormModal
-            isOpen={showAddEditModal}
-            onClose={handleCloseModals}
-            onSubmit={getSubmitHandler()} // CORRECCIÓN: Pasar la función, no ejecutarla
-            title={selectedEmpleado ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}
-            formData={formData}
-            setFormData={setFormData}
-            handleInputChange={handleInputChange}
-            errors={errors}
-            submitLabel={getSubmitLabel()} // CORRECCIÓN: Pasar la función, no ejecutarla
-            sucursales={sucursales}
-            selectedEmpleado={selectedEmpleado}
-            onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
-        />
+                isOpen={showAddEditModal}
+                onClose={handleCloseModals}
+                onSubmit={getSubmitHandler()} // CORRECCIÓN: Pasar la función, no ejecutarla
+                title={selectedEmpleado ? 'Editar Empleado' : 'Agregar Nuevo Empleado'}
+                formData={formData}
+                setFormData={setFormData}
+                handleInputChange={handleInputChange}
+                errors={errors}
+                submitLabel={getSubmitLabel()} // CORRECCIÓN: Pasar la función, no ejecutarla
+                sucursales={sucursales}
+                selectedEmpleado={selectedEmpleado}
+                onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
+            />
 
             {/* Modal de optometrista (paso 2) */}
             {showOptometristaModal && (
-    <OptometristasFormModal
-        isOpen={showOptometristaModal}
-        onClose={handleCloseModals}
-        onSubmit={handleFinalizeCreation}
-        title="Añadir Detalles del Optometrista (Paso 2 de 2)"
-        submitLabel={creationStep ? 'Creando...' : 'Finalizar y Guardar'}
-        isCreationFlow={true}
-        preloadedEmployeeData={tempEmployeeData}
-        sucursales={sucursales}
-        formData={optometristaFormData}
-        setFormData={setOptometristaFormData}
-        handleInputChange={handleOptometristaInputChange}
-        errors={optometristaErrors}
-        empleados={[]}
-        selectedOptometrista={null}
-        onBackToEmployeeForm={handleBackToEmployeeForm}
-        // NUEVAS PROPS PARA ESTADO DE CARGA
-        isCreating={!!creationStep}
-        creationStep={creationStep}
-        creationProgress={creationProgress}
-    />
-)}
+                <OptometristasFormModal
+                    isOpen={showOptometristaModal}
+                    onClose={handleCloseModals}
+                    onSubmit={handleFinalizeCreation}
+                    title="Añadir Detalles del Optometrista (Paso 2 de 2)"
+                    submitLabel={creationStep ? 'Creando...' : 'Finalizar y Guardar'}
+                    isCreationFlow={true}
+                    preloadedEmployeeData={tempEmployeeData}
+                    sucursales={sucursales}
+                    formData={optometristaFormData}
+                    setFormData={setOptometristaFormData}
+                    handleInputChange={handleOptometristaInputChange}
+                    errors={optometristaErrors}
+                    empleados={[]}
+                    selectedOptometrista={null}
+                    onBackToEmployeeForm={handleBackToEmployeeForm}
+                    // NUEVAS PROPS PARA ESTADO DE CARGA
+                    isCreating={!!creationStep}
+                    creationStep={creationStep}
+                    creationProgress={creationProgress}
+                />
+            )}
 
             {/* NUEVO: Modal de confirmación para cambio de cargo */}
             <ConfirmationModal

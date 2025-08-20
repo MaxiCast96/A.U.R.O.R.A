@@ -71,9 +71,12 @@ const Optometristas = () => {
     const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterEspecialidad, setFilterEspecialidad] = useState('todos');
-    const [filterDisponible, setFilterDisponible] = useState('todos');
-    const [filterSucursal, setFilterSucursal] = useState('todos');
+    
+    // NUEVOS ESTADOS PARA FILTROS DINÁMICOS
+    const [selectedEspecialidad, setSelectedEspecialidad] = useState('todas');
+    const [selectedDisponibilidad, setSelectedDisponibilidad] = useState('todos');
+    const [selectedSucursal, setSelectedSucursal] = useState('todas');
+    
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -140,7 +143,7 @@ const Optometristas = () => {
         fetchData();
     }, []);
 
-    // --- FILTRADO Y PAGINACIÓN ---
+    // --- FILTRADO Y PAGINACIÓN MEJORADO ---
     const filteredOptometristas = useMemo(() => {
         return optometristas.filter(optometrista => {
             const empleado = optometrista.empleadoId;
@@ -153,21 +156,55 @@ const Optometristas = () => {
                 optometrista.especialidad.toLowerCase().includes(search) ||
                 optometrista.licencia.toLowerCase().includes(search);
 
-            const matchesEspecialidad = filterEspecialidad === 'todos' ||
-                optometrista.especialidad.toLowerCase() === filterEspecialidad.toLowerCase();
+            // FILTRO DINÁMICO POR ESPECIALIDAD
+            const matchesEspecialidad = selectedEspecialidad === 'todas' ||
+                optometrista.especialidad === selectedEspecialidad;
 
-            const matchesDisponible = filterDisponible === 'todos' ||
-                (filterDisponible === 'disponible' && optometrista.disponible) ||
-                (filterDisponible === 'no disponible' && !optometrista.disponible);
+            // FILTRO DINÁMICO POR DISPONIBILIDAD
+            let matchesDisponibilidad = true;
+            if (selectedDisponibilidad === 'disponible') {
+                matchesDisponibilidad = optometrista.disponible === true;
+            } else if (selectedDisponibilidad === 'no_disponible') {
+                matchesDisponibilidad = optometrista.disponible === false;
+            }
 
-            const matchesSucursal = filterSucursal === 'todos' ||
-                optometrista.sucursalesAsignadas.some(sucursal => sucursal._id === filterSucursal);
+            // FILTRO DINÁMICO POR SUCURSAL
+            const matchesSucursal = selectedSucursal === 'todas' ||
+                (optometrista.sucursalesAsignadas && optometrista.sucursalesAsignadas.some(sucursal => sucursal._id === selectedSucursal));
 
-            return matchesSearch && matchesEspecialidad && matchesDisponible && matchesSucursal;
+            return matchesSearch && matchesEspecialidad && matchesDisponibilidad && matchesSucursal;
         });
-    }, [optometristas, searchTerm, filterEspecialidad, filterDisponible, filterSucursal]);
+    }, [optometristas, searchTerm, selectedEspecialidad, selectedDisponibilidad, selectedSucursal]);
 
     const { paginatedData: currentOptometristas, ...paginationProps } = usePagination(filteredOptometristas, 5);
+
+    // --- GENERAR OPCIONES DINÁMICAS PARA FILTROS ---
+    
+    // Opciones dinámicas de especialidad
+    const especialidadOptions = useMemo(() => {
+        const especialidadesUnicas = [...new Set(optometristas.map(opt => opt.especialidad))];
+        return [
+            { label: 'Todas las especialidades', value: 'todas' },
+            ...especialidadesUnicas.map(esp => ({ label: esp, value: esp }))
+        ];
+    }, [optometristas]);
+
+    // Opciones de disponibilidad
+    const disponibilidadOptions = [
+        { label: 'Todos los estados', value: 'todos' },
+        { label: 'Disponibles', value: 'disponible' },
+        { label: 'No disponibles', value: 'no_disponible' }
+    ];
+
+    // Opciones dinámicas de sucursal
+    const sucursalFilterOptions = useMemo(() => {
+        const baseSucursales = [{ label: 'Todas las sucursales', value: 'todas' }];
+        const sucursalesOptions = sucursales.map(sucursal => ({
+            label: sucursal.nombre,
+            value: sucursal._id
+        }));
+        return [...baseSucursales, ...sucursalesOptions];
+    }, [sucursales]);
 
     // --- HANDLERS ---
     const showAlert = (type, message) => {
@@ -253,16 +290,28 @@ const Optometristas = () => {
         }
     };
 
+    // FUNCIÓN MEJORADA PARA ELIMINAR OPTOMETRISTA Y EMPLEADO ASOCIADO
     const handleDelete = async () => {
         if (!selectedOptometrista) return;
         
         try {
+            setLoading(true);
+            
+            // 1. Eliminar el optometrista primero
             await axiosWithFallback('delete', `${OPTOMETRISTAS_EP}/${selectedOptometrista._id}`);
-            showAlert('success', '¡Optometrista eliminado exitosamente!');
+            
+            // 2. Eliminar el empleado asociado
+            if (selectedOptometrista.empleadoId?._id) {
+                await axiosWithFallback('delete', `${EMPLEADOS_EP}/${selectedOptometrista.empleadoId._id}`);
+            }
+            
+            showAlert('success', '¡Optometrista y empleado asociado eliminados exitosamente!');
             fetchData(); // Recargar datos
             handleCloseModals();
         } catch (error) {
             showAlert('error', 'Error al eliminar: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -283,8 +332,6 @@ const Optometristas = () => {
             { text: 'Disponible', color: 'bg-green-100 text-green-800' } : 
             { text: 'No Disponible', color: 'bg-red-100 text-red-800' };
     };
-
-
 
     const formatSucursales = (sucursales) => {
         if (!sucursales || sucursales.length === 0) return 'Sin sucursales asignadas';
@@ -407,53 +454,118 @@ const Optometristas = () => {
             ]} />
 
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-            <PageHeader 
-                title="Gestión de Optometristas" 
-                // REMOVED: buttonLabel="Añadir Optometrista" 
-                // REMOVED: onButtonClick={handleAdd} 
-            />
-                
-                <FilterBar
-                    searchTerm={searchTerm}
-                    onSearchChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por nombre, email, especialidad, licencia..."
-                    filters={[
-                        {
-                            label: 'Especialidad',
-                            options: [
-                                { value: 'todos', label: 'Todas' },
-                                { value: 'General', label: 'General' },
-                                { value: 'Pediátrica', label: 'Pediátrica' },
-                                { value: 'Contactología', label: 'Contactología' },
-                                { value: 'Baja Visión', label: 'Baja Visión' },
-                                { value: 'Ortóptica', label: 'Ortóptica' },
-                            ],
-                            selectedValue: filterEspecialidad,
-                            onFilterChange: setFilterEspecialidad,
-                        },
-                        {
-                            label: 'Disponibilidad',
-                            options: [
-                                { value: 'todos', label: 'Todos' },
-                                { value: 'disponible', label: 'Disponible' },
-                                { value: 'no disponible', label: 'No Disponible' },
-                            ],
-                            selectedValue: filterDisponible,
-                            onFilterChange: setFilterDisponible,
-                        },
-                        {
-                            label: 'Sucursal',
-                            options: [
-                                { value: 'todos', label: 'Todas' },
-                                ...sucursales.map(s => ({ value: s._id, label: s.nombre }))
-                            ],
-                            selectedValue: filterSucursal,
-                            onFilterChange: setFilterSucursal,
-                        }
-                    ]}
-                    activeFilter={filterEspecialidad}
-                    onFilterChange={setFilterEspecialidad}
+                {/* HEADER SIN BOTÓN DE AGREGAR */}
+                <PageHeader 
+                    title="Gestión de Optometristas"
+                    subtitle="Los optometristas se crean desde la sección de empleados"
                 />
+                
+                {/* FILTROS MEJORADOS CON DROPDOWNS DINÁMICOS */}
+                <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+                    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+                        {/* Barra de búsqueda */}
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <Search className="h-5 w-5 text-gray-400" />
+                                </div>
+                                <input
+                                    type="text"
+                                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                    placeholder="Buscar por nombre, email, especialidad, licencia..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Filtros dinámicos */}
+                        <div className="flex flex-col sm:flex-row gap-3 min-w-fit">
+                            {/* Filtro por especialidad */}
+                            <div className="min-w-[200px]">
+                                <select
+                                    value={selectedEspecialidad}
+                                    onChange={(e) => setSelectedEspecialidad(e.target.value)}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                >
+                                    {especialidadOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Filtro por disponibilidad */}
+                            <div className="min-w-[180px]">
+                                <select
+                                    value={selectedDisponibilidad}
+                                    onChange={(e) => setSelectedDisponibilidad(e.target.value)}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                >
+                                    {disponibilidadOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Filtro por sucursal */}
+                            <div className="min-w-[200px]">
+                                <select
+                                    value={selectedSucursal}
+                                    onChange={(e) => setSelectedSucursal(e.target.value)}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:outline-none focus:ring-1 focus:ring-cyan-500 focus:border-cyan-500"
+                                >
+                                    {sucursalFilterOptions.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Indicadores de filtros activos */}
+                    {(searchTerm || selectedEspecialidad !== 'todas' || selectedDisponibilidad !== 'todos' || selectedSucursal !== 'todas') && (
+                        <div className="mt-3 flex flex-wrap gap-2 text-sm">
+                            <span className="text-gray-500">Filtros activos:</span>
+                            {searchTerm && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800">
+                                    Búsqueda: "{searchTerm}"
+                                </span>
+                            )}
+                            {selectedEspecialidad !== 'todas' && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    Especialidad: {especialidadOptions.find(e => e.value === selectedEspecialidad)?.label}
+                                </span>
+                            )}
+                            {selectedDisponibilidad !== 'todos' && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    Estado: {disponibilidadOptions.find(d => d.value === selectedDisponibilidad)?.label}
+                                </span>
+                            )}
+                            {selectedSucursal !== 'todas' && (
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                    Sucursal: {sucursalFilterOptions.find(s => s.value === selectedSucursal)?.label}
+                                </span>
+                            )}
+                            <button
+                                onClick={() => {
+                                    setSearchTerm('');
+                                    setSelectedEspecialidad('todas');
+                                    setSelectedDisponibilidad('todos');
+                                    setSelectedSucursal('todas');
+                                }}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                            >
+                                Limpiar filtros
+                            </button>
+                        </div>
+                    )}
+                </div>
 
                 <DataTable
                     columns={tableColumns}
@@ -461,7 +573,7 @@ const Optometristas = () => {
                     renderRow={renderRow}
                     loading={loading}
                     noDataMessage="No se encontraron optometristas"
-                    noDataSubMessage={searchTerm ? 'Intenta con otros términos de búsqueda' : 'Aún no hay optometristas registrados'}
+                    noDataSubMessage={searchTerm ? 'Intenta con otros términos de búsqueda' : 'Los optometristas se crean desde la sección de empleados'}
                 />
                 
                 <Pagination {...paginationProps} />
@@ -483,70 +595,82 @@ const Optometristas = () => {
                 onEditEmployeeRequest={handleEditEmployeeRequest}
             />
 
-<DetailModal
-    isOpen={isDetailModalOpen}
-    onClose={handleCloseModals}
-    title="Detalles del Optometrista"
-    item={selectedOptometrista?.empleadoId || {}}
-    data={selectedOptometrista ? [
-        { 
-            label: "Nombre Completo", 
-            value: selectedOptometrista.empleadoId ? 
-                `${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}` : 
-                'N/A' 
-        },
-        { 
-            label: "Email", 
-            value: selectedOptometrista.empleadoId?.correo || 'N/A' 
-        },
-        { 
-            label: "Teléfono", 
-            value: selectedOptometrista.empleadoId?.telefono || 'N/A' 
-        },
-        { 
-            label: "Especialidad", 
-            value: selectedOptometrista.especialidad, 
-            color: getEspecialidadColor(selectedOptometrista.especialidad) 
-        },
-        { label: "Licencia", value: selectedOptometrista.licencia },
-        { label: "Experiencia", value: `${selectedOptometrista.experiencia || 0} años` },
-        { 
-            label: "Sucursales Asignadas", 
-            value: formatSucursales(selectedOptometrista.sucursalesAsignadas) 
-        },
-        { 
-            label: "Estado", 
-            value: getDisponibilidadColor(selectedOptometrista.disponible).text, 
-            color: getDisponibilidadColor(selectedOptometrista.disponible).color 
-        },
-        { 
-            label: "Fecha de Registro", 
-            value: selectedOptometrista.createdAt ? 
-                new Date(selectedOptometrista.createdAt).toLocaleDateString('es-ES') : 
-                'N/A' 
-        },
-    ] : []}
->
-    {/* Visualización gráfica de horarios */}
-    {selectedOptometrista && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-            <HorariosVisualizacion 
-                disponibilidad={selectedOptometrista.disponibilidad || []} 
-            />
-        </div>
-    )}
-</DetailModal>
+            <DetailModal
+                isOpen={isDetailModalOpen}
+                onClose={handleCloseModals}
+                title="Detalles del Optometrista"
+                item={selectedOptometrista?.empleadoId || {}}
+                data={selectedOptometrista ? [
+                    { 
+                        label: "Nombre Completo", 
+                        value: selectedOptometrista.empleadoId ? 
+                            `${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}` : 
+                            'N/A' 
+                    },
+                    { 
+                        label: "Email", 
+                        value: selectedOptometrista.empleadoId?.correo || 'N/A' 
+                    },
+                    { 
+                        label: "Teléfono", 
+                        value: selectedOptometrista.empleadoId?.telefono || 'N/A' 
+                    },
+                    { 
+                        label: "Especialidad", 
+                        value: selectedOptometrista.especialidad, 
+                        color: getEspecialidadColor(selectedOptometrista.especialidad) 
+                    },
+                    { label: "Licencia", value: selectedOptometrista.licencia },
+                    { label: "Experiencia", value: `${selectedOptometrista.experiencia || 0} años` },
+                    { 
+                        label: "Sucursales Asignadas", 
+                        value: formatSucursales(selectedOptometrista.sucursalesAsignadas) 
+                    },
+                    { 
+                        label: "Estado", 
+                        value: getDisponibilidadColor(selectedOptometrista.disponible).text, 
+                        color: getDisponibilidadColor(selectedOptometrista.disponible).color 
+                    },
+                    { 
+                        label: "Fecha de Registro", 
+                        value: selectedOptometrista.createdAt ? 
+                            new Date(selectedOptometrista.createdAt).toLocaleDateString('es-ES') : 
+                            'N/A' 
+                    },
+                ] : []}
+            >
+                {/* Visualización gráfica de horarios */}
+                {selectedOptometrista && (
+                    <div className="mt-4 pt-4 border-t border-gray-200">
+                        <HorariosVisualizacion 
+                            disponibilidad={selectedOptometrista.disponibilidad || []} 
+                        />
+                    </div>
+                )}
+            </DetailModal>
 
+            {/* MODAL DE CONFIRMACIÓN CON MENSAJE MEJORADO */}
             <ConfirmationModal
                 isOpen={isDeleteModalOpen}
                 onClose={handleCloseModals}
                 onConfirm={handleDelete}
-                title="Confirmar Eliminación"
+                title="⚠️ Confirmar Eliminación Completa"
                 message={
                     selectedOptometrista?.empleadoId ? 
-                        `¿Estás seguro de que deseas eliminar al optometrista ${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}? Esta acción no se puede deshacer.` :
-                        '¿Estás seguro de que deseas eliminar este optometrista?'
+                        `¿Estás seguro de que deseas eliminar al optometrista ${selectedOptometrista.empleadoId.nombre} ${selectedOptometrista.empleadoId.apellido}?
+
+⚠️ ATENCIÓN: Esta acción también eliminará:
+• El registro del empleado asociado
+• Todos los datos del optometrista
+• Los horarios y disponibilidad configurados
+• Las asignaciones de sucursales
+
+Esta acción NO se puede deshacer.` :
+                        '¿Estás seguro de que deseas eliminar este optometrista y su empleado asociado? Esta acción no se puede deshacer.'
                 }
+                confirmLabel="Sí, eliminar todo"
+                cancelLabel="Cancelar"
+                type="danger"
             />
         </div>
     );

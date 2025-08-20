@@ -185,7 +185,11 @@ const EnhancedField = ({ field, value, onChange, error, formData, selectedEmplea
   const getFieldValue = () => {
     if (field.nested) {
       const keys = field.name.split('.');
-      return formData?.direccion?.[keys[1]] || '';
+      // CORREGIDO: Acceder correctamente a los datos anidados
+      if (keys[0] === 'direccion') {
+        return formData?.direccion?.[keys[1]] || '';
+      }
+      return formData?.[keys[0]]?.[keys[1]] || '';
     }
     return value || '';
   };
@@ -193,12 +197,21 @@ const EnhancedField = ({ field, value, onChange, error, formData, selectedEmplea
   const handleFieldChange = (e) => {
     if (field.nested) {
         const keys = e.target.name.split('.');
-        const newDireccion = { ...formData.direccion, [keys[1]]: e.target.value };
-        onChange({ target: { name: keys[0], value: newDireccion } });
-        
-        // Si cambia el departamento, resetear municipio
-        if (keys[1] === 'departamento') {
-            onChange({ target: { name: 'direccion', value: { ...newDireccion, municipio: '' } } });
+        if (keys[0] === 'direccion') {
+          // CORREGIDO: Manejar la estructura de dirección correctamente
+          const newDireccion = { 
+            ...formData.direccion, 
+            [keys[1]]: e.target.value 
+          };
+          onChange({ target: { name: 'direccion', value: newDireccion } });
+          
+          // Si cambia el departamento, resetear municipio
+          if (keys[1] === 'departamento') {
+              onChange({ target: { 
+                name: 'direccion', 
+                value: { ...newDireccion, municipio: '' } 
+              }});
+          }
         }
     } else {
         onChange(e);
@@ -419,7 +432,7 @@ const EmpleadosFormModal = ({
                             <div key={fIdx} className={field.className || ''}>
                                 <EnhancedField 
                                     field={field} 
-                                    value={formData?.[field.name]} 
+                                    value={field.nested ? null : formData?.[field.name]} 
                                     onChange={handleInputChange} 
                                     error={field.nested ? errors?.[field.name.split('.')[1]] : errors?.[field.name]} 
                                     formData={formData}
