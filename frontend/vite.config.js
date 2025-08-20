@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react(),
     tailwindcss()
   ],
-  base: '/A.U.R.O.R.A/', // debe coincidir con tu repo
+  base: '/A.U.R.O.R.A/',
   server: {
     proxy: {
       '/api': 'https://a-u-r-o-r-a.onrender.com',
