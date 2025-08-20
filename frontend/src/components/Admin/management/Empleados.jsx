@@ -121,10 +121,33 @@ const Empleados = () => {
     }, []);
 
     // --- FORMULARIO EMPLEADO ---
-    const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm({
-        nombre: '', apellido: '', dui: '', telefono: '', correo: '', cargo: '', sucursalId: '',
-        fechaContratacion: '', salario: '', estado: 'Activo', password: '', fotoPerfil: '',
-        direccion: { departamento: '', municipio: '', direccionDetallada: '' }
+    const { 
+        formData, 
+        setFormData, 
+        handleInputChange, 
+        handleNestedChange,
+        resetForm, 
+        validateForm, 
+        errors, 
+        setErrors 
+    } = useForm({
+        nombre: '', 
+        apellido: '', 
+        dui: '', 
+        telefono: '', 
+        correo: '', 
+        cargo: '', 
+        sucursalId: '',
+        fechaContratacion: '', 
+        salario: '', 
+        estado: 'Activo', 
+        password: '', 
+        fotoPerfil: '',
+        direccion: { 
+          departamento: '', 
+          municipio: '', 
+          direccionDetallada: '' 
+        }
     }, (data) => {
         const newErrors = {};
         if (!data.nombre.trim()) newErrors.nombre = 'El nombre es requerido';
@@ -1025,11 +1048,12 @@ const Empleados = () => {
                 formData={formData}
                 setFormData={setFormData}
                 handleInputChange={handleInputChange}
+                handleNestedChange={handleNestedChange}
                 errors={errors}
                 submitLabel={getSubmitLabel()} // CORRECCIÓN: Pasar la función, no ejecutarla
                 sucursales={sucursales}
                 selectedEmpleado={selectedEmpleado}
-                onReturnToOptometristaEdit={() => handleReturnToOptometristaEdit(selectedEmpleado._id)}
+                onReturnToOptometristaEdit={() => selectedEmpleado && handleReturnToOptometristaEdit(selectedEmpleado._id)}
             />
 
             {/* Modal de optometrista (paso 2) */}

@@ -5,6 +5,7 @@ import { API_CONFIG, buildApiUrl } from '../../../config/api';
 import FormModal from '../ui/FormModal';
 import Alert, { ToastContainer, useAlert } from '../../ui/Alert';
 import DetailModal from '../ui/DetailModal';
+import axios from 'axios';
 
 const PersonalizadosContent = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -25,20 +26,24 @@ const PersonalizadosContent = () => {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
 
-    const [formData, setFormData] = useState({
-      clienteId: '',
-      productoBaseId: '',
-      nombre: '',
-      descripcion: '',
-      categoria: '',
-      marcaId: '',
-      material: '',
-      color: '',
-      tipoLente: '',
-      precioCalculado: null,
-      fechaEntregaEstimada: '',
-      cotizacion: { total: null, validaHasta: '' }
-    });
+    const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+  const [categoryError, setCategoryError] = useState(null);
+
+  const [formData, setFormData] = useState({
+    clienteId: '',
+    productoBaseId: '',
+    nombre: '',
+    descripcion: '',
+    categoria: '',
+    marcaId: '',
+    material: '',
+    color: '',
+    tipoLente: '',
+    precioCalculado: null,
+    fechaEntregaEstimada: '',
+    cotizacion: { total: null, validaHasta: '' }
+  });
     const [errors, setErrors] = useState({});
     const estadoOptions = [
       { value: 'pendiente', label: 'Pendiente' },
@@ -345,11 +350,43 @@ const PersonalizadosContent = () => {
       return () => { cancelled = true; };
     }, [refreshKey, allPersonalizados]);
 
-    // Opciones para selects
-    const clienteOptions = useMemo(() => (Array.isArray(clientesData) ? clientesData.map(c => ({
-      value: c._id,
-      label: c.nombre || c.fullName || c.razonSocial || c.email || String(c._id)
-    })) : []), [clientesData]);
+    // Fetch categories on component mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      setLoadingCategories(true);
+      setCategoryError(null);
+      try {
+        const response = await axios.get(buildApiUrl(API_CONFIG.ENDPOINTS.CATEGORIAS), {
+          withCredentials: true
+        });
+        if (response.data && Array.isArray(response.data)) {
+          setCategories(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        setCategoryError('No se pudieron cargar las categorías');
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
+  // Opciones para selects
+  const clienteOptions = useMemo(() => (Array.isArray(clientesData) ? clientesData.map(c => ({
+    value: c._id,
+    label: c.nombre || c.fullName || c.razonSocial || c.email || String(c._id)
+  })) : []), [clientesData]);
+
+  // Opciones de categorías para el select
+  const categoriaOptions = useMemo(() => {
+    if (loadingCategories) return [];
+    return categories.map(cat => ({
+      value: cat.nombre,
+      label: cat.nombre
+    }));
+  }, [categories, loadingCategories]);
 
     const lenteOptions = useMemo(() => (Array.isArray(lentesData) ? lentesData.map(l => ({
       value: l._id,
@@ -497,7 +534,7 @@ const PersonalizadosContent = () => {
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                 />
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => setSelectedCategory('todos')}
                   className={`px-4 py-2 rounded-lg transition-colors ${
@@ -508,26 +545,25 @@ const PersonalizadosContent = () => {
                 >
                   Todos
                 </button>
-                <button
-                  onClick={() => setSelectedCategory('Lentes')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    selectedCategory === 'Lentes' 
-                      ? 'bg-cyan-500 text-white' 
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  Lentes
-                </button>
-                <button
-                  onClick={() => setSelectedCategory('Accesorios')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    selectedCategory === 'Accesorios' 
-                      ? 'bg-cyan-500 text-white' 
-                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  Accesorios
-                </button>
+                {loadingCategories ? (
+                  <div className="px-4 py-2 text-gray-500">Cargando categorías...</div>
+                ) : categoryError ? (
+                  <div className="px-4 py-2 text-red-500">{categoryError}</div>
+                ) : (
+                  categories.map(cat => (
+                    <button
+                      key={cat._id}
+                      onClick={() => setSelectedCategory(cat.nombre)}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        selectedCategory === cat.nombre
+                          ? 'bg-cyan-500 text-white'
+                          : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {cat.nombre}
+                    </button>
+                  ))
+                )}
                 <button
                   onClick={() => setShowRecentOnly(prev => !prev)}
                   className={`px-4 py-2 rounded-lg transition-colors ${
@@ -672,7 +708,7 @@ const PersonalizadosContent = () => {
             { name: 'productoBaseId', label: 'Producto Base (Lente)', type: 'select', required: true, options: lenteOptions },
             { name: 'nombre', label: 'Nombre', type: 'text', required: true },
             { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
-            { name: 'categoria', label: 'Categoría', type: 'text', required: true },
+            { name: 'categoria', label: 'Categoría', type: 'select', required: true, options: categoriaOptions, loading: loadingCategories },
             { name: 'marcaId', label: 'Marca', type: 'select', required: true, options: marcaOptions },
             { name: 'material', label: 'Material', type: 'text', required: true },
             { name: 'color', label: 'Color', type: 'text', required: true },
@@ -702,7 +738,7 @@ const PersonalizadosContent = () => {
             { name: 'productoBaseId', label: 'Producto Base (Lente)', type: 'select', required: true, options: lenteOptions },
             { name: 'nombre', label: 'Nombre', type: 'text', required: true },
             { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
-            { name: 'categoria', label: 'Categoría', type: 'text', required: true },
+            { name: 'categoria', label: 'Categoría', type: 'select', required: true, options: categoriaOptions, loading: loadingCategories },
             { name: 'marcaId', label: 'Marca', type: 'select', required: true, options: marcaOptions },
             { name: 'material', label: 'Material', type: 'text', required: true },
             { name: 'color', label: 'Color', type: 'text', required: true },

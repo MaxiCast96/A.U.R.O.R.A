@@ -7,6 +7,9 @@ import Clientes from '../models/Clientes.js'; // Modelo de clientes
 import Empleados from '../models/Empleados.js'; // Modelo de empleados
 
 const router = express.Router();
+// Configuración de intentos y bloqueo
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCK_TIME_MS = 5 * 60 * 1000; // 5 minutos
 
 /**
  * @route POST /api/auth/login
@@ -43,12 +46,41 @@ const login = async (req, res) => {
       });
     }
 
+    // Si el usuario estaba bloqueado, verificar si ya expiró el bloqueo
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingMs = user.lockUntil - Date.now();
+      const remainingSec = Math.ceil(remainingMs / 1000);
+      return res.status(423).json({
+        success: false,
+        message: `Cuenta bloqueada por intentos fallidos. Intenta nuevamente en ${Math.ceil(remainingSec / 60)} minuto(s).`
+      });
+    } else if (user.lockUntil && user.lockUntil <= Date.now()) {
+      // Bloqueo expirado: limpiar contador y bloqueo
+      user.loginAttempts = 0;
+      user.lockUntil = undefined;
+      try { await user.save(); } catch {}
+    }
+
     // Verificar contraseña hasheada contra la proporcionada
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
+      try {
+        const attempts = (user.loginAttempts || 0) + 1;
+        user.loginAttempts = attempts;
+        if (attempts >= MAX_LOGIN_ATTEMPTS) {
+          user.lockUntil = new Date(Date.now() + LOCK_TIME_MS);
+          user.loginAttempts = 0; // reiniciar para la próxima ventana
+          await user.save();
+          return res.status(423).json({
+            success: false,
+            message: 'Has superado el número de intentos. La cuenta se ha bloqueado por 5 minutos.'
+          });
+        }
+        await user.save();
+      } catch {}
       return res.status(401).json({
         success: false,
-        message: 'Credenciales inválidas'
+        message: `Credenciales inválidas. Intentos restantes: ${Math.max(0, MAX_LOGIN_ATTEMPTS - (user.loginAttempts || 0))}`
       });
     }
 
@@ -59,6 +91,13 @@ const login = async (req, res) => {
         message: 'Su cuenta ha sido desactivada. Contacte al administrador.'
       });
     }
+
+    // Restablecer intentos y bloqueo al iniciar sesión correctamente
+    try {
+      user.loginAttempts = 0;
+      user.lockUntil = undefined;
+      await user.save();
+    } catch {}
 
     // Crear token JWT con datos del usuario
     const token = jwt.sign(

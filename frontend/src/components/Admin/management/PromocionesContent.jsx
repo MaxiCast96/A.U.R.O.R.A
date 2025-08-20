@@ -188,7 +188,7 @@ const PromocionesContent = () => {
 
   const showAlert = (type, message) => {
     setAlert({ type, message });
-    setTimeout(() => setAlert(null), 4500);
+    setTimeout(() => setAlert(null), 5000);
   };
 
   // Fetch data - CAMBIO: obtener lentes Y accesorios
@@ -472,7 +472,9 @@ const PromocionesContent = () => {
       />
 
       {alert && (
-        <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
+          <Alert type={alert.type} message={alert.message} onClose={() => setAlert(null)} />
+        </div>
       )}
 
       {/* Stats mejoradas */}

@@ -7,7 +7,7 @@ const Alert = ({ type = 'success', message = '', onClose }) => {
     if (!message) return;
     const timer = setTimeout(() => {
       onClose && onClose();
-    }, 4000);
+    }, 5000);
     return () => clearTimeout(timer);
   }, [message, onClose]);
 

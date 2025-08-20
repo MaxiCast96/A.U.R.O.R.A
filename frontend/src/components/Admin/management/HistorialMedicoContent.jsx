@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import {
   Users, UserCheck, Eye, FileText, Receipt, Search, Plus, Trash2, Edit, Clock
@@ -6,6 +6,16 @@ import {
 import DetailModal from '../ui/DetailModal';
 
 const API_URL = 'https://a-u-r-o-r-a.onrender.com/api';
+
+// Helper para formatear fechas a YYYY-MM-DD para inputs type="date"
+const toYMD = (val) => {
+  if (!val) return '';
+  try {
+    const d = new Date(val);
+    if (isNaN(d.getTime())) return '';
+    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  } catch { return ''; }
+};
 
 const initialFormState = {
   clienteId: '',
@@ -39,12 +49,24 @@ const HistorialMedicoContent = () => {
   const [clienteDetalle, setClienteDetalle] = useState(null);
   const [recetasCliente, setRecetasCliente] = useState([]);
   const [historialesCliente, setHistorialesCliente] = useState([]);
+
+  // Set de clientes que ya tienen historial, para evitar duplicados en UI
+  const clientesConHistorial = useMemo(() => {
+    const set = new Set();
+    for (const h of historiales) {
+      const id = h?.clienteId && typeof h.clienteId === 'object' ? h.clienteId._id : h?.clienteId;
+      if (id) set.add(id);
+    }
+    return set;
+  }, [historiales]);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailData, setDetailData] = useState(null);
   const [editHistorial, setEditHistorial] = useState(null);
   const [editReceta, setEditReceta] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
+  const [overwriteTarget, setOverwriteTarget] = useState(null);
 
   // Fetch historiales y clientes reales
   useEffect(() => {
@@ -118,20 +140,59 @@ const HistorialMedicoContent = () => {
     }
   };
 
-  const handleAddHistorial = async (e) => {
+  const handleSaveHistorial = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      await axios.post(`${API_URL}/historialMedico`, formData);
-      setAlert({ type: 'success', message: 'Historial médico creado exitosamente.' });
+      if (editHistorial && editHistorial._id) {
+        await axios.put(`${API_URL}/historialMedico/${editHistorial._id}`, formData);
+        setAlert({ type: 'success', message: 'Historial médico actualizado exitosamente.' });
+      } else {
+        // Si ya existe un historial para este cliente, pedir confirmación para sobrescribir
+        const existing = historiales.find(h => (h.clienteId?._id || h.clienteId) === formData.clienteId);
+        if (existing) {
+          setOverwriteTarget(existing);
+          setShowOverwriteConfirm(true);
+          setLoading(false);
+          return;
+        } else {
+          await axios.post(`${API_URL}/historialMedico`, formData);
+          setAlert({ type: 'success', message: 'Historial médico creado exitosamente.' });
+        }
+      }
       setShowAddModal(false);
+      setEditHistorial(null);
       setFormData(initialFormState);
       // Refrescar lista
       const historialesRes = await axios.get(`${API_URL}/historialMedico`);
       setHistoriales(historialesRes.data || []);
     } catch (err) {
-      setError('Error al crear historial médico.');
+      setError('Error al guardar historial médico.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Confirmar sobrescritura de expediente existente
+  const confirmOverwrite = async () => {
+    if (!overwriteTarget?._id) {
+      setShowOverwriteConfirm(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await axios.put(`${API_URL}/historialMedico/${overwriteTarget._id}`, formData);
+      setAlert({ type: 'success', message: 'Se sobrescribió el expediente existente del cliente.' });
+      setShowOverwriteConfirm(false);
+      setShowAddModal(false);
+      setEditHistorial(null);
+      setFormData(initialFormState);
+      const historialesRes = await axios.get(`${API_URL}/historialMedico`);
+      setHistoriales(historialesRes.data || []);
+    } catch (err) {
+      setError('Error al sobrescribir el expediente.');
     } finally {
       setLoading(false);
     }
@@ -169,10 +230,32 @@ const HistorialMedicoContent = () => {
     // Cargar datos al form
     setFormData({
       clienteId: historial.clienteId?._id || '',
-      padecimientos: { ...historial.padecimientos },
-      historialVisual: { ...historial.historialVisual }
+      padecimientos: {
+        tipo: historial.padecimientos?.tipo || '',
+        descripcion: historial.padecimientos?.descripcion || '',
+        fechaDeteccion: toYMD(historial.padecimientos?.fechaDeteccion)
+      },
+      historialVisual: {
+        fecha: toYMD(historial.historialVisual?.fecha),
+        diagnostico: historial.historialVisual?.diagnostico || '',
+        receta: {
+          ojoDerecho: {
+            esfera: historial.historialVisual?.receta?.ojoDerecho?.esfera || '',
+            cilindro: historial.historialVisual?.receta?.ojoDerecho?.cilindro || '',
+            eje: historial.historialVisual?.receta?.ojoDerecho?.eje || '',
+            adicion: historial.historialVisual?.receta?.ojoDerecho?.adicion || ''
+          },
+          ojoIzquierdo: {
+            esfera: historial.historialVisual?.receta?.ojoIzquierdo?.esfera || '',
+            cilindro: historial.historialVisual?.receta?.ojoIzquierdo?.cilindro || '',
+            eje: historial.historialVisual?.receta?.ojoIzquierdo?.eje || '',
+            adicion: historial.historialVisual?.receta?.ojoIzquierdo?.adicion || ''
+          }
+        }
+      }
     });
   };
+
   const handleEditReceta = (receta) => {
     setShowClienteModal(false); // Cierra el modal de cliente
     // Guardar el id de la receta a editar en localStorage
@@ -222,7 +305,7 @@ const HistorialMedicoContent = () => {
         <div className="bg-cyan-500 text-white p-6 flex justify-between items-center">
             <h2 className="text-2xl font-bold">Historial Médico</h2>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={() => { setEditHistorial(null); setFormData(initialFormState); setShowAddModal(true); }}
               className="bg-white text-cyan-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
@@ -273,8 +356,8 @@ const HistorialMedicoContent = () => {
       {/* Modal para añadir historial */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
-          <form onSubmit={handleAddHistorial} className="bg-white rounded-xl shadow-2xl w-full max-w-lg md:max-w-2xl p-4 md:p-8 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-xl font-bold mb-4">Nuevo Historial Médico</h3>
+          <form onSubmit={handleSaveHistorial} className="bg-white rounded-xl shadow-2xl w-full max-w-lg md:max-w-2xl p-4 md:p-8 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4">{editHistorial ? 'Editar Historial Médico' : 'Nuevo Historial Médico'}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Cliente *</label>
@@ -283,12 +366,19 @@ const HistorialMedicoContent = () => {
                   value={formData.clienteId}
                   onChange={handleInputChange}
                   required
+                  disabled={!!editHistorial}
                   className="w-full px-3 py-2 border rounded-lg"
                 >
                   <option value="">Seleccione un cliente</option>
                   {clientes.map(cliente => (
-                    <option key={cliente._id} value={cliente._id}>{cliente.nombre} {cliente.apellido}</option>
-              ))}
+                    <option
+                      key={cliente._id}
+                      value={cliente._id}
+                    >
+                      {cliente.nombre} {cliente.apellido}
+                      {!editHistorial && clientesConHistorial.has(cliente._id) ? ' (ya tiene expediente)' : ''}
+                    </option>
+                  ))}
             </select>
               </div>
               <div>
@@ -367,12 +457,12 @@ const HistorialMedicoContent = () => {
                       <input type="number" step="0.01" name="historialVisual.receta.ojoIzquierdo.adicion" placeholder="Adición" value={formData.historialVisual.receta.ojoIzquierdo.adicion} onChange={handleInputChange} className="w-full px-2 py-1 border rounded-lg" />
                     </div>
                   </div>
-                </div>
               </div>
             </div>
+            </div>
             <div className="flex justify-end gap-2 pt-2">
-              <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">Cancelar</button>
-              <button type="submit" className="px-4 py-2 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600">Guardar</button>
+              <button type="button" onClick={() => { setShowAddModal(false); setFormData(initialFormState); }} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">Cancelar</button>
+              <button type="submit" className="px-4 py-2 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600">{editHistorial ? 'Actualizar' : 'Guardar'}</button>
           </div>
             {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
           </form>
@@ -489,6 +579,21 @@ const HistorialMedicoContent = () => {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Modal de confirmación de sobrescritura de expediente */}
+      {showOverwriteConfirm && overwriteTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6">
+            <h3 className="text-lg font-bold mb-2">No se puede agregar otro expediente</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              El cliente seleccionado ya tiene un expediente existente. ¿Deseas sobrescribir los datos del expediente ya creado con la información actual del formulario?
+            </p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowOverwriteConfirm(false)} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">Cancelar</button>
+              <button onClick={confirmOverwrite} className="px-4 py-2 rounded-lg bg-yellow-500 text-white hover:bg-yellow-600">Sobrescribir</button>
+            </div>
           </div>
         </div>
       )}

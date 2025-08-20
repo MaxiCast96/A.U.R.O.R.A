@@ -56,7 +56,11 @@ const Home = () => {
     if (p.aplicaA === 'lente') return 'Aplicable a lentes seleccionados';
     return 'Promoción por tiempo limitado';
   };
-  const getPromoImage = (p) => p?.imagen || p?.bannerUrl || p?.imagenUrl || null;
+  const getPromoImage = (p) => {
+    if (!p) return null;
+    // Check for image in different possible locations
+    return p.imagenPromocion || p.imagen || p.bannerUrl || p.imagenUrl || null;
+  };
   const heroPromos = React.useMemo(() => {
     const now = new Date();
     const list = Array.isArray(safePromociones) ? safePromociones.slice() : [];
@@ -307,13 +311,21 @@ const Home = () => {
                           transition={{ duration: 0.4, ease: "easeOut" }}
                           className="relative z-10"
                         >
-                          <motion.img
+                          <motion.div 
+                            className="w-full h-full flex items-center justify-center"
                             animate={{ y: [0, -8, 0] }}
                             transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                            src={getPromoImage(currentPromo) || Lente1}
-                            alt={getPromoTitle(currentPromo)}
-                            className="w-80 h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] xl:w-[500px] xl:h-[500px] object-contain"
-                          />
+                          >
+                            <img
+                              src={getPromoImage(currentPromo) || Lente1}
+                              alt={getPromoTitle(currentPromo)}
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = Lente1;
+                              }}
+                            />
+                          </motion.div>
                         </motion.div>
                       ) : (
                         <motion.div

@@ -90,18 +90,21 @@ const LentesFormModal = ({
   // Manejar el cambio de stock para una sucursal específica
   const handleStockChange = (sucursalId, value) => {
     const stockValue = Number(value);
-    const updatedSucursales = formData.sucursales.map(s =>
-      s.sucursalId === sucursalId ? { ...s, stock: stockValue } : s
-    );
+    const targetId = String(sucursalId);
+    const updatedSucursales = (formData.sucursales || []).map((s) => {
+      const existingId = String(s?.sucursalId?._id || s?.sucursalId || '');
+      return existingId === targetId ? { ...s, stock: stockValue } : s;
+    });
 
     // Si la sucursal no está en la lista de formData, añadirla (útil para lentes nuevos)
-    if (!updatedSucursales.some(s => s.sucursalId === sucursalId)) {
-        const sucursalName = sucursales.find(s => s._id === sucursalId)?.nombre;
-        updatedSucursales.push({
-            sucursalId,
-            nombreSucursal: sucursalName,
-            stock: stockValue
-        });
+    const exists = updatedSucursales.some((s) => String(s?.sucursalId?._id || s?.sucursalId || '') === targetId);
+    if (!exists) {
+      const sucursalName = sucursales.find((s) => String(s._id) === targetId)?.nombre;
+      updatedSucursales.push({
+        sucursalId,
+        nombreSucursal: sucursalName,
+        stock: stockValue,
+      });
     }
 
     handleInputChange({
@@ -219,7 +222,9 @@ const LentesFormModal = ({
           <div className="space-y-3">
             {sucursales.map((sucursal) => {
               // Encuentra el stock actual para esta sucursal o 0 si no existe
-              const currentStockEntry = formData.sucursales.find(s => String(s.sucursalId) === String(sucursal._id));
+              const currentStockEntry = (formData.sucursales || []).find(
+                (s) => String(s?.sucursalId?._id || s?.sucursalId || '') === String(sucursal._id)
+              );
               const currentStock = currentStockEntry ? currentStockEntry.stock : 0;
               return (
                 <div key={sucursal._id} className="flex items-center gap-3">

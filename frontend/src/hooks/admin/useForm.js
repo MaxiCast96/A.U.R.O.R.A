@@ -27,15 +27,33 @@ export const useForm = (initialState, validate) => {
       inputValue = value === '' ? '' : Number(value);
     }
 
-    // Actualizar el estado del formulario
-    setFormData(prev => ({ ...prev, [name]: inputValue }));
-    
-    // Limpiar error del campo si existe
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: null }));
+    // Check if this is a nested field (e.g., 'direccion.departamento')
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...(prev[parent] || {}),
+          [child]: inputValue
+        }
+      }));
+      
+      // Clear error for this field if it exists
+      if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: null }));
+      }
+    } else {
+      // Handle non-nested fields
+      setFormData(prev => ({ ...prev, [name]: inputValue }));
+      
+      // Clear error for this field if it exists
+      if (errors[name]) {
+        setErrors(prev => ({ ...prev, [name]: null }));
+      }
     }
     
-    // Marcar campo como tocado
+    // Mark field as touched
     setTouched(prev => ({ ...prev, [name]: true }));
   }, [errors]);
 

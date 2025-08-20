@@ -90,6 +90,9 @@ const empleadoSchema = new Schema({
     },
     resetPasswordToken: { type: String }, // Token para resetear contraseña
     resetPasswordExpires: { type: Date }, // Expiración del token
+    // Control de intentos de inicio de sesión y bloqueo temporal
+    loginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
 }, {
     timestamps: true, // Agrega createdAt y updatedAt
     strict: true

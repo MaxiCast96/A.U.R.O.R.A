@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import Alert from '../ui/Alert';
+import ConfirmationModal from '../ui/ConfirmationModal';
 import { 
-  Search, Plus, Trash2, Eye, Edit, Tags, Package, UserCheck, Glasses, ShoppingBag, Save, AlertTriangle,
+  Search, Plus, Trash2, Eye, Edit, Tags, Package, UserCheck, Glasses, ShoppingBag, Save, AlertTriangle, CheckCircle,
   Heart, Star, Home, User, Settings, Bell, Calendar, Clock, Mail, Phone, Camera, Image, Music,
   Video, Download, Upload, Folder, File, Archive, Bookmark, Flag, Shield, Lock, Key, Zap,
   Wifi, Battery, Bluetooth, Headphones, Mic, Speaker, Monitor, Smartphone, Tablet, Laptop,
@@ -448,7 +450,7 @@ const CategoriasContent = () => {
   // Estados principales
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [alert, setAlert] = useState({ type: '', message: '' }); // 'error' or 'success'
   
   // Estados para UI
   const [searchTerm, setSearchTerm] = useState('');
@@ -460,6 +462,8 @@ const CategoriasContent = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedCategoria, setSelectedCategoria] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [categoriaToDelete, setCategoriaToDelete] = useState(null);
   
   // Estados para formulario
   const [formData, setFormData] = useState({
@@ -530,11 +534,11 @@ const CategoriasContent = () => {
       if (Array.isArray(data)) {
         setCategorias(data);
       } else if (data.message) {
-        setError(data.message);
+        showAlert('error', data.message);
         setCategorias([]);
       }
     } catch (err) {
-      setError('Error al conectar con el servidor');
+      showAlert('error', 'Error al conectar con el servidor');
       setCategorias([]);
     } finally {
       setLoading(false);
@@ -595,12 +599,12 @@ const CategoriasContent = () => {
         await fetchCategorias();
         setShowAddModal(false);
         resetForm();
-        setError('');
+        showAlert('success', 'Categoría creada exitosamente');
       } else {
-        setError(result.message || 'Error al crear la categoría');
+        showAlert('error', result.message || 'Error al crear la categoría');
       }
     } catch (err) {
-      setError('Error al conectar con el servidor');
+      showAlert('error', 'Error al conectar con el servidor');
     }
   };
 
@@ -621,34 +625,39 @@ const CategoriasContent = () => {
         setShowEditModal(false);
         resetForm();
         setSelectedCategoria(null);
-        setError('');
+        showAlert('success', 'Categoría actualizada exitosamente');
       } else {
-        setError(result.message || 'Error al actualizar la categoría');
+        showAlert('error', result.message || 'Error al actualizar la categoría');
       }
     } catch (err) {
-      setError('Error al conectar con el servidor');
+      showAlert('error', 'Error al conectar con el servidor');
     }
   };
 
-  // Función para eliminar categoría
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Está seguro de que desea eliminar esta categoría?')) {
-      return;
-    }
-    
+  // Abrir modal de confirmación para eliminar
+  const requestDeleteCategoria = (id) => {
+    setCategoriaToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  // Confirmar eliminación
+  const confirmDeleteCategoria = async () => {
+    if (!categoriaToDelete) return;
     try {
-      const result = await requestWithFallback(`/${id}`, {
+      const result = await requestWithFallback(`/${categoriaToDelete}`, {
         method: 'DELETE',
       });
-      
       if (result.message === 'Categoria eliminada') {
         await fetchCategorias();
-        setError('');
+        showAlert('success', 'Categoría eliminada exitosamente');
       } else {
-        setError(result.message || 'Error al eliminar la categoría');
+        showAlert('error', result.message || 'Error al eliminar la categoría');
       }
     } catch (err) {
-      setError('Error al conectar con el servidor');
+      showAlert('error', 'Error al conectar con el servidor');
+    } finally {
+      setShowDeleteModal(false);
+      setCategoriaToDelete(null);
     }
   };
 
@@ -660,6 +669,7 @@ const CategoriasContent = () => {
       icono: ''
     });
     setFormErrors({});
+    clearAlert();
   };
 
   // Función para abrir modal de edición
@@ -685,8 +695,21 @@ const CategoriasContent = () => {
     setShowAddModal(false);
     setShowEditModal(false);
     setShowDetailModal(false);
+    setShowDeleteModal(false);
     setSelectedCategoria(null);
     resetForm();
+    clearAlert();
+  };
+
+  // Función para mostrar alerta
+  const showAlert = (type, message) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert({ type: '', message: '' }), 5000); // Auto-hide after 5 seconds
+  };
+
+  // Función para limpiar alertas
+  const clearAlert = () => {
+    setAlert({ type: '', message: '' });
   };
 
   // Filtrar categorías
@@ -721,19 +744,19 @@ const CategoriasContent = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Mensaje de error */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          <span className="block sm:inline">{error}</span>
-          <button 
-            className="absolute top-0 bottom-0 right-0 px-4 py-3"
-            onClick={() => setError('')}
-          >
-            <span className="sr-only">Cerrar</span>
-            ×
-          </button>
-        </div>
-      )}
+      {/* Alertas */}
+      <div className="sticky top-2 z-40">
+        <Alert type={alert.type || 'info'} message={alert.message} onClose={clearAlert} />
+      </div>
+
+      {/* Modal de confirmación de eliminación */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => { setShowDeleteModal(false); setCategoriaToDelete(null); }}
+        onConfirm={confirmDeleteCategoria}
+        title="Confirmar eliminación"
+        message="¿Está seguro de que desea eliminar esta categoría? Esta acción no se puede deshacer."
+      />
 
       {/* Estadísticas rápidas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -839,7 +862,7 @@ const CategoriasContent = () => {
                   <td className="px-6 py-4">
                     <div className="flex space-x-2">
                       <button 
-                        onClick={() => handleDelete(categoria._id)}
+                        onClick={() => requestDeleteCategoria(categoria._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
                         title="Eliminar"
                       >

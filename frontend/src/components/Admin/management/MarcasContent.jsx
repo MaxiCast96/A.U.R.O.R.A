@@ -580,14 +580,14 @@ const MarcasContent = () => {
 
     const createMarca = async (marcaData) => {
         try {
-            const response = await axiosWithFallback('post', MARCAS_EP, {
+            await axiosWithFallback('post', MARCAS_EP, {
                 ...marcaData,
                 fechaCreacion: new Date().toISOString()
             });
-            
-            // Actualizar la lista local inmediatamente
-            setMarcas(prev => [...prev, response.data]);
-            
+
+            // Refrescar desde servidor para garantizar consistencia
+            await fetchMarcas();
+
             showAlert('success', '¡Marca creada exitosamente!');
             handleCloseModals();
         } catch (error) {
@@ -598,16 +598,14 @@ const MarcasContent = () => {
 
     const updateMarca = async (id, marcaData) => {
         try {
-            const response = await axiosWithFallback('put', `${MARCAS_EP}/${id}`, {
+            await axiosWithFallback('put', `${MARCAS_EP}/${id}`, {
                 ...marcaData,
                 fechaActualizacion: new Date().toISOString()
             });
-            
-            // Actualizar la lista local inmediatamente
-            setMarcas(prev => prev.map(marca => 
-                marca._id === id ? { ...marca, ...response.data } : marca
-            ));
-            
+
+            // Refrescar desde servidor para garantizar consistencia
+            await fetchMarcas();
+
             showAlert('success', '¡Marca actualizada exitosamente!');
             handleCloseModals();
         } catch (error) {
@@ -619,10 +617,10 @@ const MarcasContent = () => {
     const deleteMarca = async (id) => {
         try {
             await axiosWithFallback('delete', `${MARCAS_EP}/${id}`);
-            
-            // Actualizar la lista local inmediatamente
-            setMarcas(prev => prev.filter(marca => marca._id !== id));
-            
+
+            // Refrescar desde servidor para garantizar consistencia
+            await fetchMarcas();
+
             showAlert('success', '¡Marca eliminada exitosamente!');
             handleCloseModals();
         } catch (error) {

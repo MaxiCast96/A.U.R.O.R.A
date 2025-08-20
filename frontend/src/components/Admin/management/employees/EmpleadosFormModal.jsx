@@ -120,7 +120,7 @@ const ValidationAlert = ({ type, message, isVisible }) => {
   );
 };
 
-const EnhancedField = ({ field, value, onChange, error, formData, selectedEmpleado, onValidationChange }) => {
+const EnhancedField = ({ field, value, onChange, error, formData, handleNestedChange, selectedEmpleado, onValidationChange }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
 
@@ -185,41 +185,45 @@ const EnhancedField = ({ field, value, onChange, error, formData, selectedEmplea
   const getFieldValue = () => {
     if (field.nested) {
       const keys = field.name.split('.');
-      // CORREGIDO: Acceder correctamente a los datos anidados
+      // Handle nested address data
       if (keys[0] === 'direccion') {
-        return formData?.direccion?.[keys[1]] || '';
+        // Get the nested value with proper null checks
+        // First check if we have formData.direccion, if not, check selectedEmpleado.direccion
+        const direccionData = formData?.direccion || selectedEmpleado?.direccion || {};
+        return direccionData[keys[1]] || '';
       }
-      return formData?.[keys[0]]?.[keys[1]] || '';
+      // Handle other nested fields if needed
+      const nestedObj = formData?.[keys[0]] || selectedEmpleado?.[keys[0]] || {};
+      return nestedObj[keys[1]] || '';
     }
-    return value || '';
+    // Handle non-nested fields - check both formData and selectedEmpleado
+    return value ?? formData?.[field.name] ?? selectedEmpleado?.[field.name] ?? '';
   };
 
   const handleFieldChange = (e) => {
+    const { value } = e.target;
+    
     if (field.nested) {
-        const keys = e.target.name.split('.');
-        if (keys[0] === 'direccion') {
-          // CORREGIDO: Manejar la estructura de dirección correctamente
-          const newDireccion = { 
-            ...formData.direccion, 
-            [keys[1]]: e.target.value 
-          };
-          onChange({ target: { name: 'direccion', value: newDireccion } });
-          
-          // Si cambia el departamento, resetear municipio
-          if (keys[1] === 'departamento') {
-              onChange({ target: { 
-                name: 'direccion', 
-                value: { ...newDireccion, municipio: '' } 
-              }});
-          }
-        }
+      // Use handleNestedChange for nested fields
+      handleNestedChange(field.name, value);
+      
+      // If department changed, reset the municipality
+      if (field.name === 'direccion.departamento' && value !== selectedEmpleado?.direccion?.departamento) {
+        handleNestedChange('direccion.municipio', '');
+      }
     } else {
-        onChange(e);
-        
-        // Limpiar validación anterior al cambiar el campo
-        if (field.name === 'dui' || field.name === 'correo') {
-          setValidationResult(null);
+      // Handle non-nested fields
+      onChange({
+        target: {
+          name: field.name,
+          value: value
         }
+      });
+      
+      // Clear previous validation when changing the field
+      if (field.name === 'dui' || field.name === 'correo') {
+        setValidationResult(null);
+      }
     }
   };
 
@@ -305,6 +309,7 @@ const EmpleadosFormModal = ({
     title, 
     formData, 
     handleInputChange, 
+    handleNestedChange,
     errors, 
     submitLabel, 
     sucursales, 
@@ -330,7 +335,39 @@ const EmpleadosFormModal = ({
       }));
     };
 
-    // NUEVO: Efecto para determinar si se puede enviar el formulario
+    // Initialize form with employee data when editing
+    useEffect(() => {
+      if (selectedEmpleado) {
+        console.log('Initializing form with employee data:', selectedEmpleado);
+        setFormData(prev => ({
+          ...prev,
+          ...selectedEmpleado,
+          // Ensure direccion is properly initialized
+          direccion: {
+            departamento: '',
+            municipio: '',
+            direccionDetallada: '',
+            ...(selectedEmpleado.direccion || {})
+          },
+          // Format date for date input
+          fechaContratacion: selectedEmpleado.fechaContratacion 
+            ? new Date(selectedEmpleado.fechaContratacion).toISOString().split('T')[0]
+            : ''
+        }));
+      } else {
+        // Reset form when adding new employee
+        setFormData(prev => ({
+          ...prev,
+          direccion: {
+            departamento: '',
+            municipio: '',
+            direccionDetallada: ''
+          }
+        }));
+      }
+    }, [selectedEmpleado]);
+
+    // Efecto para determinar si se puede enviar el formulario
     useEffect(() => {
       const allValid = Object.values(validationStatus).every(status => status === true);
       setCanSubmit(allValid);
@@ -430,15 +467,35 @@ const EmpleadosFormModal = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {section.fields.map((field, fIdx) => (
                             <div key={fIdx} className={field.className || ''}>
-                                <EnhancedField 
-                                    field={field} 
-                                    value={field.nested ? null : formData?.[field.name]} 
-                                    onChange={handleInputChange} 
-                                    error={field.nested ? errors?.[field.name.split('.')[1]] : errors?.[field.name]} 
-                                    formData={formData}
-                                    selectedEmpleado={selectedEmpleado}
-                                    onValidationChange={handleValidationChange}
-                                />
+                                <div key={field.name} className="w-full">
+                                    <EnhancedField
+                                        field={field}
+                                        value={(() => {
+                                            if (field.nested) {
+                                                const keys = field.name.split('.');
+                                                const nestedObj = formData?.direccion || selectedEmpleado?.direccion || {};
+                                                return nestedObj[keys[1]] || '';
+                                            }
+                                            return formData?.[field.name] || '';
+                                        })()}
+                                        onChange={field.nested ? (e) => {
+                                            const value = e.target.value;
+                                            if (field.name === 'direccion.departamento') {
+                                                // Reset municipio when department changes
+                                                handleNestedChange('direccion.municipio', '');
+                                            }
+                                            handleNestedChange(field.name, value);
+                                        } : handleInputChange}
+                                        error={errors[field.name]}
+                                        formData={formData}
+                                        selectedEmpleado={selectedEmpleado}
+                                        onValidationChange={(isValid) => {
+                                            if (field.name === 'dui' || field.name === 'correo') {
+                                                handleValidationChange(field.name, isValid);
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>
