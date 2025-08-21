@@ -328,13 +328,27 @@ const CitasContent = () => {
   };
 
     const filteredCitas = citas.filter(cita => {
-        const clienteStr = (cita.cliente || '').toLowerCase();
-        const servicioStr = (cita.servicio || '').toLowerCase();
-        const matchesSearch = clienteStr.includes(searchTerm.toLowerCase()) ||
-                              servicioStr.includes(searchTerm.toLowerCase());
-        const matchesDate = !selectedDate || (cita.fecha && (new Date(cita.fecha).toISOString().split('T')[0] === selectedDate));
-        return matchesSearch && matchesDate;
-    });
+    const clienteStr = (cita.cliente || '').toLowerCase();
+    const servicioStr = (cita.servicio || '').toLowerCase();
+    const matchesSearch = clienteStr.includes(searchTerm.toLowerCase()) ||
+                          servicioStr.includes(searchTerm.toLowerCase());
+    
+    // CORRECCIÓN: Usar formato de fecha local en lugar de UTC
+    let matchesDate = true;
+    if (selectedDate && cita.fecha) {
+        // Crear la fecha sin conversión a UTC
+        const citaDate = new Date(cita.fecha);
+        const year = citaDate.getFullYear();
+        const month = String(citaDate.getMonth() + 1).padStart(2, '0');
+        const day = String(citaDate.getDate()).padStart(2, '0');
+        const citaDateString = `${year}-${month}-${day}`;
+        matchesDate = citaDateString === selectedDate;
+    } else if (selectedDate) {
+        matchesDate = false;
+    }
+    
+    return matchesSearch && matchesDate;
+});
 
     const totalPages = Math.ceil(filteredCitas.length / pageSize);
     const currentCitas = filteredCitas.slice(currentPage * pageSize, currentPage * pageSize + pageSize);

@@ -123,6 +123,7 @@ const ValidationAlert = ({ type, message, isVisible }) => {
 const EnhancedField = ({ field, value, onChange, error, formData, handleNestedChange, selectedEmpleado, onValidationChange }) => {
   const [isValidating, setIsValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   // Función para validar DUI y correo duplicados
   const validateUniqueness = async (fieldValue, fieldType) => {
@@ -131,9 +132,9 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
       return;
     }
 
-    // No validar si estamos editando y el valor no ha cambiado
+    // CAMBIO: No validar si estamos editando y el valor no ha cambiado
     if (selectedEmpleado && selectedEmpleado[fieldType] === fieldValue) {
-      setValidationResult({ type: 'success', message: 'Campo actual' });
+      setValidationResult(null); // ELIMINADO: Ya no mostrar "Campo actual"
       return;
     }
 
@@ -145,7 +146,7 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
         params: { 
           field: fieldType, 
           value: fieldValue,
-          excludeId: selectedEmpleado?._id // Excluir el ID actual si estamos editando
+          excludeId: selectedEmpleado?._id
         }
       });
 
@@ -156,16 +157,14 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
         });
         onValidationChange?.(fieldType, false);
       } else {
-        setValidationResult({ 
-          type: 'success', 
-          message: `${fieldType === 'dui' ? 'DUI' : 'Correo'} disponible` 
-        });
+        // CAMBIO: Solo mostrar validación positiva si realmente es necesario
+        setValidationResult(null); // ELIMINADO: Ya no mostrar "disponible"
         onValidationChange?.(fieldType, true);
       }
     } catch (error) {
       console.error(`Error validating ${fieldType}:`, error);
       setValidationResult(null);
-      onValidationChange?.(fieldType, true); // Asumir válido si hay error de red
+      onValidationChange?.(fieldType, true);
     } finally {
       setIsValidating(false);
     }
@@ -176,7 +175,7 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
     if (field.name === 'dui' || field.name === 'correo') {
       const timeoutId = setTimeout(() => {
         validateUniqueness(value, field.name);
-      }, 500); // Debounce de 500ms
+      }, 500);
 
       return () => clearTimeout(timeoutId);
     }
@@ -185,18 +184,13 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
   const getFieldValue = () => {
     if (field.nested) {
       const keys = field.name.split('.');
-      // Handle nested address data
       if (keys[0] === 'direccion') {
-        // Get the nested value with proper null checks
-        // First check if we have formData.direccion, if not, check selectedEmpleado.direccion
         const direccionData = formData?.direccion || selectedEmpleado?.direccion || {};
         return direccionData[keys[1]] || '';
       }
-      // Handle other nested fields if needed
       const nestedObj = formData?.[keys[0]] || selectedEmpleado?.[keys[0]] || {};
       return nestedObj[keys[1]] || '';
     }
-    // Handle non-nested fields - check both formData and selectedEmpleado
     return value ?? formData?.[field.name] ?? selectedEmpleado?.[field.name] ?? '';
   };
 
@@ -204,15 +198,13 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
     const { value } = e.target;
     
     if (field.nested) {
-      // Use handleNestedChange for nested fields
       handleNestedChange(field.name, value);
       
-      // If department changed, reset the municipality
+      // Si cambió el departamento, resetear municipio
       if (field.name === 'direccion.departamento' && value !== selectedEmpleado?.direccion?.departamento) {
         handleNestedChange('direccion.municipio', '');
       }
     } else {
-      // Handle non-nested fields
       onChange({
         target: {
           name: field.name,
@@ -220,56 +212,143 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
         }
       });
       
-      // Clear previous validation when changing the field
+      // NUEVO: Si es campo departamento en nivel raíz, resetear ciudad
+      if (field.name === 'departamento' && value !== formData.departamento) {
+        onChange({
+          target: {
+            name: 'ciudad',
+            value: ''
+          }
+        });
+      }
+      
       if (field.name === 'dui' || field.name === 'correo') {
         setValidationResult(null);
       }
     }
   };
 
-  const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 ${
-    error || (validationResult?.type === 'error') ? 'border-red-500' : 
-    validationResult?.type === 'success' ? 'border-green-500' : 'border-gray-300'
-  } ${field.disabled ? 'bg-gray-100 cursor-not-allowed opacity-60' : ''}`;
+  const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base ${
+    error || (validationResult?.type === 'error') ? 'border-red-500 bg-red-50' : 
+    isFocused ? 'border-blue-500' : 'border-gray-300 bg-white'
+  } ${field.disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`;
 
-  if (field.type === 'select') return (
+  if (field.type === 'select') {
+  return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
-      <div className="relative">
-        <select 
-          name={field.name} 
-          value={getFieldValue()} 
-          onChange={handleFieldChange} 
-          className={inputClasses} 
-          disabled={field.disabled}
-        >
-          <option value="">{field.placeholder || 'Seleccione'}</option>
-          {field.options?.map((opt, idx) => typeof opt === 'object' ? <option key={idx} value={opt.value}>{opt.label}</option> : <option key={idx} value={opt}>{opt}</option>)}
-        </select>
-        {field.disabled && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Lock className="w-4 h-4 text-gray-400" />
-          </div>
-        )}
-      </div>
-      {field.disabled && !formData?.direccion?.departamento && (
-        <p className="text-gray-500 text-xs">Primero selecciona un departamento</p>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {field.label} {field.required && <span className="text-red-500">*</span>}
+      </label>
+      <select 
+        name={field.name} 
+        value={getFieldValue()} 
+        onChange={handleFieldChange} 
+        className={inputClasses}
+        disabled={field.disabled}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+      >
+        <option value="">
+          {field.disabled ? `Primero selecciona ${field.name.includes('municipio') ? 'un departamento' : field.label.toLowerCase()}` : 
+           field.placeholder || `Seleccione ${field.label.toLowerCase()}`}
+        </option>
+        {Array.isArray(field.options) && field.options.map((option, index) => {
+          // Manejar tanto strings como objetos con value/label
+          const optionValue = typeof option === 'object' && option.value !== undefined ? option.value : option;
+          const optionLabel = typeof option === 'object' && option.label !== undefined ? option.label : option;
+          
+          return (
+            <option key={`${field.name}-${index}-${optionValue}`} value={optionValue}>
+              {optionLabel}
+            </option>
+          );
+        })}
+      </select>
+      {error && (
+        <p className="text-red-500 text-sm flex items-center space-x-1">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </p>
       )}
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {field.name.includes('municipio') && field.disabled && (
+        <p className="text-blue-500 text-sm flex items-center space-x-1">
+          <AlertCircle className="w-4 h-4" />
+          <span>Primero selecciona un departamento</span>
+        </p>
+      )}
     </div>
   );
+}
 
   if (field.type === 'textarea') return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
-      <textarea name={field.name} value={getFieldValue()} onChange={handleFieldChange} placeholder={field.placeholder} className={`${inputClasses} resize-none`} rows={3} />
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {field.label} {field.required && <span className="text-red-500">*</span>}
+      </label>
+      <textarea 
+        name={field.name} 
+        value={getFieldValue()} 
+        onChange={handleFieldChange} 
+        placeholder={field.placeholder} 
+        className={`${inputClasses} resize-none`} 
+        rows={3}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+      />
+      {error && (
+        <p className="text-red-500 text-sm flex items-center space-x-1">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </p>
+      )}
     </div>
   );
 
+  if (field.name === 'telefono') {
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {field.label} {field.required && <span className="text-red-500">*</span>}
+        </label>
+        <div className="flex items-center">
+          <div className="px-4 py-3 bg-gray-100 border border-gray-300 rounded-l-lg flex items-center space-x-2 text-gray-600">
+            <PhoneIcon className="w-5 h-5 text-gray-500" />
+            <span>+503</span>
+          </div>
+          <input
+            type="tel"
+            name={field.name}
+            value={value.replace('+503', '')}
+            onChange={(e) => onChange({ target: { name: field.name, value: '+503' + e.target.value } })}
+            placeholder="78901234"
+            className={`flex-1 px-4 py-3 border-t border-b border-r rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base ${
+              error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            }`}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            maxLength="8"
+            inputMode="numeric"
+          />
+        </div>
+        {error && (
+          <p className="text-red-500 text-sm flex items-center space-x-1">
+            <AlertCircle className="w-4 h-4" />
+            <span>{error}</span>
+          </p>
+        )}
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Ingrese 8 dígitos. Ej: 78901234</span>
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{field.label}{field.required && ' *'}</label>
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {field.label} {field.required && <span className="text-red-500">*</span>}
+      </label>
       <div className="relative">
         <input 
           type={field.type} 
@@ -277,7 +356,9 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
           value={getFieldValue()} 
           onChange={handleFieldChange} 
           placeholder={field.placeholder} 
-          className={inputClasses} 
+          className={inputClasses}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           step={field.type === 'number' ? '0.01' : undefined} 
           min={field.type === 'number' ? '0' : undefined} 
         />
@@ -288,8 +369,8 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
         )}
       </div>
       
-      {/* Mostrar resultado de validación */}
-      {(field.name === 'dui' || field.name === 'correo') && (
+      {/* CAMBIO: Solo mostrar resultado de validación si hay error */}
+      {(field.name === 'dui' || field.name === 'correo') && validationResult?.type === 'error' && (
         <ValidationAlert 
           type={validationResult?.type} 
           message={validationResult?.message} 
@@ -297,7 +378,26 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
         />
       )}
       
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && (
+        <p className="text-red-500 text-sm flex items-center space-x-1">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </p>
+      )}
+
+      {/* Mensajes informativos específicos por campo */}
+      {field.type === 'email' && (
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Ejemplo: empleado@email.com</span>
+        </p>
+      )}
+      {field.name === 'dui' && (
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Formato: 12345678-9</span>
+        </p>
+      )}
     </div>
   );
 };
@@ -318,7 +418,45 @@ const EmpleadosFormModal = ({
     onReturnToOptometristaEdit 
 }) => {
     const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
-    const municipalities = useMemo(() => formData?.direccion?.departamento ? EL_SALVADOR_DATA[formData.direccion.departamento] : [], [formData?.direccion?.departamento]);
+    
+    // CORREGIDO: Usar la misma lógica que ClientesFormModal para municipios
+    const municipalities = useMemo(() => {
+        const selectedDepartment = formData?.direccion?.departamento;
+        console.log('Calculando municipios para departamento:', selectedDepartment);
+        console.log('FormData actual:', formData);
+        console.log('Departamentos disponibles en EL_SALVADOR_DATA:', Object.keys(EL_SALVADOR_DATA));
+        
+        if (!selectedDepartment) {
+            console.log('No hay departamento seleccionado, retornando array vacío');
+            return [];
+        }
+        
+        // Buscar el departamento exacto o con normalización de caracteres
+        let municipios = EL_SALVADOR_DATA[selectedDepartment];
+        
+        if (!municipios) {
+            // Intentar encontrar coincidencia normalizando caracteres
+            const departmentKey = Object.keys(EL_SALVADOR_DATA).find(key => 
+                key.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 
+                selectedDepartment.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            );
+            
+            if (departmentKey) {
+                municipios = EL_SALVADOR_DATA[departmentKey];
+                console.log('Departamento encontrado con normalización:', departmentKey);
+            }
+        }
+        
+        municipios = municipios || [];
+        console.log('Municipios encontrados:', municipios);
+        console.log('Municipio actual en formData:', formData?.direccion?.municipio);
+        console.log('¿Municipio válido para el departamento?', municipios.includes(formData?.direccion?.municipio));
+        
+        return municipios;
+    }, [formData?.direccion?.departamento]);
+
+    // NUEVO: Verificar si el municipio debe estar deshabilitado
+    const isMunicipalityDisabled = !formData?.direccion?.departamento;
     
     // NUEVO: Estado para manejar validaciones de unicidad
     const [validationStatus, setValidationStatus] = useState({
@@ -337,35 +475,57 @@ const EmpleadosFormModal = ({
 
     // Initialize form with employee data when editing
     useEffect(() => {
-      if (selectedEmpleado) {
-        console.log('Initializing form with employee data:', selectedEmpleado);
-        setFormData(prev => ({
-          ...prev,
-          ...selectedEmpleado,
-          // Ensure direccion is properly initialized
-          direccion: {
-            departamento: '',
-            municipio: '',
-            direccionDetallada: '',
-            ...(selectedEmpleado.direccion || {})
-          },
-          // Format date for date input
-          fechaContratacion: selectedEmpleado.fechaContratacion 
-            ? new Date(selectedEmpleado.fechaContratacion).toISOString().split('T')[0]
-            : ''
-        }));
-      } else {
-        // Reset form when adding new employee
-        setFormData(prev => ({
-          ...prev,
-          direccion: {
-            departamento: '',
-            municipio: '',
-            direccionDetallada: ''
-          }
-        }));
+  if (selectedEmpleado) {
+    console.log('Initializing form with employee data:', selectedEmpleado);
+    
+    // Determinar la estructura de dirección correcta
+    let direccionData = {};
+    
+    // Si el empleado tiene direccion como objeto (estructura nueva)
+    if (selectedEmpleado.direccion && typeof selectedEmpleado.direccion === 'object') {
+      direccionData = {
+        departamento: selectedEmpleado.direccion.departamento || '',
+        municipio: selectedEmpleado.direccion.municipio || '',
+        direccionDetallada: selectedEmpleado.direccion.direccionDetallada || ''
+      };
+    } 
+    // Si el empleado tiene campos separados (estructura antigua)
+    else {
+      direccionData = {
+        departamento: selectedEmpleado.departamento || '',
+        municipio: selectedEmpleado.municipio || '',
+        direccionDetallada: selectedEmpleado.direccionDetallada || ''
+      };
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      ...selectedEmpleado,
+      // Asegurar que direccion esté correctamente inicializada
+      direccion: direccionData,
+      // Format date for date input
+      fechaContratacion: selectedEmpleado.fechaContratacion 
+        ? new Date(selectedEmpleado.fechaContratacion).toISOString().split('T')[0]
+        : '',
+      // Limpiar teléfono para mostrar sin prefijo
+      telefono: selectedEmpleado.telefono?.startsWith('+503') 
+        ? selectedEmpleado.telefono.substring(4) 
+        : selectedEmpleado.telefono || ''
+    }));
+    
+    console.log('Dirección inicializada:', direccionData);
+  } else {
+    // Reset form when adding new employee
+    setFormData(prev => ({
+      ...prev,
+      direccion: {
+        departamento: '',
+        municipio: '',
+        direccionDetallada: ''
       }
-    }, [selectedEmpleado]);
+    }));
+  }
+}, [selectedEmpleado, setFormData]);
 
     // Efecto para determinar si se puede enviar el formulario
     useEffect(() => {
@@ -382,9 +542,34 @@ const EmpleadosFormModal = ({
             { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'juan.garcia@email.com', required: true },
         ]},
         { title: "🏠 Información de Residencia", fields: [
-            { name: 'direccion.departamento', label: 'Departamento', type: 'select', options: departments, placeholder: 'Seleccione departamento', nested: true, required: true },
-            { name: 'direccion.municipio', label: 'Municipio', type: 'select', options: municipalities, placeholder: 'Seleccione municipio', nested: true, disabled: !formData?.direccion?.departamento, required: true },
-            { name: 'direccion.direccionDetallada', label: 'Dirección Completa', type: 'textarea', placeholder: 'Colonia, calle, # de casa', nested: true, className: 'md:col-span-2', required: true },
+            { 
+                name: 'direccion.departamento', 
+                label: 'Departamento', 
+                type: 'select', 
+                options: departments, 
+                placeholder: 'Seleccione un departamento',
+                nested: true, 
+                required: true 
+            },
+            { 
+                name: 'direccion.municipio', 
+                label: 'Ciudad/Municipio', 
+                type: 'select', 
+                options: municipalities, 
+                placeholder: isMunicipalityDisabled ? 'Primero selecciona un departamento' : 'Seleccione una ciudad',
+                nested: true, 
+                disabled: isMunicipalityDisabled, 
+                required: true 
+            },
+            { 
+                name: 'direccion.direccionDetallada', 
+                label: 'Dirección Completa', 
+                type: 'textarea', 
+                placeholder: 'Colonia Santa Elena, Calle Los Rosales #456, Casa amarilla con portón negro',
+                nested: true, 
+                className: 'md:col-span-2', 
+                required: true 
+            },
         ]},
         { title: "💼 Información Laboral", fields: [
             { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursales?.map(s => ({ value: s._id, label: s.nombre })) || [], required: true },
@@ -462,54 +647,55 @@ const EmpleadosFormModal = ({
             )}
             
             {sections.map((section, idx) => (
-                <div key={idx} className="bg-white border rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">{section.title}</h3>
+                <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">{section.title}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {section.fields.map((field, fIdx) => (
-                            <div key={fIdx} className={field.className || ''}>
-                                <div key={field.name} className="w-full">
-                                    <EnhancedField
-                                        field={field}
-                                        value={(() => {
-                                            if (field.nested) {
-                                                const keys = field.name.split('.');
-                                                const nestedObj = formData?.direccion || selectedEmpleado?.direccion || {};
-                                                return nestedObj[keys[1]] || '';
-                                            }
-                                            return formData?.[field.name] || '';
-                                        })()}
-                                        onChange={field.nested ? (e) => {
-                                            const value = e.target.value;
-                                            if (field.name === 'direccion.departamento') {
-                                                // Reset municipio when department changes
-                                                handleNestedChange('direccion.municipio', '');
-                                            }
-                                            handleNestedChange(field.name, value);
-                                        } : handleInputChange}
-                                        error={errors[field.name]}
-                                        formData={formData}
-                                        selectedEmpleado={selectedEmpleado}
-                                        onValidationChange={(isValid) => {
-                                            if (field.name === 'dui' || field.name === 'correo') {
-                                                handleValidationChange(field.name, isValid);
-                                            }
-                                        }}
-                                    />
-                                </div>
+                            <div key={fIdx} className={field.className || (field.type === 'textarea' ? 'md:col-span-2' : '')}>
+                                <EnhancedField
+                                    field={field}
+                                    value={(() => {
+                                        if (field.nested) {
+                                            const keys = field.name.split('.');
+                                            const nestedObj = formData?.direccion || selectedEmpleado?.direccion || {};
+                                            return nestedObj[keys[1]] || '';
+                                        }
+                                        return formData?.[field.name] || '';
+                                    })()}
+                                    onChange={field.nested ? (e) => {
+                                        const value = e.target.value;
+                                        if (field.name === 'direccion.departamento') {
+                                            // Reset municipio when department changes
+                                            handleNestedChange('direccion.municipio', '');
+                                        }
+                                        handleNestedChange(field.name, value);
+                                    } : handleInputChange}
+                                    error={errors[field.name]}
+                                    formData={formData}
+                                    handleNestedChange={handleNestedChange}
+                                    selectedEmpleado={selectedEmpleado}
+                                    onValidationChange={(isValid) => {
+                                        if (field.name === 'dui' || field.name === 'correo') {
+                                            handleValidationChange(field.name, isValid);
+                                        }
+                                    }}
+                                />
                             </div>
                         ))}
                     </div>
                 </div>
             ))}
             
-            <div className="bg-white border rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">🔐 Acceso y Seguridad</h3>
-                <PasswordField 
-                    value={formData?.password || ''} 
-                    onChange={handleInputChange} 
-                    error={errors?.password} 
-                    isEditing={!!selectedEmpleado} 
-                />
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">🔐 Acceso y Seguridad</h3>
+                <div className="max-w-md">
+                    <PasswordField 
+                        value={formData?.password || ''} 
+                        onChange={handleInputChange} 
+                        error={errors?.password} 
+                        isEditing={!!selectedEmpleado} 
+                    />
+                </div>
             </div>
             
             {formData?.cargo === 'Optometrista' && !selectedEmpleado && (

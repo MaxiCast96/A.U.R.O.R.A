@@ -110,13 +110,12 @@ const Clientes = () => {
         setShowAddEditModal(true);
     };
     
-    // CORREGIDO: Función handleOpenEditModal para manejar la estructura correcta
     const handleOpenEditModal = (cliente) => {
         console.log('Cliente a editar:', cliente); // Debug
         
         setSelectedCliente(cliente);
         
-        // CORREGIDO: Mapear correctamente los datos del cliente
+        // Mapear correctamente los datos del cliente
         const formDataToSet = {
             nombre: cliente.nombre || '',
             apellido: cliente.apellido || '',
@@ -124,7 +123,7 @@ const Clientes = () => {
             dui: cliente.dui || '',
             telefono: cliente.telefono || '',
             correo: cliente.correo || '',
-            // CORREGIDO: Manejar ambas estructuras posibles de dirección
+            // Manejar ambas estructuras posibles de dirección
             departamento: cliente.direccion?.departamento || cliente.departamento || '',
             ciudad: cliente.direccion?.ciudad || cliente.ciudad || cliente.direccion?.municipio || cliente.municipio || '',
             calle: cliente.direccion?.calle || cliente.calle || cliente.direccion?.direccionDetallada || cliente.direccionDetallada || '',

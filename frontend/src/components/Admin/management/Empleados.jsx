@@ -154,7 +154,8 @@ const Empleados = () => {
         if (!data.apellido.trim()) newErrors.apellido = 'El apellido es requerido';
         if (!/^\d{8}-\d$/.test(data.dui)) newErrors.dui = 'DUI inválido (formato: 12345678-9)';
         
-        if (!/^\d{8}$/.test(data.telefono)) newErrors.telefono = 'Teléfono inválido (8 dígitos requeridos)';
+        const telefonoSinPrefijo = data.telefono.replace('+503', '');
+        if (!/^\d{8}$/.test(telefonoSinPrefijo)) newErrors.telefono = 'Teléfono inválido (8 dígitos requeridos)';
         
         if (!/\S+@\S+\.\S+/.test(data.correo)) newErrors.correo = 'Email inválido';
         if (!data.cargo) newErrors.cargo = 'El cargo es requerido';

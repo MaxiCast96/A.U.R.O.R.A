@@ -319,7 +319,7 @@ const OpticaDashboard = () => {
               : (visibleMenuItems.find(item => item.id === activeSection)?.label || menuItems.find(item => item.id === activeSection)?.label)
             }
           </h1>
-          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-cyan-500 rounded-full flex items-center justify-center">
+          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center">
             
           </div>
         </div>

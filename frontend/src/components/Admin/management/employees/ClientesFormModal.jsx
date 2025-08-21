@@ -226,7 +226,8 @@ const EnhancedField = ({
   error, 
   nested = false,
   placeholder,
-  formData
+  formData,
+  isDisabled = false
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
@@ -274,14 +275,35 @@ const EnhancedField = ({
       }
     } else {
       onChange(e);
+      
+      // NUEVO: Si es campo departamento, resetear ciudad
+      if (name === 'departamento' && inputValue !== formData.departamento) {
+        onChange({
+          target: {
+            name: 'ciudad',
+            value: ''
+          }
+        });
+      }
     }
   };
 
   const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base ${
-    error ? 'border-red-500 bg-red-50' : isFocused ? 'border-blue-500' : 'border-gray-300 bg-white'
+    error ? 'border-red-500 bg-red-50' : 
+    isDisabled ? 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed' :
+    isFocused ? 'border-blue-500' : 'border-gray-300 bg-white'
   }`;
 
   if (field.type === 'select') {
+    // Debug específico para el campo ciudad
+    if (field.name === 'ciudad') {
+      console.log('Renderizando campo ciudad:');
+      console.log('- Valor actual:', getFieldValue());
+      console.log('- Opciones disponibles:', field.options);
+      console.log('- Campo deshabilitado:', isDisabled);
+      console.log('- FormData departamento:', formData.departamento);
+    }
+
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -294,9 +316,11 @@ const EnhancedField = ({
           className={inputClasses}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
+          disabled={isDisabled}
         >
           <option value="">
-            {field.placeholder || `Seleccione ${field.label.toLowerCase()}`}
+            {isDisabled ? `Primero selecciona ${field.name === 'ciudad' ? 'un departamento' : field.label.toLowerCase()}` : 
+             field.placeholder || `Seleccione ${field.label.toLowerCase()}`}
           </option>
           {Array.isArray(field.options) && field.options.map((option, index) => (
             <option key={`${field.name}-${index}-${option}`} value={option}>
@@ -308,6 +332,13 @@ const EnhancedField = ({
           <p className="text-red-500 text-sm flex items-center space-x-1">
             <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
+          </p>
+        )}
+        {/* NUEVO: Mensaje informativo para municipio deshabilitado */}
+        {field.name === 'ciudad' && isDisabled && (
+          <p className="text-blue-500 text-sm flex items-center space-x-1">
+            <AlertCircle className="w-4 h-4" />
+            <span>Primero selecciona un departamento</span>
           </p>
         )}
       </div>
@@ -441,6 +472,13 @@ const ClientesFormModal = ({
   const [currentPassword, setCurrentPassword] = useState('');
   const isEditing = !!selectedCliente;
 
+  // DEBUG: Verificar que los datos de El Salvador estén disponibles
+  useEffect(() => {
+    console.log('EL_SALVADOR_DATA disponible:', EL_SALVADOR_DATA);
+    console.log('Departamentos disponibles:', Object.keys(EL_SALVADOR_DATA));
+    console.log('Ejemplo - Municipios de Morazán:', EL_SALVADOR_DATA['Morazán']);
+  }, []);
+
   // CAMBIO: Mejorar el useEffect para establecer la contraseña
   useEffect(() => {
     if (isEditing && selectedCliente) {
@@ -465,10 +503,45 @@ const ClientesFormModal = ({
 
   // Obtener los departamentos y municipios dinámicamente
   const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
+  
+  // CORREGIDO: Mejorar la lógica de municipios con debugging y normalización
   const municipalities = useMemo(() => {
     const selectedDepartment = formData.departamento;
-    return selectedDepartment ? EL_SALVADOR_DATA[selectedDepartment] || [] : [];
-  }, [formData.departamento]);
+    console.log('Calculando municipios para departamento:', selectedDepartment);
+    console.log('FormData actual:', formData);
+    console.log('Departamentos disponibles en EL_SALVADOR_DATA:', Object.keys(EL_SALVADOR_DATA));
+    
+    if (!selectedDepartment) {
+      console.log('No hay departamento seleccionado, retornando array vacío');
+      return [];
+    }
+    
+    // Buscar el departamento exacto o con normalización de caracteres
+    let municipios = EL_SALVADOR_DATA[selectedDepartment];
+    
+    if (!municipios) {
+      // Intentar encontrar coincidencia normalizando caracteres
+      const departmentKey = Object.keys(EL_SALVADOR_DATA).find(key => 
+        key.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 
+        selectedDepartment.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      );
+      
+      if (departmentKey) {
+        municipios = EL_SALVADOR_DATA[departmentKey];
+        console.log('Departamento encontrado con normalización:', departmentKey);
+      }
+    }
+    
+    municipios = municipios || [];
+    console.log('Municipios encontrados:', municipios);
+    console.log('Ciudad actual en formData:', formData.ciudad);
+    console.log('¿Ciudad válida para el departamento?', municipios.includes(formData.ciudad));
+    
+    return municipios;
+  }, [formData.departamento, formData.ciudad]);
+
+  // NUEVO: Verificar si el municipio debe estar deshabilitado
+  const isMunicipalityDisabled = !formData.departamento;
 
   const sections = [
     {
@@ -498,7 +571,7 @@ const ClientesFormModal = ({
           label: 'Ciudad/Municipio', 
           type: 'select', 
           options: municipalities, 
-          placeholder: 'Seleccione una ciudad',
+          placeholder: isMunicipalityDisabled ? 'Primero selecciona un departamento' : 'Seleccione una ciudad',
           required: true
         },
         { 
@@ -543,6 +616,7 @@ const ClientesFormModal = ({
                   nested={false}
                   placeholder={field.placeholder}
                   formData={formData}
+                  isDisabled={field.name === 'ciudad' && isMunicipalityDisabled}
                 />
               </div>
             ))}
