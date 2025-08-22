@@ -1,0 +1,641 @@
+#root {
+    width: 100vw;           /* 100% del viewport width */
+    min-height: 100vh;      /* Al menos 100% del viewport height */
+    margin: 0;              /* Sin márgenes */
+    padding: 0;             /* Sin padding */
+    text-align: left;       /* Alineación natural para interfaces */
+    background-color: aliceblue;
+    box-sizing: border-box; /* Incluye padding y border en el cálculo del tamaño */
+    color-scheme: light;
+    scroll-behavior: smooth;
+    background-color: #ffffff;
+    color: #000000;
+  }
+  
+  /* styles.css */
+  .light {
+    background-color: white;
+    color: black;
+  }
+  
+  /* Sobrescribimos cualquier intento de dark mode */
+  .light body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  @import "tailwindcss";
+  
+  
+  /* Animaciones de Focus para Óptica Inteligente */
+  * {
+    outline: none !important;
+  }
+  
+  /* Botones principales - Secuencia cian a naranja complementario */
+  button:focus, .btn:focus {
+    animation: buttonGlow 2.5s ease-in-out infinite;
+  }
+  
+  @keyframes buttonGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.6); /* Tu cian principal */
+    }
+    25% { 
+      box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.7); /* Naranja complementario */
+    }
+    50% { 
+      box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.6); /* Rosa vibrante */
+    }
+    75% { 
+      box-shadow: 0 0 0 4px rgba(156, 39, 176, 0.7); /* Púrpura */
+    }
+  }
+  
+  /* Inputs - Secuencia más suave con colores que contrastan */
+  input:focus, select:focus, textarea:focus {
+    animation: inputGlow 3s linear infinite;
+  }
+  
+  @keyframes inputGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.5); /* Tu cian */
+    }
+    20% { 
+      box-shadow: 0 0 0 4px rgba(76, 175, 80, 0.6); /* Verde como tus estados activos */
+    }
+    40% { 
+      box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.7); /* Amarillo dorado */
+    }
+    60% { 
+      box-shadow: 0 0 0 4px rgba(255, 87, 34, 0.6); /* Naranja */
+    }
+    80% { 
+      box-shadow: 0 0 0 4px rgba(103, 58, 183, 0.6); /* Púrpura profundo */
+    }
+  }
+  
+  /* Botones de acción específicos (como "Añadir Categoría") */
+  .btn-primary:focus, .btn-add:focus {
+    animation: primaryButtonGlow 2s ease-in-out infinite;
+  }
+  
+  @keyframes primaryButtonGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.8); 
+    }
+    33% { 
+      box-shadow: 0 0 0 6px rgba(255, 193, 7, 0.8); /* Dorado brillante */
+    }
+    66% { 
+      box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.7); /* Rosa magenta */
+    }
+  }
+  
+  /* Elementos de navegación */
+  .nav-item:focus, .menu-item:focus {
+    animation: navGlow 2.8s ease-in-out infinite;
+  }
+  
+  @keyframes navGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.4); 
+    }
+    25% { 
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.5); /* Verde activo */
+    }
+    50% { 
+      box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.6); /* Naranja cálido */
+    }
+    75% { 
+      box-shadow: 0 0 0 3px rgba(63, 81, 181, 0.5); /* Azul índigo */
+    }
+  }
+  
+  /* Radio buttons y checkboxes */
+  input[type="radio"]:focus,
+  input[type="checkbox"]:focus {
+    animation: checkboxGlow 2.2s ease-in-out infinite;
+  }
+  
+  @keyframes checkboxGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.4); 
+    }
+    50% { 
+      box-shadow: 0 0 0 6px rgba(255, 87, 34, 0.6); /* Naranja complementario */
+    }
+  }
+  
+  /* Estados especiales - para elementos inactivos */
+  .inactive:focus {
+    animation: inactiveGlow 2s ease-in-out infinite;
+  }
+  
+  @keyframes inactiveGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 4px rgba(244, 67, 54, 0.5); /* Rojo como tu estado inactivo */
+    }
+    33% { 
+      box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.6); /* Amarillo advertencia */
+    }
+    66% { 
+      box-shadow: 0 0 0 4px rgba(156, 39, 176, 0.5); /* Púrpura */
+    }
+  }
+  
+  /* Animación especial para tablas y cards */
+  .card:focus-within, .table-row:focus-within {
+    animation: cardGlow 3.5s linear infinite;
+  }
+  
+  @keyframes cardGlow {
+    0%, 100% { 
+      box-shadow: 0 0 0 2px rgba(0, 188, 212, 0.3); 
+    }
+    20% { 
+      box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.4); 
+    }
+    40% { 
+      box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.4); 
+    }
+    60% { 
+      box-shadow: 0 0 0 2px rgba(233, 30, 99, 0.4); 
+    }
+    80% { 
+      box-shadow: 0 0 0 2px rgba(103, 58, 183, 0.4); 
+    }
+  }
+  
+  
+  
+  
+  
+  
+
+  
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideInDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  @keyframes bounceIn {
+      0% { opacity: 0; transform: scale(0.3); }
+      50% { opacity: 1; transform: scale(1.05); }
+      70% { transform: scale(0.9); }
+      100% { opacity: 1; transform: scale(1); }
+  }
+  
+  .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  .animate-slideInDown { animation: slideInDown 0.3s ease-out; }
+  .animate-slideInScale { animation: slideInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .animate-bounceIn { animation: bounceIn 0.5s ease-out; }
+  
+  /* Estilos base para botones y inputs para que los componentes reutilizables se vean bien */
+  .btn-primary {
+      @apply px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105;
+  }
+  .btn-secondary {
+      @apply px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105;
+  }
+  .btn-danger {
+      @apply px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-200 hover:scale-105;
+  }
+  .pagination-btn {
+      @apply px-3 py-1 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  }
+  .input {
+      @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  
+  
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slideInScale {
+    from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  
+  @keyframes slideInDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  
+  @keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { opacity: 1; transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  
+  @keyframes bounce-subtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+  }
+  
+  .animate-fade-in { animation: fadeIn 0.3s ease-in-out; }
+  .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
+  .animate-slideInScale { animation: slideInScale 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .animate-slideInDown { animation: slideInDown 0.3s ease-out; }
+  .animate-slideInLeft { animation: slideInLeft 0.5s ease-out; }
+  .animate-slideInRight { animation: slideInRight 0.5s ease-out; }
+  .animate-bounceIn { animation: bounceIn 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+  .animate-bounce-subtle { animation: bounce-subtle 2s infinite; }
+  .animate-shake { animation: shake 0.5s ease-in-out; }
+  
+  .delay-100 { animation-delay: 0.1s; }
+  .delay-200 { animation-delay: 0.2s; }
+  .delay-300 { animation-delay: 0.3s; }
+
+  /* Respeta la preferencia del usuario para reducir movimiento */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+
+
+
+
+
+
+
+  * {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) - Aplicación global */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+  margin: 2px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s ease;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+  transform: scale(1.05);
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #0e7490, #155e75);
+}
+
+/* Corner donde se cruzan scrollbars horizontal y vertical */
+*::-webkit-scrollbar-corner {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+/* ===== VARIANTES POR CONTEXTO ===== */
+
+/* 2. Scrollbar para body principal */
+body {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f8fafc;
+}
+
+body::-webkit-scrollbar {
+  width: 12px;
+}
+
+body::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2, #0e7490);
+  border-radius: 12px;
+  border: 2px solid #f8fafc;
+  box-shadow: 0 2px 10px rgba(6, 182, 212, 0.2);
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490, #155e75);
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.4);
+}
+
+/* 3. Scrollbar para modales y popups */
+.modal-scrollbar, .popup-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #ffffff;
+}
+
+.modal-scrollbar::-webkit-scrollbar,
+.popup-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track,
+.popup-scrollbar::-webkit-scrollbar-track {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: inset 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb,
+.popup-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+/* 4. Scrollbar para tablas y contenido de datos */
+.table-scrollbar, .data-scrollbar {
+  scrollbar-width: auto;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.table-scrollbar::-webkit-scrollbar,
+.data-scrollbar::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.table-scrollbar::-webkit-scrollbar-track,
+.data-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb,
+.data-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, #06b6d4, #0891b2);
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+}
+
+.table-scrollbar::-webkit-scrollbar-thumb:hover,
+.data-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, #0891b2, #0e7490);
+}
+
+/* 5. Scrollbar para áreas de texto y campos de input */
+textarea, 
+.text-input-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f8fafc;
+}
+
+textarea::-webkit-scrollbar,
+.text-input-scrollable::-webkit-scrollbar {
+  width: 5px;
+}
+
+textarea::-webkit-scrollbar-track,
+.text-input-scrollable::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+
+textarea::-webkit-scrollbar-thumb,
+.text-input-scrollable::-webkit-scrollbar-thumb {
+  background: #06b6d4;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+textarea::-webkit-scrollbar-thumb:hover,
+.text-input-scrollable::-webkit-scrollbar-thumb:hover {
+  opacity: 1;
+  background: #0891b2;
+}
+
+/* ===== SCROLLBAR ANIMADA CON EFECTOS ===== */
+.animated-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.animated-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.animated-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+  position: relative;
+}
+
+.animated-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 10px;
+  border: 1px solid #f1f5f9;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.animated-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490);
+  box-shadow: 
+    0 0 10px rgba(6, 182, 212, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.animated-scrollbar::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #0e7490, #155e75);
+  transform: scale(0.95);
+}
+
+/* ===== CLASES UTILITARIAS PARA TAILWIND ===== */
+
+/* Scrollbar invisible pero funcional */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Scrollbar delgada celeste */
+.scrollbar-thin-cyan {
+  scrollbar-width: thin;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #06b6d4, #0891b2);
+  border-radius: 8px;
+}
+
+.scrollbar-thin-cyan::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #0891b2, #0e7490);
+}
+
+/* Scrollbar gruesa para mejor accesibilidad */
+.scrollbar-thick-cyan {
+  scrollbar-width: auto;
+  scrollbar-color: #06b6d4 #f1f5f9;
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar {
+  width: 16px;
+  height: 16px;
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 12px;
+  border: 2px solid #e2e8f0;
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #06b6d4, #0891b2, #0e7490);
+  border-radius: 12px;
+  border: 2px solid #f1f5f9;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+.scrollbar-thick-cyan::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #0891b2, #0e7490, #155e75);
+  box-shadow: 
+    inset 0 0 0 1px rgba(255, 255, 255, 0.3),
+    0 0 15px rgba(6, 182, 212, 0.3);
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Mobile - Scrollbar más delgada */
+@media (max-width: 768px) {
+  * {
+    scrollbar-width: thin;
+  }
+  
+  *::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  
+  body::-webkit-scrollbar {
+    width: 6px;
+  }
+}
+
+/* Tablet */
+@media (min-width: 769px) and (max-width: 1024px) {
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  body::-webkit-scrollbar {
+    width: 10px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1025px) {
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  body::-webkit-scrollbar {
+    width: 12px;
+  }
+}
+
+/* ===== ACCESIBILIDAD ===== */
+
+/* Respetar preferencias de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+  
+  .animated-scrollbar::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}
+
+/* Alto contraste */
+@media (prefers-contrast: high) {
+  * {
+    scrollbar-color: #000000 #ffffff;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: #ffffff;
+    border: 2px solid #000000;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: #000000;
+    border: 1px solid #ffffff;
+  }
+}
+
+/* Modo oscuro */
+@media (prefers-color-scheme: dark) {
+  * {
+    scrollbar-color: #22d3ee #1e293b;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: #1e293b;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #22d3ee, #0891b2);
+  }
+  
+  *::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #67e8f9, #22d3ee);
+  }
+}
+
+
+
+
+
