@@ -53,7 +53,7 @@ const app = express();
 // Middleware global
 app.use(cookieParser());
 app.use(cors({
-    origin: ['http://localhost:5173', 'https://a-u-r-o-r-a.onrender.com', 'https://maxicast96.github.io', 'http://localhost:4000'],
+    origin: ['http://localhost:5173', 'aurora-production-7e57.up.railway.app', 'https://maxicast96.github.io', 'http://localhost:4000'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
