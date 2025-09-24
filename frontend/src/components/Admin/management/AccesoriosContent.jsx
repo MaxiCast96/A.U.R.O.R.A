@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { useForm } from '../../../hooks/admin/useForm';
 import { usePagination } from '../../../hooks/admin/usePagination';
@@ -11,13 +11,174 @@ import ConfirmationModal from '../ui/ConfirmationModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
 import AccesoriosFormModal from '../management/employees/AccesoriosFormModal';
-import { Search, Plus, Trash2, Eye, Edit, ShoppingBag, Tags, Package, DollarSign, Clock, ImageIcon, Building2, Palette, Layers } from 'lucide-react';
+import { 
+  Search, Plus, Trash2, Eye, Edit, ShoppingBag, Tags, Package, DollarSign, Clock, 
+  ImageIcon, Building2, Palette, Layers, Filter, X, ChevronDown, SortAsc, SortDesc, 
+  CheckCircle 
+} from 'lucide-react';
 
 const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/accesorios';
 const MARCAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/marcas';
 const CATEGORIAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/categoria';
 const SUCURSALES_URL = 'https://a-u-r-o-r-a.onrender.com/api/sucursales';
-const PROMOCIONES_URL = 'https://a-u-r-o-r-a.onrender.com/api/promociones'; // Nueva URL para promociones
+const PROMOCIONES_URL = 'https://a-u-r-o-r-a.onrender.com/api/promociones';
+
+const ITEMS_PER_PAGE = 12;
+
+// Estados iniciales para filtros
+const INITIAL_FILTERS = {
+  categoria: 'todas',
+  marca: 'todas',
+  enPromocion: 'todos',
+  stock: 'todos',
+  precioMin: '',
+  precioMax: '',
+  fechaDesde: '',
+  fechaHasta: '',
+  material: 'todos',
+  color: 'todos'
+};
+
+// Opciones de ordenamiento
+const SORT_OPTIONS = [
+  { value: 'createdAt-desc', label: 'Más Recientes Primero', icon: Package },
+  { value: 'createdAt-asc', label: 'Más Antiguos Primero', icon: Package },
+  { value: 'nombre-asc', label: 'Nombre A-Z', icon: ShoppingBag },
+  { value: 'nombre-desc', label: 'Nombre Z-A', icon: ShoppingBag },
+  { value: 'precioBase-desc', label: 'Precio: Mayor a Menor', icon: DollarSign },
+  { value: 'precioBase-asc', label: 'Precio: Menor a Mayor', icon: DollarSign },
+  { value: 'stock-desc', label: 'Mayor Stock', icon: Package },
+  { value: 'stock-asc', label: 'Menor Stock', icon: Package },
+];
+
+// Columnas de la tabla
+const TABLE_COLUMNS = [
+  { header: 'Producto', key: 'producto' },
+  { header: 'Marca/Categoría', key: 'marca_categoria' },
+  { header: 'Características', key: 'caracteristicas' },
+  { header: 'Precio', key: 'precio' },
+  { header: 'Stock', key: 'stock' },
+  { header: 'Estado', key: 'estado' },
+  { header: 'Acciones', key: 'acciones' }
+];
+
+// --- COMPONENTE SKELETON LOADER MEMOIZADO ---
+const SkeletonLoader = React.memo(() => (
+  <div className="animate-pulse">
+    {/* Skeleton para las estadísticas */}
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+      {Array.from({ length: 4 }, (_, i) => (
+        <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Skeleton para la tabla */}
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
+        <div className="flex justify-between items-center">
+          <div className="h-6 bg-cyan-400 rounded w-48"></div>
+          <div className="h-10 bg-cyan-400 rounded w-32"></div>
+        </div>
+      </div>
+
+      <div className="px-6 py-4 border-b bg-gray-50">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+          <div className="h-10 bg-gray-200 rounded-lg w-full max-w-md"></div>
+          <div className="flex space-x-3">
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+          </div>
+        </div>
+        <div className="mt-3 flex justify-between">
+          <div className="h-4 bg-gray-200 rounded w-32"></div>
+          <div className="h-4 bg-gray-200 rounded w-24"></div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: '1200px' }}>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                {TABLE_COLUMNS.map((_, index) => (
+                  <th key={index} className="px-6 py-3">
+                    <div className="h-4 bg-gray-300 rounded w-20"></div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {Array.from({ length: 8 }, (_, rowIndex) => (
+                <tr key={rowIndex}>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                      <div className="flex-1">
+                        <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded w-40"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      <div className="h-3 bg-gray-200 rounded w-20"></div>
+                      <div className="h-3 bg-gray-200 rounded w-24"></div>
+                      <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="h-6 bg-gray-200 rounded w-20"></div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="space-y-1">
+                      <div className="h-5 bg-gray-200 rounded-full w-20"></div>
+                      <div className="h-5 bg-gray-200 rounded-full w-16"></div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex space-x-2">
+                      {Array.from({ length: 3 }, (_, btnIndex) => (
+                        <div key={btnIndex} className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="px-6 py-4 border-t bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div className="h-4 bg-gray-200 rounded w-40"></div>
+          <div className="flex space-x-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="w-10 h-10 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+));
 
 const AccesoriosContent = () => {
   // Estados principales
@@ -35,11 +196,15 @@ const AccesoriosContent = () => {
   const [marcas, setMarcas] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [sucursales, setSucursales] = useState([]);
-  const [promociones, setPromociones] = useState([]); // Nuevo estado para promociones
+  const [promociones, setPromociones] = useState([]);
 
-  // Estados de filtrado
+  // Estados de filtros y ordenamiento
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('todos');
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
 
   // Hook de formulario con validación completa
   const { formData, setFormData, handleInputChange, resetForm, errors, validateForm } = useForm({
@@ -104,40 +269,122 @@ const AccesoriosContent = () => {
     return newErrors;
   });
 
-  // Hook de paginación
-  const filteredAccesorios = useMemo(() => {
-    return accesorios.filter(accesorio => {
-      const search = searchTerm.toLowerCase();
-      const matchesSearch = 
-        accesorio.nombre?.toLowerCase().includes(search) ||
-        accesorio.descripcion?.toLowerCase().includes(search) ||
-        accesorio.marcaId?.nombre?.toLowerCase().includes(search) ||
-        accesorio.tipo?.nombre?.toLowerCase().includes(search) ||
-        accesorio.material?.toLowerCase().includes(search) ||
-        accesorio.color?.toLowerCase().includes(search);
+  // Funciones utilitarias
+  const showAlert = useCallback((type, message) => {
+    setAlert({ type, message });
+    const timer = setTimeout(() => setAlert(null), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
-      let matchesFilter = true;
-      if (selectedFilter === 'en_promocion') {
-        matchesFilter = accesorio.enPromocion === true;
-      } else if (selectedFilter === 'sin_promocion') {
-        matchesFilter = accesorio.enPromocion === false;
-      } else if (selectedFilter === 'sin_stock') {
-        matchesFilter = accesorio.sucursales?.every(s => s.stock === 0);
-      } else if (selectedFilter === 'con_stock') {
-        matchesFilter = accesorio.sucursales?.some(s => s.stock > 0);
+  const getTotalStock = useCallback((accesorio) => {
+    return accesorio.sucursales ? accesorio.sucursales.reduce((sum, s) => sum + (s.stock || 0), 0) : 0;
+  }, []);
+
+  // Función para manejar ordenamiento
+  const handleSortChange = useCallback((sortValue) => {
+    const [field, order] = sortValue.split('-');
+    setSortBy(field);
+    setSortOrder(order);
+    setShowSortDropdown(false);
+  }, []);
+
+  // Función para ordenar datos
+  const sortData = useCallback((data) => {
+    return [...data].sort((a, b) => {
+      let valueA, valueB;
+      
+      switch (sortBy) {
+        case 'nombre':
+          valueA = a.nombre?.toLowerCase() || '';
+          valueB = b.nombre?.toLowerCase() || '';
+          break;
+        case 'precioBase':
+          valueA = parseFloat(a.precioBase) || 0;
+          valueB = parseFloat(b.precioBase) || 0;
+          break;
+        case 'stock':
+          valueA = getTotalStock(a);
+          valueB = getTotalStock(b);
+          break;
+        case 'createdAt':
+          valueA = new Date(a.createdAt || new Date(0));
+          valueB = new Date(b.createdAt || new Date(0));
+          break;
+        default:
+          return 0;
       }
 
-      return matchesSearch && matchesFilter;
+      if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+      if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
     });
-  }, [accesorios, searchTerm, selectedFilter]);
+  }, [sortBy, sortOrder, getTotalStock]);
 
-  const { paginatedData: currentAccesorios, ...paginationProps } = usePagination(filteredAccesorios, 12);
+  // Función para aplicar filtros avanzados
+  const applyAdvancedFilters = useCallback((accesorio) => {
+    // Filtro por categoría
+    if (filters.categoria !== 'todas' && accesorio.tipo?._id !== filters.categoria) {
+      return false;
+    }
 
-  // Función para mostrar alertas
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert(null), 5000);
-  };
+    // Filtro por marca
+    if (filters.marca !== 'todas' && accesorio.marcaId?._id !== filters.marca) {
+      return false;
+    }
+
+    // Filtro por promoción
+    if (filters.enPromocion === 'con_promocion' && !accesorio.enPromocion) {
+      return false;
+    }
+    if (filters.enPromocion === 'sin_promocion' && accesorio.enPromocion) {
+      return false;
+    }
+
+    // Filtro por stock
+    const stockTotal = getTotalStock(accesorio);
+    if (filters.stock === 'con_stock' && stockTotal <= 0) {
+      return false;
+    }
+    if (filters.stock === 'sin_stock' && stockTotal > 0) {
+      return false;
+    }
+
+    // Filtro por material
+    if (filters.material !== 'todos' && accesorio.material?.toLowerCase() !== filters.material.toLowerCase()) {
+      return false;
+    }
+
+    // Filtro por color
+    if (filters.color !== 'todos' && accesorio.color?.toLowerCase() !== filters.color.toLowerCase()) {
+      return false;
+    }
+
+    // Filtro por precio
+    const precio = accesorio.enPromocion ? accesorio.precioActual : accesorio.precioBase;
+    if (filters.precioMin && parseFloat(precio || 0) < parseFloat(filters.precioMin)) {
+      return false;
+    }
+    if (filters.precioMax && parseFloat(precio || 0) > parseFloat(filters.precioMax)) {
+      return false;
+    }
+
+    // Filtro por fecha de creación
+    if (filters.fechaDesde) {
+      const fechaDesde = new Date(filters.fechaDesde);
+      if (new Date(accesorio.createdAt || new Date(0)) < fechaDesde) {
+        return false;
+      }
+    }
+    if (filters.fechaHasta) {
+      const fechaHasta = new Date(filters.fechaHasta);
+      fechaHasta.setHours(23, 59, 59);
+      if (new Date(accesorio.createdAt || new Date(0)) > fechaHasta) {
+        return false;
+      }
+    }
+
+    return true;
+  }, [filters, getTotalStock]);
 
   // Funciones de carga de datos
   const fetchAccesorios = async () => {
@@ -163,7 +410,7 @@ const AccesoriosContent = () => {
         axios.get(MARCAS_URL),
         axios.get(CATEGORIAS_URL),
         axios.get(SUCURSALES_URL),
-        axios.get(PROMOCIONES_URL) // Nueva llamada para promociones
+        axios.get(PROMOCIONES_URL)
       ]);
       
       console.log('Dependencies loaded:', {
@@ -176,7 +423,7 @@ const AccesoriosContent = () => {
       setMarcas(Array.isArray(marcasRes.data) ? marcasRes.data : marcasRes.data.data || []);
       setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : categoriasRes.data.data || []);
       setSucursales(Array.isArray(sucursalesRes.data) ? sucursalesRes.data : sucursalesRes.data.data || []);
-      setPromociones(Array.isArray(promocionesRes.data) ? promocionesRes.data : promocionesRes.data.data || []); // Nuevas promociones
+      setPromociones(Array.isArray(promocionesRes.data) ? promocionesRes.data : promocionesRes.data.data || []);
       
     } catch (error) {
       console.error("Error fetching dependencies:", error);
@@ -186,7 +433,7 @@ const AccesoriosContent = () => {
       setMarcas([]);
       setCategorias([]);
       setSucursales([]);
-      setPromociones([]); // Nuevo estado por defecto
+      setPromociones([]);
     }
   };
 
@@ -208,20 +455,88 @@ const AccesoriosContent = () => {
     };
   }, []);
 
+  // Lógica de filtrado, ordenamiento y paginación
+  const filteredAndSortedAccesorios = useMemo(() => {
+    let currentAccesorios = Array.isArray(accesorios) ? accesorios : [];
+
+    // Filtro por término de búsqueda
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      currentAccesorios = currentAccesorios.filter(
+        (accesorio) =>
+          accesorio.nombre?.toLowerCase().includes(searchLower) ||
+          accesorio.descripcion?.toLowerCase().includes(searchLower) ||
+          accesorio.material?.toLowerCase().includes(searchLower) ||
+          accesorio.color?.toLowerCase().includes(searchLower) ||
+          accesorio.marcaId?.nombre?.toLowerCase().includes(searchLower) ||
+          accesorio.tipo?.nombre?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Aplicar filtros avanzados
+    currentAccesorios = currentAccesorios.filter(applyAdvancedFilters);
+
+    return sortData(currentAccesorios);
+  }, [accesorios, searchTerm, applyAdvancedFilters, sortData]);
+
+  const { paginatedData: currentAccesorios, ...paginationProps } = usePagination(filteredAndSortedAccesorios, ITEMS_PER_PAGE);
+
+  // Funciones para manejar filtros
+  const handleFilterChange = useCallback((key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters(INITIAL_FILTERS);
+    setSearchTerm('');
+  }, []);
+
+  const hasActiveFilters = useCallback(() => {
+    return searchTerm || 
+           filters.categoria !== 'todas' || 
+           filters.marca !== 'todas' || 
+           filters.enPromocion !== 'todos' || 
+           filters.stock !== 'todos' || 
+           filters.material !== 'todos' || 
+           filters.color !== 'todos' || 
+           filters.precioMin || 
+           filters.precioMax || 
+           filters.fechaDesde || 
+           filters.fechaHasta;
+  }, [searchTerm, filters]);
+
+  // Obtener opciones únicas
+  const uniqueMateriales = useMemo(() => {
+    const materiales = accesorios
+      .map(a => a.material)
+      .filter(Boolean)
+      .filter((material, index, arr) => arr.indexOf(material) === index);
+    return materiales.sort();
+  }, [accesorios]);
+
+  const uniqueColores = useMemo(() => {
+    const colores = accesorios
+      .map(a => a.color)
+      .filter(Boolean)
+      .filter((color, index, arr) => arr.indexOf(color) === index);
+    return colores.sort();
+  }, [accesorios]);
+
   // Funciones de manejo de modales
-  const handleCloseModals = () => {
+  const handleCloseModals = useCallback(() => {
     setShowAddEditModal(false);
     setShowDetailModal(false);
     setShowDeleteModal(false);
     setSelectedAccesorio(null);
     resetForm();
-  };
+  }, [resetForm]);
 
-  const handleOpenAddModal = () => {
+  const handleOpenAddModal = useCallback(() => {
     resetForm();
     setSelectedAccesorio(null);
-    
-    // Establecer valores por defecto
     setFormData({
       nombre: '',
       descripcion: '',
@@ -237,114 +552,73 @@ const AccesoriosContent = () => {
       promocionId: '',
       sucursales: []
     });
-    
     setShowAddEditModal(true);
-  };
+  }, [resetForm, setFormData]);
 
-  const handleOpenEditModal = (accesorio) => {
-  setSelectedAccesorio(accesorio);
-  
-  // Función para normalizar las imágenes
-  const normalizeImages = (images) => {
-    if (!images || !Array.isArray(images)) return [];
+  const handleOpenEditModal = useCallback((accesorio) => {
+    setSelectedAccesorio(accesorio);
     
-    return images.map(img => {
-      // Si es un string (URL directa)
-      if (typeof img === 'string') {
-        return img.startsWith('http') ? img : `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img}`;
-      }
+    // Función para normalizar las imágenes
+    const normalizeImages = (images) => {
+      if (!images || !Array.isArray(images)) return [];
       
-      // Si es un objeto con propiedades
-      if (typeof img === 'object' && img !== null) {
-        // Priorizar secure_url, luego url, luego public_id
-        return img.secure_url || img.url || (img.public_id ? `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img.public_id}` : '');
-      }
+      return images.map(img => {
+        // Si es un string (URL directa)
+        if (typeof img === 'string') {
+          return img.startsWith('http') ? img : `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img}`;
+        }
+        
+        // Si es un objeto con propiedades
+        if (typeof img === 'object' && img !== null) {
+          // Priorizar secure_url, luego url, luego public_id
+          return img.secure_url || img.url || (img.public_id ? `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img.public_id}` : '');
+        }
+        
+        return '';
+      }).filter(url => url && url.length > 0); // Filtrar URLs vacías
+    };
+
+    // Función para normalizar sucursales
+    const normalizeSucursales = (sucursales) => {
+      if (!sucursales || !Array.isArray(sucursales)) return [];
       
-      return '';
-    }).filter(url => url && url.length > 0); // Filtrar URLs vacías
-  };
+      return sucursales.map(s => ({
+        sucursalId: s.sucursalId?._id || s.sucursalId || s._id || '',
+        nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || s.nombre || '',
+        stock: parseInt(s.stock) || 0
+      }));
+    };
 
-  // Función para normalizar sucursales
-  const normalizeSucursales = (sucursales) => {
-    if (!sucursales || !Array.isArray(sucursales)) return [];
+    // Preparar datos para edición con normalización mejorada
+    const editData = {
+      nombre: accesorio.nombre || '',
+      descripcion: accesorio.descripcion || '',
+      tipo: accesorio.tipo?._id || accesorio.tipo || '',
+      marcaId: accesorio.marcaId?._id || accesorio.marcaId || '',
+      linea: accesorio.linea || '',
+      material: accesorio.material || '',
+      color: accesorio.color || '',
+      precioBase: parseFloat(accesorio.precioBase) || 0,
+      precioActual: parseFloat(accesorio.precioActual || accesorio.precioBase) || 0,
+      imagenes: normalizeImages(accesorio.imagenes),
+      enPromocion: Boolean(accesorio.enPromocion),
+      promocionId: accesorio.promocionId?._id || accesorio.promocionId || '',
+      sucursales: normalizeSucursales(accesorio.sucursales)
+    };
     
-    return sucursales.map(s => ({
-      sucursalId: s.sucursalId?._id || s.sucursalId || s._id || '',
-      nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || s.nombre || '',
-      stock: parseInt(s.stock) || 0
-    }));
-  };
+    setFormData(editData);
+    setShowAddEditModal(true);
+  }, [setFormData]);
 
-  // Preparar datos para edición con normalización mejorada
-  const editData = {
-    nombre: accesorio.nombre || '',
-    descripcion: accesorio.descripcion || '',
-    tipo: accesorio.tipo?._id || accesorio.tipo || '',
-    marcaId: accesorio.marcaId?._id || accesorio.marcaId || '',
-    linea: accesorio.linea || '',
-    material: accesorio.material || '',
-    color: accesorio.color || '',
-    precioBase: parseFloat(accesorio.precioBase) || 0,
-    precioActual: parseFloat(accesorio.precioActual || accesorio.precioBase) || 0,
-    imagenes: normalizeImages(accesorio.imagenes),
-    enPromocion: Boolean(accesorio.enPromocion),
-    promocionId: accesorio.promocionId?._id || accesorio.promocionId || '',
-    sucursales: normalizeSucursales(accesorio.sucursales)
-  };
-  
-  console.log('Datos originales del accesorio:', {
-    imagenes_originales: accesorio.imagenes,
-    sucursales_originales: accesorio.sucursales
-  });
-  
-  console.log('Datos normalizados para edición:', editData);
-  
-  setFormData(editData);
-  setShowAddEditModal(true);
-};
-
-
-  const debugImageUrls = (images) => {
-  if (!Array.isArray(images)) {
-    console.warn('Images is not an array:', images);
-    return;
-  }
-  
-  images.forEach((img, index) => {
-    console.log(`Image ${index}:`, {
-      type: typeof img,
-      value: img,
-      isString: typeof img === 'string',
-      isObject: typeof img === 'object',
-      hasSecureUrl: img?.secure_url,
-      hasUrl: img?.url,
-      hasPublicId: img?.public_id
-    });
-  });
-};
-
-// Función adicional para validar URLs de imágenes
-const validateImageUrl = async (url) => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
-    img.src = url;
-    
-    // Timeout después de 5 segundos
-    setTimeout(() => resolve(false), 5000);
-  });
-};
-
-  const handleOpenDetailModal = (accesorio) => {
+  const handleOpenDetailModal = useCallback((accesorio) => {
     setSelectedAccesorio(accesorio);
     setShowDetailModal(true);
-  };
+  }, []);
 
-  const handleOpenDeleteModal = (accesorio) => {
+  const handleOpenDeleteModal = useCallback((accesorio) => {
     setSelectedAccesorio(accesorio);
     setShowDeleteModal(true);
-  };
+  }, []);
 
   // Función de envío del formulario
   const handleFormSubmit = async (e) => {
@@ -426,56 +700,44 @@ const validateImageUrl = async (url) => {
   };
 
   // Calcular estadísticas
-  const totalAccesorios = accesorios.length;
-  const accesoriosEnPromocion = accesorios.filter(a => a.enPromocion).length;
-  const precioPromedio = accesorios.length > 0 
-    ? (accesorios.reduce((sum, a) => sum + (a.precioActual || a.precioBase || 0), 0) / accesorios.length)
-    : 0;
-  const stockTotal = accesorios.reduce((total, accesorio) => {
-    return total + (accesorio.sucursales?.reduce((subtotal, sucursal) => subtotal + (sucursal.stock || 0), 0) || 0);
+  const accesoriosArr = Array.isArray(accesorios) ? accesorios : [];
+  const totalAccesorios = accesoriosArr.length;
+  const accesoriosEnPromocion = accesoriosArr.filter(a => a.enPromocion).length;
+  const stockTotal = accesoriosArr.reduce((total, accesorio) => {
+    return total + getTotalStock(accesorio);
   }, 0);
+  const valorInventario = accesoriosArr.reduce((sum, a) => sum + ((a.precioActual || a.precioBase || 0) * getTotalStock(a)), 0);
 
   const stats = [
     { 
       title: "Total Accesorios", 
       value: totalAccesorios, 
       Icon: Package,
-      color: "bg-blue-500" 
+      color: "cyan" 
     },
     { 
       title: "En Promoción", 
       value: accesoriosEnPromocion, 
       Icon: Tags,
-      color: "bg-green-500" 
-    },
-    { 
-      title: "Precio Promedio", 
-      value: `$${precioPromedio.toFixed(2)}`, 
-      Icon: DollarSign,
-      color: "bg-yellow-500" 
+      color: "green" 
     },
     { 
       title: "Stock Total", 
       value: stockTotal, 
       Icon: ShoppingBag,
-      color: "bg-purple-500" 
+      color: "purple" 
+    },
+    { 
+      title: "Valor Inventario", 
+      value: valorInventario.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), 
+      Icon: DollarSign,
+      color: "yellow" 
     }
   ];
 
-  // Definir columnas de la tabla
-  const tableColumns = [
-    { header: 'Producto', key: 'producto' },
-    { header: 'Marca/Categoría', key: 'marca_categoria' },
-    { header: 'Características', key: 'caracteristicas' },
-    { header: 'Precio', key: 'precio' },
-    { header: 'Stock', key: 'stock' },
-    { header: 'Estado', key: 'estado' },
-    { header: 'Acciones', key: 'acciones' }
-  ];
-
-  // Función para renderizar filas de la tabla
-  const renderRow = (accesorio) => {
-    const stockTotal = accesorio.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0;
+  // Función para renderizar filas
+  const renderRow = useCallback((accesorio) => {
+    const stockTotal = getTotalStock(accesorio);
     const tieneStock = stockTotal > 0;
     
     return (
@@ -509,14 +771,14 @@ const validateImageUrl = async (url) => {
         <td className="px-6 py-4">
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
-              <Tags className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-900">
+              <Tags className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-900 truncate">
                 {accesorio.marcaId?.nombre || 'Sin marca'}
               </span>
             </div>
             <div className="flex items-center space-x-2">
-              <Layers className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-500">
+              <Layers className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-500 truncate">
                 {accesorio.tipo?.nombre || accesorio.tipo || 'Sin categoría'}
               </span>
             </div>
@@ -526,10 +788,10 @@ const validateImageUrl = async (url) => {
         <td className="px-6 py-4">
           <div className="space-y-1 text-sm">
             <div className="flex items-center space-x-2">
-              <Palette className="w-4 h-4 text-gray-400" />
-              <span>{accesorio.color}</span>
+              <Palette className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="truncate">{accesorio.color}</span>
             </div>
-            <div className="text-gray-500">
+            <div className="text-gray-500 truncate">
               {accesorio.material}
             </div>
             {accesorio.linea && (
@@ -594,39 +856,52 @@ const validateImageUrl = async (url) => {
                 ? 'bg-green-100 text-green-800' 
                 : 'bg-red-100 text-red-800'
             }`}>
-              {tieneStock ? '✅ Disponible' : '❌ Sin stock'}
+              {tieneStock ? '✅ Disponible' : '⏱ Sin stock'}
             </span>
           </div>
         </td>
         
         <td className="px-6 py-4">
-          <div className="flex space-x-2">
+          <div className="flex space-x-1">
+            <button 
+              onClick={() => handleOpenDeleteModal(accesorio)} 
+              className="p-1.5 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              title="Eliminar"
+              aria-label={`Eliminar accesorio ${accesorio.nombre}`}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
             <button 
               onClick={() => handleOpenDetailModal(accesorio)} 
-              className="p-2 text-blue-600 bg-white hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              className="p-1.5 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
               title="Ver detalles"
+              aria-label={`Ver detalles de ${accesorio.nombre}`}
             >
               <Eye className="w-4 h-4" />
             </button>
             <button 
               onClick={() => handleOpenEditModal(accesorio)} 
-              className="p-2 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              className="p-1.5 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
               title="Editar"
+              aria-label={`Editar accesorio ${accesorio.nombre}`}
             >
               <Edit className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => handleOpenDeleteModal(accesorio)} 
-              className="p-2 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110" 
-              title="Eliminar"
-            >
-              <Trash2 className="w-4 h-4" />
             </button>
           </div>
         </td>
       </>
     );
-  };
+  }, [getTotalStock, handleOpenDeleteModal, handleOpenDetailModal, handleOpenEditModal]);
+
+  // Renderizado del componente
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Alert alert={alert} />
+        <SkeletonLoader />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -634,7 +909,11 @@ const validateImageUrl = async (url) => {
       <Alert alert={alert} />
       
       {/* Estadísticas */}
-      <StatsGrid stats={stats} />
+      <div className="w-full flex justify-center">
+        <div className="w-full max-w-none">
+          <StatsGrid stats={stats} />
+        </div>
+      </div>
       
       {/* Tabla principal */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -644,33 +923,339 @@ const validateImageUrl = async (url) => {
           onButtonClick={handleOpenAddModal} 
         />
         
-        <FilterBar
-          searchTerm={searchTerm}
-          onSearchChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Buscar por nombre, marca, material o color..."
-          filters={[
-            { label: 'Todos', value: 'todos' },
-            { label: 'En Promoción', value: 'en_promocion' },
-            { label: 'Sin Promoción', value: 'sin_promocion' },
-            { label: 'Con Stock', value: 'con_stock' },
-            { label: 'Sin Stock', value: 'sin_stock' }
-          ]}
-          activeFilter={selectedFilter}
-          onFilterChange={setSelectedFilter}
-        />
+        {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+        <div className="px-6 py-4 border-b bg-gray-50">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+            {/* Barra de búsqueda */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, marca, material o color..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                aria-label="Buscar accesorios"
+              />
+            </div>
+
+            {/* Controles de filtro y ordenamiento */}
+            <div className="flex items-center space-x-3">
+              {/* Dropdown de ordenamiento */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowSortDropdown(!showSortDropdown);
+                    setShowFiltersPanel(false);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  aria-expanded={showSortDropdown}
+                  aria-haspopup="true"
+                  aria-label="Opciones de ordenamiento"
+                >
+                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                  <span className="text-sm font-medium">Ordenar</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                
+                {showSortDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <div className="py-2">
+                      {SORT_OPTIONS.map((option) => {
+                        const IconComponent = option.icon;
+                        const isActive = `${sortBy}-${sortOrder}` === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            onClick={() => handleSortChange(option.value)}
+                            className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                              isActive ? 'bg-cyan-50 text-cyan-600 font-medium' : 'text-gray-700'
+                            }`}
+                            aria-pressed={isActive}
+                          >
+                            <IconComponent className="w-4 h-4" />
+                            <span>{option.label}</span>
+                            {isActive && <CheckCircle className="w-4 h-4 ml-auto" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botón de filtros */}
+              <button
+                onClick={() => {
+                  setShowFiltersPanel(!showFiltersPanel);
+                  setShowSortDropdown(false);
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-all duration-200 ${
+                  hasActiveFilters() 
+                    ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+                aria-expanded={showFiltersPanel}
+                aria-label="Filtros avanzados"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="text-sm font-medium">Filtros</span>
+                {hasActiveFilters() && (
+                  <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                    {[
+                      searchTerm && 1,
+                      filters.categoria !== 'todas' && 1,
+                      filters.marca !== 'todas' && 1,
+                      filters.enPromocion !== 'todos' && 1,
+                      filters.stock !== 'todos' && 1,
+                      filters.material !== 'todos' && 1,
+                      filters.color !== 'todos' && 1,
+                      filters.precioMin && 1,
+                      filters.precioMax && 1,
+                      filters.fechaDesde && 1,
+                      filters.fechaHasta && 1
+                    ].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Información de resultados */}
+          <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+            <span>
+              {filteredAndSortedAccesorios.length} accesorio{filteredAndSortedAccesorios.length !== 1 ? 's' : ''} 
+              {hasActiveFilters() && ` (filtrado${filteredAndSortedAccesorios.length !== 1 ? 's' : ''} de ${accesorios.length})`}
+            </span>
+            {hasActiveFilters() && (
+              <button
+                onClick={clearAllFilters}
+                className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1"
+                aria-label="Limpiar todos los filtros"
+              >
+                <X className="w-4 h-4" />
+                <span>Limpiar filtros</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* PANEL DE FILTROS */}
+        {showFiltersPanel && (
+          <div className="border-b bg-white" role="region" aria-labelledby="filtros-titulo">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 id="filtros-titulo" className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
+                <button
+                  onClick={() => setShowFiltersPanel(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Cerrar panel de filtros"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {/* Filtro por Categoría */}
+                <div>
+                  <label htmlFor="filter-categoria" className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoría
+                  </label>
+                  <select
+                    id="filter-categoria"
+                    value={filters.categoria}
+                    onChange={(e) => handleFilterChange('categoria', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todas">Todas las categorías</option>
+                    {categorias.map(categoria => (
+                      <option key={categoria._id} value={categoria._id}>{categoria.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtro por Marca */}
+                <div>
+                  <label htmlFor="filter-marca" className="block text-sm font-medium text-gray-700 mb-2">
+                    Marca
+                  </label>
+                  <select
+                    id="filter-marca"
+                    value={filters.marca}
+                    onChange={(e) => handleFilterChange('marca', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todas">Todas las marcas</option>
+                    {marcas.map(marca => (
+                      <option key={marca._id} value={marca._id}>{marca.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtro por Promoción */}
+                <div>
+                  <label htmlFor="filter-promocion" className="block text-sm font-medium text-gray-700 mb-2">
+                    Promoción
+                  </label>
+                  <select
+                    id="filter-promocion"
+                    value={filters.enPromocion}
+                    onChange={(e) => handleFilterChange('enPromocion', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="con_promocion">Con promoción</option>
+                    <option value="sin_promocion">Sin promoción</option>
+                  </select>
+                </div>
+
+                {/* Filtro por Stock */}
+                <div>
+                  <label htmlFor="filter-stock" className="block text-sm font-medium text-gray-700 mb-2">
+                    Stock
+                  </label>
+                  <select
+                    id="filter-stock"
+                    value={filters.stock}
+                    onChange={(e) => handleFilterChange('stock', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="con_stock">Con stock</option>
+                    <option value="sin_stock">Sin stock</option>
+                  </select>
+                </div>
+
+                {/* Filtro por Material */}
+                <div>
+                  <label htmlFor="filter-material" className="block text-sm font-medium text-gray-700 mb-2">
+                    Material
+                  </label>
+                  <select
+                    id="filter-material"
+                    value={filters.material}
+                    onChange={(e) => handleFilterChange('material', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos los materiales</option>
+                    {uniqueMateriales.map(material => (
+                      <option key={material} value={material}>{material}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtro por Color */}
+                <div>
+                  <label htmlFor="filter-color" className="block text-sm font-medium text-gray-700 mb-2">
+                    Color
+                  </label>
+                  <select
+                    id="filter-color"
+                    value={filters.color}
+                    onChange={(e) => handleFilterChange('color', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos los colores</option>
+                    {uniqueColores.map(color => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtro por Rango de Precio */}
+                <div className="md:col-span-2 lg:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Precio</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="number"
+                      placeholder="Min $"
+                      value={filters.precioMin}
+                      onChange={(e) => handleFilterChange('precioMin', e.target.value)}
+                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                      aria-label="Precio mínimo"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max $"
+                      value={filters.precioMax}
+                      onChange={(e) => handleFilterChange('precioMax', e.target.value)}
+                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                      aria-label="Precio máximo"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtro por Fecha de Creación */}
+                <div className="md:col-span-2 lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Creación</label>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={filters.fechaDesde}
+                        onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        aria-label="Fecha desde"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={filters.fechaHasta}
+                        onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        aria-label="Fecha hasta"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex text-xs text-gray-500 mt-1 space-x-4">
+                    <span>Desde</span>
+                    <span>Hasta</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones de acción del panel de filtros */}
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Limpiar Todo
+                </button>
+                <button
+                  onClick={() => setShowFiltersPanel(false)}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                >
+                  Aplicar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         
-        <DataTable
-          columns={tableColumns}
-          data={currentAccesorios}
-          renderRow={renderRow}
-          loading={loading}
-          noDataMessage="No se encontraron accesorios"
-          noDataSubMessage={searchTerm ? 'Intenta con otros términos de búsqueda' : 'Aún no hay accesorios registrados'}
-        />
+        {/* TABLA DE DATOS */}
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: '1200px' }}>
+            <DataTable
+              columns={TABLE_COLUMNS}
+              data={currentAccesorios}
+              renderRow={renderRow}
+              isLoading={false}
+              noDataMessage="No se encontraron accesorios"
+              noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Aún no hay accesorios registrados'}
+            />
+          </div>
+        </div>
         
         <Pagination {...paginationProps} />
       </div>
 
+      {/* MODALES */}
       {/* Modal de formulario mejorado con soporte para promociones */}
       <AccesoriosFormModal
         isOpen={showAddEditModal}
@@ -685,7 +1270,7 @@ const validateImageUrl = async (url) => {
         marcas={marcas}
         categorias={categorias}
         sucursales={sucursales}
-        promociones={promociones} // Nueva prop para promociones
+        promociones={promociones}
         selectedAccesorio={selectedAccesorio}
       />
 
@@ -721,7 +1306,7 @@ const validateImageUrl = async (url) => {
           }] : []),
           { 
             label: "Stock Total", 
-            value: `${selectedAccesorio.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0} unidades`
+            value: `${getTotalStock(selectedAccesorio)} unidades`
           },
           { 
             label: "Disponibilidad por Sucursal", 
@@ -730,7 +1315,7 @@ const validateImageUrl = async (url) => {
             ).join(' | ') || 'Sin stock'
           },
           { label: "Imágenes", value: `${selectedAccesorio.imagenes?.length || 0} imagen(es)` },
-          { label: "Fecha de Creación", value: new Date(selectedAccesorio.createdAt).toLocaleDateString('es-ES') }
+          { label: "Fecha de Creación", value: selectedAccesorio.createdAt ? new Date(selectedAccesorio.createdAt).toLocaleDateString('es-ES') : 'N/A' }
         ] : []}
       />
 
@@ -745,6 +1330,15 @@ const validateImageUrl = async (url) => {
         cancelLabel="Cancelar"
         type="danger"
       />
+
+      {/* OVERLAY PARA DROPDOWN */}
+      {showSortDropdown && (
+        <div 
+          className="fixed inset-0 z-10" 
+          onClick={() => setShowSortDropdown(false)}
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 };

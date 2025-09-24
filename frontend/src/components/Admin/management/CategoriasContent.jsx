@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Alert from '../ui/Alert';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import { 
@@ -11,7 +11,8 @@ import {
   Target, Briefcase, Building, Store, Factory, Hospital, School, Book, GraduationCap, Lightbulb,
   Palette, Brush, Scissors, Wrench, Hammer, PaintBucket, Ruler, Calculator,
   CreditCard, DollarSign, TrendingUp, TrendingDown, BarChart, PieChart, Activity,
-  Droplet, Leaf, Flower, Bug, Fish, Dog, Cat, Bird, Rabbit
+  Droplet, Leaf, Flower, Bug, Fish, Dog, Cat, Bird, Rabbit,
+  Filter, X, ChevronDown, SortAsc, SortDesc
 } from 'lucide-react';
 import { API_CONFIG, buildApiUrl } from '../../../config/api';
 
@@ -115,6 +116,21 @@ const availableIcons = [
   { name: 'Rabbit', component: Rabbit, category: 'Animales' }
 ];
 
+// Estados iniciales de filtros
+const INITIAL_FILTERS = {
+  iconCategory: 'todos',
+  fechaDesde: '',
+  fechaHasta: ''
+};
+
+// Opciones de ordenamiento
+const SORT_OPTIONS = [
+  { value: 'fechaRegistro-desc', label: 'Más Recientes Primero', icon: Calendar },
+  { value: 'fechaRegistro-asc', label: 'Más Antiguos Primero', icon: Calendar },
+  { value: 'nombre-asc', label: 'Nombre A-Z', icon: User },
+  { value: 'nombre-desc', label: 'Nombre Z-A', icon: User },
+];
+
 // Helper global para obtener el componente de icono por nombre
 const getIconComponent = (iconName) => {
   if (!iconName) return <Tags className="w-6 h-6" />;
@@ -125,6 +141,85 @@ const getIconComponent = (iconName) => {
   }
   return <Tags className="w-6 h-6" />;
 };
+
+// Componente Skeleton Loader
+const SkeletonLoader = React.memo(() => (
+  <div className="animate-pulse">
+    {/* Skeleton para las estadísticas */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Skeleton para la tabla */}
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
+        <div className="flex justify-between items-center">
+          <div className="h-6 bg-cyan-400 rounded w-48"></div>
+          <div className="h-10 bg-cyan-400 rounded w-32"></div>
+        </div>
+      </div>
+
+      <div className="px-6 py-4 border-b bg-gray-50">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+          <div className="h-10 bg-gray-200 rounded-lg w-full max-w-md"></div>
+          <div className="flex space-x-3">
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              {Array.from({ length: 5 }, (_, index) => (
+                <th key={index} className="px-6 py-4">
+                  <div className="h-4 bg-gray-300 rounded w-20"></div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {Array.from({ length: 5 }, (_, rowIndex) => (
+              <tr key={rowIndex}>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-48"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex space-x-1">
+                    {Array.from({ length: 3 }, (_, btnIndex) => (
+                      <div key={btnIndex} className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+));
 
 // Componente para el selector de iconos
 const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
@@ -226,7 +321,7 @@ const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
   );
 };
 
-// Componente FormModal arreglado
+// Componente FormModal
 const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChange, errors, submitLabel = 'Guardar', isEditing = false }) => {
   const [showIconSelector, setShowIconSelector] = useState(false);
 
@@ -370,7 +465,6 @@ const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChan
         </div>
       </div>
 
-      {/* Selector de iconos - Renderizado por separado con z-index más alto */}
       {showIconSelector && (
         <IconSelector
           selectedIcon={formData.icono}
@@ -382,7 +476,7 @@ const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChan
   );
 };
 
-// Componente DetailModal para ver detalles
+// Componente DetailModal
 const DetailModal = ({ isOpen, onClose, categoria }) => {
   if (!isOpen || !categoria) return null;
 
@@ -450,10 +544,17 @@ const CategoriasContent = () => {
   // Estados principales
   const [categorias, setCategorias] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState({ type: '', message: '' }); // 'error' or 'success'
+  const [alert, setAlert] = useState(null);
+  
+  // Estados de filtros y ordenamiento
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [sortBy, setSortBy] = useState('fechaRegistro');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
   
   // Estados para UI
-  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
   
@@ -526,13 +627,18 @@ const CategoriasContent = () => {
   };
 
   // Función para obtener todas las categorías
-  const fetchCategorias = async () => {
+  const fetchCategorias = useCallback(async () => {
     try {
       setLoading(true);
       const data = await requestWithFallback('', { method: 'GET' });
       
       if (Array.isArray(data)) {
-        setCategorias(data);
+        const formattedData = data.map(c => ({
+          ...c,
+          fechaRegistro: new Date(c.createdAt).toLocaleDateString(),
+          fechaRegistroRaw: new Date(c.createdAt),
+        }));
+        setCategorias(formattedData);
       } else if (data.message) {
         showAlert('error', data.message);
         setCategorias([]);
@@ -543,11 +649,130 @@ const CategoriasContent = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Cargar categorías al montar el componente
   useEffect(() => {
     fetchCategorias();
+  }, [fetchCategorias]);
+
+  // Funciones utilitarias
+  const showAlert = useCallback((type, message) => {
+    setAlert({ type, message });
+    const timer = setTimeout(() => setAlert(null), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Función para manejar ordenamiento
+  const handleSortChange = useCallback((sortValue) => {
+    const [field, order] = sortValue.split('-');
+    setSortBy(field);
+    setSortOrder(order);
+    setShowSortDropdown(false);
+  }, []);
+
+  // Función para ordenar datos
+  const sortData = useCallback((data) => {
+    return [...data].sort((a, b) => {
+      let valueA, valueB;
+      
+      switch (sortBy) {
+        case 'nombre':
+          valueA = a.nombre?.toLowerCase() || '';
+          valueB = b.nombre?.toLowerCase() || '';
+          break;
+        case 'fechaRegistro':
+          valueA = a.fechaRegistroRaw || new Date(0);
+          valueB = b.fechaRegistroRaw || new Date(0);
+          break;
+        default:
+          return 0;
+      }
+
+      if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+      if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [sortBy, sortOrder]);
+
+  // Función para aplicar filtros avanzados
+  const applyAdvancedFilters = useCallback((categoria) => {
+    // Filtro por categoría de icono
+    if (filters.iconCategory !== 'todos') {
+      const iconData = availableIcons.find(icon => icon.name === categoria.icono);
+      const iconCategory = iconData?.category || '';
+      if (iconCategory.toLowerCase() !== filters.iconCategory.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // Filtro por fecha de registro
+    if (filters.fechaDesde) {
+      const fechaDesde = new Date(filters.fechaDesde);
+      if (categoria.fechaRegistroRaw < fechaDesde) {
+        return false;
+      }
+    }
+    if (filters.fechaHasta) {
+      const fechaHasta = new Date(filters.fechaHasta);
+      fechaHasta.setHours(23, 59, 59);
+      if (categoria.fechaRegistroRaw > fechaHasta) {
+        return false;
+      }
+    }
+
+    return true;
+  }, [filters]);
+
+  // Lógica de filtrado y ordenamiento
+  const filteredAndSortedCategorias = useMemo(() => {
+    const filtered = categorias.filter(categoria => {
+      // Búsqueda por texto
+      const search = searchTerm.toLowerCase();
+      const matchesSearch = !searchTerm || 
+        categoria.nombre?.toLowerCase().includes(search) ||
+        categoria.descripcion?.toLowerCase().includes(search);
+      
+      // Filtros avanzados
+      const matchesAdvancedFilters = applyAdvancedFilters(categoria);
+      
+      return matchesSearch && matchesAdvancedFilters;
+    });
+    
+    return sortData(filtered);
+  }, [categorias, searchTerm, applyAdvancedFilters, sortData]);
+
+  // Paginación
+  const totalPages = Math.ceil(filteredAndSortedCategorias.length / pageSize);
+  const currentCategorias = filteredAndSortedCategorias.slice(
+    currentPage * pageSize,
+    currentPage * pageSize + pageSize
+  );
+
+  // Funciones para manejar filtros
+  const handleFilterChange = useCallback((key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  }, []);
+
+  const clearAllFilters = useCallback(() => {
+    setFilters(INITIAL_FILTERS);
+    setSearchTerm('');
+  }, []);
+
+  const hasActiveFilters = useCallback(() => {
+    return searchTerm || 
+           filters.iconCategory !== 'todos' || 
+           filters.fechaDesde || 
+           filters.fechaHasta;
+  }, [searchTerm, filters]);
+
+  // Obtener categorías de iconos únicas
+  const uniqueIconCategories = useMemo(() => {
+    const categories = [...new Set(availableIcons.map(icon => icon.category))];
+    return categories.sort();
   }, []);
 
   // Función para validar el formulario
@@ -701,29 +926,10 @@ const CategoriasContent = () => {
     clearAlert();
   };
 
-  // Función para mostrar alerta
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert({ type: '', message: '' }), 5000); // Auto-hide after 5 seconds
-  };
-
   // Función para limpiar alertas
   const clearAlert = () => {
-    setAlert({ type: '', message: '' });
+    setAlert(null);
   };
-
-  // Filtrar categorías
-  const filteredCategorias = categorias.filter(categoria => 
-    categoria.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    categoria.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Paginación
-  const totalPages = Math.ceil(filteredCategorias.length / pageSize);
-  const currentCategorias = filteredCategorias.slice(
-    currentPage * pageSize,
-    currentPage * pageSize + pageSize
-  );
 
   // Funciones de paginación
   const goToFirstPage = () => setCurrentPage(0);
@@ -732,69 +938,42 @@ const CategoriasContent = () => {
   const goToLastPage = () => setCurrentPage(totalPages - 1);
 
   // Estadísticas
-  const totalCategorias = categorias.length;
+  const stats = useMemo(() => [
+    { title: 'Total Categorías', value: categorias.length, Icon: Tags, color: 'cyan' },
+    { title: 'Categorías Activas', value: categorias.length, Icon: UserCheck, color: 'green' },
+    { title: 'En Esta Página', value: currentCategorias.length, Icon: Package, color: 'cyan' },
+  ], [categorias.length, currentCategorias.length]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500"></div>
+      <div className="space-y-6 animate-fade-in">
+        {alert && <Alert alert={alert} />}
+        <SkeletonLoader />
       </div>
     );
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Alertas */}
-      <div className="sticky top-2 z-40">
-        <Alert type={alert.type || 'info'} message={alert.message} onClose={clearAlert} />
-      </div>
-
-      {/* Modal de confirmación de eliminación */}
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={() => { setShowDeleteModal(false); setCategoriaToDelete(null); }}
-        onConfirm={confirmDeleteCategoria}
-        title="Confirmar eliminación"
-        message="¿Está seguro de que desea eliminar esta categoría? Esta acción no se puede deshacer."
-      />
-
-      {/* Estadísticas rápidas */}
+      <Alert alert={alert} />
+      
+      {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Total Categorías</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">{totalCategorias}</p>
-            </div>
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-              <Tags className="w-6 h-6 text-cyan-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Categorías Activas</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{totalCategorias}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <UserCheck className="w-6 h-6 text-green-600" />
+        {stats.map((stat, index) => (
+          <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
+                <p className={`text-3xl font-bold mt-2 ${stat.color === 'cyan' ? 'text-cyan-600' : stat.color === 'green' ? 'text-green-600' : 'text-gray-800'}`}>
+                  {stat.value}
+                </p>
+              </div>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${stat.color === 'cyan' ? 'bg-cyan-100' : stat.color === 'green' ? 'bg-green-100' : 'bg-gray-100'}`}>
+                <stat.Icon className={`w-6 h-6 ${stat.color === 'cyan' ? 'text-cyan-600' : stat.color === 'green' ? 'text-green-600' : 'text-gray-600'}`} />
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">En Esta Página</p>
-              <p className="text-3xl font-bold text-cyan-600 mt-2">{currentCategorias.length}</p>
-            </div>
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-              <Package className="w-6 h-6 text-cyan-600" />
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
       {/* Tabla principal */}
@@ -815,24 +994,198 @@ const CategoriasContent = () => {
           </div>
         </div>
         
-        {/* Filtros */}
-        <div className="p-6 bg-gray-50 border-b">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+        {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+        <div className="px-6 py-4 border-b bg-gray-50">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+            {/* Barra de búsqueda */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
                 placeholder="Buscar categoría..."
                 value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(0); // Resetear página al buscar
-                }}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                aria-label="Buscar categorías"
               />
             </div>
+
+            {/* Controles de filtro y ordenamiento */}
+            <div className="flex items-center space-x-3">
+              {/* Dropdown de ordenamiento */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    setShowSortDropdown(!showSortDropdown);
+                    setShowFiltersPanel(false);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  aria-expanded={showSortDropdown}
+                  aria-haspopup="true"
+                  aria-label="Opciones de ordenamiento"
+                >
+                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                  <span className="text-sm font-medium">Ordenar</span>
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                
+                {showSortDropdown && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <div className="py-2">
+                      {SORT_OPTIONS.map((option) => {
+                        const IconComponent = option.icon;
+                        const isActive = `${sortBy}-${sortOrder}` === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            onClick={() => handleSortChange(option.value)}
+                            className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                              isActive ? 'bg-cyan-50 text-cyan-600 font-medium' : 'text-gray-700'
+                            }`}
+                            aria-pressed={isActive}
+                          >
+                            <IconComponent className="w-4 h-4" />
+                            <span>{option.label}</span>
+                            {isActive && <CheckCircle className="w-4 h-4 ml-auto" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botón de filtros */}
+              <button
+                onClick={() => {
+                  setShowFiltersPanel(!showFiltersPanel);
+                  setShowSortDropdown(false);
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-all duration-200 ${
+                  hasActiveFilters() 
+                    ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                }`}
+                aria-expanded={showFiltersPanel}
+                aria-label="Filtros avanzados"
+              >
+                <Filter className="w-4 h-4" />
+                <span className="text-sm font-medium">Filtros</span>
+                {hasActiveFilters() && (
+                  <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                    {[
+                      searchTerm && 1,
+                      filters.iconCategory !== 'todos' && 1,
+                      filters.fechaDesde && 1,
+                      filters.fechaHasta && 1
+                    ].filter(Boolean).length}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Información de resultados */}
+          <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+            <span>
+              {filteredAndSortedCategorias.length} categoría{filteredAndSortedCategorias.length !== 1 ? 's' : ''} 
+              {hasActiveFilters() && ` (filtrado${filteredAndSortedCategorias.length !== 1 ? 's' : ''} de ${categorias.length})`}
+            </span>
+            {hasActiveFilters() && (
+              <button
+                onClick={clearAllFilters}
+                className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1"
+                aria-label="Limpiar todos los filtros"
+              >
+                <X className="w-4 h-4" />
+                <span>Limpiar filtros</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {/* PANEL DE FILTROS */}
+        {showFiltersPanel && (
+          <div className="border-b bg-white" role="region" aria-labelledby="filtros-titulo">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 id="filtros-titulo" className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
+                <button
+                  onClick={() => setShowFiltersPanel(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Cerrar panel de filtros"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {/* Filtro por Categoría de Icono */}
+                <div>
+                  <label htmlFor="filter-icon-category" className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoría de Icono
+                  </label>
+                  <select
+                    id="filter-icon-category"
+                    value={filters.iconCategory}
+                    onChange={(e) => handleFilterChange('iconCategory', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todas las categorías</option>
+                    {uniqueIconCategories.map(category => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtro por Fecha de Registro */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Registro</label>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={filters.fechaDesde}
+                        onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        aria-label="Fecha desde"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={filters.fechaHasta}
+                        onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        aria-label="Fecha hasta"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex text-xs text-gray-500 mt-1 space-x-4">
+                    <span>Desde</span>
+                    <span>Hasta</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Botones de acción del panel de filtros */}
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Limpiar Todo
+                </button>
+                <button
+                  onClick={() => setShowFiltersPanel(false)}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                >
+                  Aplicar Filtros
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabla */}
         <div className="overflow-x-auto">
@@ -857,7 +1210,7 @@ const CategoriasContent = () => {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {categoria.createdAt ? new Date(categoria.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+                    {categoria.fechaRegistro}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex space-x-2">
@@ -891,71 +1244,73 @@ const CategoriasContent = () => {
         </div>
 
         {/* Mensaje cuando no hay resultados */}
-        {filteredCategorias.length === 0 && !loading && (
+        {filteredAndSortedCategorias.length === 0 && !loading && (
           <div className="p-8 text-center">
             <Tags className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
               No se encontraron categorías
             </h3>
             <p className="text-gray-500">
-              {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza creando tu primera categoría'}
+              {hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Comienza creando tu primera categoría'}
             </p>
           </div>
         )}
 
         {/* Controles de paginación */}
-        {filteredCategorias.length > 0 && (
-          <div className="mt-4 flex flex-col items-center gap-4 pb-6">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700">Mostrar</span>
-              <select
-                value={pageSize}
-                onChange={e => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(0);
-                }}
-                className="border border-cyan-500 rounded py-1 px-2"
-              >
-                {[5, 10, 15, 20].map(size => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-              <span className="text-gray-700">por página</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={goToFirstPage}
-                disabled={currentPage === 0}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {"<<"}
-              </button>
-              <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 0}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {"<"}
-              </button>
-              <span className="text-gray-700 font-medium">
-                Página {currentPage + 1} de {totalPages}
-              </span>
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages - 1}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {">"}
-              </button>
-              <button
-                onClick={goToLastPage}
-                disabled={currentPage === totalPages - 1}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {">>"}
-              </button>
+        {filteredAndSortedCategorias.length > 0 && (
+          <div className="px-6 py-4 border-t bg-gray-50">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-700">Mostrar</span>
+                <select
+                  value={pageSize}
+                  onChange={e => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(0);
+                  }}
+                  className="border border-gray-300 rounded py-1 px-2 focus:ring-2 focus:ring-cyan-500"
+                >
+                  {[5, 10, 15, 20].map(size => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-gray-700">por página</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={goToFirstPage}
+                  disabled={currentPage === 0}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {"<<"}
+                </button>
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 0}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {"<"}
+                </button>
+                <span className="text-gray-700 font-medium">
+                  Página {currentPage + 1} de {totalPages}
+                </span>
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages - 1}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {">"}
+                </button>
+                <button
+                  onClick={goToLastPage}
+                  disabled={currentPage === totalPages - 1}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {">>"}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -968,7 +1323,7 @@ const CategoriasContent = () => {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredCategorias.slice(0, 6).map((categoria) => (
+            {filteredAndSortedCategorias.slice(0, 6).map((categoria) => (
               <div key={`card-${categoria._id}`} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => openDetailModal(categoria)}>
                 <div className="flex items-center space-x-3">
                   <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center text-cyan-600">
@@ -1014,6 +1369,26 @@ const CategoriasContent = () => {
         onClose={closeModals}
         categoria={selectedCategoria}
       />
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => { 
+          setShowDeleteModal(false); 
+          setCategoriaToDelete(null); 
+        }}
+        onConfirm={confirmDeleteCategoria}
+        title="Confirmar eliminación"
+        message="¿Está seguro de que desea eliminar esta categoría? Esta acción no se puede deshacer."
+      />
+
+      {/* OVERLAY PARA DROPDOWN */}
+      {showSortDropdown && (
+        <div 
+          className="fixed inset-0 z-10" 
+          onClick={() => setShowSortDropdown(false)}
+          aria-hidden="true"
+        />
+      )}
     </div>
   );
 };
