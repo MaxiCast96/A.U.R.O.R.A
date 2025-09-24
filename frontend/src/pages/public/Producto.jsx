@@ -27,6 +27,7 @@ const Producto = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showProductModal, setShowProductModal] = useState(false);
   const { alertState, showSuccess, showError, hideAlert } = useAlert();
+  const [promoOnly, setPromoOnly] = useState(false);
   const [showSolicitudModal, setShowSolicitudModal] = useState(false);
   const [solicitudForm, setSolicitudForm] = useState({
     nombre: '',
@@ -156,6 +157,26 @@ const Producto = () => {
     const id = setTimeout(() => setSearchTerm(searchInput), 250);
     return () => clearTimeout(id);
   }, [searchInput]);
+
+  // Aplicar filtro de marca desde query string (?marca=...)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const marcaFromQuery = params.get('marca');
+    const q = params.get('q');
+    const enPromocion = params.get('enPromocion');
+    if (marcaFromQuery) {
+      setSelectedMarca(marcaFromQuery);
+      setCurrentPage(1);
+    }
+    if (typeof q === 'string' && q.length > 0) {
+      setSearchInput(q);
+      setSearchTerm(q);
+    }
+    if (typeof enPromocion === 'string') {
+      const val = enPromocion.toLowerCase();
+      setPromoOnly(val === '1' || val === 'true' || val === 'yes' || val === 'si');
+    }
+  }, [location.search]);
 
   // Datos mock para el sistema
   const mockData = {
@@ -455,8 +476,12 @@ const Producto = () => {
       // Filtro por precio
       const price = product.precioActual || product.precioBase || product.precioCalculado || 0;
       const matchesPrice = price >= priceRange.min && price <= priceRange.max;
+
+      // Filtro por promoción (si está activo)
+      const hasPromo = (product.precioBase && product.precioActual && product.precioActual < product.precioBase) || product.enPromocion === true;
+      const matchesPromo = !promoOnly || hasPromo;
       
-      return matchesSearch && matchesCategory && matchesMarca && matchesMaterial && matchesColor && matchesPrice;
+      return matchesSearch && matchesCategory && matchesMarca && matchesMaterial && matchesColor && matchesPrice && matchesPromo;
     });
   };
 

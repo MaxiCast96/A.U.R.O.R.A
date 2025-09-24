@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import PageTransition from "../../components/transition/PageTransition";
 import Navbar from "../../components/layout/Navbar";
@@ -31,6 +32,11 @@ const Home = () => {
     loading: loadingPopulars,
     error: errorPopulars,
   } = useData("lentes?popular=true");
+  const {
+    data: sucursales,
+    loading: loadingSucursales,
+    error: errorSucursales,
+  } = useData('sucursales');
 
   const [promoIndex, setPromoIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -92,6 +98,65 @@ const Home = () => {
   }, [heroPromos.length]);
   const safeBrands = brands || [];
   const safePopulars = populars || [];
+  const safeSucursales = Array.isArray(sucursales) ? sucursales : [];
+  const [sucursalIndex, setSucursalIndex] = useState(0); // índice de página
+  const [isSucursalHover, setIsSucursalHover] = useState(false);
+  const [sucursalPageSize, setSucursalPageSize] = useState(1);
+  const autoplayRef = useRef(null);
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+
+  // Paginación por páginas (no por item) para evitar duplicados visuales
+  const totalSucursalPages = Math.max(1, Math.ceil((safeSucursales.length || 0) / sucursalPageSize));
+
+  // Detectar tamaño para mostrar 1 en móvil y 2 en md+
+  useEffect(() => {
+    const updatePageSize = () => {
+      setSucursalPageSize(window.innerWidth >= 768 ? 2 : 1);
+    };
+    updatePageSize();
+    window.addEventListener('resize', updatePageSize);
+    return () => window.removeEventListener('resize', updatePageSize);
+  }, []);
+
+  // Clamp de índice si cambian cantidad de páginas
+  useEffect(() => {
+    if (sucursalIndex >= totalSucursalPages) setSucursalIndex(0);
+  }, [totalSucursalPages]);
+
+  // Autoplay de sucursales por página
+  useEffect(() => {
+    if (!safeSucursales.length) return;
+    if (isSucursalHover) return; // pausar en hover
+    autoplayRef.current && clearInterval(autoplayRef.current);
+    autoplayRef.current = setInterval(() => {
+      setSucursalIndex((i) => (i + 1) % totalSucursalPages);
+    }, 5000);
+    return () => autoplayRef.current && clearInterval(autoplayRef.current);
+  }, [totalSucursalPages, safeSucursales.length, isSucursalHover]);
+
+  // Gestos de swipe
+  const onTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].clientX;
+    touchEndX.current = null;
+  };
+  const onTouchMove = (e) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+  };
+  const onTouchEnd = () => {
+    if (touchStartX.current == null || touchEndX.current == null) return;
+    const delta = touchEndX.current - touchStartX.current;
+    const threshold = 50;
+    if (delta > threshold) {
+      // swipe right -> anterior página
+      setSucursalIndex((i) => (i - 1 + totalSucursalPages) % totalSucursalPages);
+    } else if (delta < -threshold) {
+      // swipe left -> siguiente página
+      setSucursalIndex((i) => (i + 1) % totalSucursalPages);
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   // Handlers para el carrusel de productos populares (se pasan como props)
   const handlePopularSlideChange = (newSlide) => {
@@ -250,6 +315,18 @@ const Home = () => {
                           >
                             {getPromoDesc(currentPromo)}
                           </motion.p>
+                          {/* Acciones de promoción */}
+                          <div className="pt-2">
+                            <Link
+                              to="/productos?enPromocion=true"
+                              className="inline-flex items-center bg-[#0097c2] hover:bg-[#0083a8] text-white px-5 py-2.5 rounded-xl font-semibold shadow transition-all duration-300"
+                            >
+                              Ver más
+                              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                              </svg>
+                            </Link>
+                          </div>
                         </motion.div>
                       ) : (
                         <motion.div
@@ -416,10 +493,12 @@ const Home = () => {
             )}
           </div>
         </motion.section>
-        <br />
-        <br />
-        <br />
-
+        {/* División clara entre hero y marcas */}
+        <section className="w-full" aria-hidden>
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+          </div>
+        </section>
 
         {/* Carrusel de Marcas - AHORA RECIBE DATOS COMO PROPS */}
         <BrandsCarousel
@@ -574,200 +653,132 @@ const Home = () => {
         <br />
         <br />
 
-        {/* Sucursales con animaciones minimalistas */}
+        {/* Sucursales dinámicas desde la API */}
         <motion.section
           variants={fadeIn}
           initial="initial"
           whileInView="animate"
           viewport={{ once: true }}
-          className="max-w-6xl mx-auto px-4 mb-12"
+          className="max-w-7xl mx-auto px-4 mb-12"
         >
-          <motion.div
-            variants={staggerContainer}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto"
-          >
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="bg-gradient-to-br from-[#0097c2] to-[#00b4e4] text-white rounded-2xl p-6"
+          <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">Nuestras Sucursales</h2>
+          {loadingSucursales ? (
+            <div className="h-56 rounded-2xl bg-gray-100 animate-pulse max-w-3xl mx-auto" />
+          ) : errorSucursales ? (
+            <div className="text-center text-red-600">Error al cargar sucursales.</div>
+          ) : safeSucursales.length === 0 ? (
+            <div className="text-center text-gray-500">No hay sucursales para mostrar.</div>
+          ) : (
+            <div
+              className="relative max-w-6xl mx-auto overflow-hidden rounded-2xl bg-gray-50 p-3 sm:p-4"
+              onMouseEnter={() => setIsSucursalHover(true)}
+              onMouseLeave={() => setIsSucursalHover(false)}
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
             >
-              <div className="flex items-center mb-4">
-                <div className="p-2 bg-white/10 rounded-lg mr-3">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-lg">Sucursal Principal</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 items-stretch">
+                {(() => {
+                  const start = sucursalIndex * sucursalPageSize;
+                  const end = Math.min(start + sucursalPageSize, safeSucursales.length);
+                  const visibleSucursales = safeSucursales.slice(start, end);
+                  const isSingle = visibleSucursales.length === 1;
+                  return visibleSucursales.map((suc, idx) => {
+                    const nombre = suc.nombre || suc.nombreSucursal || suc.nombre_sucursal || suc.titulo || 'Sucursal';
+                    const rawDireccion = suc.direccion ?? suc.ubicacion ?? suc.address ?? '';
+                    const direccion = (rawDireccion && typeof rawDireccion === 'object')
+                      ? [rawDireccion.calle, rawDireccion.ciudad, rawDireccion.departamento, rawDireccion.pais].filter(Boolean).join(', ')
+                      : (rawDireccion || '');
+                    const rawTelefono = suc.telefono ?? suc.telefono1 ?? suc.phone ?? '';
+                    const telefono = (rawTelefono && typeof rawTelefono === 'object')
+                      ? [rawTelefono.whatsapp, rawTelefono.fijo, rawTelefono.movil].filter(Boolean).join(' / ')
+                      : (rawTelefono || '');
+                    const rawHorario = suc.horario ?? suc.horarios ?? '';
+                    const horario = (rawHorario && typeof rawHorario === 'object')
+                      ? Object.values(rawHorario).filter(Boolean).join(' | ')
+                      : (rawHorario || '');
+                    const lat = suc.lat || suc.latitud || suc.latitude;
+                    const lng = suc.lng || suc.longitud || suc.longitude;
+                    const mapsQuery = lat && lng ? `${lat},${lng}` : encodeURIComponent(direccion || nombre);
+                    const mapsLink = `https://www.google.com/maps?q=${mapsQuery}`;
+                    const mapsEmbed = `${mapsLink}&output=embed`;
+                    return (
+                      <motion.div
+                        key={suc._id || suc.id || `${sucursalIndex}-${idx}`}
+                        variants={fadeInUp}
+                        initial="initial"
+                        animate="animate"
+                        whileHover={{ scale: 1.01 }}
+                        className={`rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-lg transition-all duration-300 h-full ${isSingle ? 'md:col-span-2' : ''}`}
+                      >
+                        <div className="p-5 sm:p-6 flex flex-col h-full">
+                          <div className="flex items-center mb-3">
+                            <div className="p-2 bg-[#0097c2]/10 text-[#0097c2] rounded-lg mr-3">
+                              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                            <h3 className="font-semibold text-lg text-gray-900">{nombre}</h3>
+                          </div>
+                          {direccion && <p className="text-gray-600 mb-3">{direccion}</p>}
+                          <div className="space-y-2 text-sm text-gray-700">
+                            {horario && (
+                              <p className="flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                {horario}
+                              </p>
+                            )}
+                            {telefono && (
+                              <p className="flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                                {telefono}
+                              </p>
+                            )}
+                          </div>
+                          <div className="mt-4">
+                            <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center bg-[#0097c2] hover:bg-[#0083a8] text-white px-4 py-2 rounded-lg font-semibold shadow transition">
+                              Ver en Google Maps
+                              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
+                            </a>
+                          </div>
+                          <div className="mt-4 h-48 md:h-56 lg:h-64 w-full bg-gray-100 rounded-xl overflow-hidden">
+                            <iframe title={`map-${suc._id || idx}`} src={mapsEmbed} className="w-full h-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })
+                })()}
               </div>
-              <p className="mb-6 text-white/90">
-                Colonia Médica, Avenida Dr. Max Bloch #23, San Salvador.
-              </p>
-              <div className="mt-auto space-y-3">
-                <div className="flex items-center text-sm">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Lun-Vie: 8:00 AM - 5:00 PM
-                </div>
-                <div className="flex items-center text-sm">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
-                  </svg>
-                  2222-2222
-                </div>
-                <a
-                  href="https://maps.google.com"
-                  className="inline-flex items-center bg-white text-[#0097c2] px-4 py-2 rounded-xl font-semibold shadow hover:shadow-lg transition-all duration-300 group"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span>Ver en Google Maps</span>
-                  <svg
-                    className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
-                </a>
+              {/* Controles */}
+              <button
+                aria-label="Anterior"
+                onClick={() => setSucursalIndex((i) => (i - 1 + totalSucursalPages) % totalSucursalPages)}
+                className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#0097c2] border border-gray-200 rounded-full w-10 h-10 md:w-12 md:h-12 shadow-xl backdrop-blur flex items-center justify-center"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+              </button>
+              <button
+                aria-label="Siguiente"
+                onClick={() => setSucursalIndex((i) => (i + 1) % totalSucursalPages)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-[#0097c2] border border-gray-200 rounded-full w-10 h-10 md:w-12 md:h-12 shadow-xl backdrop-blur flex items-center justify-center"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+              </button>
+              {/* Dots */}
+              <div className="flex items-center justify-center gap-2 mt-4">
+                {Array.from({ length: totalSucursalPages }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSucursalIndex(i)}
+                    className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-all ${i === sucursalIndex ? 'bg-[#0097c2] ring-2 ring-[#0097c2]/30' : 'bg-gray-300 hover:bg-gray-400'}`}
+                    aria-label={`Ir a sucursales página ${i + 1}`}
+                  />
+                ))}
               </div>
-            </motion.div>
-
-            {/* Sucursal Quezaltepeque */}
-            <motion.div
-              variants={fadeInUp}
-              whileHover={{ y: -5 }}
-              className="bg-gradient-to-br from-[#0097c2] to-[#00b4e4] text-white rounded-2xl p-6"
-            >
-              <div className="flex items-center mb-4">
-                <div className="p-2 bg-white/10 rounded-lg mr-3">
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-lg">
-                  Sucursal Quezaltepeque
-                </h3>
-              </div>
-              <p className="mb-6 text-white/90">
-                1ra Avenida Norte y 8va Calle Poniente, #22, Quezaltepeque, La
-                Libertad.
-              </p>
-              <div className="mt-auto space-y-3">
-                <div className="flex items-center text-sm">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  Lun-Vie: 8:00 AM - 5:00 PM
-                </div>
-                <div className="flex items-center text-sm">
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
-                    />
-                  </svg>
-                  2222-2222
-                </div>
-                <a
-                  href="https://maps.google.com"
-                  className="inline-flex items-center bg-white text-[#0097c2] px-4 py-2 rounded-xl font-semibold shadow hover:shadow-lg transition-all duration-300 group"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <span>Ver en Google Maps</span>
-                  <svg
-                    className="w-5 h-5 ml-2 transform group-hover:translate-x-1 transition-transform"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17 8l4 4m0 0l-4 4m4-4H3"
-                    />
-                  </svg>
-                </a>
-              </div>
-            </motion.div>
-          </motion.div>
+            </div>
+          )}
         </motion.section>
 
         <br />
@@ -910,7 +921,6 @@ const Home = () => {
                     alt="Óptica La Inteligente"
                     className="w-27 h-14 object-contain hover:scale-105 transition-transform duration-300 hover:drop-shadow-lg"
                   />
-                  <h2 className="text-xl font-bold">Óptica La Inteligente</h2>
                 </div>
                 <p className="text-sm text-gray-100">
                   Comprometidos con tu Salud Visual desde 2010. Ofrecemos
@@ -920,7 +930,7 @@ const Home = () => {
                 <div className="flex space-x-4 mt-4">
                   <a
                     href="https://facebook.com"
-                    className="hover:text-gray-200 transition-colors p-2 bg-white/10 rounded-full"
+                    className="transition-colors p-2 rounded-full text-white hover:bg-white/20"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -928,7 +938,7 @@ const Home = () => {
                   </a>
                   <a
                     href="https://instagram.com"
-                    className="hover:text-gray-200 transition-colors p-2 bg-white/10 rounded-full"
+                    className="transition-colors p-2 rounded-full text-white hover:bg-white/20"
                     target="_blank"
                     rel="noopener noreferrer"
                   >
@@ -936,7 +946,7 @@ const Home = () => {
                   </a>
                   <a
                     href="https://wa.me/1234567890"
-                    className="hover:text-gray-200 transition-colors p-2 bg-white/10 rounded-full"
+                    className="transition-colors p-2 rounded-full text-white hover:bg-white/20"
                     target="_blank"
                     rel="noopener noreferrer"
                   >

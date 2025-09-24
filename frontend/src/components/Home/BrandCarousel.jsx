@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const BrandsCarousel = ({
@@ -12,8 +13,16 @@ const BrandsCarousel = ({
   const items = Array.isArray(brands) ? brands.filter(b => b.logo || b.image || b.imagen) : [];
   
   const isControlled = !!onSlideChange;
-  const [currentIndex, setCurrentIndex] = useState(currentSlide);
+  // initialize in the middle segment to allow smooth backward/forward moves
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    const base = Array.isArray(items) ? items.length : 0;
+    return Math.max(0, base); // start at the first index of the middle segment
+  });
   const setSlideState = isControlled ? onSlideChange : setCurrentIndex;
+
+  // Helper to wrap an index within the infinite list length
+  const total = Math.max(1, (Array.isArray(items) && items.length > 0) ? items.length * 3 : 1);
+  const normalize = (idx) => ((idx % total) + total) % total;
   
   const generatePlaceholder = (width = 160, height = 120) => {
     const svg = `
@@ -30,10 +39,19 @@ const BrandsCarousel = ({
 
   const infiniteItems = items.length > 0 ? [...items, ...items, ...items] : [];
 
+  // When items change, reset to middle segment for seamless navigation
+  useEffect(() => {
+    if (!isControlled) {
+      setCurrentIndex(items.length); // beginning of the middle copy
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
+
   const getVisibleBrands = () => {
     if (infiniteItems.length === 0) return [];
-    const visible = infiniteItems.slice(currentIndex, currentIndex + visibleItems);
-    const count = visible.length;
+    // Build visible window using modular indexing to properly wrap near edges
+    const count = Math.min(visibleItems, infiniteItems.length);
+    const visible = Array.from({ length: count }, (_, i) => infiniteItems[normalize(currentIndex + i)]);
     const centerIndex = Math.floor((count - 1) / 2);
 
     return visible.map((brand, idx) => {
@@ -43,6 +61,7 @@ const BrandsCarousel = ({
       const scale = 0.8 + (1 - normalizedDistance) * 0.2;
       const opacity = 0.6 + (1 - normalizedDistance) * 0.4;
       const leftPercent = count > 1 ? (idx / (count - 1)) * 60 + 20 : 50;
+      const isCenter = idx === centerIndex;
 
       return {
         ...brand,
@@ -50,7 +69,8 @@ const BrandsCarousel = ({
         zIndex: 100 + count - distanceFromCenter,
         opacity,
         leftPercent,
-        globalIndex: currentIndex + idx,
+        globalIndex: normalize(currentIndex + idx),
+        isCenter,
       };
     });
   };
@@ -59,14 +79,14 @@ const BrandsCarousel = ({
   useEffect(() => {
     if (!isControlled && items.length > visibleItems) {
       const interval = setInterval(() => {
-        setSlideState(prev => prev + 1);
+        setSlideState(prev => normalize((typeof prev === 'number' ? prev : currentIndex) + 1));
       }, 5000);
       return () => clearInterval(interval);
     }
-  }, [isControlled, items.length, visibleItems, setSlideState]);
+  }, [isControlled, items.length, visibleItems, setSlideState, normalize, currentIndex]);
 
-  const nextSlide = () => setSlideState(prev => prev + 1);
-  const prevSlide = () => setSlideState(prev => Math.max(0, prev - 1));
+  const nextSlide = () => setSlideState(prev => normalize((typeof prev === 'number' ? prev : currentIndex) + 1));
+  const prevSlide = () => setSlideState(prev => normalize((typeof prev === 'number' ? prev : currentIndex) - 1));
 
   if (loading) {
     return (
@@ -114,21 +134,23 @@ const BrandsCarousel = ({
                 left: `${brand.leftPercent}%`,
               }}
             >
-              <img
-                src={brand.logo || brand.imagen || brand.image || generatePlaceholder()}
-                alt={brand.nombre || brand.name || 'Marca'}
-                className="h-48 w-auto object-contain filter grayscale hover:grayscale-0 transition-all duration-300 hover:scale-125 block shadow-xl rounded-xl bg-white p-6 border border-gray-200"
-                onError={(e) => {
-                  if (!e.currentTarget.dataset.fallbackSet) {
-                    e.currentTarget.src = generatePlaceholder();
-                    e.currentTarget.alt = 'Logo no disponible';
-                    e.currentTarget.dataset.fallbackSet = 'true';
-                  }
-                }}
-              />
-              <div className="mt-4 text-center">
-                <p className="text-base font-semibold text-gray-700">{brand.nombre || brand.name || 'Marca'}</p>
-              </div>
+              <Link to={`/productos?marca=${encodeURIComponent(brand.nombre || brand.name || '')}`}>
+                <img
+                  src={brand.logo || brand.imagen || brand.image || generatePlaceholder()}
+                  alt={brand.nombre || brand.name || 'Marca'}
+                  className={`h-48 w-auto object-contain transition-all duration-300 hover:scale-125 block shadow-xl rounded-xl bg-white p-6 border border-gray-200 ${brand.isCenter ? '' : 'filter grayscale'}`}
+                  onError={(e) => {
+                    if (!e.currentTarget.dataset.fallbackSet) {
+                      e.currentTarget.src = generatePlaceholder();
+                      e.currentTarget.alt = 'Logo no disponible';
+                      e.currentTarget.dataset.fallbackSet = 'true';
+                    }
+                  }}
+                />
+                <div className="mt-4 text-center">
+                  <p className={`text-base font-semibold ${brand.isCenter ? 'text-gray-800' : 'text-gray-600'}`}>{brand.nombre || brand.name || 'Marca'}</p>
+                </div>
+              </Link>
             </div>
           ))}
         </div>

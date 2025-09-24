@@ -1,5 +1,5 @@
 #root {
-    width: 100vw;           /* 100% del viewport width */
+    width: 100%;            /* Evita overflow horizontal causado por 100vw */
     min-height: 100vh;      /* Al menos 100% del viewport height */
     margin: 0;              /* Sin márgenes */
     padding: 0;             /* Sin padding */
@@ -10,6 +10,12 @@
     scroll-behavior: smooth;
     background-color: #ffffff;
     color: #000000;
+  }
+
+  /* Prevenir scroll horizontal global */
+  html, body {
+    width: 100%;
+    overflow-x: hidden;
   }
   
   /* styles.css */

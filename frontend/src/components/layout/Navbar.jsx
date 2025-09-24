@@ -29,16 +29,6 @@ const Navbar = () => {
 
   return (
     <>
-      {/* Barra superior - Solo se muestra en Home */}
-      {isHome && (
-        <div className="bg-[#0097c2] text-white text-xs sm:text-sm py-1 sm:py-2 px-2 sm:px-4 flex flex-col md:flex-row justify-center items-center">
-          <span>Envío gratis en compras mayores a $1000</span>
-          <a href="/promociones" className="ml-1 sm:ml-2 underline">
-            Ver más
-          </a>
-        </div>
-      )}
-
       {/* Info de contacto - Solo se muestra en Home */}
       {isHome && (
         <div className="flex flex-col lg:flex-row justify-between items-center bg-[#f5fafd] px-2 sm:px-4 lg:px-8 py-2 sm:py-3 border-b border-gray-200">
