@@ -652,7 +652,7 @@ const AgendarCitas = () => {
                 <ul className="space-y-2 text-sm">
                   <li>
                     <a
-                      href="/servicios"
+                      href="/A.U.R.O.R.A/servicios"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -661,7 +661,7 @@ const AgendarCitas = () => {
                   </li>
                   <li>
                     <a
-                      href="/servicios"
+                      href="/A.U.R.O.R.A/servicios"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -670,7 +670,7 @@ const AgendarCitas = () => {
                   </li>
                   <li>
                     <a
-                      href="/servicios"
+                      href="/A.U.R.O.R.A/servicios"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -686,7 +686,7 @@ const AgendarCitas = () => {
                 <ul className="space-y-2 text-sm">
                   <li>
                     <a
-                      href="/nosotros"
+                      href="/A.U.R.O.R.A/nosotros"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -695,7 +695,7 @@ const AgendarCitas = () => {
                   </li>
                   <li>
                     <a
-                      href="/nosotros"
+                      href="/A.U.R.O.R.A/nosotros"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -704,7 +704,7 @@ const AgendarCitas = () => {
                   </li>
                   <li>
                     <a
-                      href="/nosotros"
+                      href="/A.U.R.O.R.A/nosotros"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>

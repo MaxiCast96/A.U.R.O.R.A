@@ -1,11 +1,166 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Search, Plus, Trash2, Eye, Edit, Package, Clock, UserCheck, ChevronDown, Tags } from 'lucide-react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { 
+  Search, Plus, Trash2, Eye, Edit, Package, Clock, UserCheck, ChevronDown, Tags,
+  Filter, X, SortAsc, SortDesc, CheckCircle, TrendingUp, DollarSign
+} from 'lucide-react';
 import { useApiData } from '../../../hooks/useApiData';
 import { API_CONFIG, buildApiUrl } from '../../../config/api';
 import FormModal from '../ui/FormModal';
 import Alert, { ToastContainer, useAlert } from '../../ui/Alert';
 import DetailModal from '../ui/DetailModal';
+import PageHeader from '../ui/PageHeader';
+import StatsGrid from '../ui/StatsGrid';
+import DataTable from '../ui/DataTable';
+import Pagination from '../ui/Pagination';
+import { usePagination } from '../../../hooks/admin/usePagination';
 import axios from 'axios';
+
+const ITEMS_PER_PAGE = 12;
+
+// Estados iniciales para filtros
+const INITIAL_FILTERS = {
+  categoria: 'todas',
+  marca: 'todas',
+  cliente: 'todos',
+  estado: 'todos',
+  precioMin: '',
+  precioMax: '',
+  fechaDesde: '',
+  fechaHasta: '',
+  material: 'todos',
+  color: 'todos',
+  tipoLente: 'todos',
+  recent: false
+};
+
+// Opciones de ordenamiento
+const SORT_OPTIONS = [
+  { value: 'fechaSolicitud-desc', label: 'Más Recientes Primero', icon: Package },
+  { value: 'fechaSolicitud-asc', label: 'Más Antiguos Primero', icon: Package },
+  { value: 'nombre-asc', label: 'Nombre A-Z', icon: Tags },
+  { value: 'nombre-desc', label: 'Nombre Z-A', icon: Tags },
+  { value: 'precioCalculado-desc', label: 'Precio: Mayor a Menor', icon: DollarSign },
+  { value: 'precioCalculado-asc', label: 'Precio: Menor a Mayor', icon: DollarSign },
+];
+
+// Columnas de la tabla
+const TABLE_COLUMNS = [
+  { header: 'Producto', key: 'producto' },
+  { header: 'Cliente', key: 'cliente' },
+  { header: 'Categoría', key: 'categoria' },
+  { header: 'Color', key: 'color' },
+  { header: 'Precio', key: 'precio' },
+  { header: 'Fecha', key: 'fecha' },
+  { header: 'Estado', key: 'estado' },
+  { header: 'Acciones', key: 'acciones' }
+];
+
+// --- COMPONENTE SKELETON LOADER MEMOIZADO ---
+const SkeletonLoader = React.memo(() => (
+  <div className="animate-pulse">
+    {/* Skeleton para las estadísticas */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      {Array.from({ length: 3 }, (_, i) => (
+        <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded w-16"></div>
+            </div>
+            <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+          </div>
+        </div>
+      ))}
+    </div>
+
+    {/* Skeleton para la tabla */}
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
+        <div className="flex justify-between items-center">
+          <div className="h-6 bg-cyan-400 rounded w-64"></div>
+          <div className="h-10 bg-cyan-400 rounded w-40"></div>
+        </div>
+      </div>
+
+      <div className="px-6 py-4 border-b bg-gray-50">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+          <div className="h-10 bg-gray-200 rounded-lg w-full max-w-md"></div>
+          <div className="flex space-x-3">
+            <div className="h-10 bg-gray-200 rounded w-32"></div>
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+            <div className="h-10 bg-gray-200 rounded w-28"></div>
+          </div>
+        </div>
+        <div className="mt-3 flex justify-between">
+          <div className="h-4 bg-gray-200 rounded w-40"></div>
+          <div className="h-4 bg-gray-200 rounded w-24"></div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              {TABLE_COLUMNS.map((_, index) => (
+                <th key={index} className="px-6 py-3">
+                  <div className="h-4 bg-gray-300 rounded w-20"></div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {Array.from({ length: 8 }, (_, rowIndex) => (
+              <tr key={rowIndex}>
+                <td className="px-6 py-4">
+                  <div className="space-y-1">
+                    <div className="h-4 bg-gray-200 rounded w-40 mb-1"></div>
+                    <div className="h-3 bg-gray-200 rounded w-48"></div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-6 bg-gray-200 rounded w-24"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-8 bg-gray-200 rounded w-24"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex space-x-2">
+                    {Array.from({ length: 4 }, (_, btnIndex) => (
+                      <div key={btnIndex} className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                    ))}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="px-6 py-4 border-t bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div className="h-4 bg-gray-200 rounded w-48"></div>
+          <div className="flex space-x-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="w-10 h-10 bg-gray-200 rounded"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+));
 
 // Helper para obtener el componente de icono por nombre
 const getIconComponent = (iconName) => {
@@ -53,7 +208,7 @@ const CategoryDropdown = ({
         className="flex items-center justify-between px-4 py-2 bg-white border border-gray-300 rounded-lg hover:border-cyan-300 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 min-w-[200px]"
       >
         <div className="flex items-center space-x-2">
-          {selectedCategory === 'todos' ? (
+          {selectedCategory === 'todas' ? (
             <>
               <Package className="w-4 h-4 text-gray-500" />
               <span className="text-gray-700">Todas las categorías</span>
@@ -96,9 +251,9 @@ const CategoryDropdown = ({
               <>
                 {/* Opción "Todos" */}
                 <button
-                  onClick={() => handleCategorySelect('todos')}
+                  onClick={() => handleCategorySelect('todas')}
                   className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
-                    selectedCategory === 'todos' ? 'bg-cyan-50 text-cyan-600' : 'text-gray-700'
+                    selectedCategory === 'todas' ? 'bg-cyan-50 text-cyan-600' : 'text-gray-700'
                   }`}
                 >
                   <div className="flex items-center space-x-3">
@@ -149,11 +304,18 @@ const CategoryDropdown = ({
 
 const PersonalizadosContent = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('todos');
+    const [selectedCategory, setSelectedCategory] = useState('todas');
     const [showAddModal, setShowAddModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
+
+    // Estados de filtros y ordenamiento
+    const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+    const [showSortDropdown, setShowSortDropdown] = useState(false);
+    const [sortBy, setSortBy] = useState('fechaSolicitud');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [filters, setFilters] = useState(INITIAL_FILTERS);
 
     const { data: apiData, loading, error } = useApiData('productosPersonalizados', { r: refreshKey });
     const { data: pedidosData } = useApiData('pedidos', { r: refreshKey });
@@ -161,7 +323,6 @@ const PersonalizadosContent = () => {
     const { data: lentesData } = useApiData('lentes');
     const { data: marcasData } = useApiData('marcas');
     const [stats, setStats] = useState({ total: 0, enProceso: 0, completado: 0 });
-    const [showRecentOnly, setShowRecentOnly] = useState(false);
     const { alertState, showSuccess, showError, hideAlert } = useAlert();
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
@@ -216,6 +377,43 @@ const PersonalizadosContent = () => {
         if (isNaN(dt.getTime())) return '';
         return dt.toISOString().slice(0, 10);
     };
+
+    // Funciones utilitarias
+    const handleSortChange = useCallback((sortValue) => {
+        const [field, order] = sortValue.split('-');
+        setSortBy(field);
+        setSortOrder(order);
+        setShowSortDropdown(false);
+    }, []);
+
+    const handleFilterChange = useCallback((key, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    }, []);
+
+    const clearAllFilters = useCallback(() => {
+        setFilters(INITIAL_FILTERS);
+        setSearchTerm('');
+        setSelectedCategory('todas');
+    }, []);
+
+    const hasActiveFilters = useCallback(() => {
+        return searchTerm || 
+               selectedCategory !== 'todas' ||
+               filters.marca !== 'todas' || 
+               filters.cliente !== 'todos' || 
+               filters.estado !== 'todos' || 
+               filters.material !== 'todos' || 
+               filters.color !== 'todos' || 
+               filters.tipoLente !== 'todos' ||
+               filters.precioMin || 
+               filters.precioMax || 
+               filters.fechaDesde || 
+               filters.fechaHasta ||
+               filters.recent;
+    }, [searchTerm, selectedCategory, filters]);
 
     const handleInputChange = (e) => {
         const { name, value, type } = e.target;
@@ -406,8 +604,14 @@ const PersonalizadosContent = () => {
                 categoria: p.categoria,
                 color: p.color,
                 precio: formatPrice(p.precioCalculado),
+                precioCalculado: p.precioCalculado,
+                material: p.material,
+                tipoLente: p.tipoLente,
+                marcaId: p.marcaId,
                 cliente: typeof p.clienteId === 'object' && p.clienteId !== null ? (p.clienteId.nombre || p.clienteId.fullName || p.clienteId.razonSocial || p.clienteId.email || String(p.clienteId._id || '')) : String(p.clienteId || ''),
+                clienteId: p.clienteId,
                 fechaCreacion: formatDate(createdAtRaw),
+                fechaSolicitud: createdAtRaw,
                 estado: estadoLabel(p.estado),
                 backendEstado: p.estado,
                 cotizacionId: p.cotizacionId || null,
@@ -439,8 +643,14 @@ const PersonalizadosContent = () => {
                         categoria: it.categoria || 'Personalizado',
                         color: '-',
                         precio: formatPrice(typeof it.subtotal === 'number' ? it.subtotal : (Number(it.precioUnitario||0) * Number(it.cantidad||1))),
+                        precioCalculado: typeof it.subtotal === 'number' ? it.subtotal : (Number(it.precioUnitario||0) * Number(it.cantidad||1)),
+                        material: '-',
+                        tipoLente: '-',
+                        marcaId: null,
                         cliente,
+                        clienteId: ped.clienteId,
                         fechaCreacion: formatDate(createdAtRaw),
+                        fechaSolicitud: createdAtRaw,
                         estado: estadoLabel('en_proceso'),
                         backendEstado: 'en_proceso',
                         cotizacionId: ped.cotizacionId || null,
@@ -458,6 +668,134 @@ const PersonalizadosContent = () => {
     const allPersonalizados = useMemo(() => {
         return [...productosPersonalizados, ...pedidosPersonalizados];
     }, [productosPersonalizados, pedidosPersonalizados]);
+
+    // Función para aplicar filtros avanzados
+    const applyAdvancedFilters = useCallback((personalizado) => {
+        // Filtro por categoría
+        if (selectedCategory !== 'todas' && personalizado.categoria !== selectedCategory) {
+            return false;
+        }
+
+        // Filtro por marca
+        if (filters.marca !== 'todas') {
+            const marcaId = personalizado.marcaId?._id || personalizado.marcaId;
+            if (marcaId !== filters.marca) {
+                return false;
+            }
+        }
+
+        // Filtro por cliente
+        if (filters.cliente !== 'todos') {
+            const clienteId = personalizado.clienteId?._id || personalizado.clienteId;
+            if (clienteId !== filters.cliente) {
+                return false;
+            }
+        }
+
+        // Filtro por estado
+        if (filters.estado !== 'todos' && personalizado.backendEstado !== filters.estado) {
+            return false;
+        }
+
+        // Filtro por material
+        if (filters.material !== 'todos' && personalizado.material?.toLowerCase() !== filters.material.toLowerCase()) {
+            return false;
+        }
+
+        // Filtro por color
+        if (filters.color !== 'todos' && personalizado.color?.toLowerCase() !== filters.color.toLowerCase()) {
+            return false;
+        }
+
+        // Filtro por tipo de lente
+        if (filters.tipoLente !== 'todos' && personalizado.tipoLente?.toLowerCase() !== filters.tipoLente.toLowerCase()) {
+            return false;
+        }
+
+        // Filtro por precio
+        if (filters.precioMin && personalizado.precioCalculado < parseFloat(filters.precioMin)) {
+            return false;
+        }
+        if (filters.precioMax && personalizado.precioCalculado > parseFloat(filters.precioMax)) {
+            return false;
+        }
+
+        // Filtro por fecha
+        if (filters.fechaDesde) {
+            const fechaDesde = new Date(filters.fechaDesde);
+            if (new Date(personalizado.fechaSolicitud || new Date(0)) < fechaDesde) {
+                return false;
+            }
+        }
+        if (filters.fechaHasta) {
+            const fechaHasta = new Date(filters.fechaHasta);
+            fechaHasta.setHours(23, 59, 59);
+            if (new Date(personalizado.fechaSolicitud || new Date(0)) > fechaHasta) {
+                return false;
+            }
+        }
+
+        // Filtro por recientes
+        if (filters.recent && !personalizado.isRecent) {
+            return false;
+        }
+
+        return true;
+    }, [selectedCategory, filters]);
+
+    // Función para ordenar datos
+    const sortData = useCallback((data) => {
+        return [...data].sort((a, b) => {
+            let valueA, valueB;
+            
+            switch (sortBy) {
+                case 'nombre':
+                    valueA = a.nombre?.toLowerCase() || '';
+                    valueB = b.nombre?.toLowerCase() || '';
+                    break;
+                case 'precioCalculado':
+                    valueA = a.precioCalculado || 0;
+                    valueB = b.precioCalculado || 0;
+                    break;
+                case 'fechaSolicitud':
+                    valueA = new Date(a.fechaSolicitud || new Date(0));
+                    valueB = new Date(b.fechaSolicitud || new Date(0));
+                    break;
+                default:
+                    return 0;
+            }
+
+            if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+            if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [sortBy, sortOrder]);
+
+    // Lógica de filtrado, ordenamiento y paginación
+    const filteredAndSortedPersonalizados = useMemo(() => {
+        let currentPersonalizados = allPersonalizados;
+
+        // Filtro por término de búsqueda
+        if (searchTerm) {
+            const searchLower = searchTerm.toLowerCase();
+            currentPersonalizados = currentPersonalizados.filter(
+                (personalizado) =>
+                    personalizado.nombre?.toLowerCase().includes(searchLower) ||
+                    personalizado.descripcion?.toLowerCase().includes(searchLower) ||
+                    personalizado.cliente?.toLowerCase().includes(searchLower) ||
+                    personalizado.categoria?.toLowerCase().includes(searchLower) ||
+                    personalizado.material?.toLowerCase().includes(searchLower) ||
+                    personalizado.color?.toLowerCase().includes(searchLower)
+            );
+        }
+
+        // Aplicar filtros avanzados
+        currentPersonalizados = currentPersonalizados.filter(applyAdvancedFilters);
+
+        return sortData(currentPersonalizados);
+    }, [allPersonalizados, searchTerm, applyAdvancedFilters, sortData]);
+
+    const { paginatedData: currentPersonalizados, ...paginationProps } = usePagination(filteredAndSortedPersonalizados, ITEMS_PER_PAGE);
 
     // Cargar estadísticas rápidas desde backend con fallback al cálculo local
     useEffect(() => {
@@ -511,6 +849,31 @@ const PersonalizadosContent = () => {
         fetchCategories();
     }, []);
 
+    // Obtener opciones únicas para filtros
+    const uniqueMateriales = useMemo(() => {
+        const materiales = allPersonalizados
+            .map(p => p.material)
+            .filter(Boolean)
+            .filter((material, index, arr) => arr.indexOf(material) === index);
+        return materiales.sort();
+    }, [allPersonalizados]);
+
+    const uniqueColores = useMemo(() => {
+        const colores = allPersonalizados
+            .map(p => p.color)
+            .filter(Boolean)
+            .filter((color, index, arr) => arr.indexOf(color) === index);
+        return colores.sort();
+    }, [allPersonalizados]);
+
+    const uniqueTipoLentes = useMemo(() => {
+        const tipos = allPersonalizados
+            .map(p => p.tipoLente)
+            .filter(Boolean)
+            .filter((tipo, index, arr) => arr.indexOf(tipo) === index);
+        return tipos.sort();
+    }, [allPersonalizados]);
+
     // Opciones para selects
     const clienteOptions = useMemo(() => (Array.isArray(clientesData) ? clientesData.map(c => ({
         value: c._id,
@@ -536,19 +899,13 @@ const PersonalizadosContent = () => {
         label: m.nombre || m.descripcion || String(m._id)
     })) : []), [marcasData]);
 
-    const filteredProducts = allPersonalizados.filter(producto => {
-        const matchesSearch = producto.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             producto.cliente.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'todos' || producto.categoria === selectedCategory;
-        const matchesRecent = !showRecentOnly || producto.isRecent;
-        return matchesSearch && matchesCategory && matchesRecent;
-    });
-
     const getEstadoColor = (estado) => {
         switch(estado) {
             case 'Completado': return 'bg-green-100 text-green-800';
             case 'En Proceso': return 'bg-yellow-100 text-yellow-800';
             case 'Pendiente': return 'bg-red-100 text-red-800';
+            case 'Cancelado': return 'bg-gray-100 text-gray-800';
+            case 'Entregado': return 'bg-blue-100 text-blue-800';
             default: return 'bg-gray-100 text-gray-800';
         }
     };
@@ -574,24 +931,99 @@ const PersonalizadosContent = () => {
         }
     };
 
-    // Estado para la página actual y tamaño de página.
-    const [currentPage, setCurrentPage] = useState(0);
-    const [pageSize, setPageSize] = useState(5);
+    // Función para renderizar filas
+    const renderRow = useCallback((producto) => {
+        return (
+            <>
+                <td className="px-6 py-4">
+                    <div>
+                        <div className="font-medium text-gray-900 flex items-center gap-2">
+                            {producto.nombre}
+                            {producto.isRecent && (
+                                <span className="px-2 py-0.5 text-[11px] rounded-full bg-green-100 text-green-700 border border-green-200">Nuevo</span>
+                            )}
+                        </div>
+                        <div className="text-sm text-gray-500">{producto.descripcion}</div>
+                    </div>
+                </td>
+                <td className="px-6 py-4 font-medium text-gray-900">{producto.cliente}</td>
+                <td className="px-6 py-4 text-gray-600">{producto.categoria}</td>
+                <td className="px-6 py-4 text-gray-600">{producto.color}</td>
+                <td className="px-6 py-4 font-semibold text-cyan-600">{producto.precio}</td>
+                <td className="px-6 py-4 text-gray-600">{producto.fechaCreacion}</td>
+                <td className="px-6 py-4">
+                    <select
+                        value={producto.backendEstado || 'pendiente'}
+                        onChange={(e) => handleEstadoChange(producto.id, e.target.value)}
+                        className="px-3 py-1 border rounded-lg text-sm"
+                        disabled={producto.source === 'pedido'}
+                    >
+                        {estadoOptions.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                </td>
+                <td className="px-6 py-4">
+                    <div className="flex space-x-1">
+                        <button
+                            className="p-1.5 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
+                            title="Eliminar"
+                            onClick={() => producto.source === 'pedido' ? null : handleDelete(producto.id)}
+                            disabled={producto.source === 'pedido'}
+                            aria-label={`Eliminar ${producto.nombre}`}
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                        <button
+                            className="p-1.5 text-blue-600 bg-white hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110"
+                            title="Ver detalles"
+                            onClick={() => handleOpenViewModal(producto)}
+                            aria-label={`Ver detalles de ${producto.nombre}`}
+                        >
+                            <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                            className="p-1.5 text-green-600 bg-white hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110"
+                            title="Editar"
+                            onClick={() => producto.source === 'pedido' ? null : prepareEdit(producto.id)}
+                            disabled={producto.source === 'pedido'}
+                            aria-label={`Editar ${producto.nombre}`}
+                        >
+                            <Edit className="w-4 h-4" />
+                        </button>
+                        {producto.source !== 'pedido' && (
+                            <button
+                                className={`p-1.5 ${producto.cotizacionId ? 'text-cyan-700 hover:bg-cyan-50' : 'text-gray-400 cursor-not-allowed'} rounded-lg transition-colors`}
+                                title={producto.cotizacionId ? 'Convertir cotización a pedido' : 'Sin cotización vinculada'}
+                                disabled={!producto.cotizacionId}
+                                onClick={() => convertirAPedido(producto.cotizacionId)}
+                            >
+                                <Package className="w-4 h-4" />
+                            </button>
+                        )}
+                    </div>
+                </td>
+            </>
+        );
+    }, [handleEstadoChange, handleDelete, handleOpenViewModal, prepareEdit, convertirAPedido]);
 
-    // Calculamos la cantidad total de páginas
-    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
-
-    // Obtenemos los productos de la página actual
-    const currentProducts = filteredProducts.slice(
-        currentPage * pageSize,
-        currentPage * pageSize + pageSize
-    );
-
-    // Funciones para cambiar de página
-    const goToFirstPage = () => setCurrentPage(0);
-    const goToPreviousPage = () => setCurrentPage(prev => (prev > 0 ? prev - 1 : prev));
-    const goToNextPage = () => setCurrentPage(prev => (prev < totalPages - 1 ? prev + 1 : prev));
-    const goToLastPage = () => setCurrentPage(totalPages - 1);
+    // Renderizado del componente
+    if (loading) {
+        return (
+            <div className="space-y-6 animate-fade-in">
+                <ToastContainer>
+                    <Alert 
+                        type={alertState.type}
+                        message={alertState.message}
+                        show={alertState.show}
+                        onClose={hideAlert}
+                        duration={alertState.duration}
+                    />
+                </ToastContainer>
+                <SkeletonLoader />
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -607,72 +1039,99 @@ const PersonalizadosContent = () => {
             <div className="animate-fade-in">
 
                 {/* Estadísticas rápidas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-sm font-medium">Total Personalizados</p>
-                                <p className="text-3xl font-bold text-gray-800 mt-2">{stats.total}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-                                <Package className="w-6 h-6 text-cyan-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-sm font-medium">En Proceso</p>
-                                <p className="text-3xl font-bold text-yellow-600 mt-2">{stats.enProceso}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-                                <Clock className="w-6 h-6 text-yellow-600" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-gray-500 text-sm font-medium">Completados</p>
-                                <p className="text-3xl font-bold text-green-600 mt-2">{stats.completado}</p>
-                            </div>
-                            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                                <UserCheck className="w-6 h-6 text-green-600" />
-                            </div>
-                        </div>
+                <div className="w-full flex justify-center">
+                    <div className="w-full max-w-none">
+                        <StatsGrid stats={[
+                            { 
+                                title: "Total Personalizados", 
+                                value: stats.total, 
+                                Icon: Package,
+                                color: "cyan" 
+                            },
+                            { 
+                                title: "En Proceso", 
+                                value: stats.enProceso, 
+                                Icon: Clock,
+                                color: "yellow" 
+                            },
+                            { 
+                                title: "Completados", 
+                                value: stats.completado, 
+                                Icon: UserCheck,
+                                color: "green" 
+                            }
+                        ]} />
                     </div>
                 </div>
 
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                    <div className="bg-cyan-500 text-white p-6">
-                        <div className="flex justify-between items-center">
-                            <h2 className="text-2xl font-bold">Productos Personalizados</h2>
-                            <button
-                                onClick={() => setShowAddModal(true)}
-                                className="bg-white text-cyan-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span>Añadir Personalizado</span>
-                            </button>
-                        </div>
-                    </div>
+                    <PageHeader 
+                        title="Productos Personalizados" 
+                        buttonLabel="Añadir Personalizado" 
+                        onButtonClick={() => setShowAddModal(true)} 
+                    />
                     
-                    {/* Filtros */}
-                    <div className="p-6 bg-gray-50 border-b">
-                        <div className="flex flex-col md:flex-row gap-4 items-center">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
+                    {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+                    <div className="px-6 py-4 border-b bg-gray-50">
+                        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+                            {/* Barra de búsqueda */}
+                            <div className="relative flex-1 max-w-md">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
                                     type="text"
                                     placeholder="Buscar por producto o cliente..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                    aria-label="Buscar productos personalizados"
                                 />
                             </div>
-                            <div className="flex flex-wrap gap-2 items-center">
+
+                            {/* Controles de filtro y ordenamiento */}
+                            <div className="flex items-center space-x-3">
+                                {/* Dropdown de ordenamiento */}
+                                <div className="relative">
+                                    <button
+                                        onClick={() => {
+                                            setShowSortDropdown(!showSortDropdown);
+                                            setShowFiltersPanel(false);
+                                        }}
+                                        className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                        aria-expanded={showSortDropdown}
+                                        aria-haspopup="true"
+                                        aria-label="Opciones de ordenamiento"
+                                    >
+                                        {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                        <span className="text-sm font-medium">Ordenar</span>
+                                        <ChevronDown className="w-4 h-4" />
+                                    </button>
+                                    
+                                    {showSortDropdown && (
+                                        <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                                            <div className="py-2">
+                                                {SORT_OPTIONS.map((option) => {
+                                                    const IconComponent = option.icon;
+                                                    const isActive = `${sortBy}-${sortOrder}` === option.value;
+                                                    return (
+                                                        <button
+                                                            key={option.value}
+                                                            onClick={() => handleSortChange(option.value)}
+                                                            className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                                                                isActive ? 'bg-cyan-50 text-cyan-600 font-medium' : 'text-gray-700'
+                                                            }`}
+                                                            aria-pressed={isActive}
+                                                        >
+                                                            <IconComponent className="w-4 h-4" />
+                                                            <span>{option.label}</span>
+                                                            {isActive && <CheckCircle className="w-4 h-4 ml-auto" />}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Dropdown de categorías */}
                                 <CategoryDropdown
                                     categories={categories}
@@ -681,189 +1140,293 @@ const PersonalizadosContent = () => {
                                     loading={loadingCategories}
                                     error={categoryError}
                                 />
-                                
+
+                                {/* Botón de filtros */}
                                 <button
-                                    onClick={() => setShowRecentOnly(prev => !prev)}
-                                    className={`px-4 py-2 rounded-lg transition-colors ${
-                                        showRecentOnly
-                                            ? 'bg-emerald-500 text-white'
-                                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                    onClick={() => {
+                                        setShowFiltersPanel(!showFiltersPanel);
+                                        setShowSortDropdown(false);
+                                    }}
+                                    className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-all duration-200 ${
+                                        hasActiveFilters() 
+                                            ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg' 
+                                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                                     }`}
-                                    title="Mostrar solo solicitudes de las últimas 24 horas"
+                                    aria-expanded={showFiltersPanel}
+                                    aria-label="Filtros avanzados"
                                 >
-                                    {showRecentOnly ? 'Recientes (24h): ON' : 'Recientes (24h)'}
+                                    <Filter className="w-4 h-4" />
+                                    <span className="text-sm font-medium">Filtros</span>
+                                    {hasActiveFilters() && (
+                                        <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                                            {[
+                                                searchTerm && 1,
+                                                selectedCategory !== 'todas' && 1,
+                                                filters.marca !== 'todas' && 1,
+                                                filters.cliente !== 'todos' && 1,
+                                                filters.estado !== 'todos' && 1,
+                                                filters.material !== 'todos' && 1,
+                                                filters.color !== 'todos' && 1,
+                                                filters.tipoLente !== 'todos' && 1,
+                                                filters.precioMin && 1,
+                                                filters.precioMax && 1,
+                                                filters.fechaDesde && 1,
+                                                filters.fechaHasta && 1,
+                                                filters.recent && 1
+                                            ].filter(Boolean).length}
+                                        </span>
+                                    )}
                                 </button>
                             </div>
+                        </div>
+
+                        {/* Información de resultados */}
+                        <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                            <span>
+                                {filteredAndSortedPersonalizados.length} personalizado{filteredAndSortedPersonalizados.length !== 1 ? 's' : ''} 
+                                {hasActiveFilters() && ` (filtrado${filteredAndSortedPersonalizados.length !== 1 ? 's' : ''} de ${allPersonalizados.length})`}
+                            </span>
+                            {hasActiveFilters() && (
+                                <button
+                                    onClick={clearAllFilters}
+                                    className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1"
+                                    aria-label="Limpiar todos los filtros"
+                                >
+                                    <X className="w-4 h-4" />
+                                    <span>Limpiar filtros</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
+                    {/* PANEL DE FILTROS */}
+                    {showFiltersPanel && (
+                        <div className="border-b bg-white" role="region" aria-labelledby="filtros-titulo">
+                            <div className="px-6 py-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 id="filtros-titulo" className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
+                                    <button
+                                        onClick={() => setShowFiltersPanel(false)}
+                                        className="text-gray-400 hover:text-gray-600"
+                                        aria-label="Cerrar panel de filtros"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    {/* Filtro por Marca */}
+                                    <div>
+                                        <label htmlFor="filter-marca" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Marca
+                                        </label>
+                                        <select
+                                            id="filter-marca"
+                                            value={filters.marca}
+                                            onChange={(e) => handleFilterChange('marca', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        >
+                                            <option value="todas">Todas las marcas</option>
+                                            {marcaOptions.map(marca => (
+                                                <option key={marca.value} value={marca.value}>{marca.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Filtro por Cliente */}
+                                    <div>
+                                        <label htmlFor="filter-cliente" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Cliente
+                                        </label>
+                                        <select
+                                            id="filter-cliente"
+                                            value={filters.cliente}
+                                            onChange={(e) => handleFilterChange('cliente', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        >
+                                            <option value="todos">Todos los clientes</option>
+                                            {clienteOptions.map(cliente => (
+                                                <option key={cliente.value} value={cliente.value}>{cliente.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Filtro por Estado */}
+                                    <div>
+                                        <label htmlFor="filter-estado" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Estado
+                                        </label>
+                                        <select
+                                            id="filter-estado"
+                                            value={filters.estado}
+                                            onChange={(e) => handleFilterChange('estado', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        >
+                                            <option value="todos">Todos los estados</option>
+                                            {estadoOptions.map(estado => (
+                                                <option key={estado.value} value={estado.value}>{estado.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Filtro por Material */}
+                                    <div>
+                                        <label htmlFor="filter-material" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Material
+                                        </label>
+                                        <select
+                                            id="filter-material"
+                                            value={filters.material}
+                                            onChange={(e) => handleFilterChange('material', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        >
+                                            <option value="todos">Todos los materiales</option>
+                                            {uniqueMateriales.map(material => (
+                                                <option key={material} value={material}>{material}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Filtro por Color */}
+                                    <div>
+                                        <label htmlFor="filter-color" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Color
+                                        </label>
+                                        <select
+                                            id="filter-color"
+                                            value={filters.color}
+                                            onChange={(e) => handleFilterChange('color', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        >
+                                            <option value="todos">Todos los colores</option>
+                                            {uniqueColores.map(color => (
+                                                <option key={color} value={color}>{color}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Filtro por Tipo de Lente */}
+                                    <div>
+                                        <label htmlFor="filter-tipo-lente" className="block text-sm font-medium text-gray-700 mb-2">
+                                            Tipo de Lente
+                                        </label>
+                                        <select
+                                            id="filter-tipo-lente"
+                                            value={filters.tipoLente}
+                                            onChange={(e) => handleFilterChange('tipoLente', e.target.value)}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                        >
+                                            <option value="todos">Todos los tipos</option>
+                                            {uniqueTipoLentes.map(tipo => (
+                                                <option key={tipo} value={tipo}>{tipo}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    {/* Filtro por Rango de Precio */}
+                                    <div className="md:col-span-2 lg:col-span-1">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Precio</label>
+                                        <div className="flex space-x-2">
+                                            <input
+                                                type="number"
+                                                placeholder="Min $"
+                                                value={filters.precioMin}
+                                                onChange={(e) => handleFilterChange('precioMin', e.target.value)}
+                                                className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                min="0"
+                                                step="0.01"
+                                                aria-label="Precio mínimo"
+                                            />
+                                            <input
+                                                type="number"
+                                                placeholder="Max $"
+                                                value={filters.precioMax}
+                                                onChange={(e) => handleFilterChange('precioMax', e.target.value)}
+                                                className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                min="0"
+                                                step="0.01"
+                                                aria-label="Precio máximo"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Filtro por Fecha */}
+                                    <div className="md:col-span-2 lg:col-span-2">
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Solicitud</label>
+                                        <div className="flex space-x-2">
+                                            <div className="flex-1">
+                                                <input
+                                                    type="date"
+                                                    value={filters.fechaDesde}
+                                                    onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                    aria-label="Fecha desde"
+                                                />
+                                            </div>
+                                            <div className="flex-1">
+                                                <input
+                                                    type="date"
+                                                    value={filters.fechaHasta}
+                                                    onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                    aria-label="Fecha hasta"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex text-xs text-gray-500 mt-1 space-x-4">
+                                            <span>Desde</span>
+                                            <span>Hasta</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Filtro por Recientes */}
+                                    <div className="flex items-center">
+                                        <label htmlFor="filter-recent" className="flex items-center cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                id="filter-recent"
+                                                checked={filters.recent}
+                                                onChange={(e) => handleFilterChange('recent', e.target.checked)}
+                                                className="mr-2 h-4 w-4 text-cyan-600 focus:ring-cyan-500 border-gray-300 rounded"
+                                            />
+                                            <span className="text-sm font-medium text-gray-700">Solo recientes (24h)</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                {/* Botones de acción del panel de filtros */}
+                                <div className="mt-6 flex justify-end space-x-3">
+                                    <button
+                                        onClick={clearAllFilters}
+                                        className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    >
+                                        Limpiar Todo
+                                    </button>
+                                    <button
+                                        onClick={() => setShowFiltersPanel(false)}
+                                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                                    >
+                                        Aplicar Filtros
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div>
-                        {/* Tabla */}
+                        {/* TABLA DE DATOS */}
                         <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead className="bg-cyan-500 text-white">
-                                    <tr>
-                                        <th className="px-6 py-4 text-left font-semibold">Producto</th>
-                                        <th className="px-6 py-4 text-left font-semibold">Cliente</th>
-                                        <th className="px-6 py-4 text-left font-semibold">Categoría</th>
-                                        <th className="px-6 py-4 text-left font-semibold">Color</th>
-                                        <th className="px-6 py-4 text-left font-semibold">Precio</th>
-                                        <th className="px-6 py-4 text-left font-semibold">Fecha</th>
-                                        <th className="px-6 py-4 text-left font-semibold">Estado</th>
-                                        <th className="px-6 py-4 text-left font-semibold">Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-200">
-                                    {loading && (
-                                        <tr>
-                                            <td colSpan={8} className="px-6 py-6 text-center text-gray-500">Cargando...</td>
-                                        </tr>
-                                    )}
-                                    {!loading && error && (
-                                        <tr>
-                                            <td colSpan={8} className="px-6 py-6 text-center text-red-600">{String(error)}</td>
-                                        </tr>
-                                    )}
-                                    {!loading && !error && currentProducts.map((producto) => (
-                                        <tr key={producto.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div>
-                                                    <div className="font-medium text-gray-900 flex items-center gap-2">
-                                                        {producto.nombre}
-                                                        {producto.isRecent && (
-                                                            <span className="px-2 py-0.5 text-[11px] rounded-full bg-green-100 text-green-700 border border-green-200">Nuevo</span>
-                                                        )}
-                                                    </div>
-                                                    <div className="text-sm text-gray-500">{producto.descripcion}</div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 font-medium text-gray-900">{producto.cliente}</td>
-                                            <td className="px-6 py-4 text-gray-600">{producto.categoria}</td>
-                                            <td className="px-6 py-4 text-gray-600">{producto.color}</td>
-                                            <td className="px-6 py-4 font-semibold text-cyan-600">{producto.precio}</td>
-                                            <td className="px-6 py-4 text-gray-600">{producto.fechaCreacion}</td>
-                                            <td className="px-6 py-4">
-                                                <select
-                                                    value={producto.backendEstado || 'pendiente'}
-                                                    onChange={(e) => handleEstadoChange(producto.id, e.target.value)}
-                                                    className="px-3 py-1 border rounded-lg text-sm"
-                                                >
-                                                    {estadoOptions.map(opt => (
-                                                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                                                    ))}
-                                                </select>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Eliminar"
-                                                        onClick={() => producto.source === 'pedido' ? null : handleDelete(producto.id)}
-                                                        disabled={producto.source === 'pedido'}
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                        title="Ver detalles"
-                                                        onClick={() => handleOpenViewModal(producto)}
-                                                    >
-                                                        <Eye className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                                                        title="Editar"
-                                                        onClick={() => producto.source === 'pedido' ? null : prepareEdit(producto.id)}
-                                                        disabled={producto.source === 'pedido'}
-                                                    >
-                                                        <Edit className="w-4 h-4" />
-                                                    </button>
-                                                    {producto.source !== 'pedido' && (
-                                                        <button
-                                                            className={`p-2 ${producto.cotizacionId ? 'text-cyan-700 hover:bg-cyan-50' : 'text-gray-400 cursor-not-allowed'} rounded-lg transition-colors`}
-                                                            title={producto.cotizacionId ? 'Convertir cotización a pedido' : 'Sin cotización vinculada'}
-                                                            disabled={!producto.cotizacionId}
-                                                            onClick={() => convertirAPedido(producto.cotizacionId)}
-                                                        >
-                                                            <Package className="w-4 h-4" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                            <DataTable
+                                columns={TABLE_COLUMNS}
+                                data={currentPersonalizados}
+                                renderRow={renderRow}
+                                isLoading={false}
+                                noDataMessage="No se encontraron productos personalizados"
+                                noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Comienza creando tu primer producto personalizado'}
+                            />
                         </div>
 
-                        {/* Mensaje cuando no hay resultados */}
-                        {!loading && !error && filteredProducts.length === 0 && (
-                            <div className="p-8 text-center">
-                                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                                    No se encontraron productos personalizados
-                                </h3>
-                                <p className="text-gray-500">
-                                    {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza creando tu primer producto personalizado'}
-                                </p>
-                            </div>
-                        )}
-
-                        {/* Controles de paginación centrados */}
-                        <div className="mt-4 flex flex-col items-center gap-4 pb-6">
-                            <div className="flex items-center gap-2">
-                                <span className="text-gray-700">Mostrar</span>
-                                <select
-                                    value={pageSize}
-                                    onChange={e => {
-                                        setPageSize(Number(e.target.value));
-                                        setCurrentPage(0);
-                                    }}
-                                    className="border border-cyan-500 rounded py-1 px-2"
-                                >
-                                    {[5, 10, 15, 20].map(size => (
-                                        <option key={size} value={size}>
-                                            {size}
-                                        </option>
-                                    ))}
-                                </select>
-                                <span className="text-gray-700">por página</span>
-                            </div>
-                            <div className="flex items-center gap-2 m-[25px]">
-                                <button
-                                    onClick={goToFirstPage}
-                                    disabled={currentPage === 0}
-                                    className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                                >
-                                    {"<<"}
-                                </button>
-                                <button
-                                    onClick={goToPreviousPage}
-                                    disabled={currentPage === 0}
-                                    className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                                >
-                                    {"<"}
-                                </button>
-                                <span className="text-gray-700 font-medium">
-                                    Página {currentPage + 1} de {totalPages}
-                                </span>
-                                <button
-                                    onClick={goToNextPage}
-                                    disabled={currentPage === totalPages - 1}
-                                    className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                                >
-                                    {">"}
-                                </button>
-                                <button
-                                    type='button'
-                                    onClick={goToLastPage}
-                                    disabled={currentPage === totalPages - 1}
-                                    className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-                                >
-                                    {">>"}
-                                </button>
-                            </div>
-                        </div>
+                        <Pagination {...paginationProps} />
                     </div>
                 </div>
             </div>
@@ -941,14 +1504,26 @@ const PersonalizadosContent = () => {
                         { label: 'Descripción', value: selectedItem.descripcion || '-' },
                         { label: 'Cliente', value: selectedItem.cliente || '-' },
                         { label: 'Categoría', value: selectedItem.categoria || '-' },
+                        { label: 'Material', value: selectedItem.material || '-' },
                         { label: 'Color', value: selectedItem.color || '-' },
+                        { label: 'Tipo de Lente', value: selectedItem.tipoLente || '-' },
                         { label: 'Precio', value: selectedItem.precio || '-' },
                         { label: 'Fecha', value: selectedItem.fechaCreacion || '-' },
                         { label: 'Estado', value: selectedItem.estado || '-' },
                         selectedItem.cotizacionId ? { label: 'Cotización ID', value: selectedItem.cotizacionId } : null,
                         selectedItem.pedidoId ? { label: 'Pedido ID', value: selectedItem.pedidoId } : null,
                         { label: 'Origen', value: selectedItem.source === 'pedido' ? 'Pedido' : 'Personalizado' },
+                        { label: 'Reciente', value: selectedItem.isRecent ? 'Sí (últimas 24h)' : 'No' },
                     ].filter(Boolean) : []}
+                />
+            )}
+
+            {/* OVERLAY PARA DROPDOWN */}
+            {showSortDropdown && (
+                <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowSortDropdown(false)}
+                    aria-hidden="true"
                 />
             )}
         </div>

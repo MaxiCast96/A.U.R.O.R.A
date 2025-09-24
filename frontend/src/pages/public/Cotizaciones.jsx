@@ -55,17 +55,17 @@ const Cotizaciones = () => {
               <div className="md:col-span-2">
                 <h3 className="font-semibold text-lg mb-4">Servicios</h3>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="/servicios" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Examen Visual</a></li>
-                  <li><a href="/servicios" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Adaptación de Lentes</a></li>
-                  <li><a href="/servicios" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Reparaciones</a></li>
+                  <li><a href="/A.U.R.O.R.A/servicios" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Examen Visual</a></li>
+                  <li><a href="/A.U.R.O.R.A/servicios" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Adaptación de Lentes</a></li>
+                  <li><a href="/A.U.R.O.R.A/servicios" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Reparaciones</a></li>
                 </ul>
               </div>
               <div className="md:col-span-2">
                 <h3 className="font-semibold text-lg mb-4">Compañía</h3>
                 <ul className="space-y-2 text-sm">
-                  <li><a href="/nosotros" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Sobre Nosotros</a></li>
-                  <li><a href="/nosotros" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Historia</a></li>
-                  <li><a href="/nosotros" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Misión y Visión</a></li>
+                  <li><a href="/A.U.R.O.R.A/nosotros" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Sobre Nosotros</a></li>
+                  <li><a href="/A.U.R.O.R.A/nosotros" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Historia</a></li>
+                  <li><a href="/A.U.R.O.R.A/nosotros" className="hover:text-gray-200 transition-colors flex items-center"><span className="mr-2">→</span>Misión y Visión</a></li>
                 </ul>
               </div>
               <div className="md:col-span-4">
@@ -322,7 +322,7 @@ const Cotizaciones = () => {
                 <ul className="space-y-2 text-sm">
                   <li>
                     <a
-                      href="/servicios"
+                      href="/A.U.R.O.R.A/servicios"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -331,7 +331,7 @@ const Cotizaciones = () => {
                   </li>
                   <li>
                     <a
-                      href="/servicios"
+                      href="/A.U.R.O.R.A/servicios"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -340,7 +340,7 @@ const Cotizaciones = () => {
                   </li>
                   <li>
                     <a
-                      href="/servicios"
+                      href="/A.U.R.O.R.A/servicios"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -356,7 +356,7 @@ const Cotizaciones = () => {
                 <ul className="space-y-2 text-sm">
                   <li>
                     <a
-                      href="/nosotros"
+                      href="/A.U.R.O.R.A/nosotros"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -365,7 +365,7 @@ const Cotizaciones = () => {
                   </li>
                   <li>
                     <a
-                      href="/nosotros"
+                      href="/A.U.R.O.R.A/nosotros"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
@@ -374,7 +374,7 @@ const Cotizaciones = () => {
                   </li>
                   <li>
                     <a
-                      href="/nosotros"
+                      href="/A.U.R.O.R.A/nosotros"
                       className="hover:text-gray-200 transition-colors flex items-center"
                     >
                       <span className="mr-2">→</span>
