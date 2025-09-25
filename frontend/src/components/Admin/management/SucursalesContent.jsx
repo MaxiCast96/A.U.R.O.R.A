@@ -618,9 +618,9 @@ const SucursalesContent = () => {
     // --- CÁLCULO DE ESTADÍSTICAS ---
     const stats = useMemo(() => [
         { title: 'Total Sucursales', value: sucursales.length, Icon: Building2, color: 'cyan' },
-        { title: 'Sucursales Activas', value: sucursales.filter(s => s.activo).length, Icon: CheckCircle, color: 'green' },
-        { title: 'Sucursales Inactivas', value: sucursales.filter(s => !s.activo).length, Icon: Building2, color: 'red' },
-        { title: 'Resultados', value: filteredAndSortedSucursales.length, Icon: Search, color: 'purple' },
+        { title: 'Sucursales Activas', value: sucursales.filter(s => s.activo).length, Icon: CheckCircle, color: 'cyan' },
+        { title: 'Sucursales Inactivas', value: sucursales.filter(s => !s.activo).length, Icon: Building2, color: 'cyan' },
+        { title: 'Resultados', value: filteredAndSortedSucursales.length, Icon: Search, color: 'cyan' },
     ], [sucursales, filteredAndSortedSucursales]);
 
     // --- FUNCIÓN PARA RENDERIZAR FILAS ---

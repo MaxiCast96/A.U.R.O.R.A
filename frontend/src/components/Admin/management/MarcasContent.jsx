@@ -915,10 +915,10 @@ const MarcasContent = () => {
         const paisesUnicos = uniqueCountries.length;
 
         return [
-            { title: 'Total Marcas', value: totalMarcas, Icon: Bookmark },
-            { title: 'Líneas Premium', value: marcasPremium, Icon: Tags },
-            { title: 'Líneas Económicas', value: marcasEconomicas, Icon: Package },
-            { title: 'Países', value: paisesUnicos, Icon: MapPin }
+            { title: 'Total Marcas', value: totalMarcas, Icon: Bookmark, color: 'cyan' },
+            { title: 'Líneas Premium', value: marcasPremium, Icon: Tags, color: 'cyan' },
+            { title: 'Líneas Económicas', value: marcasEconomicas, Icon: Package, color: 'cyan' },
+            { title: 'Países', value: paisesUnicos, Icon: MapPin, color: 'cyan' }
         ];
     }, [marcas, uniqueCountries]);
 

@@ -1298,8 +1298,8 @@ const Producto = () => {
     const tips = [
       '💡 Usa múltiples filtros para encontrar exactamente lo que buscas',
       '🔍 La búsqueda funciona con nombre, descripción y características',
-      '💰 Los filtros de precio te ayudan a encontrar opciones en tu presupuesto',
-      '🎨 Combina colores y materiales para un look personalizado',
+      '  Los filtros de precio te ayudan a encontrar opciones en tu presupuesto',
+      '   Combina colores y materiales para un look personalizado',
       '⭐ Los filtros rápidos te dan acceso a categorías populares',
       '📱 Los filtros se guardan automáticamente para tu próxima visita'
     ];

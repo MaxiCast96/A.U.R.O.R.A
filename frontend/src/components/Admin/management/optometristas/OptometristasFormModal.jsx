@@ -434,7 +434,7 @@ const OptometristasFormModal = ({
             finalFormData.empleadoId = formData.empleadoId;
         }
         
-        console.log('📦 Datos finales para envío:', finalFormData);
+        console.log('  Datos finales para envío:', finalFormData);
         
         // NAVEGACIÓN CORREGIDA: Usar el sistema de dashboard
         const handlePostSubmission = () => {
