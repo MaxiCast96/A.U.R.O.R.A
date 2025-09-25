@@ -59,7 +59,7 @@ const SkeletonLoader = React.memo(() => (
         {/* Skeleton para las estadísticas */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {Array.from({ length: 3 }, (_, i) => (
-                <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
+                <div key={i} className="bg-white rounded-xl shadow-lg p-6">
                     <div className="flex items-center justify-between">
                         <div>
                             <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
@@ -584,10 +584,35 @@ const Clientes = () => {
         <div className="space-y-6 animate-fade-in">
             <Alert alert={alert} />
             
-            <div className="w-full flex justify-center">
-                <div className="w-full max-w-none">
-                    <StatsGrid stats={stats} />
-                </div>
+            {/* ESTADÍSTICAS CENTRADAS - Eliminamos el contenedor restrictivo */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {stats.map((stat, index) => (
+                    <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
+                                <p className={`text-3xl font-bold mt-2 ${
+                                    stat.color === 'cyan' ? 'text-cyan-600' : 
+                                    stat.color === 'green' ? 'text-green-600' : 
+                                    'text-red-600'
+                                }`}>
+                                    {stat.value}
+                                </p>
+                            </div>
+                            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                stat.color === 'cyan' ? 'bg-cyan-100' : 
+                                stat.color === 'green' ? 'bg-green-100' : 
+                                'bg-red-100'
+                            }`}>
+                                <stat.Icon className={`w-6 h-6 ${
+                                    stat.color === 'cyan' ? 'text-cyan-600' : 
+                                    stat.color === 'green' ? 'text-green-600' : 
+                                    'text-red-600'
+                                }`} />
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
             
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">

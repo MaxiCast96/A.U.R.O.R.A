@@ -179,7 +179,19 @@ const Auditoria = () => {
             </thead>
             <tbody>
               {loading ? (
-                <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-500">Cargando...</td></tr>
+                Array.from({ length: 10 }).map((_, i) => (
+                  <tr key={i} className="border-t animate-pulse">
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-12"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-10"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-40"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+                  </tr>
+                ))
               ) : logs.length === 0 ? (
                 <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-500">Sin registros</td></tr>
               ) : (

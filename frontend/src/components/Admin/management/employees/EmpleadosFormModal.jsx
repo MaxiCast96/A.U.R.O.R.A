@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
 import { Camera, Upload, X, User, Edit3, Eye, EyeOff, Lock, Unlock, Check, AlertCircle, Phone as PhoneIcon, ArrowRight, Save, Loader } from 'lucide-react';
 import { EL_SALVADOR_DATA } from '../../constants/ElSalvadorData';
-import axios from 'axios';
 
 // URL base de tu API
 const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/empleados';
@@ -96,90 +95,112 @@ const PasswordField = ({ value, onChange, error, isEditing = false }) => {
       <div className="relative">
         <input type={showPassword ? 'text' : 'password'} name="password" value={value} onChange={onChange}
             className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
-            placeholder="Ingrese la contraseña" autoComplete="new-password" />
+            placeholder="Ingrese la contraseña" autoComplete="new-password" minLength="6" maxLength="50" />
         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}</button>
       </div>
       {error && <p className="text-red-500 text-sm">{error}</p>}
+      {!isEditing && (
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Debe tener entre 6 y 50 caracteres</span>
+        </p>
+      )}
     </div>
   );
 };
 
-// NUEVO: Componente para mostrar validaciones en tiempo real
-const ValidationAlert = ({ type, message, isVisible }) => {
-  if (!isVisible) return null;
+// Función para formatear DUI automáticamente
+const formatDUI = (value) => {
+  // Remover todo lo que no sean números
+  const numbers = value.replace(/\D/g, '');
   
-  const bgColor = type === 'error' ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200';
-  const textColor = type === 'error' ? 'text-red-800' : 'text-green-800';
-  const icon = type === 'error' ? <AlertCircle className="w-4 h-4" /> : <Check className="w-4 h-4" />;
+  // Limitar a 9 dígitos máximo
+  const limitedNumbers = numbers.slice(0, 9);
   
-  return (
-    <div className={`${bgColor} border rounded-lg p-3 flex items-center space-x-2 transition-all duration-300`}>
-      <div className={textColor}>{icon}</div>
-      <p className={`text-sm ${textColor}`}>{message}</p>
-    </div>
-  );
+  // Aplicar formato: 12345678-9
+  if (limitedNumbers.length <= 8) {
+    return limitedNumbers;
+  } else {
+    return `${limitedNumbers.slice(0, 8)}-${limitedNumbers.slice(8)}`;
+  }
 };
 
-const EnhancedField = ({ field, value, onChange, error, formData, handleNestedChange, selectedEmpleado, onValidationChange }) => {
-  const [isValidating, setIsValidating] = useState(false);
-  const [validationResult, setValidationResult] = useState(null);
+// Función para validar formato DUI
+const isValidDUI = (dui) => {
+  const duiPattern = /^\d{8}-\d{1}$/;
+  return duiPattern.test(dui) && dui.length === 10;
+};
+
+// Función para validar email
+const isValidEmail = (email) => {
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailPattern.test(email) && email.length <= 100;
+};
+
+// Función para validar teléfono (8 dígitos)
+const isValidPhone = (phone) => {
+  const phoneNumber = phone.replace('+503', '');
+  return phoneNumber.length === 8 && /^\d{8}$/.test(phoneNumber);
+};
+
+// Función para validar nombre/apellido
+const isValidName = (name) => {
+  return name && name.trim().length >= 2 && name.trim().length <= 50 && /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(name.trim());
+};
+
+// Función para validar salario
+const isValidSalary = (salary) => {
+  const numSalary = parseFloat(salary);
+  return !isNaN(numSalary) && numSalary >= 365 && numSalary <= 50000; // Salario mínimo SV aprox $365
+};
+
+const EnhancedField = ({ field, value, onChange, error, formData, handleNestedChange, selectedEmpleado }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
-  // Función para validar DUI y correo duplicados
-  const validateUniqueness = async (fieldValue, fieldType) => {
-    if (!fieldValue || fieldValue.trim() === '') {
-      setValidationResult(null);
-      return;
-    }
-
-    // CAMBIO: No validar si estamos editando y el valor no ha cambiado
-    if (selectedEmpleado && selectedEmpleado[fieldType] === fieldValue) {
-      setValidationResult(null); // ELIMINADO: Ya no mostrar "Campo actual"
-      return;
-    }
-
-    setIsValidating(true);
-    setValidationResult(null);
-
-    try {
-      const response = await axios.get(`${API_URL}/validate`, {
-        params: { 
-          field: fieldType, 
-          value: fieldValue,
-          excludeId: selectedEmpleado?._id
+  // Validación en tiempo real mejorada
+  const validateField = (fieldValue, fieldType) => {
+    switch (fieldType) {
+      case 'nombre':
+      case 'apellido':
+        if (fieldValue && !isValidName(fieldValue)) {
+          setValidationError(`${fieldType === 'nombre' ? 'El nombre' : 'El apellido'} debe tener 2-50 caracteres, solo letras y espacios`);
+        } else {
+          setValidationError('');
         }
-      });
-
-      if (response.data.exists) {
-        setValidationResult({ 
-          type: 'error', 
-          message: `Este ${fieldType === 'dui' ? 'DUI' : 'correo'} ya está registrado` 
-        });
-        onValidationChange?.(fieldType, false);
-      } else {
-        // CAMBIO: Solo mostrar validación positiva si realmente es necesario
-        setValidationResult(null); // ELIMINADO: Ya no mostrar "disponible"
-        onValidationChange?.(fieldType, true);
-      }
-    } catch (error) {
-      console.error(`Error validating ${fieldType}:`, error);
-      setValidationResult(null);
-      onValidationChange?.(fieldType, true);
-    } finally {
-      setIsValidating(false);
+        break;
+      case 'dui':
+        if (fieldValue && !isValidDUI(fieldValue)) {
+          setValidationError('DUI debe tener formato: 12345678-9 (9 dígitos)');
+        } else {
+          setValidationError('');
+        }
+        break;
+      case 'correo':
+        if (fieldValue && !isValidEmail(fieldValue)) {
+          setValidationError('Formato de correo inválido o muy largo (máx. 100 caracteres)');
+        } else {
+          setValidationError('');
+        }
+        break;
+      case 'telefono':
+        if (fieldValue && !isValidPhone(fieldValue)) {
+          setValidationError('El teléfono debe tener exactamente 8 dígitos');
+        } else {
+          setValidationError('');
+        }
+        break;
+      case 'salario':
+        if (fieldValue && !isValidSalary(fieldValue)) {
+          setValidationError('El salario debe estar entre $365 y $50,000');
+        } else {
+          setValidationError('');
+        }
+        break;
+      default:
+        setValidationError('');
     }
   };
-
-  // Efecto para validar DUI y correo con debounce
-  useEffect(() => {
-    if (field.name === 'dui' || field.name === 'correo') {
-      const timeoutId = setTimeout(() => {
-        validateUniqueness(value, field.name);
-      }, 500);
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [value, field.name]);
 
   const getFieldValue = () => {
     if (field.nested) {
@@ -195,25 +216,52 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
   };
 
   const handleFieldChange = (e) => {
-    const { value } = e.target;
+    let { name, value: inputValue } = e.target;
+    
+    // Aplicar formato automático para DUI
+    if (name === 'dui') {
+      inputValue = formatDUI(inputValue);
+      validateField(inputValue, 'dui');
+    }
+
+    // Normalizar email a minúsculas
+    if (name === 'correo') {
+      inputValue = inputValue.toLowerCase().trim();
+      validateField(inputValue, 'correo');
+    }
+
+    // Limitar nombres y apellidos
+    if (name === 'nombre' || name === 'apellido') {
+      inputValue = inputValue.slice(0, 50);
+      validateField(inputValue, name);
+    }
+
+    // Validar teléfono
+    if (name === 'telefono') {
+      validateField(inputValue, 'telefono');
+    }
+
+    // Validar salario
+    if (name === 'salario') {
+      validateField(inputValue, 'salario');
+    }
     
     if (field.nested) {
-      handleNestedChange(field.name, value);
+      handleNestedChange(field.name, inputValue);
       
       // Si cambió el departamento, resetear municipio
-      if (field.name === 'direccion.departamento' && value !== selectedEmpleado?.direccion?.departamento) {
+      if (field.name === 'direccion.departamento' && inputValue !== selectedEmpleado?.direccion?.departamento) {
         handleNestedChange('direccion.municipio', '');
       }
     } else {
       onChange({
         target: {
           name: field.name,
-          value: value
+          value: inputValue
         }
       });
       
-      // NUEVO: Si es campo departamento en nivel raíz, resetear ciudad
-      if (field.name === 'departamento' && value !== formData.departamento) {
+      if (field.name === 'departamento' && inputValue !== formData.departamento) {
         onChange({
           target: {
             name: 'ciudad',
@@ -221,64 +269,59 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
           }
         });
       }
-      
-      if (field.name === 'dui' || field.name === 'correo') {
-        setValidationResult(null);
-      }
     }
   };
 
   const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base ${
-    error || (validationResult?.type === 'error') ? 'border-red-500 bg-red-50' : 
+    error || validationError ? 'border-red-500 bg-red-50' : 
     isFocused ? 'border-blue-500' : 'border-gray-300 bg-white'
   } ${field.disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : ''}`;
 
   if (field.type === 'select') {
-  return (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700 mb-1">
-        {field.label} {field.required && <span className="text-red-500">*</span>}
-      </label>
-      <select 
-        name={field.name} 
-        value={getFieldValue()} 
-        onChange={handleFieldChange} 
-        className={inputClasses}
-        disabled={field.disabled}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-      >
-        <option value="">
-          {field.disabled ? `Primero selecciona ${field.name.includes('municipio') ? 'un departamento' : field.label.toLowerCase()}` : 
-           field.placeholder || `Seleccione ${field.label.toLowerCase()}`}
-        </option>
-        {Array.isArray(field.options) && field.options.map((option, index) => {
-          // Manejar tanto strings como objetos con value/label
-          const optionValue = typeof option === 'object' && option.value !== undefined ? option.value : option;
-          const optionLabel = typeof option === 'object' && option.label !== undefined ? option.label : option;
-          
-          return (
-            <option key={`${field.name}-${index}-${optionValue}`} value={optionValue}>
-              {optionLabel}
-            </option>
-          );
-        })}
-      </select>
-      {error && (
-        <p className="text-red-500 text-sm flex items-center space-x-1">
-          <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
-        </p>
-      )}
-      {field.name.includes('municipio') && field.disabled && (
-        <p className="text-blue-500 text-sm flex items-center space-x-1">
-          <AlertCircle className="w-4 h-4" />
-          <span>Primero selecciona un departamento</span>
-        </p>
-      )}
-    </div>
-  );
-}
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {field.label} {field.required && <span className="text-red-500">*</span>}
+        </label>
+        <select 
+          name={field.name} 
+          value={getFieldValue()} 
+          onChange={handleFieldChange} 
+          className={inputClasses}
+          disabled={field.disabled}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        >
+          <option value="">
+            {field.disabled ? `Primero selecciona ${field.name.includes('municipio') ? 'un departamento' : field.label.toLowerCase()}` : 
+             field.placeholder || `Seleccione ${field.label.toLowerCase()}`}
+          </option>
+          {Array.isArray(field.options) && field.options.map((option, index) => {
+            const optionValue = typeof option === 'object' && option.value !== undefined ? option.value : option;
+            const optionLabel = typeof option === 'object' && option.label !== undefined ? option.label : option;
+            
+            return (
+              <option key={`${field.name}-${index}-${optionValue}`} value={optionValue}>
+                {optionLabel}
+              </option>
+            );
+          })}
+        </select>
+        {(error || validationError) && (
+          <p className="text-red-500 text-sm flex items-center space-x-1">
+            <AlertCircle className="w-4 h-4" />
+            <span>{error || validationError}</span>
+          </p>
+        )}
+        {field.name.includes('municipio') && field.disabled && (
+          <p className="text-blue-500 text-sm flex items-center space-x-1">
+            <AlertCircle className="w-4 h-4" />
+            <span>Primero selecciona un departamento</span>
+          </p>
+        )}
+      </div>
+    );
+  }
 
   if (field.type === 'textarea') return (
     <div className="space-y-2">
@@ -294,13 +337,18 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
         rows={3}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
+        maxLength="200"
       />
-      {error && (
+      {(error || validationError) && (
         <p className="text-red-500 text-sm flex items-center space-x-1">
           <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
+          <span>{error || validationError}</span>
         </p>
       )}
+      <p className="text-xs text-gray-500 flex items-center space-x-1">
+        <AlertCircle className="w-3 h-3" />
+        <span>Máximo 200 caracteres ({getFieldValue().length}/200)</span>
+      </p>
     </div>
   );
 
@@ -319,10 +367,15 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
             type="tel"
             name={field.name}
             value={value.replace('+503', '')}
-            onChange={(e) => onChange({ target: { name: field.name, value: '+503' + e.target.value } })}
+            onChange={(e) => {
+              const phoneValue = e.target.value.replace(/\D/g, '').slice(0, 8);
+              const fullPhone = '+503' + phoneValue;
+              onChange({ target: { name: field.name, value: fullPhone } });
+              validateField(fullPhone, 'telefono');
+            }}
             placeholder="78901234"
             className={`flex-1 px-4 py-3 border-t border-b border-r rounded-r-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base ${
-              error ? 'border-red-500 bg-red-50' : 'border-gray-300'
+              error || validationError ? 'border-red-500 bg-red-50' : 'border-gray-300'
             }`}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
@@ -330,10 +383,10 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
             inputMode="numeric"
           />
         </div>
-        {error && (
+        {(error || validationError) && (
           <p className="text-red-500 text-sm flex items-center space-x-1">
             <AlertCircle className="w-4 h-4" />
-            <span>{error}</span>
+            <span>{error || validationError}</span>
           </p>
         )}
         <p className="text-xs text-gray-500 flex items-center space-x-1">
@@ -360,28 +413,20 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           step={field.type === 'number' ? '0.01' : undefined} 
-          min={field.type === 'number' ? '0' : undefined} 
+          min={field.type === 'number' && field.name === 'salario' ? '365' : undefined}
+          max={field.type === 'number' && field.name === 'salario' ? '50000' : undefined}
+          maxLength={
+            field.name === 'dui' ? '10' : 
+            field.name === 'nombre' || field.name === 'apellido' ? '50' :
+            field.name === 'correo' ? '100' : undefined
+          }
         />
-        {isValidating && (field.name === 'dui' || field.name === 'correo') && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Loader className="w-4 h-4 text-gray-400 animate-spin" />
-          </div>
-        )}
       </div>
       
-      {/* CAMBIO: Solo mostrar resultado de validación si hay error */}
-      {(field.name === 'dui' || field.name === 'correo') && validationResult?.type === 'error' && (
-        <ValidationAlert 
-          type={validationResult?.type} 
-          message={validationResult?.message} 
-          isVisible={!!validationResult}
-        />
-      )}
-      
-      {error && (
+      {(error || validationError) && (
         <p className="text-red-500 text-sm flex items-center space-x-1">
           <AlertCircle className="w-4 h-4" />
-          <span>{error}</span>
+          <span>{error || validationError}</span>
         </p>
       )}
 
@@ -389,13 +434,25 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
       {field.type === 'email' && (
         <p className="text-xs text-gray-500 flex items-center space-x-1">
           <AlertCircle className="w-3 h-3" />
-          <span>Ejemplo: empleado@email.com</span>
+          <span>Ejemplo: empleado@email.com (máx. 100 caracteres)</span>
         </p>
       )}
       {field.name === 'dui' && (
         <p className="text-xs text-gray-500 flex items-center space-x-1">
           <AlertCircle className="w-3 h-3" />
-          <span>Formato: 12345678-9</span>
+          <span>Formato automático: 12345678-9</span>
+        </p>
+      )}
+      {field.name === 'salario' && (
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Salario en USD ($365 - $50,000)</span>
+        </p>
+      )}
+      {(field.name === 'nombre' || field.name === 'apellido') && (
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Solo letras y espacios (2-50 caracteres)</span>
         </p>
       )}
     </div>
@@ -417,25 +474,20 @@ const EmpleadosFormModal = ({
     selectedEmpleado, 
     onReturnToOptometristaEdit 
 }) => {
+    const [validationErrors, setValidationErrors] = useState({});
+    
     const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
     
-    // CORREGIDO: Usar la misma lógica que ClientesFormModal para municipios
     const municipalities = useMemo(() => {
         const selectedDepartment = formData?.direccion?.departamento;
-        console.log('Calculando municipios para departamento:', selectedDepartment);
-        console.log('FormData actual:', formData);
-        console.log('Departamentos disponibles en EL_SALVADOR_DATA:', Object.keys(EL_SALVADOR_DATA));
         
         if (!selectedDepartment) {
-            console.log('No hay departamento seleccionado, retornando array vacío');
             return [];
         }
         
-        // Buscar el departamento exacto o con normalización de caracteres
         let municipios = EL_SALVADOR_DATA[selectedDepartment];
         
         if (!municipios) {
-            // Intentar encontrar coincidencia normalizando caracteres
             const departmentKey = Object.keys(EL_SALVADOR_DATA).find(key => 
                 key.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 
                 selectedDepartment.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -443,95 +495,221 @@ const EmpleadosFormModal = ({
             
             if (departmentKey) {
                 municipios = EL_SALVADOR_DATA[departmentKey];
-                console.log('Departamento encontrado con normalización:', departmentKey);
             }
         }
         
-        municipios = municipios || [];
-        console.log('Municipios encontrados:', municipios);
-        console.log('Municipio actual en formData:', formData?.direccion?.municipio);
-        console.log('¿Municipio válido para el departamento?', municipios.includes(formData?.direccion?.municipio));
-        
-        return municipios;
+        return municipios || [];
     }, [formData?.direccion?.departamento]);
 
-    // NUEVO: Verificar si el municipio debe estar deshabilitado
     const isMunicipalityDisabled = !formData?.direccion?.departamento;
-    
-    // NUEVO: Estado para manejar validaciones de unicidad
-    const [validationStatus, setValidationStatus] = useState({
-      dui: true,
-      correo: true
-    });
-    const [canSubmit, setCanSubmit] = useState(true);
 
-    // NUEVO: Función para manejar cambios en validación
-    const handleValidationChange = (field, isValid) => {
-      setValidationStatus(prev => ({
-        ...prev,
-        [field]: isValid
-      }));
+    // Validación en tiempo real
+    const validateField = (name, value) => {
+      const newErrors = { ...validationErrors };
+
+      switch (name) {
+        case 'nombre':
+        case 'apellido':
+          if (!value || !isValidName(value)) {
+            newErrors[name] = `${name === 'nombre' ? 'El nombre' : 'El apellido'} debe tener 2-50 caracteres, solo letras y espacios`;
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'dui':
+          if (!value) {
+            newErrors[name] = 'El DUI es obligatorio';
+          } else if (!isValidDUI(value)) {
+            newErrors[name] = 'DUI debe tener formato: 12345678-9 (9 dígitos)';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'telefono':
+          if (!value) {
+            newErrors[name] = 'El teléfono es obligatorio';
+          } else if (!isValidPhone(value)) {
+            newErrors[name] = 'El teléfono debe tener exactamente 8 dígitos';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'correo':
+          if (!value) {
+            newErrors[name] = 'El correo es obligatorio';
+          } else if (!isValidEmail(value)) {
+            newErrors[name] = 'Formato de correo inválido o muy largo (máx. 100 caracteres)';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'cargo':
+          if (!value) {
+            newErrors[name] = 'El cargo es obligatorio';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'sucursalId':
+          if (!value) {
+            newErrors[name] = 'La sucursal es obligatoria';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'salario':
+          if (!value) {
+            newErrors[name] = 'El salario es obligatorio';
+          } else if (!isValidSalary(value)) {
+            newErrors[name] = 'El salario debe estar entre $365 y $50,000';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'fechaContratacion':
+          if (!value) {
+            newErrors[name] = 'La fecha de contratación es obligatoria';
+          } else {
+            const selectedDate = new Date(value);
+            const today = new Date();
+            const minDate = new Date('2000-01-01');
+            if (selectedDate > today) {
+              newErrors[name] = 'La fecha no puede ser futura';
+            } else if (selectedDate < minDate) {
+              newErrors[name] = 'Fecha debe ser posterior al año 2000';
+            } else {
+              delete newErrors[name];
+            }
+          }
+          break;
+        
+        case 'departamento':
+          if (!value) {
+            newErrors[name] = 'El departamento es obligatorio';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'municipio':
+          if (!value) {
+            newErrors[name] = 'El municipio es obligatorio';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'direccionDetallada':
+          if (!value || value.trim().length < 10 || value.trim().length > 200) {
+            newErrors[name] = 'La dirección debe tener entre 10 y 200 caracteres';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+        
+        case 'password':
+          if (!selectedEmpleado) { // Solo validar password en creación
+            if (!value) {
+              newErrors[name] = 'La contraseña es obligatoria';
+            } else if (value.length < 6 || value.length > 50) {
+              newErrors[name] = 'La contraseña debe tener entre 6 y 50 caracteres';
+            } else {
+              delete newErrors[name];
+            }
+          }
+          break;
+        
+        case 'estado':
+          if (!value) {
+            newErrors[name] = 'El estado es obligatorio';
+          } else {
+            delete newErrors[name];
+          }
+          break;
+      }
+
+      setValidationErrors(newErrors);
+    };
+
+    // Manejar cambios con validación
+    const handleValidatedInputChange = (e) => {
+      const { name, value } = e.target;
+      
+      // Manejar direccion como objeto anidado
+      if (name.includes('direccion.')) {
+        const fieldName = name.split('.')[1];
+        const newDireccion = {
+          ...formData.direccion,
+          [fieldName]: value
+        };
+        
+        // Si cambia departamento, resetear municipio
+        if (fieldName === 'departamento') {
+          newDireccion.municipio = '';
+        }
+        
+        setFormData(prev => ({
+          ...prev,
+          direccion: newDireccion
+        }));
+        
+        validateField(fieldName, value);
+      } else {
+        handleInputChange(e);
+        validateField(name, value);
+      }
     };
 
     // Initialize form with employee data when editing
     useEffect(() => {
-  if (selectedEmpleado) {
-    console.log('Initializing form with employee data:', selectedEmpleado);
-    
-    // Determinar la estructura de dirección correcta
-    let direccionData = {};
-    
-    // Si el empleado tiene direccion como objeto (estructura nueva)
-    if (selectedEmpleado.direccion && typeof selectedEmpleado.direccion === 'object') {
-      direccionData = {
-        departamento: selectedEmpleado.direccion.departamento || '',
-        municipio: selectedEmpleado.direccion.municipio || '',
-        direccionDetallada: selectedEmpleado.direccion.direccionDetallada || ''
-      };
-    } 
-    // Si el empleado tiene campos separados (estructura antigua)
-    else {
-      direccionData = {
-        departamento: selectedEmpleado.departamento || '',
-        municipio: selectedEmpleado.municipio || '',
-        direccionDetallada: selectedEmpleado.direccionDetallada || ''
-      };
-    }
-    
-    setFormData(prev => ({
-      ...prev,
-      ...selectedEmpleado,
-      // Asegurar que direccion esté correctamente inicializada
-      direccion: direccionData,
-      // Format date for date input
-      fechaContratacion: selectedEmpleado.fechaContratacion 
-        ? new Date(selectedEmpleado.fechaContratacion).toISOString().split('T')[0]
-        : '',
-      // Limpiar teléfono para mostrar sin prefijo
-      telefono: selectedEmpleado.telefono?.startsWith('+503') 
-        ? selectedEmpleado.telefono.substring(4) 
-        : selectedEmpleado.telefono || ''
-    }));
-    
-    console.log('Dirección inicializada:', direccionData);
-  } else {
-    // Reset form when adding new employee
-    setFormData(prev => ({
-      ...prev,
-      direccion: {
-        departamento: '',
-        municipio: '',
-        direccionDetallada: ''
-      }
-    }));
-  }
-}, [selectedEmpleado, setFormData]);
-
-    // Efecto para determinar si se puede enviar el formulario
-    useEffect(() => {
-      const allValid = Object.values(validationStatus).every(status => status === true);
-      setCanSubmit(allValid);
-    }, [validationStatus]);
+        if (selectedEmpleado) {
+            console.log('Initializing form with employee data:', selectedEmpleado);
+            
+            let direccionData = {};
+            
+            if (selectedEmpleado.direccion && typeof selectedEmpleado.direccion === 'object') {
+                direccionData = {
+                    departamento: selectedEmpleado.direccion.departamento || '',
+                    municipio: selectedEmpleado.direccion.municipio || '',
+                    direccionDetallada: selectedEmpleado.direccion.direccionDetallada || ''
+                };
+            } else {
+                direccionData = {
+                    departamento: selectedEmpleado.departamento || '',
+                    municipio: selectedEmpleado.municipio || '',
+                    direccionDetallada: selectedEmpleado.direccionDetallada || ''
+                };
+            }
+            
+            setFormData(prev => ({
+                ...prev,
+                ...selectedEmpleado,
+                direccion: direccionData,
+                fechaContratacion: selectedEmpleado.fechaContratacion 
+                    ? new Date(selectedEmpleado.fechaContratacion).toISOString().split('T')[0]
+                    : '',
+                telefono: selectedEmpleado.telefono?.startsWith('+503') 
+                    ? selectedEmpleado.telefono 
+                    : '+503' + (selectedEmpleado.telefono || '')
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                direccion: {
+                    departamento: '',
+                    municipio: '',
+                    direccionDetallada: ''
+                }
+            }));
+        }
+    }, [selectedEmpleado, setFormData]);
 
     const sections = [
         { title: "📋 Información Personal", fields: [
@@ -580,45 +758,48 @@ const EmpleadosFormModal = ({
         ]}
     ];
 
-    // CORRECCIÓN: Función para determinar el ícono del botón
+    const handleFormSubmit = () => {
+        // Validar todos los campos antes de enviar
+        const fieldsToValidate = [
+            'nombre', 'apellido', 'dui', 'telefono', 'correo', 'cargo', 
+            'sucursalId', 'salario', 'fechaContratacion', 'estado',
+            'departamento', 'municipio', 'direccionDetallada'
+        ];
+        if (!selectedEmpleado) fieldsToValidate.push('password');
+
+        fieldsToValidate.forEach(field => {
+            let value;
+            if (['departamento', 'municipio', 'direccionDetallada'].includes(field)) {
+                value = formData.direccion?.[field] || '';
+            } else {
+                value = formData[field] || '';
+            }
+            validateField(field, value);
+        });
+
+        // Si hay errores de validación, no enviar
+        if (Object.keys(validationErrors).length === 0) {
+            onSubmit();
+        }
+    };
+
     const getSubmitIcon = () => {
         if (selectedEmpleado) return <Save className="w-4 h-4" />;
         if (formData?.cargo === 'Optometrista') return <ArrowRight className="w-4 h-4" />;
         return <Save className="w-4 h-4" />;
     };
 
-    // CORRECCIÓN: Función para determinar el label del botón
     const getSubmitLabel = () => {
         if (selectedEmpleado) {
-            // Si estamos editando y cambiamos a optometrista
             if (selectedEmpleado.cargo !== 'Optometrista' && formData?.cargo === 'Optometrista') {
                 return 'Continuar';
             }
             return 'Actualizar Empleado';
         }
-        // Si estamos creando y es optometrista
         if (formData?.cargo === 'Optometrista') {
             return 'Continuar';
         }
         return 'Guardar Empleado';
-    };
-
-    // NUEVO: Función para manejar el envío del formulario
-    const handleFormSubmit = (e) => {
-        e.preventDefault();
-        
-        // Verificar validaciones de unicidad antes de enviar
-        if (!canSubmit) {
-            // Mostrar alerta sobre campos duplicados
-            const duplicateFields = Object.entries(validationStatus)
-                .filter(([key, value]) => !value)
-                .map(([key]) => key === 'dui' ? 'DUI' : 'Correo');
-            
-            alert(`No se puede guardar el empleado. Los siguientes campos ya están registrados: ${duplicateFields.join(', ')}`);
-            return;
-        }
-        
-        onSubmit();
     };
 
     const customContent = (
@@ -632,19 +813,6 @@ const EmpleadosFormModal = ({
                     />
                 </div>
             </div>
-            
-            {/* NUEVO: Alerta de validación global */}
-            {!canSubmit && (
-                <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-center space-x-3">
-                    <AlertCircle className="w-6 h-6 text-red-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold text-red-800">Datos duplicados detectados</h4>
-                        <p className="text-sm text-red-600 mt-1">
-                            Corrige los campos marcados antes de continuar.
-                        </p>
-                    </div>
-                </div>
-            )}
             
             {sections.map((section, idx) => (
                 <div key={idx} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -665,20 +833,18 @@ const EmpleadosFormModal = ({
                                     onChange={field.nested ? (e) => {
                                         const value = e.target.value;
                                         if (field.name === 'direccion.departamento') {
-                                            // Reset municipio when department changes
                                             handleNestedChange('direccion.municipio', '');
                                         }
                                         handleNestedChange(field.name, value);
-                                    } : handleInputChange}
-                                    error={errors[field.name]}
+                                        
+                                        // Validar el campo
+                                        const fieldName = field.name.split('.')[1] || field.name;
+                                        validateField(fieldName, value);
+                                    } : handleValidatedInputChange}
+                                    error={validationErrors[field.name] || validationErrors[field.name?.split('.')[1]] || errors[field.name]}
                                     formData={formData}
                                     handleNestedChange={handleNestedChange}
                                     selectedEmpleado={selectedEmpleado}
-                                    onValidationChange={(isValid) => {
-                                        if (field.name === 'dui' || field.name === 'correo') {
-                                            handleValidationChange(field.name, isValid);
-                                        }
-                                    }}
                                 />
                             </div>
                         ))}
@@ -691,12 +857,27 @@ const EmpleadosFormModal = ({
                 <div className="max-w-md">
                     <PasswordField 
                         value={formData?.password || ''} 
-                        onChange={handleInputChange} 
-                        error={errors?.password} 
+                        onChange={handleValidatedInputChange} 
+                        error={validationErrors.password || errors?.password} 
                         isEditing={!!selectedEmpleado} 
                     />
                 </div>
             </div>
+            
+            {/* Errores de validación global */}
+            {Object.keys(validationErrors).length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                        <AlertCircle className="w-5 h-5 text-red-500" />
+                        <h4 className="font-medium text-red-800">Corrige los siguientes errores:</h4>
+                    </div>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-red-600">
+                        {Object.entries(validationErrors).map(([field, error]) => (
+                            <li key={field}>{error}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
             
             {formData?.cargo === 'Optometrista' && !selectedEmpleado && (
                 <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-4 flex items-center space-x-3">
@@ -711,7 +892,6 @@ const EmpleadosFormModal = ({
                 </div>
             )}
             
-            {/* CORRECCIÓN: Mostrar alerta también para empleados existentes que cambian a optometrista */}
             {formData?.cargo === 'Optometrista' && selectedEmpleado && selectedEmpleado.cargo !== 'Optometrista' && (
                 <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-4 flex items-center space-x-3">
                     <div className="w-12 h-12 bg-cyan-500 rounded-full flex items-center justify-center shrink-0">
@@ -743,17 +923,17 @@ const EmpleadosFormModal = ({
         <FormModal 
             isOpen={isOpen} 
             onClose={onClose} 
-            onSubmit={handleFormSubmit} // CORRECCIÓN: Usar nuestra función personalizada
+            onSubmit={handleFormSubmit}
             title={title}
             formData={formData} 
-            handleInputChange={handleInputChange} 
-            errors={errors} 
-            submitLabel={getSubmitLabel()} // CORRECCIÓN: Usar función dinámica
+            handleInputChange={handleValidatedInputChange} 
+            errors={{...errors, ...validationErrors}} 
+            submitLabel={getSubmitLabel()}
             submitIcon={getSubmitIcon()} 
             fields={[]} 
             gridCols={1} 
             size="xl"
-            submitDisabled={!canSubmit} // NUEVO: Deshabilitar botón si hay validaciones pendientes
+            submitDisabled={Object.keys(validationErrors).length > 0}
         >
             {customContent}
         </FormModal>

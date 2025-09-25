@@ -1,759 +1,1005 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, Building2, CheckCircle, DollarSign, Search, Plus, Trash2, Eye, Edit, MapPin, Clock, Mail, Phone
-} from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { usePagination } from '../../../hooks/admin/usePagination';
 import FormModal from '../ui/FormModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
+import DataTable from '../ui/DataTable';
+import Pagination from '../ui/Pagination';
+import PageHeader from '../ui/PageHeader';
+import StatsGrid from '../ui/StatsGrid';
+
+import { 
+    Users, Building2, CheckCircle, Search, Plus, Trash2, Eye, Edit, MapPin, 
+    ChevronDown, SortAsc, SortDesc, Filter, X, Calendar, DollarSign, Phone, Mail
+} from 'lucide-react';
+
+// --- CONFIGURACIÓN ---
+const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/sucursales';
+const ITEMS_PER_PAGE = 10;
+
+// Estados iniciales
+const INITIAL_FILTERS = {
+    estado: 'todos',
+    departamento: 'todos',
+    fechaDesde: '',
+    fechaHasta: ''
+};
+
+const SORT_OPTIONS = [
+    { value: 'nombre-asc', label: 'Nombre A-Z', icon: Building2 },
+    { value: 'nombre-desc', label: 'Nombre Z-A', icon: Building2 },
+    { value: 'fechaRegistro-desc', label: 'Más Recientes Primero', icon: Calendar },
+    { value: 'fechaRegistro-asc', label: 'Más Antiguos Primero', icon: Calendar },
+    { value: 'activo-asc', label: 'Estado: Activa Primero', icon: CheckCircle },
+    { value: 'activo-desc', label: 'Estado: Inactiva Primero', icon: CheckCircle },
+];
+
+const TABLE_COLUMNS = [
+    { header: 'Nombre', key: 'nombre' },
+    { header: 'Dirección', key: 'direccion' },
+    { header: 'Contacto', key: 'contacto' },
+    { header: 'Estado', key: 'estado' },
+    { header: 'Acciones', key: 'acciones' },
+];
+
+// --- COMPONENTE SKELETON LOADER MEMOIZADO ---
+const SkeletonLoader = React.memo(() => (
+    <div className="animate-pulse">
+        {/* Skeleton para las estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                            <div className="h-8 bg-gray-200 rounded w-16"></div>
+                        </div>
+                        <div className="w-12 h-12 bg-gray-200 rounded-full"></div>
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        {/* Skeleton para la tabla */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
+                <div className="flex justify-between items-center">
+                    <div className="h-6 bg-cyan-400 rounded w-48"></div>
+                    <div className="h-10 bg-cyan-400 rounded w-32"></div>
+                </div>
+            </div>
+
+            <div className="px-6 py-4 border-b bg-gray-50">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+                    <div className="h-10 bg-gray-200 rounded-lg w-full max-w-md"></div>
+                    <div className="flex space-x-3">
+                        <div className="h-10 bg-gray-200 rounded w-24"></div>
+                        <div className="h-10 bg-gray-200 rounded w-24"></div>
+                    </div>
+                </div>
+                <div className="mt-3 flex justify-between">
+                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                </div>
+            </div>
+
+            <div className="overflow-x-auto">
+                <div style={{ minWidth: '1200px' }}>
+                    <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                {TABLE_COLUMNS.map((_, index) => (
+                                    <th key={index} className="px-4 py-3">
+                                        <div className="h-4 bg-gray-300 rounded w-20"></div>
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {Array.from({ length: 5 }, (_, rowIndex) => (
+                                <tr key={rowIndex}>
+                                    <td className="px-4 py-4">
+                                        <div className="flex items-center space-x-3">
+                                            <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <div className="h-4 bg-gray-200 rounded w-48"></div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <div className="space-y-1">
+                                            <div className="h-3 bg-gray-200 rounded w-32"></div>
+                                            <div className="h-3 bg-gray-200 rounded w-40"></div>
+                                        </div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                                    </td>
+                                    <td className="px-4 py-4">
+                                        <div className="flex space-x-1">
+                                            {Array.from({ length: 3 }, (_, btnIndex) => (
+                                                <div key={btnIndex} className="w-8 h-8 bg-gray-200 rounded-lg"></div>
+                                            ))}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div className="px-6 py-4 border-t bg-gray-50">
+                <div className="flex items-center justify-between">
+                    <div className="h-4 bg-gray-200 rounded w-40"></div>
+                    <div className="flex space-x-2">
+                        {Array.from({ length: 4 }, (_, i) => (
+                            <div key={i} className="w-10 h-10 bg-gray-200 rounded"></div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+));
 
 const SucursalesContent = () => {
-  const [sucursales, setSucursales] = useState([]);
-  const [filteredSucursales, setFilteredSucursales] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('todas');
-  const [loading, setLoading] = useState(true);
-  
-  // Estados para modales
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedSucursal, setSelectedSucursal] = useState(null);
-  
-  // Estado para alertas
-  const [alert, setAlert] = useState({ type: '', message: '' });
-  
-  // Estados para la paginación
-  const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(5);
-
-  // Estados para el formulario
-  const [formData, setFormData] = useState({
-    nombre: '',
-    direccion: {
-      calle: '',
-      ciudad: '',
-      departamento: ''
-    },
-    telefono: '',
-    correo: '',
-    horariosAtencion: [],
-    activo: true
-  });
-  const [errors, setErrors] = useState({});
-
-  // Cargar sucursales al montar el componente
-  useEffect(() => {
-    fetchSucursales();
-  }, []);
-
-  // Filtrar sucursales cuando cambie el término de búsqueda o el filtro
-  useEffect(() => {
-    filterSucursales();
-  }, [sucursales, searchTerm, selectedFilter]);
-
-  // API Functions
-  const fetchSucursales = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('https://a-u-r-o-r-a.onrender.com/api/sucursales');
-      const data = await response.json();
-      
-      if (Array.isArray(data)) {
-        setSucursales(data);
-      } else if (data.message) {
-        showAlert('error', data.message);
-      }
-    } catch (error) {
-      console.error('Error fetching sucursales:', error);
-      showAlert('error', 'Error al cargar las sucursales');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createSucursal = async (sucursalData) => {
-    try {
-      const response = await fetch('https://a-u-r-o-r-a.onrender.com/api/sucursales', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sucursalData)
-      });
-      
-      const data = await response.json();
-      
-      if (data.message === 'Sucursal guardada') {
-        showAlert('success', 'Sucursal creada exitosamente');
-        fetchSucursales();
-        return true;
-      } else {
-        showAlert('error', data.message || 'Error al crear la sucursal');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error creating sucursal:', error);
-      showAlert('error', 'Error al crear la sucursal');
-      return false;
-    }
-  };
-
-  const updateSucursal = async (id, sucursalData) => {
-    try {
-      const response = await fetch(`https://a-u-r-o-r-a.onrender.com/api/sucursales/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(sucursalData)
-      });
-      
-      const data = await response.json();
-      
-      if (data.message === 'Sucursal actualizada') {
-        showAlert('success', 'Sucursal actualizada exitosamente');
-        fetchSucursales();
-        return true;
-      } else {
-        showAlert('error', data.message || 'Error al actualizar la sucursal');
-        return false;
-      }
-    } catch (error) {
-      console.error('Error updating sucursal:', error);
-      showAlert('error', 'Error al actualizar la sucursal');
-      return false;
-    }
-  };
-
-  const deleteSucursal = async (id) => {
-    if (!window.confirm('¿Está seguro de que desea eliminar esta sucursal?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`https://a-u-r-o-r-a.onrender.com/api/sucursales/${id}`, {
-        method: 'DELETE'
-      });
-      
-      const data = await response.json();
-      
-      if (data.message === 'Sucursal eliminada') {
-        showAlert('delete', 'Sucursal eliminada exitosamente');
-        fetchSucursales();
-      } else {
-        showAlert('error', data.message || 'Error al eliminar la sucursal');
-      }
-    } catch (error) {
-      console.error('Error deleting sucursal:', error);
-      showAlert('error', 'Error al eliminar la sucursal');
-    }
-  };
-
-  // Utility functions
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-  };
-
-  const clearAlert = () => {
-    setAlert({ type: '', message: '' });
-  };
-
-  const filterSucursales = () => {
-    let filtered = sucursales.filter(sucursal => {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch = 
-        sucursal.nombre.toLowerCase().includes(searchLower) ||
-        sucursal.correo.toLowerCase().includes(searchLower) ||
-        sucursal.telefono.includes(searchTerm) ||
-        (sucursal.direccion?.calle && sucursal.direccion.calle.toLowerCase().includes(searchLower)) ||
-        (sucursal.direccion?.ciudad && sucursal.direccion.ciudad.toLowerCase().includes(searchLower)) ||
-        (sucursal.direccion?.departamento && sucursal.direccion.departamento.toLowerCase().includes(searchLower));
-
-      const matchesFilter = 
-        selectedFilter === 'todas' || 
-        (selectedFilter === 'activa' && sucursal.activo) ||
-        (selectedFilter === 'inactiva' && !sucursal.activo) ||
-        (selectedFilter === 'reciente' && new Date(sucursal.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
-
-      return matchesSearch && matchesFilter;
-    });
-
-    setFilteredSucursales(filtered);
-    setCurrentPage(0);
-  };
-
-  // Form handlers
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
+    // --- ESTADOS PRINCIPALES ---
+    const [sucursales, setSucursales] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [selectedSucursal, setSelectedSucursal] = useState(null);
+    const [alert, setAlert] = useState(null);
     
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent],
-          [child]: type === 'checkbox' ? checked : value
+    // --- ESTADOS DE MODALES ---
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDetailModal, setShowDetailModal] = useState(false);
+  
+    // --- ESTADOS DE FILTROS Y ORDENAMIENTO ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+    const [showSortDropdown, setShowSortDropdown] = useState(false);
+    const [sortBy, setSortBy] = useState('fechaRegistro');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [filters, setFilters] = useState(INITIAL_FILTERS);
+
+    // Estados para el formulario
+    const [formData, setFormData] = useState({
+        nombre: '',
+        direccion: {
+            calle: '',
+            ciudad: '',
+            departamento: ''
+        },
+        telefono: '',
+        correo: '',
+        horariosAtencion: [],
+        activo: true
+    });
+    const [errors, setErrors] = useState({});
+
+    // --- FUNCIÓN PARA OBTENER DATOS ---
+    const fetchSucursales = useCallback(async () => {
+        try {
+            setLoading(true);
+            const response = await fetch(API_URL);
+            const data = await response.json();
+      
+            if (Array.isArray(data)) {
+                const formattedData = data.map(s => ({
+                    ...s,
+                    fechaRegistro: new Date(s.createdAt).toLocaleDateString(),
+                    fechaRegistroRaw: new Date(s.createdAt),
+                }));
+                setSucursales(formattedData);
+            } else if (data.message) {
+                showAlert('error', data.message);
+            }
+        } catch (error) {
+            console.error('Error fetching sucursales:', error);
+            showAlert('error', 'Error al cargar las sucursales');
+        } finally {
+            setLoading(false);
         }
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-    }
-    
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
-    }
-  };
+    }, []);
 
-  const validateForm = () => {
-    const newErrors = {};
+    // --- EFECTO PARA CARGA INICIAL ---
+    useEffect(() => {
+        fetchSucursales();
+    }, [fetchSucursales]);
 
-    if (!formData.nombre.trim()) {
-      newErrors.nombre = 'El nombre es obligatorio';
-    }
-    if (!formData.direccion.calle.trim()) {
-      newErrors['direccion.calle'] = 'La calle es obligatoria';
-    }
-    if (!formData.direccion.ciudad.trim()) {
-      newErrors['direccion.ciudad'] = 'La ciudad es obligatoria';
-    }
-    if (!formData.direccion.departamento.trim()) {
-      newErrors['direccion.departamento'] = 'El departamento es obligatorio';
-    }
-    if (!formData.telefono.trim()) {
-      newErrors.telefono = 'El teléfono es obligatorio';
-    }
-    if (!formData.correo.trim()) {
-      newErrors.correo = 'El correo es obligatorio';
-    } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
-      newErrors.correo = 'El formato del correo no es válido';
-    }
+    // --- FUNCIONES UTILITARIAS ---
+    const showAlert = useCallback((type, message) => {
+        setAlert({ type, message });
+        const timer = setTimeout(() => setAlert(null), 5000);
+        return () => clearTimeout(timer);
+    }, []);
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    const getEstadoColor = useCallback((activo) => (
+        activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+    ), []);
 
-  const resetForm = () => {
-    setFormData({
-      nombre: '',
-      direccion: {
-        calle: '',
-        ciudad: '',
-        departamento: ''
-      },
-      telefono: '',
-      correo: '',
-      horariosAtencion: [],
-      activo: true
-    });
-    setErrors({});
-  };
+    const getEstadoText = useCallback((activo) => (
+        activo ? 'Activa' : 'Inactiva'
+    ), []);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
+    const formatDireccion = useCallback((direccion) => {
+        if (!direccion) return 'No especificada';
+        const { calle, ciudad, departamento } = direccion;
+        return `${calle || ''}, ${ciudad || ''}, ${departamento || ''}`.replace(/(^,\s|,\s$)/g, '');
+    }, []);
 
-    let success = false;
-    if (selectedSucursal) {
-      success = await updateSucursal(selectedSucursal._id, formData);
-    } else {
-      success = await createSucursal(formData);
-    }
+    // --- FUNCIÓN PARA MANEJAR ORDENAMIENTO ---
+    const handleSortChange = useCallback((sortValue) => {
+        const [field, order] = sortValue.split('-');
+        setSortBy(field);
+        setSortOrder(order);
+        setShowSortDropdown(false);
+    }, []);
 
-    if (success) {
-      setShowAddModal(false);
-      setShowEditModal(false);
-      resetForm();
-      setSelectedSucursal(null);
-    }
-  };
+    // --- FUNCIÓN PARA ORDENAR DATOS ---
+    const sortData = useCallback((data) => {
+        return [...data].sort((a, b) => {
+            let valueA, valueB;
+            
+            switch (sortBy) {
+                case 'nombre':
+                    valueA = a.nombre.toLowerCase();
+                    valueB = b.nombre.toLowerCase();
+                    break;
+                case 'activo':
+                    // Sort booleans: false (inactivo) comes before true (activo) for asc, and vice-versa for desc
+                    valueA = a.activo;
+                    valueB = b.activo;
+                    if (valueA === valueB) return 0;
+                    return sortOrder === 'asc' ? (valueA ? 1 : -1) : (valueA ? -1 : 1);
+                case 'fechaRegistro':
+                    valueA = a.fechaRegistroRaw || new Date(0);
+                    valueB = b.fechaRegistroRaw || new Date(0);
+                    break;
+                default:
+                    return 0;
+            }
 
-  // Modal handlers
-  const handleAdd = () => {
-    resetForm();
-    setSelectedSucursal(null);
-    setShowAddModal(true);
-  };
+            if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
+            if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
+            return 0;
+        });
+    }, [sortBy, sortOrder]);
 
-  const handleEdit = (sucursal) => {
-    setSelectedSucursal(sucursal);
-    setFormData({
-      nombre: sucursal.nombre || '',
-      direccion: {
-        calle: sucursal.direccion?.calle || '',
-        ciudad: sucursal.direccion?.ciudad || '',
-        departamento: sucursal.direccion?.departamento || ''
-      },
-      telefono: sucursal.telefono || '',
-      correo: sucursal.correo || '',
-      horariosAtencion: sucursal.horariosAtencion || [],
-      activo: sucursal.activo !== undefined ? sucursal.activo : true
-    });
-    setShowEditModal(true);
-  };
+    // --- FUNCIÓN PARA APLICAR FILTROS AVANZADOS ---
+    const applyAdvancedFilters = useCallback((sucursal) => {
+        // Filtro por estado
+        const estadoFilter = filters.estado;
+        if (estadoFilter !== 'todos') {
+            const isActive = estadoFilter === 'activa';
+            if (sucursal.activo !== isActive) {
+                return false;
+            }
+        }
 
-  const handleDetail = (sucursal) => {
-    setSelectedSucursal(sucursal);
-    setShowDetailModal(true);
-  };
+        // Filtro por departamento
+        if (filters.departamento !== 'todos') {
+            const sucursalDepartamento = sucursal.direccion?.departamento?.toLowerCase() || '';
+            if (sucursalDepartamento !== filters.departamento.toLowerCase()) {
+                return false;
+            }
+        }
 
-  // Pagination
-  const totalPages = Math.ceil(filteredSucursales.length / pageSize);
-  const currentSucursales = filteredSucursales.slice(
-    currentPage * pageSize,
-    currentPage * pageSize + pageSize
-  );
+        // Filtro por fecha de registro
+        if (filters.fechaDesde) {
+            const fechaDesde = new Date(filters.fechaDesde);
+            if (sucursal.fechaRegistroRaw < fechaDesde) {
+                return false;
+            }
+        }
+        if (filters.fechaHasta) {
+            const fechaHasta = new Date(filters.fechaHasta);
+            fechaHasta.setHours(23, 59, 59);
+            if (sucursal.fechaRegistroRaw > fechaHasta) {
+                return false;
+            }
+        }
 
-  const goToFirstPage = () => setCurrentPage(0);
-  const goToPreviousPage = () => setCurrentPage(prev => (prev > 0 ? prev - 1 : prev));
-  const goToNextPage = () => setCurrentPage(prev => (prev < totalPages - 1 ? prev + 1 : prev));
-  const goToLastPage = () => setCurrentPage(totalPages - 1);
+        return true;
+    }, [filters]);
 
-  // Utility functions for display
-  const getEstadoColor = (activo) => {
-    return activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-  };
-
-  const getEstadoText = (activo) => {
-    return activo ? 'Activa' : 'Inactiva';
-  };
-
-  const formatDireccion = (direccion) => {
-    if (!direccion) return 'No especificada';
-    const { calle, ciudad, departamento } = direccion;
-    return `${calle || ''}, ${ciudad || ''}, ${departamento || ''}`.replace(/(^,\s|,\s$)/g, '');
-  };
-
-  // Statistics
-  const totalSucursales = sucursales.length;
-  const sucursalesActivas = sucursales.filter(s => s.activo).length;
-
-  // Form fields configuration
-  const formFields = [
-    {
-      name: 'nombre',
-      label: 'Nombre de la Sucursal',
-      type: 'text',
-      required: true,
-      placeholder: 'Ej: Sucursal Centro'
-    },
-    {
-      name: 'direccion.calle',
-      label: 'Calle',
-      type: 'text',
-      required: true,
-      nested: true,
-      placeholder: 'Ej: Avenida Principal #123'
-    },
-    {
-      name: 'direccion.ciudad',
-      label: 'Ciudad',
-      type: 'text',
-      required: true,
-      nested: true,
-      placeholder: 'Ej: San Salvador'
-    },
-    {
-      name: 'direccion.departamento',
-      label: 'Departamento',
-      type: 'text',
-      required: true,
-      nested: true,
-      placeholder: 'Ej: San Salvador'
-    },
-    {
-      name: 'telefono',
-      label: 'Teléfono',
-      type: 'text',
-      required: true,
-      placeholder: 'Ej: 2234-5678'
-    },
-    {
-      name: 'correo',
-      label: 'Correo Electrónico',
-      type: 'email',
-      required: true,
-      placeholder: 'Ej: sucursal@optica.com'
-    },
-    {
-      name: 'activo',
-      label: 'Estado',
-      type: 'boolean',
-      required: true
-    }
-  ];
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-500"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Alert */}
-      {alert.message && (
-        <div className="fixed top-4 right-4 z-50">
-          <Alert
-            type={alert.type}
-            message={alert.message}
-            onClose={clearAlert}
-          />
-        </div>
-      )}
-
-      {/* Estadísticas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Total Sucursales</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">{totalSucursales}</p>
-            </div>
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-cyan-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Sucursales Activas</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{sucursalesActivas}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Sucursales Inactivas</p>
-              <p className="text-3xl font-bold text-red-600 mt-2">{totalSucursales - sucursalesActivas}</p>
-            </div>
-            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-red-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Resultados</p>
-              <p className="text-3xl font-bold text-purple-600 mt-2">{filteredSucursales.length}</p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-              <Search className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <div className="bg-cyan-500 text-white p-6">
-          <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Gestión de Sucursales</h2>
-            <button
-              onClick={handleAdd}
-              className="bg-white text-cyan-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Añadir Sucursal</span>
-            </button>
-          </div>
-        </div>
+    // --- LÓGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÓN ---
+    const filteredAndSortedSucursales = useMemo(() => {
+        const filtered = sucursales.filter(sucursal => {
+            // Búsqueda por texto
+            const search = searchTerm.toLowerCase();
+            const matchesSearch = !searchTerm || 
+                sucursal.nombre.toLowerCase().includes(search) ||
+                sucursal.correo.toLowerCase().includes(search) ||
+                sucursal.telefono?.includes(searchTerm) ||
+                sucursal.direccion?.calle?.toLowerCase().includes(search) ||
+                sucursal.direccion?.ciudad?.toLowerCase().includes(search) ||
+                sucursal.direccion?.departamento?.toLowerCase().includes(search);
+            
+            // Filtros avanzados
+            const matchesAdvancedFilters = applyAdvancedFilters(sucursal);
+            
+            return matchesSearch && matchesAdvancedFilters;
+        });
         
-        {/* Filtros */}
-        <div className="p-6 bg-gray-50 border-b">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Buscar por nombre, dirección, teléfono o correo..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setSelectedFilter('todas')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  selectedFilter === 'todas' 
-                    ? 'bg-cyan-500 text-white' 
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Todas
-              </button>
-              <button
-                onClick={() => setSelectedFilter('activa')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  selectedFilter === 'activa' 
-                    ? 'bg-cyan-500 text-white' 
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Activas
-              </button>
-              <button
-                onClick={() => setSelectedFilter('inactiva')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  selectedFilter === 'inactiva' 
-                    ? 'bg-cyan-500 text-white' 
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Inactivas
-              </button>
-              <button
-                onClick={() => setSelectedFilter('reciente')}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  selectedFilter === 'reciente' 
-                    ? 'bg-cyan-500 text-white' 
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                }`}
-              >
-                Recientes
-              </button>
-            </div>
-          </div>
-        </div>
+        return sortData(filtered);
+    }, [sucursales, searchTerm, applyAdvancedFilters, sortData]);
 
-        {/* Tabla */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-cyan-500 text-white">
-              <tr>
-                <th className="px-6 py-4 text-left font-semibold">Nombre</th>
-                <th className="px-6 py-4 text-left font-semibold">Dirección</th>
-                <th className="px-6 py-4 text-left font-semibold">Contacto</th>
-                <th className="px-6 py-4 text-left font-semibold">Estado</th>
-                <th className="px-6 py-4 text-left font-semibold">Acciones</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {currentSucursales.map((sucursal) => (
-                <tr key={sucursal._id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium text-gray-900">{sucursal.nombre}</div>
-                      <div className="text-sm text-gray-500">
-                        Creada: {new Date(sucursal.createdAt).toLocaleDateString()}
-                      </div>
+    const { paginatedData: currentSucursales, ...paginationProps } = usePagination(filteredAndSortedSucursales, ITEMS_PER_PAGE);
+
+    // --- FUNCIONES PARA MANEJAR FILTROS ---
+    const handleFilterChange = useCallback((key, value) => {
+        setFilters(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    }, []);
+
+    const clearAllFilters = useCallback(() => {
+        setFilters(INITIAL_FILTERS);
+        setSearchTerm('');
+    }, []);
+
+    const hasActiveFilters = useCallback(() => {
+        return searchTerm || 
+               filters.estado !== 'todos' || 
+               filters.departamento !== 'todos' || 
+               filters.fechaDesde || 
+               filters.fechaHasta;
+    }, [searchTerm, filters]);
+
+    // --- OBTENER DEPARTAMENTOS ÚNICOS ---
+    const uniqueDepartments = useMemo(() => {
+        const departments = sucursales
+            .map(s => s.direccion?.departamento)
+            .filter(Boolean)
+            .filter((dept, index, arr) => arr.indexOf(dept) === index);
+        return departments.sort();
+    }, [sucursales]);
+
+    // API Functions
+    const createSucursal = async (sucursalData) => {
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(sucursalData)
+            });
+      
+            const data = await response.json();
+      
+            if (data.message === 'Sucursal guardada') {
+                showAlert('success', 'Sucursal creada exitosamente');
+                fetchSucursales();
+                return true;
+            } else {
+                showAlert('error', data.message || 'Error al crear la sucursal');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error creating sucursal:', error);
+            showAlert('error', 'Error al crear la sucursal');
+            return false;
+        }
+    };
+
+    const updateSucursal = async (id, sucursalData) => {
+        try {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(sucursalData)
+            });
+      
+            const data = await response.json();
+      
+            if (data.message === 'Sucursal actualizada') {
+                showAlert('success', 'Sucursal actualizada exitosamente');
+                fetchSucursales();
+                return true;
+            } else {
+                showAlert('error', data.message || 'Error al actualizar la sucursal');
+                return false;
+            }
+        } catch (error) {
+            console.error('Error updating sucursal:', error);
+            showAlert('error', 'Error al actualizar la sucursal');
+            return false;
+        }
+    };
+
+    const deleteSucursal = async (id) => {
+        if (!window.confirm('¿Está seguro de que desea eliminar esta sucursal?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/${id}`, {
+                method: 'DELETE'
+            });
+      
+            const data = await response.json();
+      
+            if (data.message === 'Sucursal eliminada') {
+                showAlert('success', 'Sucursal eliminada exitosamente');
+                fetchSucursales();
+            } else {
+                showAlert('error', data.message || 'Error al eliminar la sucursal');
+            }
+        } catch (error) {
+            console.error('Error deleting sucursal:', error);
+            showAlert('error', 'Error al eliminar la sucursal');
+        }
+    };
+
+    // Form handlers
+    const handleInputChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        
+        if (name.includes('.')) {
+            const [parent, child] = name.split('.');
+            setFormData(prev => ({
+                ...prev,
+                [parent]: {
+                    ...prev[parent],
+                    [child]: type === 'checkbox' ? checked : value
+                }
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [name]: type === 'checkbox' ? checked : value
+            }));
+        }
+    
+        if (errors[name]) {
+            setErrors(prev => ({
+                ...prev,
+                [name]: ''
+            }));
+        }
+    };
+
+    const validateForm = () => {
+        const newErrors = {};
+
+        if (!formData.nombre.trim()) {
+            newErrors.nombre = 'El nombre es obligatorio';
+        }
+        if (!formData.direccion.calle.trim()) {
+            newErrors['direccion.calle'] = 'La calle es obligatoria';
+        }
+        if (!formData.direccion.ciudad.trim()) {
+            newErrors['direccion.ciudad'] = 'La ciudad es obligatoria';
+        }
+        if (!formData.direccion.departamento.trim()) {
+            newErrors['direccion.departamento'] = 'El departamento es obligatorio';
+        }
+        if (!formData.telefono.trim()) {
+            newErrors.telefono = 'El teléfono es obligatorio';
+        }
+        if (!formData.correo.trim()) {
+            newErrors.correo = 'El correo es obligatorio';
+        } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
+            newErrors.correo = 'El formato del correo no es válido';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
+    const resetForm = () => {
+        setFormData({
+            nombre: '',
+            direccion: {
+                calle: '',
+                ciudad: '',
+                departamento: ''
+            },
+            telefono: '',
+            correo: '',
+            horariosAtencion: [],
+            activo: true
+        });
+        setErrors({});
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        
+        if (!validateForm()) {
+            return;
+        }
+
+        let success = false;
+        if (selectedSucursal) {
+            success = await updateSucursal(selectedSucursal._id, formData);
+        } else {
+            success = await createSucursal(formData);
+        }
+
+        if (success) {
+            setShowAddModal(false);
+            setShowEditModal(false);
+            resetForm();
+            setSelectedSucursal(null);
+        }
+    };
+
+    // Modal handlers
+    const handleAdd = () => {
+        resetForm();
+        setSelectedSucursal(null);
+        setShowAddModal(true);
+    };
+
+    const handleEdit = (sucursal) => {
+        setSelectedSucursal(sucursal);
+        setFormData({
+            nombre: sucursal.nombre || '',
+            direccion: {
+                calle: sucursal.direccion?.calle || '',
+                ciudad: sucursal.direccion?.ciudad || '',
+                departamento: sucursal.direccion?.departamento || ''
+            },
+            telefono: sucursal.telefono || '',
+            correo: sucursal.correo || '',
+            horariosAtencion: sucursal.horariosAtencion || [],
+            activo: sucursal.activo !== undefined ? sucursal.activo : true
+        });
+        setShowEditModal(true);
+    };
+
+    const handleDetail = (sucursal) => {
+        setSelectedSucursal(sucursal);
+        setShowDetailModal(true);
+    };
+
+    // Form fields configuration
+    const formFields = [
+        {
+            name: 'nombre',
+            label: 'Nombre de la Sucursal',
+            type: 'text',
+            required: true,
+            placeholder: 'Ej: Sucursal Centro'
+        },
+        {
+            name: 'direccion.calle',
+            label: 'Calle',
+            type: 'text',
+            required: true,
+            nested: true,
+            placeholder: 'Ej: Avenida Principal #123'
+        },
+        {
+            name: 'direccion.ciudad',
+            label: 'Ciudad',
+            type: 'text',
+            required: true,
+            nested: true,
+            placeholder: 'Ej: San Salvador'
+        },
+        {
+            name: 'direccion.departamento',
+            label: 'Departamento',
+            type: 'text',
+            required: true,
+            nested: true,
+            placeholder: 'Ej: San Salvador'
+        },
+        {
+            name: 'telefono',
+            label: 'Teléfono',
+            type: 'text',
+            required: true,
+            placeholder: 'Ej: 2234-5678'
+        },
+        {
+            name: 'correo',
+            label: 'Correo Electrónico',
+            type: 'email',
+            required: true,
+            placeholder: 'Ej: sucursal@optica.com'
+        },
+        {
+            name: 'activo',
+            label: 'Estado',
+            type: 'boolean',
+            required: true
+        }
+    ];
+
+    // --- CÁLCULO DE ESTADÍSTICAS ---
+    const stats = useMemo(() => [
+        { title: 'Total Sucursales', value: sucursales.length, Icon: Building2, color: 'cyan' },
+        { title: 'Sucursales Activas', value: sucursales.filter(s => s.activo).length, Icon: CheckCircle, color: 'green' },
+        { title: 'Sucursales Inactivas', value: sucursales.filter(s => !s.activo).length, Icon: Building2, color: 'red' },
+        { title: 'Resultados', value: filteredAndSortedSucursales.length, Icon: Search, color: 'purple' },
+    ], [sucursales, filteredAndSortedSucursales]);
+
+    // --- FUNCIÓN PARA RENDERIZAR FILAS ---
+    const renderRow = useCallback((sucursal) => (
+        <>
+            <td className="px-6 py-4">
+                <div>
+                    <div className="font-medium text-gray-900">{sucursal.nombre}</div>
+                    <div className="text-sm text-gray-500">
+                        Creada: {sucursal.fechaRegistro}
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 max-w-xs">
-                      <div className="flex items-center space-x-1">
+                </div>
+            </td>
+            <td className="px-6 py-4">
+                <div className="text-sm text-gray-900 max-w-xs">
+                    <div className="flex items-center space-x-1">
                         <MapPin className="w-3 h-3 text-gray-400" />
                         <span>{formatDireccion(sucursal.direccion)}</span>
-                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900 space-y-1">
-                      <div className="flex items-center space-x-1">
+                </div>
+            </td>
+            <td className="px-6 py-4">
+                <div className="text-sm text-gray-900 space-y-1">
+                    <div className="flex items-center space-x-1">
                         <Phone className="w-3 h-3 text-gray-400" />
                         <span>{sucursal.telefono}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
+                    </div>
+                    <div className="flex items-center space-x-1">
                         <Mail className="w-3 h-3 text-gray-400" />
                         <span className="truncate">{sucursal.correo}</span>
-                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEstadoColor(sucursal.activo)}`}>
-                      {getEstadoText(sucursal.activo)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex space-x-2">
-                      <button 
+                </div>
+            </td>
+            <td className="px-6 py-4">
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getEstadoColor(sucursal.activo)}`}>
+                    {getEstadoText(sucursal.activo)}
+                </span>
+            </td>
+            <td className="px-6 py-4">
+                <div className="flex space-x-2">
+                    <button 
                         onClick={() => handleDetail(sucursal)}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
                         title="Ver detalles"
-                      >
+                    >
                         <Eye className="w-4 h-4" />
-                      </button>
-                      <button 
+                    </button>
+                    <button 
                         onClick={() => handleEdit(sucursal)}
                         className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
                         title="Editar"
-                      >
+                    >
                         <Edit className="w-4 h-4" />
-                      </button>
-                      <button 
+                    </button>
+                    <button 
                         onClick={() => deleteSucursal(sucursal._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
                         title="Eliminar"
-                      >
+                    >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                    </button>
+                </div>
+            </td>
+        </>
+    ), [formatDireccion, getEstadoColor, getEstadoText, handleDetail, handleEdit, deleteSucursal]);
+
+    // --- RENDERIZADO DEL COMPONENTE ---
+    if (loading) {
+        return (
+            <div className="space-y-6 animate-fade-in">
+                <Alert alert={alert} />
+                <SkeletonLoader />
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 animate-fade-in">
+            <Alert alert={alert} />
+
+            <div className="w-full flex justify-center">
+                <div className="w-full max-w-none">
+                    <StatsGrid stats={stats} />
+                </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                <PageHeader 
+                    title="Gestión de Sucursales" 
+                    buttonLabel="Añadir Sucursal" 
+                    onButtonClick={handleAdd} 
+                />
+                
+                {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+                <div className="px-6 py-4 border-b bg-gray-50">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+                        {/* Barra de búsqueda */}
+                        <div className="relative flex-1 max-w-md">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                            <input
+                                type="text"
+                                placeholder="Buscar sucursal..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                aria-label="Buscar sucursales"
+                            />
+                        </div>
+
+                        {/* Controles de filtro y ordenamiento */}
+                        <div className="flex items-center space-x-3">
+                            {/* Dropdown de ordenamiento */}
+                            <div className="relative">
+                                <button
+                                    onClick={() => {
+                                        setShowSortDropdown(!showSortDropdown);
+                                        setShowFiltersPanel(false);
+                                    }}
+                                    className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                    aria-expanded={showSortDropdown}
+                                    aria-haspopup="true"
+                                    aria-label="Opciones de ordenamiento"
+                                >
+                                    {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                                    <span className="text-sm font-medium">Ordenar</span>
+                                    <ChevronDown className="w-4 h-4" />
+                                </button>
+                                
+                                {showSortDropdown && (
+                                    <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                                        <div className="py-2">
+                                            {SORT_OPTIONS.map((option) => {
+                                                const IconComponent = option.icon;
+                                                const isActive = `${sortBy}-${sortOrder}` === option.value;
+                                                return (
+                                                    <button
+                                                        key={option.value}
+                                                        onClick={() => handleSortChange(option.value)}
+                                                        className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                                                            isActive ? 'bg-cyan-50 text-cyan-600 font-medium' : 'text-gray-700'
+                                                        }`}
+                                                        aria-pressed={isActive}
+                                                    >
+                                                        <IconComponent className="w-4 h-4" />
+                                                        <span>{option.label}</span>
+                                                        {isActive && <CheckCircle className="w-4 h-4 ml-auto" />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Botón de filtros */}
+                            <button
+                                onClick={() => {
+                                    setShowFiltersPanel(!showFiltersPanel);
+                                    setShowSortDropdown(false);
+                                }}
+                                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-all duration-200 ${
+                                    hasActiveFilters() 
+                                        ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg' 
+                                        : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                                }`}
+                                aria-expanded={showFiltersPanel}
+                                aria-label="Filtros avanzados"
+                            >
+                                <Filter className="w-4 h-4" />
+                                <span className="text-sm font-medium">Filtros</span>
+                                {hasActiveFilters() && (
+                                    <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                                        {[
+                                            searchTerm && 1,
+                                            filters.estado !== 'todos' && 1,
+                                            filters.departamento !== 'todos' && 1,
+                                            filters.fechaDesde && 1,
+                                            filters.fechaHasta && 1
+                                        ].filter(Boolean).length}
+                                    </span>
+                                )}
+                            </button>
+                        </div>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
 
-        {/* Mensaje cuando no hay resultados */}
-        {filteredSucursales.length === 0 && (
-          <div className="p-8 text-center">
-            <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No se encontraron sucursales
-            </h3>
-            <p className="text-gray-500">
-              {searchTerm || selectedFilter !== 'todas' 
-                ? 'Intenta con otros términos de búsqueda o filtros' 
-                : 'Comienza agregando tu primera sucursal'}
-            </p>
-          </div>
-        )}
+                    {/* Información de resultados */}
+                    <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+                        <span>
+                            {filteredAndSortedSucursales.length} sucursal{filteredAndSortedSucursales.length !== 1 ? 'es' : ''} 
+                            {hasActiveFilters() && ` (filtrada${filteredAndSortedSucursales.length !== 1 ? 's' : ''} de ${sucursales.length})`}
+                        </span>
+                        {hasActiveFilters() && (
+                            <button
+                                onClick={clearAllFilters}
+                                className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1"
+                                aria-label="Limpiar todos los filtros"
+                            >
+                                <X className="w-4 h-4" />
+                                <span>Limpiar filtros</span>
+                            </button>
+                        )}
+                    </div>
+                </div>
 
-        {/* Controles de paginación */}
-        {filteredSucursales.length > 0 && (
-          <div className="mt-4 flex flex-col items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-gray-700">Mostrar</span>
-              <select
-                value={pageSize}
-                onChange={e => {
-                  setPageSize(Number(e.target.value));
-                  setCurrentPage(0);
+                {/* PANEL DE FILTROS */}
+                {showFiltersPanel && (
+                    <div className="border-b bg-white" role="region" aria-labelledby="filtros-titulo">
+                        <div className="px-6 py-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 id="filtros-titulo" className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
+                                <button
+                                    onClick={() => setShowFiltersPanel(false)}
+                                    className="text-gray-400 hover:text-gray-600"
+                                    aria-label="Cerrar panel de filtros"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {/* Filtro por Estado */}
+                                <div>
+                                    <label htmlFor="filter-estado" className="block text-sm font-medium text-gray-700 mb-2">
+                                        Estado
+                                    </label>
+                                    <select
+                                        id="filter-estado"
+                                        value={filters.estado}
+                                        onChange={(e) => handleFilterChange('estado', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                    >
+                                        <option value="todos">Todos los estados</option>
+                                        <option value="activa">Activa</option>
+                                        <option value="inactiva">Inactiva</option>
+                                    </select>
+                                </div>
+
+                                {/* Filtro por Departamento */}
+                                <div>
+                                    <label htmlFor="filter-departamento" className="block text-sm font-medium text-gray-700 mb-2">
+                                        Departamento
+                                    </label>
+                                    <select
+                                        id="filter-departamento"
+                                        value={filters.departamento}
+                                        onChange={(e) => handleFilterChange('departamento', e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                    >
+                                        <option value="todos">Todos los departamentos</option>
+                                        {uniqueDepartments.map(dept => (
+                                            <option key={dept} value={dept}>{dept}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                {/* Filtro por Fecha de Registro */}
+                                <div className="md:col-span-2 lg:col-span-1">
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Registro</label>
+                                    <div className="flex space-x-2">
+                                        <div className="flex-1">
+                                            <input
+                                                type="date"
+                                                value={filters.fechaDesde}
+                                                onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                aria-label="Fecha desde"
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <input
+                                                type="date"
+                                                value={filters.fechaHasta}
+                                                onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                                aria-label="Fecha hasta"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="flex text-xs text-gray-500 mt-1 space-x-4">
+                                        <span>Desde</span>
+                                        <span>Hasta</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Botones de acción del panel de filtros */}
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    onClick={clearAllFilters}
+                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    Limpiar Todo
+                                </button>
+                                <button
+                                    onClick={() => setShowFiltersPanel(false)}
+                                    className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                                >
+                                    Aplicar Filtros
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+                
+                {/* TABLA DE DATOS */}
+                <div className="overflow-x-auto">
+                    <div style={{ minWidth: '1200px' }}>
+                        <DataTable
+                            columns={TABLE_COLUMNS}
+                            data={currentSucursales}
+                            renderRow={renderRow}
+                            isLoading={false}
+                            noDataMessage="No se encontraron sucursales"
+                            noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Comienza registrando tu primera sucursal'}
+                        />
+                    </div>
+                </div>
+                
+                <Pagination {...paginationProps} />
+            </div>
+
+            {/* MODALES */}
+            <FormModal
+                isOpen={showAddModal || showEditModal}
+                onClose={() => {
+                    setShowAddModal(false);
+                    setShowEditModal(false);
+                    resetForm();
+                    setSelectedSucursal(null);
                 }}
-                className="border border-cyan-500 rounded py-1 px-2"
-              >
-                {[5, 10, 15, 20].map(size => (
-                  <option key={size} value={size}>
-                    {size}
-                  </option>
-                ))}
-              </select>
-              <span className="text-gray-700">por página</span>
-            </div>
-            <div className="flex items-center gap-2 m-[25px]">
-              <button
-                onClick={goToFirstPage}
-                disabled={currentPage === 0}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {"<<"}
-              </button>
-              <button
-                onClick={goToPreviousPage}
-                disabled={currentPage === 0}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {"<"}
-              </button>
-              <span className="text-gray-700 font-medium">
-                Página {currentPage + 1} de {totalPages}
-              </span>
-              <button
-                onClick={goToNextPage}
-                disabled={currentPage === totalPages - 1}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {">"}
-              </button>
-              <button
-                onClick={goToLastPage}
-                disabled={currentPage === totalPages - 1}
-                className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
-              >
-                {">>"}
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+                onSubmit={handleSubmit}
+                title={selectedSucursal ? 'Editar Sucursal' : 'Agregar Nueva Sucursal'}
+                formData={formData}
+                handleInputChange={handleInputChange}
+                errors={errors}
+                fields={formFields}
+                submitLabel={selectedSucursal ? 'Actualizar Sucursal' : 'Crear Sucursal'}
+                gridCols={2}
+            />
 
-      {/* Modal para agregar sucursal */}
-      <FormModal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          resetForm();
-        }}
-        onSubmit={handleSubmit}
-        title="Agregar Nueva Sucursal"
-        formData={formData}
-        handleInputChange={handleInputChange}
-        errors={errors}
-        fields={formFields}
-        submitLabel="Crear Sucursal"
-        gridCols={2}
-      />
-
-      {/* Modal para editar sucursal */}
-      <FormModal
-        isOpen={showEditModal}
-        onClose={() => {
-          setShowEditModal(false);
-          resetForm();
-          setSelectedSucursal(null);
-        }}
-        onSubmit={handleSubmit}
-        title="Editar Sucursal"
-        formData={formData}
-        handleInputChange={handleInputChange}
-        errors={errors}
-        fields={formFields}
-        submitLabel="Actualizar Sucursal"
-        gridCols={2}
-      />
-
-      {/* Modal de detalles */}
-      <DetailModal
-        isOpen={showDetailModal}
-        onClose={() => {
-          setShowDetailModal(false);
-          setSelectedSucursal(null);
-        }}
-        title="Detalles de la Sucursal"
-        item={selectedSucursal}
-        data={selectedSucursal ? [
-          { label: 'Nombre', value: selectedSucursal.nombre },
-          { label: 'Dirección', value: formatDireccion(selectedSucursal.direccion) },
-          { label: 'Teléfono', value: selectedSucursal.telefono },
-          { label: 'Correo', value: selectedSucursal.correo },
-          { 
-            label: 'Estado', 
-            value: getEstadoText(selectedSucursal.activo), 
-            color: getEstadoColor(selectedSucursal.activo) 
-          },
-          { 
-            label: 'Fecha de Creación', 
-            value: new Date(selectedSucursal.createdAt).toLocaleString() 
-          },
-          { 
-            label: 'Última Actualización', 
-            value: new Date(selectedSucursal.updatedAt).toLocaleString() 
-          }
-        ] : []}
-      />
-    </div>
-  );
+            <DetailModal
+                isOpen={showDetailModal}
+                onClose={() => {
+                    setShowDetailModal(false);
+                    setSelectedSucursal(null);
+                }}
+                title="Detalles de la Sucursal"
+                item={selectedSucursal}
+                data={selectedSucursal ? [
+                    { label: 'Nombre', value: selectedSucursal.nombre },
+                    { label: 'Dirección', value: formatDireccion(selectedSucursal.direccion) },
+                    { label: 'Teléfono', value: selectedSucursal.telefono },
+                    { label: 'Correo', value: selectedSucursal.correo },
+                    { 
+                        label: 'Estado', 
+                        value: getEstadoText(selectedSucursal.activo), 
+                        color: getEstadoColor(selectedSucursal.activo) 
+                    },
+                    { 
+                        label: 'Fecha de Creación', 
+                        value: new Date(selectedSucursal.createdAt).toLocaleString() 
+                    },
+                    { 
+                        label: 'Última Actualización', 
+                        value: new Date(selectedSucursal.updatedAt).toLocaleString() 
+                    }
+                ] : []}
+            />
+            
+            {/* OVERLAY PARA DROPDOWN */}
+            {showSortDropdown && (
+                <div 
+                    className="fixed inset-0 z-10" 
+                    onClick={() => setShowSortDropdown(false)}
+                    aria-hidden="true"
+                />
+            )}
+        </div>
+    );
 };
 
 export default SucursalesContent;

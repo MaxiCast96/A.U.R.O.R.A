@@ -503,13 +503,7 @@ const PromocionesContent = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <PageHeader
-        title="Gestión de Promociones"
-        subtitle="Crea, edita y administra las promociones de la óptica"
-        icon={Tag}
-        buttonText="Añadir Promoción"
-        onButtonClick={openAdd}
-      />
+      
 
       {alert && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md px-4">
