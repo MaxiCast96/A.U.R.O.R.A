@@ -806,7 +806,7 @@ const LentesFormModal = ({
       ]
     },
     {
-      title: "🏷️ Categorización",
+      title: "  Categorización",
       fields: [
         {
           name: 'categoriaId',
@@ -1038,7 +1038,7 @@ const LentesFormModal = ({
       {/* Resumen final */}
       {formData?.nombre && formData?.precioBase && (formData?.sucursales?.length > 0) && (
         <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-6">
-          <h4 className="font-semibold text-cyan-800 mb-3">📋 Resumen del Lente</h4>
+          <h4 className="font-semibold text-cyan-800 mb-3">  Resumen del Lente</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p><span className="font-medium">Lente:</span> {formData.nombre}</p>
@@ -1046,7 +1046,7 @@ const LentesFormModal = ({
               <p><span className="font-medium">Precio:</span> ${(formData.precioActual || formData.precioBase || 0).toFixed(2)}</p>
               {formData.enPromocion && formData.promocionId && (
                 <p className="text-green-600">
-                  <span className="font-medium">🏷️ En promoción:</span> {
+                  <span className="font-medium">  En promoción:</span> {
                     promociones.find(p => p._id === formData.promocionId)?.nombre || 'Promoción seleccionada'
                   }
                 </p>

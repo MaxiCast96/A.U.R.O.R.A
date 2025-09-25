@@ -88,7 +88,7 @@ const axiosWithFallback = async (method, path, data, config = {}) => {
 
     const primaryBase = API_CONFIG.BASE_URL;
     const secondaryBase = primaryBase.includes('localhost')
-        ? 'https://a-u-r-o-r-a.onrender.com/api'
+        ? 'https://aurora-production-7e57.up.railway.app/api'
         : 'http://localhost:4000/api';
 
     try {

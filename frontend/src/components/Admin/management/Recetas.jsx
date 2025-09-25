@@ -17,7 +17,7 @@ import {
 
 
 // --- CONFIGURACIÓN ---
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api';
 const ITEMS_PER_PAGE = 10;
 
 // Estados iniciales de filtros

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 // --- CONFIGURACIÓN ---
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/clientes';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api/clientes';
 const ITEMS_PER_PAGE = 10;
 
 // Estados iniciales

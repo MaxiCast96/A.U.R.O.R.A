@@ -17,11 +17,11 @@ import {
   CheckCircle 
 } from 'lucide-react';
 
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/accesorios';
-const MARCAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/marcas';
-const CATEGORIAS_URL = 'https://a-u-r-o-r-a.onrender.com/api/categoria';
-const SUCURSALES_URL = 'https://a-u-r-o-r-a.onrender.com/api/sucursales';
-const PROMOCIONES_URL = 'https://a-u-r-o-r-a.onrender.com/api/promociones';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api/accesorios';
+const MARCAS_URL = 'https://aurora-production-7e57.up.railway.app/api/marcas';
+const CATEGORIAS_URL = 'https://aurora-production-7e57.up.railway.app/api/categoria';
+const SUCURSALES_URL = 'https://aurora-production-7e57.up.railway.app/api/sucursales';
+const PROMOCIONES_URL = 'https://aurora-production-7e57.up.railway.app/api/promociones';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -849,14 +849,14 @@ const AccesoriosContent = () => {
                 ? 'bg-yellow-100 text-yellow-800' 
                 : 'bg-gray-100 text-gray-800'
             }`}>
-              {accesorio.enPromocion ? '🏷️ Promoción' : 'Precio normal'}
+              {accesorio.enPromocion ? '  Promoción' : 'Precio normal'}
             </span>
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
               tieneStock 
                 ? 'bg-green-100 text-green-800' 
                 : 'bg-red-100 text-red-800'
             }`}>
-              {tieneStock ? '✅ Disponible' : '⏱ Sin stock'}
+              {tieneStock ? '  Disponible' : '⏱ Sin stock'}
             </span>
           </div>
         </td>

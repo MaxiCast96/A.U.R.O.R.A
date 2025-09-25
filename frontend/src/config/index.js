@@ -12,7 +12,7 @@ const env = import.meta.env;
 export const config = {
   // Configuración de la API
   api: {
-    baseUrl: env.VITE_API_URL || 'https://a-u-r-o-r-a.onrender.com/api',
+    baseUrl: env.VITE_API_URL || 'https://aurora-production-7e57.up.railway.app/api',
     timeout: 10000, // 10 segundos
     retries: 3,
     headers: {
@@ -248,7 +248,7 @@ export const config = {
 export const environmentConfig = {
   development: {
     api: {
-      baseUrl: 'https://a-u-r-o-r-a.onrender.com/api',
+      baseUrl: 'https://aurora-production-7e57.up.railway.app/api',
       timeout: 30000
     },
     logging: {
@@ -262,7 +262,7 @@ export const environmentConfig = {
   },
   production: {
     api: {
-      baseUrl: env.VITE_API_URL || 'https://a-u-r-o-r-a.onrender.com/api',
+      baseUrl: env.VITE_API_URL || 'https://aurora-production-7e57.up.railway.app/api',
       timeout: 10000
     },
     logging: {
@@ -276,7 +276,7 @@ export const environmentConfig = {
   },
   test: {
     api: {
-      baseUrl: 'https://a-u-r-o-r-a.onrender.com/api',
+      baseUrl: 'https://aurora-production-7e57.up.railway.app/api',
       timeout: 5000
     },
     logging: {

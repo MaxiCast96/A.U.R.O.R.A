@@ -191,7 +191,7 @@ const PromocionesContent = () => {
     setTimeout(() => setAlert(null), 5000);
   };
 
-  // ✅ FUNCIÓN CORREGIDA - Manejo correcto de la respuesta paginada
+  //   FUNCIÓN CORREGIDA - Manejo correcto de la respuesta paginada
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -203,7 +203,7 @@ const PromocionesContent = () => {
       setPromociones(Array.isArray(promosRes.data) ? promosRes.data : []);
       setCategorias(Array.isArray(catRes.data) ? catRes.data : []);
       
-      // ✅ CORRECCIÓN: Manejo correcto de la respuesta paginada de lentes
+      //   CORRECCIÓN: Manejo correcto de la respuesta paginada de lentes
       let lentesData = [];
       
       // Verificar si la respuesta tiene estructura de paginación
@@ -256,7 +256,7 @@ const PromocionesContent = () => {
     fetchData(); 
   }, []);
 
-  // ✅ DEBUGGING: Log temporal para verificar productos
+  //   DEBUGGING: Log temporal para verificar productos
   useEffect(() => {
     console.log('Estado productos actualizado:', productos.length, productos);
   }, [productos]);
@@ -463,14 +463,14 @@ const PromocionesContent = () => {
     }
   };
 
-  // ✅ CORREGIDO: Options para selects con verificación de datos
+  //   CORREGIDO: Options para selects con verificación de datos
   const categoriaOptions = categorias.map(c => ({ value: c._id, label: c.nombre }));
   const productosOptions = productos.map(p => ({ 
     value: p._id, 
     label: `${p.nombre} (${p.tipo === 'lente' ? 'Lente' : 'Accesorio'})` 
   }));
 
-  // ✅ DEBUGGING: Log temporal para verificar options
+  //   DEBUGGING: Log temporal para verificar options
   console.log('Categoria options:', categoriaOptions.length);
   console.log('Productos options:', productosOptions.length);
 

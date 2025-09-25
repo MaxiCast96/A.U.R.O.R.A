@@ -7,44 +7,44 @@ Este sistema de productos conecta el frontend con el backend para mostrar, filtr
 ## 🚀 Características Implementadas
 
 ### 1. **Conexión con Backend**
-- ✅ Integración completa con API REST del backend
-- ✅ Endpoints: `/api/lentes`, `/api/accesorios`, `/api/productosPersonalizados`
-- ✅ Manejo automático de estados de carga, error y éxito
-- ✅ Soporte para imágenes desde Cloudinary
-- ✅ **NUEVO**: Hook personalizado `useApiData` con manejo robusto de errores
-- ✅ **NUEVO**: Configuración centralizada de API con validaciones
+-   Integración completa con API REST del backend
+-   Endpoints: `/api/lentes`, `/api/accesorios`, `/api/productosPersonalizados`
+-   Manejo automático de estados de carga, error y éxito
+-   Soporte para imágenes desde Cloudinary
+-   **NUEVO**: Hook personalizado `useApiData` con manejo robusto de errores
+-   **NUEVO**: Configuración centralizada de API con validaciones
 
 ### 2. **Navegación Inteligente**
-- ✅ Navegación entre categorías de productos
-- ✅ Rutas dinámicas: `/productos`, `/productos/lentes`, `/productos/accesorios`, `/productos/personalizables`
-- ✅ Indicadores visuales de página activa
-- ✅ Navegación responsive
+-   Navegación entre categorías de productos
+-   Rutas dinámicas: `/productos`, `/productos/lentes`, `/productos/accesorios`, `/productos/personalizables`
+-   Indicadores visuales de página activa
+-   Navegación responsive
 
 ### 3. **Sistema de Filtros Avanzado**
-- ✅ **Búsqueda por texto**: Nombre y descripción del producto
-- ✅ **Filtro por categoría**: Basado en datos del backend
-- ✅ **Filtro por marca**: Integrado con API de marcas
-- ✅ **Rango de precios**: Filtro personalizable min/max
-- ✅ **Ordenamiento**: Por nombre, precio (asc/desc), marca
-- ✅ **Vista dual**: Grid y Lista
+-   **Búsqueda por texto**: Nombre y descripción del producto
+-   **Filtro por categoría**: Basado en datos del backend
+-   **Filtro por marca**: Integrado con API de marcas
+-   **Rango de precios**: Filtro personalizable min/max
+-   **Ordenamiento**: Por nombre, precio (asc/desc), marca
+-   **Vista dual**: Grid y Lista
 
 ### 4. **Visualización de Productos**
-- ✅ **Vista Grid**: Tarjetas con imágenes, precios y badges
-- ✅ **Vista Lista**: Información detallada en formato horizontal
-- ✅ **Modal de detalles**: Información completa del producto
-- ✅ **Indicadores de promoción**: Badges para productos en oferta
-- ✅ **Imágenes responsivas**: Fallback a imágenes por defecto
+-   **Vista Grid**: Tarjetas con imágenes, precios y badges
+-   **Vista Lista**: Información detallada en formato horizontal
+-   **Modal de detalles**: Información completa del producto
+-   **Indicadores de promoción**: Badges para productos en oferta
+-   **Imágenes responsivas**: Fallback a imágenes por defecto
 
 ### 5. **Componentes Reutilizables**
-- ✅ `ProductNavigation`: Navegación entre categorías
-- ✅ `ProductStats`: Estadísticas de productos
-- ✅ `FeaturedProducts`: Productos destacados/en promoción
-- ✅ `ProductTypeInfo`: Información específica por tipo
-- ✅ `LoadingSpinner`: Indicador de carga atractivo
-- ✅ `ErrorMessage`: Manejo de errores user-friendly
-- ✅ `EmptyProducts`: Mensaje cuando no hay productos
-- ✅ `ContactHelp`: Información de contacto y ayuda
-- ✅ **NUEVO**: `ErrorBoundary`: Manejo de errores a nivel de componente
+-   `ProductNavigation`: Navegación entre categorías
+-   `ProductStats`: Estadísticas de productos
+-   `FeaturedProducts`: Productos destacados/en promoción
+-   `ProductTypeInfo`: Información específica por tipo
+-   `LoadingSpinner`: Indicador de carga atractivo
+-   `ErrorMessage`: Manejo de errores user-friendly
+-   `EmptyProducts`: Mensaje cuando no hay productos
+-   `ContactHelp`: Información de contacto y ayuda
+-   **NUEVO**: `ErrorBoundary`: Manejo de errores a nivel de componente
 
 ## 🏗️ Arquitectura del Sistema
 
@@ -91,7 +91,7 @@ npm install
 ### 2. **Variables de Entorno**
 ```env
 # El backend debe estar configurado con:
-VITE_API_BASE_URL=https://a-u-r-o-r-a.onrender.com/api
+VITE_API_BASE_URL=https://aurora-production-7e57.up.railway.app/api
 ```
 
 ### 3. **Ejecutar en Desarrollo**
@@ -173,11 +173,11 @@ GET /api/marcas
 ## 🚨 Manejo de Errores Mejorado
 
 ### **NUEVO**: Sistema de Manejo de Errores
-- ✅ **ErrorBoundary**: Captura errores a nivel de componente
-- ✅ **Validación de API**: Verifica estructura de respuestas
-- ✅ **Reintentos automáticos**: Para errores de red
-- ✅ **Timeouts configurables**: Evita solicitudes colgadas
-- ✅ **Mensajes user-friendly**: Errores comprensibles para usuarios
+-   **ErrorBoundary**: Captura errores a nivel de componente
+-   **Validación de API**: Verifica estructura de respuestas
+-   **Reintentos automáticos**: Para errores de red
+-   **Timeouts configurables**: Evita solicitudes colgadas
+-   **Mensajes user-friendly**: Errores comprensibles para usuarios
 
 ### Tipos de Error Manejados
 - **404**: Producto no encontrado
@@ -188,13 +188,13 @@ GET /api/marcas
 - **Unexpected**: Errores inesperados del componente
 
 ### Estrategias de Recuperación
-- ✅ Reintento automático para errores de red
-- ✅ Validación robusta de datos de API
-- ✅ Fallbacks para datos corruptos
-- ✅ Mensajes de error contextuales
-- ✅ Botones de acción claros
+-   Reintento automático para errores de red
+-   Validación robusta de datos de API
+-   Fallbacks para datos corruptos
+-   Mensajes de error contextuales
+-   Botones de acción claros
 
-## 📊 Funcionalidades Avanzadas
+##   Funcionalidades Avanzadas
 
 ### 1. **Búsqueda Inteligente**
 - Búsqueda en tiempo real
@@ -215,12 +215,12 @@ GET /api/marcas
 ## 🧪 Testing
 
 ### Componentes a Probar
-- ✅ Filtros de productos
-- ✅ Navegación entre categorías
-- ✅ Modal de detalles
-- ✅ Estados de carga y error
-- ✅ Responsive design
-- ✅ **NUEVO**: Manejo de errores y validaciones
+-   Filtros de productos
+-   Navegación entre categorías
+-   Modal de detalles
+-   Estados de carga y error
+-   Responsive design
+-   **NUEVO**: Manejo de errores y validaciones
 
 ### Casos de Uso
 - Usuario busca productos específicos
@@ -260,11 +260,11 @@ GET /api/marcas
   - Manejo de timeouts y reintentos automáticos
 
 ### **Mejoras de Robustez**
-- ✅ Validación de arrays antes de iteración
-- ✅ Fallbacks para datos corruptos o faltantes
-- ✅ Manejo de errores de red con reintentos
-- ✅ Timeouts configurables para evitar solicitudes colgadas
-- ✅ Logging detallado para debugging
+-   Validación de arrays antes de iteración
+-   Fallbacks para datos corruptos o faltantes
+-   Manejo de errores de red con reintentos
+-   Timeouts configurables para evitar solicitudes colgadas
+-   Logging detallado para debugging
 
 ## 📞 Soporte
 
@@ -282,5 +282,5 @@ GET /api/marcas
 
 **Última actualización**: Diciembre 2024  
 **Versión**: 1.1.0  
-**Estado**: ✅ Completado, Funcional y Corregido  
+**Estado**:   Completado, Funcional y Corregido  
 **Cambios**: Sistema de manejo de errores robusto implementado

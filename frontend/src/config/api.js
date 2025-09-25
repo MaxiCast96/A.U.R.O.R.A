@@ -1,6 +1,6 @@
 // Configuración de la API con fallback dinámico (localhost -> render)
 const LOCAL_BASE = 'http://localhost:4000/api';
-const PROD_BASE = 'https://a-u-r-o-r-a.onrender.com/api';
+const PROD_BASE = 'https://aurora-production-7e57.up.railway.app/api';
 const ENV_BASE = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL)
   ? String(import.meta.env.VITE_API_BASE_URL).trim()
   : '';

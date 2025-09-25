@@ -65,7 +65,7 @@ const TABLE_COLUMNS = [
 
 // Helpers para usar BASE_URL dinámico + fallback per-request
 const getBase = () => API_CONFIG.BASE_URL;
-const PROD_FALLBACK = 'https://a-u-r-o-r-a.onrender.com/api';
+const PROD_FALLBACK = 'https://aurora-production-7e57.up.railway.app/api';
 const withBase = (path, base = getBase()) => `${base}${path}`;
 
 // --- COMPONENTE SKELETON LOADER MEMOIZADO ---
@@ -873,14 +873,14 @@ const LentesContent = () => {
                 ? 'bg-yellow-100 text-yellow-800' 
                 : 'bg-gray-100 text-gray-800'
             }`}>
-              {lente.enPromocion ? '🏷️ Promoción' : 'Precio normal'}
+              {lente.enPromocion ? '  Promoción' : 'Precio normal'}
             </span>
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
               tieneStock 
                 ? 'bg-green-100 text-green-800' 
                 : 'bg-red-100 text-red-800'
             }`}>
-              {tieneStock ? '✅ Disponible' : '⌛ Sin stock'}
+              {tieneStock ? '  Disponible' : '⌛ Sin stock'}
             </span>
           </div>
         </td>
