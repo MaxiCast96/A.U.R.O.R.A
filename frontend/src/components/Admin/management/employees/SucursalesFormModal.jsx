@@ -59,6 +59,7 @@ const EnhancedField = ({
     } else {
       onChange(e);
       
+      // Si se cambia el departamento, resetear municipio
       if (name === 'departamento' && inputValue !== formData.departamento) {
         onChange({
           target: {

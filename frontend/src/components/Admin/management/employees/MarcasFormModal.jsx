@@ -297,69 +297,57 @@ const MarcasFormModal = ({
     });
   };
 
-  const sections = [
+ const sections = [
     {
-      title: "Información General",
-      fields: [
-        { 
-          name: 'nombre', 
-          label: 'Nombre de la Marca', 
-          type: 'text', 
-          required: true,
-          placeholder: 'Ej: Ray-Ban, Oakley, Armani'
-        },
-        { 
-          name: 'paisOrigen', 
-          label: 'País de Origen', 
-          type: 'select',
-          options: [
-            'Estados Unidos', 'Italia', 'Francia', 'Alemania', 'Suiza',
-            'Japón', 'China', 'Corea del Sur', 'Brasil', 'España',
-            'Reino Unido', 'Países Bajos', 'Austria', 'Dinamarca'
-          ],
-          required: true,
-          placeholder: 'Seleccione el país de origen'
-        },
-        { 
-          name: 'descripcion', 
-          label: 'Descripción', 
-          type: 'textarea',
-          placeholder: 'Breve descripción de la marca, su historia y especialidades...',
-          className: 'md:col-span-2'
-        },
-      ]
+        title: "Información General",
+        fields: [
+            { 
+                name: 'nombre', 
+                label: 'Nombre de la Marca', 
+                type: 'text', 
+                required: true,
+                placeholder: 'Ej: Ray-Ban, Oakley, Armani'
+            },
+            { 
+                name: 'paisOrigen', 
+                label: 'País de Origen', 
+                type: 'select',
+                options: [
+                    'Estados Unidos', 'Italia', 'Francia', 'Alemania', 'Suiza',
+                    'Japón', 'China', 'Corea del Sur', 'Brasil', 'España',
+                    'Reino Unido', 'Países Bajos', 'Austria', 'Dinamarca'
+                ],
+                required: true
+            },
+            { 
+                name: 'descripcion', 
+                label: 'Descripción', 
+                type: 'textarea',
+                placeholder: 'Breve descripción de la marca...',
+                className: 'md:col-span-2'
+            },
+        ]
     },
     {
-      title: "Información de Contacto",
-      fields: [
-        { 
-          name: 'sitioWeb', 
-          label: 'Sitio Web', 
-          type: 'url',
-          placeholder: 'https://www.marca.com'
-        },
-        { 
-          name: 'email', 
-          label: 'Email de Contacto', 
-          type: 'email',
-          placeholder: 'contacto@marca.com'
-        },
-        { 
-          name: 'telefono', 
-          label: 'Teléfono', 
-          type: 'tel',
-          placeholder: '+1-800-123-4567'
-        },
-        { 
-          name: 'estado', 
-          label: 'Estado de la Marca', 
-          type: 'select', 
-          options: ['Activa', 'Inactiva', 'Descontinuada'], 
-          required: true 
-        },
-      ]
+        title: "Líneas de Producto",
+        fields: [
+            {
+                name: 'lineas',
+                label: 'Líneas de Productos',
+                type: 'select', // o 'multi-select' si quieres múltiples selecciones
+                options: ['Premium', 'Económica'],
+                required: true
+            },
+            { 
+                name: 'estado', 
+                label: 'Estado de la Marca', 
+                type: 'select', 
+                options: ['Activa', 'Inactiva', 'Descontinuada'], 
+                required: true 
+            },
+        ]
     }
-  ];
+];
 
   const customContent = (
     <div className="space-y-8">

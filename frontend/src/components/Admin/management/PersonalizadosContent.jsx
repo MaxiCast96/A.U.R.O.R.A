@@ -14,6 +14,7 @@ import DataTable from '../ui/DataTable';
 import Pagination from '../ui/Pagination';
 import { usePagination } from '../../../hooks/admin/usePagination';
 import axios from 'axios';
+import PersonalizadosFormModal from './employees/PersonalizadosFormModal';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -1444,63 +1445,42 @@ const PersonalizadosContent = () => {
 
             {/* Modal Crear */}
             {showAddModal && (
-                <FormModal
-                    isOpen={showAddModal}
-                    onClose={() => { setShowAddModal(false); }}
-                    onSubmit={handleCreate}
-                    title="Crear Personalizado"
-                    formData={formData}
-                    handleInputChange={handleInputChange}
-                    errors={errors}
-                    submitLabel="Crear"
-                    gridCols={2}
-                    fields={[
-                        { name: 'clienteId', label: 'Cliente', type: 'select', required: true, options: clienteOptions },
-                        { name: 'productoBaseId', label: 'Producto Base (Lente)', type: 'select', required: true, options: lenteOptions },
-                        { name: 'nombre', label: 'Nombre', type: 'text', required: true },
-                        { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
-                        { name: 'categoria', label: 'Categoría', type: 'select', required: true, options: categoriaOptions, loading: loadingCategories },
-                        { name: 'marcaId', label: 'Marca', type: 'select', required: true, options: marcaOptions },
-                        { name: 'material', label: 'Material', type: 'text', required: true },
-                        { name: 'color', label: 'Color', type: 'text', required: true },
-                        { name: 'tipoLente', label: 'Tipo de Lente', type: 'text', required: true },
-                        { name: 'precioCalculado', label: 'Precio Calculado', type: 'number', required: true },
-                        { name: 'fechaEntregaEstimada', label: 'Fecha Entrega Estimada', type: 'date', required: true },
-                        { name: 'cotizacion.total', label: 'Cotización Total', type: 'number', required: true, nested: true },
-                        { name: 'cotizacion.validaHasta', label: 'Cotización Válida Hasta', type: 'date', required: true, nested: true },
-                    ]}
-                />
-            )}
+    <PersonalizadosFormModal
+        isOpen={showAddModal}
+        onClose={() => { setShowAddModal(false); resetForm(); }}
+        onSubmit={handleCreate}
+        title="Crear Producto Personalizado"
+        formData={formData}
+        handleInputChange={handleInputChange}
+        errors={errors}
+        submitLabel="Crear Personalizado"
+        clienteOptions={clienteOptions}
+        lenteOptions={lenteOptions}
+        categoriaOptions={categoriaOptions}
+        marcaOptions={marcaOptions}
+        loadingCategories={loadingCategories}
+    />
+)}
 
-            {/* Modal Editar */}
-            {showEditModal && (
-                <FormModal
-                    isOpen={showEditModal}
-                    onClose={() => { setShowEditModal(false); setEditingId(null); }}
-                    onSubmit={handleUpdate}
-                    title="Editar Personalizado"
-                    formData={formData}
-                    handleInputChange={handleInputChange}
-                    errors={errors}
-                    submitLabel="Guardar Cambios"
-                    gridCols={2}
-                    fields={[
-                        { name: 'clienteId', label: 'Cliente', type: 'select', required: true, options: clienteOptions },
-                        { name: 'productoBaseId', label: 'Producto Base (Lente)', type: 'select', required: true, options: lenteOptions },
-                        { name: 'nombre', label: 'Nombre', type: 'text', required: true },
-                        { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
-                        { name: 'categoria', label: 'Categoría', type: 'select', required: true, options: categoriaOptions, loading: loadingCategories },
-                        { name: 'marcaId', label: 'Marca', type: 'select', required: true, options: marcaOptions },
-                        { name: 'material', label: 'Material', type: 'text', required: true },
-                        { name: 'color', label: 'Color', type: 'text', required: true },
-                        { name: 'tipoLente', label: 'Tipo de Lente', type: 'text', required: true },
-                        { name: 'precioCalculado', label: 'Precio Calculado', type: 'number', required: true },
-                        { name: 'fechaEntregaEstimada', label: 'Fecha Entrega Estimada', type: 'date', required: true },
-                        { name: 'cotizacion.total', label: 'Cotización Total', type: 'number', required: true, nested: true },
-                        { name: 'cotizacion.validaHasta', label: 'Cotización Válida Hasta', type: 'date', required: true, nested: true },
-                    ]}
-                />
-            )}
+{/* Modal Editar - DESPUÉS */}
+{showEditModal && (
+    <PersonalizadosFormModal
+        isOpen={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditingId(null); resetForm(); }}
+        onSubmit={handleUpdate}
+        title="Editar Producto Personalizado"
+        formData={formData}
+        handleInputChange={handleInputChange}
+        errors={errors}
+        submitLabel="Actualizar Personalizado"
+        clienteOptions={clienteOptions}
+        lenteOptions={lenteOptions}
+        categoriaOptions={categoriaOptions}
+        marcaOptions={marcaOptions}
+        loadingCategories={loadingCategories}
+        selectedPersonalizado={editingId ? { _id: editingId } : null}
+    />
+)}
 
             {/* Modal Detalles */}
             {showDetailModal && (

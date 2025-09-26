@@ -4,13 +4,14 @@ import { API_CONFIG } from '../../../config/api';
 import { 
   Search, Plus, Trash2, Eye, Edit, Tag, Calendar, Percent, CheckCircle, 
   Image as ImageIcon, Star, Users, Camera, Upload, Filter, X, 
-  ChevronDown, SortAsc, SortDesc 
+  ChevronDown, SortAsc, SortDesc,
 } from 'lucide-react';
 import PageHeader from '../ui/PageHeader';
 import Alert from '../ui/Alert';
 import FormModal from '../ui/FormModal';
 import DetailModal from '../ui/DetailModal';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import PromocionesFormModal from '../management/employees/PromocionesFormModal';
 
 // Helpers
 const withBase = (path, base = API_CONFIG.BASE_URL) => `${base}${path}`;
@@ -336,89 +337,11 @@ const PromocionesContent = () => {
   // --- FUNCIONES UTILITARIAS ---
   const showAlert = useCallback((type, message) => {
     setAlert({ type, message });
-<<<<<<< HEAD
     const timer = setTimeout(() => setAlert(null), 5000);
     return () => clearTimeout(timer);
   }, []);
 
   const getEstadoPromo = useCallback((promo) => {
-=======
-    setTimeout(() => setAlert(null), 5000);
-  };
-
-  //   FUNCIÓN CORREGIDA - Manejo correcto de la respuesta paginada
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Hacer las peticiones por separado para mejor control de errores
-      const promosRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.PROMOCIONES));
-      const catRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.CATEGORIAS));
-      const lentesRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.LENTES));
-      
-      setPromociones(Array.isArray(promosRes.data) ? promosRes.data : []);
-      setCategorias(Array.isArray(catRes.data) ? catRes.data : []);
-      
-      //   CORRECCIÓN: Manejo correcto de la respuesta paginada de lentes
-      let lentesData = [];
-      
-      // Verificar si la respuesta tiene estructura de paginación
-      if (lentesRes.data && lentesRes.data.data && Array.isArray(lentesRes.data.data)) {
-        // Respuesta con paginación: { success: true, data: [...], pagination: {...} }
-        lentesData = lentesRes.data.data;
-        console.log('Lentes cargados (paginación):', lentesData.length);
-      } else if (Array.isArray(lentesRes.data)) {
-        // Respuesta directa: [...]
-        lentesData = lentesRes.data;
-        console.log('Lentes cargados (directo):', lentesData.length);
-      }
-      
-      // Intentar cargar accesorios solo si el endpoint existe
-      let accesoriosData = [];
-      try {
-        const accesoriosRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.ACCESORIOS));
-        
-        // Manejar respuesta de accesorios de forma similar
-        if (accesoriosRes.data && accesoriosRes.data.data && Array.isArray(accesoriosRes.data.data)) {
-          accesoriosData = accesoriosRes.data.data;
-        } else if (Array.isArray(accesoriosRes.data)) {
-          accesoriosData = accesoriosRes.data;
-        }
-        
-        console.log('Accesorios cargados:', accesoriosData.length);
-      } catch (accesoriosError) {
-        console.warn('Endpoint de accesorios no disponible:', accesoriosError.message);
-        // No es un error crítico, continuamos solo con lentes
-      }
-      
-      // Combinar lentes y accesorios con tipo identificador
-      const todosLosProductos = [
-        ...lentesData.map(lente => ({ ...lente, tipo: 'lente' })),
-        ...accesoriosData.map(accesorio => ({ ...accesorio, tipo: 'accesorio' }))
-      ];
-      
-      setProductos(todosLosProductos);
-      console.log('Total productos finales:', todosLosProductos.length);
-      
-    } catch (err) {
-      console.error('Error detallado cargando datos:', err.response || err);
-      showAlert('error', 'Error cargando datos de promociones: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { 
-    fetchData(); 
-  }, []);
-
-  //   DEBUGGING: Log temporal para verificar productos
-  useEffect(() => {
-    console.log('Estado productos actualizado:', productos.length, productos);
-  }, [productos]);
-
-  // Filters helpers
-  const getEstadoPromo = (promo) => {
->>>>>>> 163a621cab6b7907d7890ecce3fb93aa3e15878b
     const now = new Date();
     const ini = promo.fechaInicio ? new Date(promo.fechaInicio) : null;
     const fin = promo.fechaFin ? new Date(promo.fechaFin) : null;
@@ -1399,66 +1322,19 @@ const PromocionesContent = () => {
       </div>
 
       {/* MODALES */}
-      <FormModal
-        isOpen={showAddEditModal}
-        onClose={closeModals}
-        onSubmit={onSubmitForm}
-        title={selectedPromo ? 'Editar Promoción' : 'Nueva Promoción'}
-        formData={formData}
-        handleInputChange={handleInputChange}
-        errors={errors}
-        submitLabel={selectedPromo ? 'Guardar cambios' : 'Crear promoción'}
-        gridCols={2}
-        size="xl"
-        fields={[
-          // SECCIÓN 1: INFORMACIÓN BÁSICA
-          { name: 'nombre', label: 'Nombre de la Promoción', type: 'text', required: true, colSpan: 2 },
-          { name: 'descripcion', label: 'Descripción', type: 'textarea', required: true, colSpan: 2 },
-          
-          // SECCIÓN 2: CONFIGURACIÓN DEL DESCUENTO
-          { name: 'tipoDescuento', label: 'Tipo de Descuento', type: 'select', options: [
-            { value: 'porcentaje', label: 'Porcentaje (%)' },
-            { value: 'monto', label: 'Monto fijo ($)' },
-            { value: '2x1', label: '2x1' },
-          ], required: true },
-          
-          { name: 'valorDescuento', label: 'Valor del Descuento', type: 'number', required: true },
-          
-          // SECCIÓN 3: APLICABILIDAD
-          { name: 'aplicaA', label: 'Aplicar Promoción A', type: 'select', options: [
-            { value: 'todos', label: 'Todos los productos' },
-            { value: 'categoria', label: 'Categorías específicas' },
-            { value: 'lente', label: 'Productos específicos' },
-          ], required: true, colSpan: 2 },
-          
-          { name: 'categoriasAplicables', label: 'Categorías Aplicables', type: 'multi-select', options: categoriaOptions, hidden: formData.aplicaA !== 'categoria', colSpan: 2 },
-          
-          { name: 'lentesAplicables', label: 'Productos Aplicables', type: 'multi-select', options: productosOptions, hidden: formData.aplicaA !== 'lente', colSpan: 2 },
-          
-          // SECCIÓN 4: VIGENCIA Y CÓDIGO
-          { name: 'fechaInicio', label: 'Fecha de Inicio', type: 'date', required: true },
-          { name: 'fechaFin', label: 'Fecha de Fin', type: 'date', required: true },
-          
-          { name: 'codigoPromo', label: 'Código de Promoción', type: 'text', required: true, colSpan: 2, placeholder: 'Ej: DESCUENTO20, VERANO2024' },
-          
-          // SECCIÓN 5: CONFIGURACIÓN AVANZADA
-          { name: 'prioridad', label: 'Prioridad (0-10)', type: 'number', min: 0, max: 10, placeholder: '0 = Baja, 10 = Alta' },
-          { name: 'limiteUsos', label: 'Límite de Usos', type: 'number', min: 1, placeholder: 'Vacío = Ilimitado' },
-          
-          { name: 'mostrarEnCarrusel', label: 'Mostrar en Carrusel Principal', type: 'boolean' },
-          { name: 'activo', label: 'Promoción Activa', type: 'boolean' },
-        ]}
-      >
-        {/* Contenido personalizado para la imagen */}
-        <div className="mt-6 border-t pt-6">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Imagen de la Promoción</h4>
-          <PromocionImageUpload 
-            currentImage={formData?.imagenPromocion}
-            onImageChange={handleImageChange}
-            promocionName={formData?.nombre}
-          />
-        </div>
-      </FormModal>
+      <PromocionesFormModal
+  isOpen={showAddEditModal}
+  onClose={closeModals}
+  onSubmit={onSubmitForm}
+  title={selectedPromo ? 'Editar Promoción' : 'Nueva Promoción'}
+  formData={formData}
+  handleInputChange={handleInputChange}
+  errors={errors}
+  submitLabel={selectedPromo ? 'Guardar cambios' : 'Crear promoción'}
+  categoriaOptions={categoriaOptions}
+  productosOptions={productosOptions}
+  selectedPromo={selectedPromo}
+/>
 
       <DetailModal
         isOpen={showDetailModal}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import FormModal from '../../ui/FormModal';
-import { Tag, Percent, Calendar, Settings, AlertCircle, Gift, Eye, EyeOff } from 'lucide-react';
+import { Tag, Percent, Calendar, Settings, AlertCircle, Gift, Eye, EyeOff, X } from 'lucide-react';
 
 // Componente para subida de imagen de promoción
 const PromocionImageUpload = ({ currentImage, onImageChange, promocionName }) => {

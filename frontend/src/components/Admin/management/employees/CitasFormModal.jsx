@@ -31,10 +31,20 @@ const EnhancedField = ({
         label: `${cliente.nombre || ''} ${cliente.apellido || ''}`
       }));
     } else if (field.name === 'optometristaId') {
-      options = optometristas.map(opt => ({
-        value: opt._id,
-        label: `Dr(a). ${opt.nombre || ''} ${opt.apellido || ''}`
-      }));
+      options = optometristas.map(opt => {
+        const emp = opt.empleadoId;
+        let nombre = 'Optometrista';
+        if (emp && (emp.nombre || emp.apellido)) {
+          nombre = `Dr(a). ${emp.nombre || ''} ${emp.apellido || ''}`.trim();
+        } else if (opt._id) {
+          const shortId = opt._id.slice(-6).toUpperCase();
+          nombre = `Dr(a). ${shortId}`;
+        }
+        return {
+          value: opt._id,
+          label: nombre
+        };
+      });
     } else if (field.name === 'sucursalId') {
       options = sucursales.map(suc => ({
         value: suc._id,
@@ -116,7 +126,8 @@ const EnhancedField = ({
         className={inputClasses}
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
-        min={field.type === 'datetime-local' ? new Date().toISOString().slice(0, 16) : undefined}
+        min={field.type === 'datetime-local' ? new Date().toISOString().slice(0, 16) : field.min}
+        max={field.max}
       />
       {error && (
         <p className="text-red-500 text-sm flex items-center space-x-1">
@@ -128,6 +139,12 @@ const EnhancedField = ({
         <p className="text-xs text-gray-500 flex items-center space-x-1">
           <AlertCircle className="w-3 h-3" />
           <span>Seleccione fecha y hora de la cita</span>
+        </p>
+      )}
+      {field.type === 'number' && field.name === 'duracionEstimada' && (
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <Clock className="w-3 h-3" />
+          <span>Duración recomendada: 30-60 minutos</span>
         </p>
       )}
     </div>
@@ -192,12 +209,12 @@ const CitasFormModal = ({
           label: 'Tipo de Consulta', 
           type: 'select', 
           options: [
-            'Examen Rutinario', 
-            'Consulta Especializada', 
-            'Control Post-Cirugía', 
-            'Urgencia',
-            'Primera Consulta',
-            'Seguimiento'
+            { value: 'Examen Rutinario', label: 'Examen Rutinario' },
+            { value: 'Consulta Especializada', label: 'Consulta Especializada' },
+            { value: 'Control Post-Cirugía', label: 'Control Post-Cirugía' },
+            { value: 'Urgencia', label: 'Urgencia' },
+            { value: 'Primera Consulta', label: 'Primera Consulta' },
+            { value: 'Seguimiento', label: 'Seguimiento' }
           ],
           required: true 
         },
@@ -206,13 +223,22 @@ const CitasFormModal = ({
           label: 'Duración Estimada (minutos)', 
           type: 'number', 
           placeholder: '30',
+          min: 15,
+          max: 120,
           required: true 
         },
         { 
           name: 'estado', 
           label: 'Estado de la Cita', 
           type: 'select', 
-          options: ['Programada', 'Confirmada', 'En Proceso', 'Completada', 'Cancelada', 'No Asistió'],
+          options: [
+            { value: 'Programada', label: 'Programada' },
+            { value: 'Confirmada', label: 'Confirmada' },
+            { value: 'En Proceso', label: 'En Proceso' },
+            { value: 'Completada', label: 'Completada' },
+            { value: 'Cancelada', label: 'Cancelada' },
+            { value: 'No Asistió', label: 'No Asistió' }
+          ],
           required: true 
         },
       ]
@@ -257,6 +283,20 @@ const CitasFormModal = ({
   };
 
   const dateTimeError = validateDateTime();
+
+  // Obtener nombre del cliente seleccionado
+  const getClienteNombre = () => {
+    if (!formData.clienteId) return '';
+    const cliente = clientes.find(c => c._id === formData.clienteId);
+    return cliente ? `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim() : 'Cliente seleccionado';
+  };
+
+  // Obtener nombre de la sucursal seleccionada
+  const getSucursalNombre = () => {
+    if (!formData.sucursalId) return '';
+    const sucursal = sucursales.find(s => s._id === formData.sucursalId);
+    return sucursal ? sucursal.nombre : 'Sucursal seleccionada';
+  };
 
   const customContent = (
     <div className="space-y-8">
@@ -314,14 +354,28 @@ const CitasFormModal = ({
           </h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-              <p><span className="font-medium">Cliente:</span> {clientes.find(c => c._id === formData.clienteId)?.nombre || 'Seleccionado'}</p>
+              <p><span className="font-medium">Cliente:</span> {getClienteNombre()}</p>
               <p><span className="font-medium">Fecha:</span> {formData.fechaHora ? new Date(formData.fechaHora).toLocaleDateString('es-ES') : 'No especificada'}</p>
               <p><span className="font-medium">Hora:</span> {formData.fechaHora ? new Date(formData.fechaHora).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : 'No especificada'}</p>
             </div>
             <div>
+              <p><span className="font-medium">Sucursal:</span> {getSucursalNombre()}</p>
               <p><span className="font-medium">Tipo:</span> {formData.tipoConsulta}</p>
               <p><span className="font-medium">Duración:</span> {formData.duracionEstimada} minutos</p>
               <p><span className="font-medium">Estado:</span> {formData.estado}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Alertas de validación */}
+      {dateTimeError && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+            <div className="text-sm text-red-800">
+              <p className="font-medium">Error en fecha y hora:</p>
+              <p>{dateTimeError}</p>
             </div>
           </div>
         </div>
