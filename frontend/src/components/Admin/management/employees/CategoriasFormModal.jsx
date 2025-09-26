@@ -1,0 +1,274 @@
+import React, { useState } from 'react';
+import FormModal from '../../ui/FormModal';
+import { Folder, AlertCircle, Save, Tag, Package } from 'lucide-react';
+
+// Componente para campos de entrada mejorados
+const EnhancedField = ({ 
+  field, 
+  value, 
+  onChange, 
+  error,
+  formData
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+
+  const getFieldValue = () => value || '';
+
+  const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base ${
+    error ? 'border-red-500 bg-red-50' : 
+    isFocused ? 'border-blue-500' : 'border-gray-300 bg-white'
+  }`;
+
+  if (field.type === 'select') {
+    let options = [];
+    
+    if (field.options) {
+      options = field.options.map(opt => 
+        typeof opt === 'object' ? opt : { value: opt, label: opt }
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {field.label} {field.required && <span className="text-red-500">*</span>}
+        </label>
+        <select
+          name={field.name}
+          value={getFieldValue()}
+          onChange={onChange}
+          className={inputClasses}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        >
+          <option value="">{field.placeholder || `Seleccione ${field.label.toLowerCase()}`}</option>
+          {options.map((option, index) => (
+            <option key={`${field.name}-${index}-${option.value}`} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {error && (
+          <p className="text-red-500 text-sm flex items-center space-x-1">
+            <AlertCircle className="w-4 h-4" />
+            <span>{error}</span>
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  if (field.type === 'textarea') {
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {field.label} {field.required && <span className="text-red-500">*</span>}
+        </label>
+        <textarea
+          name={field.name}
+          value={getFieldValue()}
+          onChange={onChange}
+          placeholder={field.placeholder}
+          className={`${inputClasses} resize-none`}
+          rows={3}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+        />
+        {error && (
+          <p className="text-red-500 text-sm flex items-center space-x-1">
+            <AlertCircle className="w-4 h-4" />
+            <span>{error}</span>
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <label className="block text-sm font-medium text-gray-700 mb-1">
+        {field.label} {field.required && <span className="text-red-500">*</span>}
+      </label>
+      <input
+        type={field.type}
+        name={field.name}
+        value={getFieldValue()}
+        onChange={onChange}
+        placeholder={field.placeholder}
+        className={inputClasses}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+      />
+      {error && (
+        <p className="text-red-500 text-sm flex items-center space-x-1">
+          <AlertCircle className="w-4 h-4" />
+          <span>{error}</span>
+        </p>
+      )}
+    </div>
+  );
+};
+
+const CategoriasFormModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  title, 
+  formData, 
+  handleInputChange, 
+  errors, 
+  submitLabel,
+  isEditing = false,
+  selectedCategoria = null
+}) => {
+
+  const sections = [
+    {
+      title: "Información General",
+      fields: [
+        { 
+          name: 'nombre', 
+          label: 'Nombre de la Categoría', 
+          type: 'text', 
+          required: true,
+          placeholder: 'Ej: Lentes de Sol, Monturas, Accesorios',
+          className: 'md:col-span-2'
+        },
+        { 
+          name: 'descripcion', 
+          label: 'Descripción', 
+          type: 'textarea',
+          placeholder: 'Breve descripción de la categoría y los productos que incluye...',
+          className: 'md:col-span-2'
+        },
+      ]
+    },
+    {
+      title: "Configuración",
+      fields: [
+        { 
+          name: 'codigo', 
+          label: 'Código de Categoría', 
+          type: 'text',
+          placeholder: 'Ej: CAT-001, LENTES-SOL',
+          required: true
+        },
+        { 
+          name: 'tipoProducto', 
+          label: 'Tipo de Producto', 
+          type: 'select',
+          options: [
+            'Lentes',
+            'Monturas', 
+            'Accesorios',
+            'Lentes de Contacto',
+            'Productos de Limpieza',
+            'Estuches',
+            'Otros'
+          ],
+          required: true,
+          placeholder: 'Seleccione el tipo de producto'
+        },
+        { 
+          name: 'orden', 
+          label: 'Orden de Visualización', 
+          type: 'number',
+          placeholder: '1',
+          min: 1
+        },
+        { 
+          name: 'estado', 
+          label: 'Estado de la Categoría', 
+          type: 'select', 
+          options: ['Activa', 'Inactiva'], 
+          required: true 
+        },
+      ]
+    }
+  ];
+
+  const customContent = (
+    <div className="space-y-8">
+      {sections.map((section, sectionIndex) => (
+        <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
+            {sectionIndex === 0 && <Folder className="w-5 h-5 mr-2 text-blue-600" />}
+            {sectionIndex === 1 && <Tag className="w-5 h-5 mr-2 text-green-600" />}
+            {section.title}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {section.fields.map((field, fieldIndex) => (
+              <div key={`field-${sectionIndex}-${fieldIndex}`} className={field.className || ''}>
+                <EnhancedField
+                  field={field}
+                  value={formData[field.name]}
+                  onChange={handleInputChange}
+                  error={errors[field.name]}
+                  formData={formData}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Información adicional */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <div className="flex items-start space-x-2">
+          <Package className="w-5 h-5 text-yellow-600 mt-0.5" />
+          <div className="text-sm text-yellow-800">
+            <p className="font-medium mb-1">Información sobre categorías:</p>
+            <ul className="list-disc list-inside space-y-1 text-xs">
+              <li>Las categorías organizan y clasifican los productos</li>
+              <li>El código debe ser único para cada categoría</li>
+              <li>El orden determina cómo aparecen en los menús</li>
+              <li>Solo categorías activas aparecen en el catálogo</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Resumen de la categoría */}
+      {formData?.nombre && formData?.tipoProducto && (
+        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
+          <h4 className="font-semibold text-green-800 mb-3 flex items-center">
+            <Folder className="w-5 h-5 mr-2" />
+            Resumen de la Categoría
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p><span className="font-medium">Nombre:</span> {formData.nombre}</p>
+              <p><span className="font-medium">Código:</span> {formData.codigo}</p>
+              <p><span className="font-medium">Tipo:</span> {formData.tipoProducto}</p>
+            </div>
+            <div>
+              <p><span className="font-medium">Estado:</span> {formData.estado}</p>
+              <p><span className="font-medium">Orden:</span> {formData.orden || 'No especificado'}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onSubmit={onSubmit}
+      title={title}
+      formData={formData}
+      handleInputChange={handleInputChange}
+      errors={errors}
+      submitLabel={submitLabel}
+      submitIcon={<Save className="w-4 h-4" />}
+      fields={[]}
+      gridCols={1}
+      size="lg"
+    >
+      {customContent}
+    </FormModal>
+  );
+};
+
+export default CategoriasFormModal;

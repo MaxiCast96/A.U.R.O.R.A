@@ -17,7 +17,7 @@ const ClientAvatarComponent = ({ clientName = '', size = 'large' }) => {
     if (!name) return 'C';
     const parts = name.split(' ');
     return parts.length > 1 ? 
-      `${parts[0][0]}${parts[1][0]}` : 
+      `${parts[0][0]}${parts[1][0]}` :
       parts[0][0];
   };
 
