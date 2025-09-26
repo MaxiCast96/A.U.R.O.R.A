@@ -17,7 +17,7 @@ const fetchWithFallback = async (path, options = {}) => {
 
   const primary = API_CONFIG.BASE_URL;
   const secondary = primary.includes('localhost')
-    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    ? 'https://aurora-production-7e57.up.railway.app/api'
     : 'http://localhost:4000/api';
 
   try {

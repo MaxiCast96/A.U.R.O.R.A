@@ -4,7 +4,7 @@ import { Camera, Upload, X, User, Edit3, Eye, EyeOff, Lock, Unlock, Check, Alert
 import { EL_SALVADOR_DATA } from '../../constants/ElSalvadorData';
 
 // URL base de tu API
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/empleados';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api/empleados';
 
 // Componente de subida de foto profesional
 const PhotoUploadComponent = ({ currentPhoto, onPhotoChange, employeeName = '' }) => {
@@ -712,14 +712,14 @@ const EmpleadosFormModal = ({
     }, [selectedEmpleado, setFormData]);
 
     const sections = [
-        { title: "📋 Información Personal", fields: [
+        { title: "  Información Personal", fields: [
             { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Juan Carlos', required: true },
             { name: 'apellido', label: 'Apellido', type: 'text', placeholder: 'García López', required: true },
             { name: 'dui', label: 'DUI', type: 'text', placeholder: '12345678-9', required: true },
             { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: '78901234', required: true },
             { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'juan.garcia@email.com', required: true },
         ]},
-        { title: "🏠 Información de Residencia", fields: [
+        { title: "  Información de Residencia", fields: [
             { 
                 name: 'direccion.departamento', 
                 label: 'Departamento', 
@@ -749,7 +749,7 @@ const EmpleadosFormModal = ({
                 required: true 
             },
         ]},
-        { title: "💼 Información Laboral", fields: [
+        { title: " Información Laboral", fields: [
             { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursales?.map(s => ({ value: s._id, label: s.nombre })) || [], required: true },
             { name: 'cargo', label: 'Puesto', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
             { name: 'salario', label: 'Salario (USD)', type: 'number', placeholder: '500.00', required: true },
@@ -853,7 +853,7 @@ const EmpleadosFormModal = ({
             ))}
             
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">🔐 Acceso y Seguridad</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">  Acceso y Seguridad</h3>
                 <div className="max-w-md">
                     <PasswordField 
                         value={formData?.password || ''} 

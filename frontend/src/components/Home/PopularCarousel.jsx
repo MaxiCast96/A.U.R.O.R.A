@@ -66,7 +66,7 @@ const PopularCarousel = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await fetch('https://a-u-r-o-r-a.onrender.com/api/lentes/populares');
+        const response = await fetch('https://aurora-production-7e57.up.railway.app/api/lentes/populares');
         const data = await response.json();
         setProducts(data);
       } catch (error) {

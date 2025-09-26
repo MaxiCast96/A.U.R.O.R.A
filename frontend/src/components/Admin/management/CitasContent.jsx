@@ -10,7 +10,7 @@ import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
 import ConfirmationModal from '../ui/ConfirmationModal';
 
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api';
 
 const initialFormState = {
   clienteId: '',

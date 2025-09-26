@@ -86,7 +86,7 @@ const axiosWithFallback = async (method, path, data, config = {}) => {
 
   const primary = API_CONFIG.BASE_URL;
   const secondary = primary.includes('localhost')
-    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    ? 'https://aurora-production-7e57.up.railway.app/api'
     : 'http://localhost:4000/api';
 
   try {
@@ -705,9 +705,9 @@ const Optometristas = () => {
                 <div className="w-full max-w-none">
                     <StatsGrid stats={[
                         { title: 'Total Optometristas', value: totalOptometristas, Icon: Eye, color: 'cyan' },
-                        { title: 'Disponibles', value: optometristasDisponibles, Icon: UserCheck, color: 'green' },
-                        { title: 'No Disponibles', value: optometristasNoDisponibles, Icon: UserX, color: 'red' },
-                        { title: 'Experiencia Promedio', value: `${promedioExperiencia} años`, Icon: Award, color: 'purple' },
+                        { title: 'Disponibles', value: optometristasDisponibles, Icon: UserCheck, color: 'cyan' },
+                        { title: 'No Disponibles', value: optometristasNoDisponibles, Icon: UserX, color: 'cyan' },
+                        { title: 'Experiencia Promedio', value: `${promedioExperiencia} años`, Icon: Award, color: 'cyan' },
                     ]} />
                 </div>
             </div>

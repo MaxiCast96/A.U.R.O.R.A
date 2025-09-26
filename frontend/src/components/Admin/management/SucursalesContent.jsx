@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 
 // --- CONFIGURACIÓN ---
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/sucursales';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api/sucursales';
 const ITEMS_PER_PAGE = 10;
 
 // Estados iniciales
@@ -618,9 +618,9 @@ const SucursalesContent = () => {
     // --- CÁLCULO DE ESTADÍSTICAS ---
     const stats = useMemo(() => [
         { title: 'Total Sucursales', value: sucursales.length, Icon: Building2, color: 'cyan' },
-        { title: 'Sucursales Activas', value: sucursales.filter(s => s.activo).length, Icon: CheckCircle, color: 'green' },
-        { title: 'Sucursales Inactivas', value: sucursales.filter(s => !s.activo).length, Icon: Building2, color: 'red' },
-        { title: 'Resultados', value: filteredAndSortedSucursales.length, Icon: Search, color: 'purple' },
+        { title: 'Sucursales Activas', value: sucursales.filter(s => s.activo).length, Icon: CheckCircle, color: 'cyan' },
+        { title: 'Sucursales Inactivas', value: sucursales.filter(s => !s.activo).length, Icon: Building2, color: 'cyan' },
+        { title: 'Resultados', value: filteredAndSortedSucursales.length, Icon: Search, color: 'cyan' },
     ], [sucursales, filteredAndSortedSucursales]);
 
     // --- FUNCIÓN PARA RENDERIZAR FILAS ---

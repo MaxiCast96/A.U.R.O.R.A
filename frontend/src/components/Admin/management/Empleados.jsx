@@ -88,7 +88,7 @@ const axiosWithFallback = async (method, path, data, config = {}) => {
 
     const primaryBase = API_CONFIG.BASE_URL;
     const secondaryBase = primaryBase.includes('localhost')
-        ? 'https://a-u-r-o-r-a.onrender.com/api'
+        ? 'https://aurora-production-7e57.up.railway.app/api'
         : 'http://localhost:4000/api';
 
     try {
@@ -602,14 +602,9 @@ const Empleados = () => {
 
     const employeeStats = [
         { title: 'Total Empleados', value: totalEmpleados, Icon: Users, color: 'cyan' },
-        { title: 'Empleados Activos', value: empleadosActivos, Icon: UserCheck, color: 'green' },
-        { 
-            title: sucursales.length > 0 ? sucursales[0].nombre : 'Sucursal Principal', 
-            value: sucursalPrincipalStats, 
-            Icon: Building2,
-            color: 'blue'
-        },
-        { title: 'Nómina Total (Activos)', value: formatSalario(nominaTotal), Icon: DollarSign, color: 'yellow' }
+        { title: 'Empleados Activos', value: empleadosActivos, Icon: UserCheck, color: 'cyan' },
+        { title: sucursales.length > 0 ? sucursales[0].nombre : 'Sucursal Principal', value: sucursalPrincipalStats, Icon: Building2, color: 'cyan'},
+        { title: 'Nómina Total (Activos)', value: formatSalario(nominaTotal), Icon: DollarSign, color: 'cyan' }
     ];
 
     // --- FUNCIONES DEL FLUJO DE OPTOMETRISTA ---

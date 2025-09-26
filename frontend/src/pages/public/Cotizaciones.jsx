@@ -95,7 +95,7 @@ const Cotizaciones = () => {
   const confirmarEliminarCotizacion = async () => {
     const id = modalEliminar.id;
     try {
-      const res = await fetch(`https://a-u-r-o-r-a.onrender.com/api/cotizaciones/${id}`, {
+      const res = await fetch(`https://aurora-production-7e57.up.railway.app/api/cotizaciones/${id}`, {
         method: 'DELETE',
       });
       const data = await res.json();

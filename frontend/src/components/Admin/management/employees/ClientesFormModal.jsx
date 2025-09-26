@@ -545,7 +545,7 @@ const ClientesFormModal = ({
 
   const sections = [
     {
-      title: "👤 Información Personal",
+      title: "  Información Personal",
       fields: [
         { name: 'nombre', label: 'Nombre Completo', type: 'text', placeholder: 'Ej: María Elena', required: true },
         { name: 'apellido', label: 'Apellidos', type: 'text', placeholder: 'Ej: Rodríguez Pérez', required: true },
@@ -556,7 +556,7 @@ const ClientesFormModal = ({
       ]
     },
     {
-      title: "🏠 Información de Residencia",
+      title: "  Información de Residencia",
       fields: [
         { 
           name: 'departamento', 
@@ -584,7 +584,7 @@ const ClientesFormModal = ({
       ]
     },
     {
-      title: "📊 Estado del Cliente",
+      title: "  Estado del Cliente",
       fields: [
         { 
           name: 'estado', 
@@ -627,7 +627,7 @@ const ClientesFormModal = ({
       {/* Sección de contraseña */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-          🔐 Acceso y Seguridad
+            Acceso y Seguridad
         </h3>
         <div className="max-w-md">
           <PasswordField

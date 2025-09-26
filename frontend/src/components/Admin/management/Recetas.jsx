@@ -17,7 +17,7 @@ import {
 
 
 // --- CONFIGURACIÓN ---
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api';
 const ITEMS_PER_PAGE = 10;
 
 // Estados iniciales de filtros
@@ -439,9 +439,9 @@ const Recetas = () => {
     const stats = useMemo(() => {
         const vigentes = recetas.filter(r => r.isVigente).length;
         return [
-            { title: 'Total Recetas', value: recetas.length, Icon: FileText, color: 'blue' },
-            { title: 'Recetas Vigentes', value: vigentes, Icon: CheckCircle, color: 'green' },
-            { title: 'Recetas Vencidas', value: recetas.length - vigentes, Icon: Clock, color: 'red' },
+            { title: 'Total Recetas', value: recetas.length, Icon: FileText, color: 'cyan' },
+            { title: 'Recetas Vigentes', value: vigentes, Icon: CheckCircle, color: 'cyan' },
+            { title: 'Recetas Vencidas', value: recetas.length - vigentes, Icon: Clock, color: 'cyan' },
         ];
     }, [recetas]);
 

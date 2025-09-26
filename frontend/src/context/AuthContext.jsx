@@ -11,7 +11,7 @@ export const AuthProvider = ({ children }) => {
         // Verificar autenticación al cargar
         const verifyAuth = async () => {
             try {
-                const response = await axios.get('https://a-u-r-o-r-a.onrender.com/api/auth/verify', {
+                const response = await axios.get('https://aurora-production-7e57.up.railway.app/api/auth/verify', {
                     withCredentials: true
                 });
                 if (response.data.success) {

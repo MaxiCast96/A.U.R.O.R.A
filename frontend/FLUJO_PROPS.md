@@ -1,8 +1,8 @@
 # 🔄 FLUJO DE PROPS - A.U.R.O.R.A
 
-## 📋 **REGLAS IMPLEMENTADAS**
+##   **REGLAS IMPLEMENTADAS**
 
-### ✅ **FLUJO UNIDIRECCIONAL DE PROPS**
+###   **FLUJO UNIDIRECCIONAL DE PROPS**
 Los props se comparten **SIEMPRE** desde el componente padre hacia los componentes hijos.
 
 ### 🏗️ **ESTRUCTURA DE COMPONENTES**
@@ -111,27 +111,27 @@ const BrandsCarousel = ({
 
 ---
 
-## ✅ **BENEFICIOS IMPLEMENTADOS**
+##   **BENEFICIOS IMPLEMENTADOS**
 
 ### **1. FLUJO DE DATOS CLARO**
-- ✅ Datos fluyen de padre → hijo
-- ✅ Handlers fluyen de padre → hijo
-- ✅ Estados centralizados en páginas
+-   Datos fluyen de padre → hijo
+-   Handlers fluyen de padre → hijo
+-   Estados centralizados en páginas
 
 ### **2. COMPONENTES REUTILIZABLES**
-- ✅ Componentes hijos son puros (solo props)
-- ✅ Fáciles de testear
-- ✅ Independientes de fuentes de datos
+-   Componentes hijos son puros (solo props)
+-   Fáciles de testear
+-   Independientes de fuentes de datos
 
 ### **3. MANTENIBILIDAD**
-- ✅ Lógica centralizada en páginas
-- ✅ Separación clara de responsabilidades
-- ✅ Fácil debugging
+-   Lógica centralizada en páginas
+-   Separación clara de responsabilidades
+-   Fácil debugging
 
 ### **4. PERFORMANCE**
-- ✅ Estados optimizados en páginas padre
-- ✅ Re-renders controlados
-- ✅ Props memoizables
+-   Estados optimizados en páginas padre
+-   Re-renders controlados
+-   Props memoizables
 
 ---
 
@@ -144,16 +144,16 @@ const BrandsCarousel = () => {
 };
 ```
 
-## ✅ **DESPUÉS (CORRECTO)**
+##   **DESPUÉS (CORRECTO)**
 ```jsx
-// ✅ Componente hijo recibiendo props
+//   Componente hijo recibiendo props
 const BrandsCarousel = ({ brands, loading, error }) => {
   return <div>{/* render con props */}</div>;
 };
 
-// ✅ Página padre manejando datos
+//   Página padre manejando datos
 const Home = () => {
-  const { data: brands } = useData('marcas'); // ✅ Hook en padre
+  const { data: brands } = useData('marcas'); //   Hook en padre
   return <BrandsCarousel brands={brands} />;
 };
 ```
@@ -162,14 +162,14 @@ const Home = () => {
 
 ## 📝 **CHECKLIST DE IMPLEMENTACIÓN**
 
-- ✅ **Home.jsx** - Refactorizado con flujo de props
-- ✅ **BrandsCarousel.jsx** - Recibe props del padre
-- ✅ **PopularCarousel.jsx** - Recibe props del padre
-- ✅ **Cotizaciones.jsx** - Maneja datos y pasa props
-- ✅ **VerCotizacionPage.jsx** - Nueva página padre
-- ✅ **VerCotizacion.jsx** - Recibe props del padre
-- ✅ **CrearCotizacionPage.jsx** - Nueva página padre
-- ✅ **CrearCotizacion.jsx** - Recibe props del padre
+-   **Home.jsx** - Refactorizado con flujo de props
+-   **BrandsCarousel.jsx** - Recibe props del padre
+-   **PopularCarousel.jsx** - Recibe props del padre
+-   **Cotizaciones.jsx** - Maneja datos y pasa props
+-   **VerCotizacionPage.jsx** - Nueva página padre
+-   **VerCotizacion.jsx** - Recibe props del padre
+-   **CrearCotizacionPage.jsx** - Nueva página padre
+-   **CrearCotizacion.jsx** - Recibe props del padre
 
 ---
 

@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 // --- CONFIGURACIÓN ---
-const API_URL = 'https://a-u-r-o-r-a.onrender.com/api/clientes';
+const API_URL = 'https://aurora-production-7e57.up.railway.app/api/clientes';
 const ITEMS_PER_PAGE = 10;
 
 // Estados iniciales
@@ -566,8 +566,8 @@ const Clientes = () => {
     // --- CÁLCULO DE ESTADÍSTICAS ---
     const stats = useMemo(() => [
         { title: 'Total Clientes', value: clientes.length, Icon: Users, color: 'cyan' },
-        { title: 'Clientes Activos', value: clientes.filter(c => c.estado === 'Activo').length, Icon: UserCheck, color: 'green' },
-        { title: 'Clientes Inactivos', value: clientes.filter(c => c.estado === 'Inactivo').length, Icon: UserX, color: 'red' },
+        { title: 'Clientes Activos', value: clientes.filter(c => c.estado === 'Activo').length, Icon: UserCheck, color: 'cyan' },
+        { title: 'Clientes Inactivos', value: clientes.filter(c => c.estado === 'Inactivo').length, Icon: UserX, color: 'cyan' },
     ], [clientes]);
 
     // --- RENDERIZADO DEL COMPONENTE ---

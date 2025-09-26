@@ -336,11 +336,89 @@ const PromocionesContent = () => {
   // --- FUNCIONES UTILITARIAS ---
   const showAlert = useCallback((type, message) => {
     setAlert({ type, message });
+<<<<<<< HEAD
     const timer = setTimeout(() => setAlert(null), 5000);
     return () => clearTimeout(timer);
   }, []);
 
   const getEstadoPromo = useCallback((promo) => {
+=======
+    setTimeout(() => setAlert(null), 5000);
+  };
+
+  //   FUNCIÓN CORREGIDA - Manejo correcto de la respuesta paginada
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // Hacer las peticiones por separado para mejor control de errores
+      const promosRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.PROMOCIONES));
+      const catRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.CATEGORIAS));
+      const lentesRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.LENTES));
+      
+      setPromociones(Array.isArray(promosRes.data) ? promosRes.data : []);
+      setCategorias(Array.isArray(catRes.data) ? catRes.data : []);
+      
+      //   CORRECCIÓN: Manejo correcto de la respuesta paginada de lentes
+      let lentesData = [];
+      
+      // Verificar si la respuesta tiene estructura de paginación
+      if (lentesRes.data && lentesRes.data.data && Array.isArray(lentesRes.data.data)) {
+        // Respuesta con paginación: { success: true, data: [...], pagination: {...} }
+        lentesData = lentesRes.data.data;
+        console.log('Lentes cargados (paginación):', lentesData.length);
+      } else if (Array.isArray(lentesRes.data)) {
+        // Respuesta directa: [...]
+        lentesData = lentesRes.data;
+        console.log('Lentes cargados (directo):', lentesData.length);
+      }
+      
+      // Intentar cargar accesorios solo si el endpoint existe
+      let accesoriosData = [];
+      try {
+        const accesoriosRes = await axios.get(withBase(API_CONFIG.ENDPOINTS.ACCESORIOS));
+        
+        // Manejar respuesta de accesorios de forma similar
+        if (accesoriosRes.data && accesoriosRes.data.data && Array.isArray(accesoriosRes.data.data)) {
+          accesoriosData = accesoriosRes.data.data;
+        } else if (Array.isArray(accesoriosRes.data)) {
+          accesoriosData = accesoriosRes.data;
+        }
+        
+        console.log('Accesorios cargados:', accesoriosData.length);
+      } catch (accesoriosError) {
+        console.warn('Endpoint de accesorios no disponible:', accesoriosError.message);
+        // No es un error crítico, continuamos solo con lentes
+      }
+      
+      // Combinar lentes y accesorios con tipo identificador
+      const todosLosProductos = [
+        ...lentesData.map(lente => ({ ...lente, tipo: 'lente' })),
+        ...accesoriosData.map(accesorio => ({ ...accesorio, tipo: 'accesorio' }))
+      ];
+      
+      setProductos(todosLosProductos);
+      console.log('Total productos finales:', todosLosProductos.length);
+      
+    } catch (err) {
+      console.error('Error detallado cargando datos:', err.response || err);
+      showAlert('error', 'Error cargando datos de promociones: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { 
+    fetchData(); 
+  }, []);
+
+  //   DEBUGGING: Log temporal para verificar productos
+  useEffect(() => {
+    console.log('Estado productos actualizado:', productos.length, productos);
+  }, [productos]);
+
+  // Filters helpers
+  const getEstadoPromo = (promo) => {
+>>>>>>> 163a621cab6b7907d7890ecce3fb93aa3e15878b
     const now = new Date();
     const ini = promo.fechaInicio ? new Date(promo.fechaInicio) : null;
     const fin = promo.fechaFin ? new Date(promo.fechaFin) : null;

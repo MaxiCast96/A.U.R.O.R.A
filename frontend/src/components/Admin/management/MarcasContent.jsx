@@ -601,7 +601,7 @@ const axiosWithFallback = async (method, path, data, config = {}) => {
 
   const primary = API_CONFIG.BASE_URL;
   const secondary = primary.includes('localhost')
-    ? 'https://a-u-r-o-r-a.onrender.com/api'
+    ? 'https://aurora-production-7e57.up.railway.app/api'
     : 'http://localhost:4000/api';
 
   try {
@@ -915,10 +915,10 @@ const MarcasContent = () => {
         const paisesUnicos = uniqueCountries.length;
 
         return [
-            { title: 'Total Marcas', value: totalMarcas, Icon: Bookmark },
-            { title: 'Líneas Premium', value: marcasPremium, Icon: Tags },
-            { title: 'Líneas Económicas', value: marcasEconomicas, Icon: Package },
-            { title: 'Países', value: paisesUnicos, Icon: MapPin }
+            { title: 'Total Marcas', value: totalMarcas, Icon: Bookmark, color: 'cyan' },
+            { title: 'Líneas Premium', value: marcasPremium, Icon: Tags, color: 'cyan' },
+            { title: 'Líneas Económicas', value: marcasEconomicas, Icon: Package, color: 'cyan' },
+            { title: 'Países', value: paisesUnicos, Icon: MapPin, color: 'cyan' }
         ];
     }, [marcas, uniqueCountries]);
 

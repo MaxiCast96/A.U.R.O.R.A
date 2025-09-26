@@ -434,11 +434,11 @@ const OptometristasFormModal = ({
             finalFormData.empleadoId = formData.empleadoId;
         }
         
-        console.log('📦 Datos finales para envío:', finalFormData);
+        console.log('  Datos finales para envío:', finalFormData);
         
         // NAVEGACIÓN CORREGIDA: Usar el sistema de dashboard
         const handlePostSubmission = () => {
-            console.log('✅ Optometrista guardado exitosamente');
+            console.log('  Optometrista guardado exitosamente');
             
             if (isCreationFlow && setActiveSection) {
                 // Si estamos en flujo de creación, navegar a la sección de optometristas
@@ -450,7 +450,7 @@ const OptometristasFormModal = ({
                 
             } else if (onCreationComplete && typeof onCreationComplete === 'function') {
                 // Fallback si onCreationComplete está disponible
-                console.log('✅ Llamando onCreationComplete');
+                console.log('  Llamando onCreationComplete');
                 onCreationComplete();
                 
             } else {

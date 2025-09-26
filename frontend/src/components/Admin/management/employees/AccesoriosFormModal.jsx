@@ -731,7 +731,7 @@ const AccesoriosFormModal = ({
 
   const sections = [
     {
-      title: "📦 Información Básica",
+      title: "  Información Básica",
       fields: [
         {
           name: 'nombre',
@@ -752,7 +752,7 @@ const AccesoriosFormModal = ({
       ]
     },
     {
-      title: "🏷️ Categorización",
+      title: "  Categorización",
       fields: [
         {
           name: 'tipo',
@@ -782,7 +782,7 @@ const AccesoriosFormModal = ({
       ]
     },
     {
-      title: "🎨 Características Físicas",
+      title: "   Características Físicas",
       fields: [
         {
           name: 'material',
@@ -847,7 +847,7 @@ const AccesoriosFormModal = ({
       {/* Sección de precios mejorada */}
       <div className="bg-white border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-          💰 Información de Precios
+            Información de Precios
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <PriceField
@@ -909,7 +909,7 @@ const AccesoriosFormModal = ({
                 {formData?.precioBase && formData?.precioActual && formData.precioBase > formData.precioActual && (
                   <div className="bg-green-100 border border-green-300 rounded p-3">
                     <p className="text-green-800 text-sm font-medium">
-                      💰 Descuento: ${(formData.precioBase - formData.precioActual).toFixed(2)} 
+                        Descuento: ${(formData.precioBase - formData.precioActual).toFixed(2)} 
                       ({(((formData.precioBase - formData.precioActual) / formData.precioBase) * 100).toFixed(1)}% OFF)
                     </p>
                   </div>
@@ -940,14 +940,14 @@ const AccesoriosFormModal = ({
       {/* Resumen final */}
       {formData?.nombre && formData?.precioBase && (formData?.sucursales?.length > 0) && (
         <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-6">
-          <h4 className="font-semibold text-cyan-800 mb-3">📋 Resumen del Producto</h4>
+          <h4 className="font-semibold text-cyan-800 mb-3">  Resumen del Producto</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p><span className="font-medium">Producto:</span> {formData.nombre}</p>
               <p><span className="font-medium">Precio:</span> ${(formData.precioActual || formData.precioBase || 0).toFixed(2)}</p>
               {formData.enPromocion && formData.promocionId && (
                 <p className="text-green-600">
-                  <span className="font-medium">🏷️ En promoción:</span> {
+                  <span className="font-medium">  En promoción:</span> {
                     promociones.find(p => p._id === formData.promocionId)?.nombre || 'Promoción seleccionada'
                   }
                 </p>

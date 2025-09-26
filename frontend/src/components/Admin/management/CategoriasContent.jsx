@@ -604,8 +604,8 @@ const CategoriasContent = () => {
     // Intentar primero con la BASE_URL activa
     const primaryBase = API_CONFIG.BASE_URL;
     const secondaryBase = primaryBase.includes('localhost')
-      ? 'https://a-u-r-o-r-a.onrender.com/api'
-      : 'https://a-u-r-o-r-a.onrender.com/api/api';
+      ? 'https://aurora-production-7e57.up.railway.app/api'
+      : 'https://aurora-production-7e57.up.railway.app/api/api';
 
     try {
       return await tryOnce(primaryBase);
@@ -940,7 +940,7 @@ const CategoriasContent = () => {
   // Estadísticas
   const stats = useMemo(() => [
     { title: 'Total Categorías', value: categorias.length, Icon: Tags, color: 'cyan' },
-    { title: 'Categorías Activas', value: categorias.length, Icon: UserCheck, color: 'green' },
+    { title: 'Categorías Activas', value: categorias.length, Icon: UserCheck, color: 'cyan' },
     { title: 'En Esta Página', value: currentCategorias.length, Icon: Package, color: 'cyan' },
   ], [categorias.length, currentCategorias.length]);
 
