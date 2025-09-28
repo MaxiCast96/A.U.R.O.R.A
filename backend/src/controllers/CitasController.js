@@ -41,7 +41,6 @@ citasController.getCitaById = async (req, res) => {
         }
         res.status(200).json(cita);
     } catch (error) {
-        console.log("Error: " + error);
         res.status(500).json({ message: "Error obteniendo cita: " + error.message });
     }
 };
@@ -50,37 +49,35 @@ citasController.getCitaById = async (req, res) => {
 citasController.createCita = async (req, res) => {
     const {
         clienteId, optometristaId, sucursalId, fecha, hora, estado,
-        motivoCita, tipoLente, graduacion, notasAdicionales
+        motivoCita, tipoLente, notasAdicionales
     } = req.body;
 
-    // Validación de campos requeridos para crear cita
-    if (!clienteId || !optometristaId || !sucursalId || !fecha || !hora || !estado || !motivoCita) {
-
+    // Validación de campos requeridos para crear cita (optometristaId es opcional)
+    if (!clienteId || !sucursalId || !fecha || !hora || !estado || !motivoCita) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
 
     try {
-        console.log('Datos recibidos para nueva cita:', req.body); // Log para debugging
-                // Crea nueva instancia de cita con todos los datos
+        console.log('Datos recibidos para nueva cita:', req.body);
+        // Crea nueva instancia de cita con todos los datos
         const nuevaCita = new Citas({
             clienteId,
-            optometristaId,
+            optometristaId: optometristaId || undefined,
             sucursalId,
             fecha,
             hora,
             estado,
             motivoCita,
             tipoLente,
-            graduacion,
             notasAdicionales
         });
 
-        await nuevaCita.save(); // Guarda en base de datos
+        await nuevaCita.save();
         console.log('Cita guardada:', nuevaCita);
         res.status(201).json({ message: "Cita guardada" });
     } catch (error) {
         console.log("Error: " + error);
-        res.status(500).json({ message: "Error creando cita: " + error.message }); // Log de confirmación
+        res.status(500).json({ message: "Error creando cita: " + error.message });
     }
 };
 
@@ -88,11 +85,11 @@ citasController.createCita = async (req, res) => {
 citasController.updateCita = async (req, res) => {
     const {
         clienteId, optometristaId, sucursalId, fecha, hora, estado,
-        motivoCita, tipoLente, graduacion, notasAdicionales
+        motivoCita, tipoLente, notasAdicionales
     } = req.body;
 
-    // Validación de campos obligatorios para actualización
-    if (!clienteId || !optometristaId || !sucursalId || !fecha || !hora || !estado || !motivoCita) {
+    // Validación de campos obligatorios para actualización (optometristaId es opcional)
+    if (!clienteId || !sucursalId || !fecha || !hora || !estado || !motivoCita) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
 
@@ -102,17 +99,16 @@ citasController.updateCita = async (req, res) => {
             req.params.id,
             {
                 clienteId,
-                optometristaId,
+                optometristaId: optometristaId || undefined,
                 sucursalId,
                 fecha,
                 hora,
                 estado,
                 motivoCita,
                 tipoLente,
-                graduacion,
                 notasAdicionales
             },
-            { new: true } // Retorna documento actualizado
+            { new: true }
         );
         if (!updatedCita) {
             return res.status(404).json({ message: "Cita no encontrada" });

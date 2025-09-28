@@ -19,7 +19,6 @@ const AgendarCitas = () => {
     fecha: "",
     hora: "",
     tipoLente: "",
-    graduacion: "",
     notasAdicionales: "",
     contacto: "telefono",
   });
@@ -109,7 +108,7 @@ const AgendarCitas = () => {
   // Recalcular horarios y grid de horas cuando cambia el optometrista
   useEffect(() => {
     const empty = { Lun: [], Mar: [], Mie: [], Jue: [], Vie: [], Sab: [], Dom: [] };
-    if (!formData.optometristaId) {
+    if (!formData.optometristaId || formData.optometristaId === 'any') {
       setHorarios(empty);
       setHorasGrid(["9:00", "10:00", "11:00", "12:00", "13:00"]);
       return;
@@ -177,7 +176,7 @@ const AgendarCitas = () => {
         }
 
         // Validaciones mínimas requeridas por backend
-        const required = ['sucursalId', 'optometristaId', 'fecha', 'hora', 'motivo', 'tipoLente', 'graduacion'];
+        const required = ['sucursalId', 'optometristaId', 'fecha', 'hora', 'motivo', 'tipoLente'];
         for (const k of required) {
           if (!formData[k]) {
             throw new Error('Completa todos los campos requeridos.');
@@ -186,14 +185,13 @@ const AgendarCitas = () => {
 
         const payload = {
           clienteId,
-          optometristaId: formData.optometristaId,
+          optometristaId: formData.optometristaId === 'any' ? null : formData.optometristaId,
           sucursalId: formData.sucursalId,
           fecha: formData.fecha ? new Date(formData.fecha) : null,
           hora: formData.hora,
           estado: 'pendiente',
           motivoCita: formData.motivo,
           tipoLente: formData.tipoLente,
-          graduacion: formData.graduacion,
           notasAdicionales: formData.notasAdicionales || ''
         };
 
@@ -219,7 +217,6 @@ const AgendarCitas = () => {
           fecha: "",
           hora: "",
           tipoLente: "",
-          graduacion: "",
           notasAdicionales: "",
           contacto: "telefono",
         });
@@ -321,6 +318,7 @@ const AgendarCitas = () => {
                 required
               >
                 <option value="">Seleccionar optometrista</option>
+                <option value="any">Cualquiera</option>
                 {optometristas.map(o => (
                   <option key={o._id} value={o._id}>
                     {getOptometristaNombre(o)}
@@ -339,130 +337,148 @@ const AgendarCitas = () => {
                 required
               />
             </div>
-            <div>
-              <input
-                type="text"
-                name="graduacion"
-                placeholder="Graduación (Ej. -1.25)"
-                value={formData.graduacion}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
-                required
-              />
-            </div>
           </div>
         );
       case 2:
         return (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                <h3 className="text-sm font-medium">Selecciona una hora</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const d = new Date(weekStart);
-                      d.setDate(weekStart.getDate() - 7);
-                      setWeekStart(d);
-                    }}
-                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
-                  >
-                    ◀ Semana anterior
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWeekStart(getMonday(new Date()))}
-                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
-                  >
-                    Esta semana
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const d = new Date(weekStart);
-                      d.setDate(weekStart.getDate() + 7);
-                      setWeekStart(d);
-                    }}
-                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
-                  >
-                    Semana siguiente ▶
-                  </button>
+              {formData.optometristaId === 'any' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Fecha</label>
+                    <input
+                      type="date"
+                      name="fecha"
+                      value={formData.fecha ? String(formData.fecha).slice(0,10) : ''}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Hora</label>
+                    <input
+                      type="time"
+                      name="hora"
+                      value={formData.hora}
+                      onChange={handleInputChange}
+                      className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-              <div className="overflow-x-auto">
-                {(() => {
-                  const weekDays = getWeekDays();
-                  const formatDM = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-                  const hours = horasGrid;
-                  const opt = optometristas.find(o => o._id === formData.optometristaId);
-                  const sucMismatch = opt && formData.sucursalId && !(opt.sucursalesAsignadas || []).some(s => (s._id || s) === formData.sucursalId);
-                  const now = new Date();
-                  return (
-                    <>
-                    {sucMismatch && (
-                      <div className="mb-3 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                        El optometrista seleccionado no atiende en la sucursal elegida. Cambia de sucursal u optometrista.
-                      </div>
-                    )}
-                    <table className="w-full text-xs sm:text-sm md:text-base">
-                      <thead>
-                        <tr>
-                          {dayNames.map((dia, i) => (
-                            <th key={dia} className="py-2">
-                              <div className="flex flex-col items-center">
-                                <span>{dia}</span>
-                                <span className="text-[11px] text-gray-500">{formatDM(weekDays[i])}</span>
-                              </div>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {hours.map((hora) => (
-                          <tr key={hora}>
-                            {dayNames.map((dia, i) => {
-                              const dayDate = weekDays[i];
-                              const iso = new Date(dayDate.getTime());
-                              iso.setHours(0, 0, 0, 0);
-                              const isoStr = iso.toISOString();
-                              const available = horarios[dia]?.includes(hora);
-                              // Calcular si el slot ya pasó
-                              const [hh, mm] = hora.split(":").map((x) => parseInt(x, 10));
-                              const slotDate = new Date(dayDate.getTime());
-                              slotDate.setHours(hh || 0, mm || 0, 0, 0);
-                              const isPast = slotDate.getTime() < now.getTime();
-                              const disabled = !available || isPast;
-                              const selected = !disabled && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
-                              return (
-                                <td key={`${dia}-${hora}`} className="p-2 text-center">
-                                  {!disabled ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleInputChange({ target: { name: "hora", value: hora } });
-                                        handleInputChange({ target: { name: "fecha", value: isoStr } });
-                                      }}
-                                      className={`w-full py-2 rounded-lg transition-all ${selected ? "bg-[#0097c2] text-white" : "bg-gray-50 hover:bg-gray-100"}`}
-                                    >
-                                      {hora}
-                                    </button>
-                                  ) : (
-                                    <span className="text-gray-400">No disponible</span>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    </>
-                  );
-                })()}
-              </div>
-              {Object.values(horarios).every(arr => arr.length === 0) && (
-                <div className="text-center text-gray-500 mt-4">No hay horarios disponibles actualmente.</div>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                    <h3 className="text-sm font-medium">Selecciona una hora</h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(weekStart);
+                          d.setDate(weekStart.getDate() - 7);
+                          setWeekStart(d);
+                        }}
+                        className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                      >
+                        ◀ Semana anterior
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWeekStart(getMonday(new Date()))}
+                        className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                      >
+                        Esta semana
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(weekStart);
+                          d.setDate(weekStart.getDate() + 7);
+                          setWeekStart(d);
+                        }}
+                        className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                      >
+                        Semana siguiente ▶
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    {(() => {
+                      const weekDays = getWeekDays();
+                      const formatDM = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                      const hours = horasGrid;
+                      const opt = optometristas.find(o => o._id === formData.optometristaId);
+                      const sucMismatch = opt && formData.sucursalId && !(opt.sucursalesAsignadas || []).some(s => (s._id || s) === formData.sucursalId);
+                      const now = new Date();
+                      return (
+                        <>
+                        {sucMismatch && (
+                          <div className="mb-3 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                            El optometrista seleccionado no atiende en la sucursal elegida. Cambia de sucursal u optometrista.
+                          </div>
+                        )}
+                        <table className="w-full text-xs sm:text-sm md:text-base">
+                          <thead>
+                            <tr>
+                              {dayNames.map((dia, i) => (
+                                <th key={dia} className="py-2">
+                                  <div className="flex flex-col items-center">
+                                    <span>{dia}</span>
+                                    <span className="text-[11px] text-gray-500">{formatDM(weekDays[i])}</span>
+                                  </div>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {hours.map((hora) => (
+                              <tr key={hora}>
+                                {dayNames.map((dia, i) => {
+                                  const dayDate = weekDays[i];
+                                  const iso = new Date(dayDate.getTime());
+                                  iso.setHours(0, 0, 0, 0);
+                                  const isoStr = iso.toISOString();
+                                  const available = horarios[dia]?.includes(hora);
+                                  // Calcular si el slot ya pasó
+                                  const [hh, mm] = hora.split(":").map((x) => parseInt(x, 10));
+                                  const slotDate = new Date(dayDate.getTime());
+                                  slotDate.setHours(hh || 0, mm || 0, 0, 0);
+                                  const isPast = slotDate.getTime() < now.getTime();
+                                  const disabled = !available || isPast;
+                                  const selected = !disabled && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
+                                  return (
+                                    <td key={`${dia}-${hora}`} className="p-2 text-center">
+                                      {!disabled ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleInputChange({ target: { name: "hora", value: hora } });
+                                            handleInputChange({ target: { name: "fecha", value: isoStr } });
+                                          }}
+                                          className={`w-full py-2 rounded-lg transition-all ${selected ? "bg-[#0097c2] text-white" : "bg-gray-50 hover:bg-gray-100"}`}
+                                        >
+                                          {hora}
+                                        </button>
+                                      ) : (
+                                        <span className="text-gray-400">No disponible</span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  {Object.values(horarios).every(arr => arr.length === 0) && (
+                    <div className="text-center text-gray-500 mt-4">No hay horarios disponibles actualmente.</div>
+                  )}
+                </>
               )}
             </div>
           </div>

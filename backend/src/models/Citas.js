@@ -9,8 +9,8 @@ const citaSchema = new mongoose.Schema({
     },
     optometristaId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Optometrista", // Referencia al optometrista asignado
-        required: true,
+        ref: "Optometrista", // Referencia al optometrista asignado (opcional cuando el cliente elige "Cualquiera")
+        required: false,
     },
     sucursalId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -37,10 +37,6 @@ const citaSchema = new mongoose.Schema({
     tipoLente: {
         type: String,
         required: true, // Tipo de lente que necesita el cliente
-    },
-    graduacion: {
-        type: String,
-        required: true, // Graduación actual o aproximada
     },
     notasAdicionales: {
         type: String,
