@@ -169,11 +169,8 @@ const AgendarCitas = () => {
       setError(null);
       setSuccess(false);
       try {
-        // Requiere inicio de sesión para asociar la cita al cliente
+        // Asociar cliente si está logueado; permitir citas anónimas
         const clienteId = user?._id || user?.id;
-        if (!clienteId) {
-          throw new Error('Inicia sesión para agendar tu cita.');
-        }
 
         // Validaciones mínimas requeridas por backend
         const required = ['sucursalId', 'optometristaId', 'fecha', 'hora', 'motivo', 'tipoLente'];
@@ -184,7 +181,7 @@ const AgendarCitas = () => {
         }
 
         const payload = {
-          clienteId,
+          clienteId: clienteId || undefined,
           optometristaId: formData.optometristaId === 'any' ? null : formData.optometristaId,
           sucursalId: formData.sucursalId,
           fecha: formData.fecha ? new Date(formData.fecha) : null,
@@ -344,28 +341,60 @@ const AgendarCitas = () => {
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-4">
               {formData.optometristaId === 'any' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Fecha</label>
-                    <input
-                      type="date"
-                      name="fecha"
-                      value={formData.fecha ? String(formData.fecha).slice(0,10) : ''}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
-                      required
-                    />
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha</label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="fecha"
+                          value={formData.fecha ? String(formData.fecha).slice(0,10) : ''}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all shadow-sm"
+                          required
+                        />
+                        <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Hora</label>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          name="hora"
+                          value={formData.hora}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all shadow-sm"
+                          required
+                        />
+                        <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
                   </div>
+
                   <div>
-                    <label className="block text-sm font-medium mb-1">Hora</label>
-                    <input
-                      type="time"
-                      name="hora"
-                      value={formData.hora}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
-                      required
-                    />
+                    <p className="text-xs text-gray-500 mb-2">Selecciona rápidamente una hora recomendada</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['09:00','09:30','10:00','10:30','11:00','14:00','14:30','15:00','15:30','16:00'].map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => handleInputChange({ target: { name: 'hora', value: t } })}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-all ${formData.hora === t ? 'bg-[#0097c2] text-white border-[#0097c2]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-dashed border-gray-200 p-3 bg-gray-50 text-xs text-gray-600">
+                    Consejo: Si necesitas un optometrista específico, vuelve y selecciona su nombre para ver su disponibilidad exacta por día.
                   </div>
                 </div>
               ) : (

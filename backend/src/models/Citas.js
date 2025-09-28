@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 const citaSchema = new mongoose.Schema({
     clienteId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Clientes", // Referencia al cliente que agenda la cita
-        required: true,
+        ref: "Clientes", // Referencia al cliente que agenda la cita (opcional para citas públicas)
+        required: false,
     },
     optometristaId: {
         type: mongoose.Schema.Types.ObjectId,
