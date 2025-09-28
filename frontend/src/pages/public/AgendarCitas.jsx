@@ -189,7 +189,12 @@ const AgendarCitas = () => {
           estado: 'pendiente',
           motivoCita: formData.motivo,
           tipoLente: formData.tipoLente,
-          notasAdicionales: formData.notasAdicionales || ''
+          notasAdicionales: formData.notasAdicionales || '',
+          // Datos de contacto anónimo
+          clienteNombre: formData.nombres || undefined,
+          clienteApellidos: formData.apellidos || undefined,
+          telefono: formData.telefono || undefined,
+          email: formData.email || undefined
         };
 
         const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.CITAS), {

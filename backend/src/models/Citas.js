@@ -7,6 +7,27 @@ const citaSchema = new mongoose.Schema({
         ref: "Clientes", // Referencia al cliente que agenda la cita (opcional para citas públicas)
         required: false,
     },
+    // Datos de contacto opcionales para citas sin cliente registrado
+    clienteNombre: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    clienteApellidos: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    telefono: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    email: {
+        type: String,
+        required: false,
+        trim: true,
+    },
     optometristaId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Optometrista", // Referencia al optometrista asignado (opcional cuando el cliente elige "Cualquiera")
@@ -43,5 +64,12 @@ const citaSchema = new mongoose.Schema({
         default: "", // Notas extras sobre la cita
     }
 }, { timestamps: true }); // Agrega createdAt y updatedAt
+
+// Evitar doble asignación: un optometrista no puede tener dos citas en misma sucursal, fecha (día) y hora
+// Nota: usamos índice parcial para ignorar citas canceladas
+citaSchema.index(
+    { optometristaId: 1, sucursalId: 1, fecha: 1, hora: 1 },
+    { unique: true, partialFilterExpression: { estado: { $ne: 'cancelada' } } }
+);
 
 export default mongoose.model("Citas", citaSchema);

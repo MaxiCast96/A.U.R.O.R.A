@@ -40,6 +40,21 @@ const getDayAliases = (dia) => {
     return map[d] || [dia];
 };
 
+// Normaliza hora a formato HH:MM y genera variantes equivalentes (para comparar registros antiguos)
+const normalizeHora = (h) => {
+    if (!h) return '';
+    const [hh, mm] = h.split(':');
+    const HH = String(parseInt(hh || '0', 10)).padStart(2, '0');
+    const MM = String(parseInt(mm || '0', 10)).padStart(2, '0');
+    return `${HH}:${MM}`;
+};
+const horaVariants = (h) => {
+    const norm = normalizeHora(h);
+    // Variante sin cero a la izquierda en hora (para datos antiguos '9:00')
+    const alt = norm.startsWith('0') ? norm.slice(1) : norm;
+    return [norm, alt];
+};
+
 // SELECT - Obtiene todas las citas con relaciones pobladas
 citasController.getCitas = async (req, res) => {
     try {
@@ -84,7 +99,8 @@ citasController.getCitaById = async (req, res) => {
 citasController.createCita = async (req, res) => {
     const {
         clienteId, optometristaId, sucursalId, fecha, hora, estado,
-        motivoCita, tipoLente, notasAdicionales
+        motivoCita, tipoLente, notasAdicionales,
+        clienteNombre, clienteApellidos, telefono, email
     } = req.body;
 
     // Validación de campos requeridos para crear cita (clienteId y optometristaId son opcionales)
@@ -99,7 +115,11 @@ citasController.createCita = async (req, res) => {
         await session.withTransaction(async () => {
             let assignedOptometristaId = optometristaId || undefined;
             const dayStart = new Date(new Date(fecha).setHours(0,0,0,0));
+            const dayEnd = new Date(dayStart.getTime());
+            dayEnd.setDate(dayEnd.getDate() + 1);
             const sucIdObj = new mongoose.Types.ObjectId(String(sucursalId));
+            const horaNorm = normalizeHora(hora);
+            const horaList = horaVariants(hora);
 
             // Autoasignación dentro de la transacción
             if (!assignedOptometristaId) {
@@ -113,14 +133,14 @@ citasController.createCita = async (req, res) => {
                 }).session(session);
 
                 const candidatosPorHora = candidatos.filter(opt =>
-                    (opt.disponibilidad || []).some(d => normalize(d.dia) === normalize(diaSemana) && horaEnRango(hora, d.horaInicio, d.horaFin))
+                    (opt.disponibilidad || []).some(d => normalize(d.dia) === normalize(diaSemana) && horaEnRango(horaNorm, d.horaInicio, d.horaFin))
                 );
 
                 const ocupaciones = await Citas.find({
                     optometristaId: { $in: candidatosPorHora.map(o => o._id) },
                     sucursalId: sucIdObj,
-                    fecha: dayStart,
-                    hora: hora,
+                    fecha: { $gte: dayStart, $lt: dayEnd },
+                    hora: { $in: horaList },
                     estado: { $ne: 'cancelada' }
                 }).select('optometristaId').session(session);
 
@@ -133,7 +153,7 @@ citasController.createCita = async (req, res) => {
 
                 const libreIds = libres.map(o => o._id);
                 const conteos = await Citas.aggregate([
-                    { $match: { optometristaId: { $in: libreIds }, sucursalId: sucIdObj, fecha: dayStart, estado: { $ne: 'cancelada' } } },
+                    { $match: { optometristaId: { $in: libreIds }, sucursalId: sucIdObj, fecha: { $gte: dayStart, $lt: dayEnd }, estado: { $ne: 'cancelada' } } },
                     { $group: { _id: '$optometristaId', total: { $sum: 1 } } }
                 ]).session(session);
 
@@ -151,8 +171,8 @@ citasController.createCita = async (req, res) => {
             const choque = await Citas.findOne({
                 optometristaId: assignedOptometristaId,
                 sucursalId: sucIdObj,
-                fecha: dayStart,
-                hora: hora,
+                fecha: { $gte: dayStart, $lt: dayEnd },
+                hora: { $in: horaList },
                 estado: { $ne: 'cancelada' }
             }).session(session);
             if (choque) {
@@ -164,11 +184,16 @@ citasController.createCita = async (req, res) => {
                 optometristaId: assignedOptometristaId,
                 sucursalId,
                 fecha: dayStart, // normalizar a inicio de día para consistencia con consultas
-                hora,
+                hora: horaNorm,
                 estado,
                 motivoCita,
                 tipoLente,
-                notasAdicionales
+                notasAdicionales,
+                // Datos de contacto anónimo opcionales
+                clienteNombre: clienteNombre || undefined,
+                clienteApellidos: clienteApellidos || undefined,
+                telefono: telefono || undefined,
+                email: email || undefined
             });
 
             await nuevaCita.save({ session });
