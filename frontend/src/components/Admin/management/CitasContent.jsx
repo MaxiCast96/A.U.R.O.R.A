@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { 
   Search, Plus, Trash2, Eye, Edit, Calendar, User, Clock, CheckCircle, XCircle, 
@@ -36,8 +36,8 @@ const INITIAL_FILTERS = {
 };
 
 const SORT_OPTIONS = [
-  { value: 'fecha-desc', label: 'Más Recientes Primero', icon: Calendar },
-  { value: 'fecha-asc', label: 'Más Antiguos Primero', icon: Calendar },
+  { value: 'fecha-desc', label: 'MÃƒÂ¡s Recientes Primero', icon: Calendar },
+  { value: 'fecha-asc', label: 'MÃƒÂ¡s Antiguos Primero', icon: Calendar },
   { value: 'cliente-asc', label: 'Cliente A-Z', icon: User },
   { value: 'cliente-desc', label: 'Cliente Z-A', icon: User },
   { value: 'hora-asc', label: 'Hora: Temprano a Tarde', icon: Clock },
@@ -49,7 +49,7 @@ const SORT_OPTIONS = [
 // --- COMPONENTE SKELETON LOADER MEMOIZADO ---
 const SkeletonLoader = React.memo(() => (
   <div className="animate-pulse">
-    {/* Skeleton para las estadísticas */}
+    {/* Skeleton para las estadÃƒÂ­sticas */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       {Array.from({ length: 3 }, (_, i) => (
         <div key={i} className="bg-white rounded-xl shadow-lg p-6">
@@ -225,7 +225,7 @@ const CitasContent = () => {
     return `Optometrista ${shortId}`;
   }, [optometristas, getOptometristaNombre]);
 
-  // --- FUNCIÓN PARA OBTENER DATOS ---
+  // --- FUNCIÃƒâ€œN PARA OBTENER DATOS ---
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -265,7 +265,7 @@ const CitasContent = () => {
     setTimeout(() => setNotification(null), 3500);
   }, []);
 
-  // --- FUNCIÓN PARA MANEJAR ORDENAMIENTO ---
+  // --- FUNCIÃƒâ€œN PARA MANEJAR ORDENAMIENTO ---
   const handleSortChange = useCallback((sortValue) => {
     const [field, order] = sortValue.split('-');
     setSortBy(field);
@@ -273,7 +273,7 @@ const CitasContent = () => {
     setShowSortDropdown(false);
   }, []);
 
-  // --- FUNCIÓN PARA ORDENAR DATOS ---
+  // --- FUNCIÃƒâ€œN PARA ORDENAR DATOS ---
   const sortData = useCallback((data) => {
     return [...data].sort((a, b) => {
       let valueA, valueB;
@@ -307,7 +307,7 @@ const CitasContent = () => {
     });
   }, [sortBy, sortOrder]);
 
-  // --- FUNCIÓN PARA APLICAR FILTROS AVANZADOS ---
+  // --- FUNCIÃƒâ€œN PARA APLICAR FILTROS AVANZADOS ---
   const applyAdvancedFilters = useCallback((cita) => {
     // Filtro por estado
     if (filters.estado !== 'todos' && cita.estado?.toLowerCase() !== filters.estado) {
@@ -360,10 +360,10 @@ const CitasContent = () => {
     return true;
   }, [filters]);
 
-  // --- LÓGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÓN ---
+  // --- LÃƒâ€œGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÃƒâ€œN ---
   const filteredAndSortedCitas = useMemo(() => {
     const filtered = citas.filter(cita => {
-      // Búsqueda por texto
+      // BÃƒÂºsqueda por texto
       const search = searchTerm.toLowerCase();
       const clienteStr = cita.clienteId ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.toLowerCase() : '';
       const servicioStr = (cita.motivoCita || '').toLowerCase();
@@ -371,7 +371,7 @@ const CitasContent = () => {
         clienteStr.includes(search) ||
         servicioStr.includes(search);
       
-      // Filtro por fecha específica (del selector de fecha)
+      // Filtro por fecha especÃƒÂ­fica (del selector de fecha)
       let matchesDate = true;
       if (selectedDate && cita.fecha) {
         const citaDate = new Date(cita.fecha);
@@ -393,7 +393,7 @@ const CitasContent = () => {
     return sortData(filtered);
   }, [citas, searchTerm, selectedDate, applyAdvancedFilters, sortData]);
 
-  // Paginación
+  // PaginaciÃƒÂ³n
   const totalPages = Math.ceil(filteredAndSortedCitas.length / pageSize);
   const currentCitas = filteredAndSortedCitas.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
 
@@ -423,7 +423,7 @@ const CitasContent = () => {
            filters.horaHasta;
   }, [searchTerm, selectedDate, filters]);
 
-  // --- OBTENER LISTAS ÚNICAS PARA FILTROS ---
+  // --- OBTENER LISTAS ÃƒÅ¡NICAS PARA FILTROS ---
   const uniqueSucursales = useMemo(() => {
     return sucursales.filter((sucursal, index, arr) => 
       arr.findIndex(s => s._id === sucursal._id) === index
@@ -523,7 +523,7 @@ const CitasContent = () => {
     setShowDetailModal(true);
   };
 
-  // Validación simple
+  // ValidaciÃƒÂ³n simple
   const validate = () => {
     const newErrors = {};
     
@@ -532,7 +532,7 @@ const CitasContent = () => {
     if (!formData.sucursalId) newErrors.sucursalId = 'La sucursal es obligatoria';
     if (!formData.fechaHora) newErrors.fechaHora = 'La fecha y hora son obligatorias';
     if (!formData.tipoConsulta) newErrors.tipoConsulta = 'El tipo de consulta es obligatorio';
-    if (!formData.duracionEstimada || formData.duracionEstimada < 15) newErrors.duracionEstimada = 'La duración debe ser mínimo 15 minutos';
+    if (!formData.duracionEstimada || formData.duracionEstimada < 15) newErrors.duracionEstimada = 'La duraciÃƒÂ³n debe ser mÃƒÂ­nimo 15 minutos';
     if (!formData.estado) newErrors.estado = 'El estado es obligatorio';
     
     setErrors(newErrors);
@@ -591,10 +591,8 @@ const CitasContent = () => {
     setLoading(true);
     try {
       await axios.delete(`${API_URL}/citas/${cita._id}`);
-      const clienteNombre = cita.clienteId && (cita.clienteId.nombre || cita.clienteId.apellido)
-        ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.trim()
-        : 'cliente';
-      showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete');
+      const clienteNombre = cita.clienteId ? `${cita.clienteId.nombre || '} ${cita.clienteId.apellido || '}`.trim() : `${cita.clienteNombre || '} ${cita.clienteApellidos || '}`.trim();
+showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete');
       await fetchData();
       setShowDetailModal(false);
       setConfirmDelete({ open: false, cita: null });
@@ -606,7 +604,7 @@ const CitasContent = () => {
     }
   };
 
-  // Funciones de navegación
+  // Funciones de navegaciÃƒÂ³n
   const goToFirstPage = () => setCurrentPage(0);
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(0, prev - 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
@@ -642,7 +640,7 @@ const CitasContent = () => {
     }
   }, [showDetailModal, detailCita, showNotification]);
 
-  // Estadísticas
+  // EstadÃƒÂ­sticas
   const totalCitasHoy = citas.filter(c => {
     const today = new Date().toISOString().split('T')[0];
     const citaDate = c.fecha ? c.fecha.slice(0, 10) : '';
@@ -712,7 +710,7 @@ const CitasContent = () => {
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="bg-cyan-500 text-white p-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">Gestión de Citas</h2>
+            <h2 className="text-2xl font-bold">GestiÃƒÂ³n de Citas</h2>
             <button
               onClick={handleOpenAddModal}
               className="bg-white text-cyan-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2"
@@ -723,10 +721,10 @@ const CitasContent = () => {
           </div>
         </div>
         
-        {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+        {/* BARRA DE BÃƒÅ¡SQUEDA Y CONTROLES */}
         <div className="p-6 bg-gray-50 border-b">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-            {/* Barra de búsqueda */}
+            {/* Barra de bÃƒÂºsqueda */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
@@ -741,13 +739,13 @@ const CitasContent = () => {
 
             {/* Controles de fecha, filtro y ordenamiento */}
             <div className="flex items-center space-x-3">
-              {/* Selector de fecha con navegación */}
+              {/* Selector de fecha con navegaciÃƒÂ³n */}
               <div className="relative flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => changeDay(-1)}
                   className="p-2 rounded-full hover:bg-cyan-100 transition-colors"
-                  title="Día anterior"
+                  title="DÃƒÂ­a anterior"
                 >
                   <ChevronLeft className="w-5 h-5 text-cyan-500" />
                 </button>
@@ -764,7 +762,7 @@ const CitasContent = () => {
                   type="button"
                   onClick={() => changeDay(1)}
                   className="p-2 rounded-full hover:bg-cyan-100 transition-colors"
-                  title="Día siguiente"
+                  title="DÃƒÂ­a siguiente"
                 >
                   <ChevronRight className="w-5 h-5 text-cyan-500" />
                 </button>
@@ -813,7 +811,7 @@ const CitasContent = () => {
                 )}
               </div>
 
-              {/* Botón de filtros */}
+              {/* BotÃƒÂ³n de filtros */}
               <button
                 onClick={() => {
                   setShowFiltersPanel(!showFiltersPanel);
@@ -848,7 +846,7 @@ const CitasContent = () => {
             </div>
           </div>
 
-          {/* Información de resultados */}
+          {/* InformaciÃƒÂ³n de resultados */}
           <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
             <span>
               {filteredAndSortedCitas.length} cita{filteredAndSortedCitas.length !== 1 ? 's' : ''} 
@@ -990,7 +988,7 @@ const CitasContent = () => {
                 </div>
               </div>
 
-              {/* Botones de acción del panel de filtros */}
+              {/* Botones de acciÃƒÂ³n del panel de filtros */}
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   onClick={clearAllFilters}
@@ -1025,8 +1023,8 @@ const CitasContent = () => {
             <tbody className="divide-y divide-gray-200">
               {currentCitas.map((cita) => {
                 const estadoInfo = getEstadoInfo(cita.estado);
-                const clienteNombre = cita.clienteId ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.trim() : '';
-                const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
+                const clienteNombre = cita.clienteId ? `${cita.clienteId.nombre || '} ${cita.clienteId.apellido || '}`.trim() : `${cita.clienteNombre || '} ${cita.clienteApellidos || '}`.trim();
+const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
                 const optometristaNombre = resolveOptometristaNombre(cita.optometristaId);
                 const servicio = cita.motivoCita || '';
                 
@@ -1035,7 +1033,7 @@ const CitasContent = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <User className="w-5 h-5 text-gray-400" />
-                        <span className="font-medium text-gray-900">{clienteNombre || 'An�nimo'}</span>
+                        <span className="font-medium text-gray-900">{clienteNombre || 'AnÃ³nimo'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{servicio || 'N/A'}</td>
@@ -1122,19 +1120,19 @@ const CitasContent = () => {
                 </option>
               ))}
             </select>
-            <span className="text-gray-700">por página</span>
+            <span className="text-gray-700">por pÃƒÂ¡gina</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={goToFirstPage} disabled={currentPage === 0} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{"<<"}</button>
             <button onClick={goToPreviousPage} disabled={currentPage === 0} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{"<"}</button>
-            <span className="text-gray-700 font-medium">Página {currentPage + 1} de {totalPages}</span>
+            <span className="text-gray-700 font-medium">PÃƒÂ¡gina {currentPage + 1} de {totalPages}</span>
             <button onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{">"}</button>
             <button onClick={goToLastPage} disabled={currentPage === totalPages - 1} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{">>"}</button>
           </div>
         </div>
       </div>
 
-      {/* MODAL DE ALTA/EDICIÓN */}
+      {/* MODAL DE ALTA/EDICIÃƒâ€œN */}
       <CitasFormModal
         isOpen={showAddModal || showEditModal}
         onClose={handleCloseModal}
@@ -1165,7 +1163,7 @@ const CitasContent = () => {
           { label: 'Estado', value: detailCita && detailCita.estado ? detailCita.estado : 'N/A' },
           { label: 'Motivo de la cita', value: detailCita && detailCita.motivoCita ? detailCita.motivoCita : 'N/A' },
           { label: 'Tipo de lente', value: detailCita && detailCita.tipoLente ? detailCita.tipoLente : 'N/A' },
-          { label: 'Graduación', value: detailCita && detailCita.graduacion ? detailCita.graduacion : 'N/A' },
+          { label: 'GraduaciÃƒÂ³n', value: detailCita && detailCita.graduacion ? detailCita.graduacion : 'N/A' },
           { label: 'Notas adicionales', value: detailCita && detailCita.notasAdicionales ? detailCita.notasAdicionales : 'N/A' },
         ]}
         actions={[
@@ -1184,13 +1182,13 @@ const CitasContent = () => {
         ]}
       />
       
-      {/* MODAL DE CONFIRMACIÓN DE ELIMINAR CITA */}
+      {/* MODAL DE CONFIRMACIÃƒâ€œN DE ELIMINAR CITA */}
       <ConfirmationModal
         isOpen={confirmDelete.open}
         onClose={() => setConfirmDelete({ open: false, cita: null })}
         onConfirm={confirmDeleteCita}
-        title="¿Estás seguro de eliminar la cita?"
-        message="Esta acción eliminará la cita de forma permanente."
+        title="Ã‚Â¿EstÃƒÂ¡s seguro de eliminar la cita?"
+        message="Esta acciÃƒÂ³n eliminarÃƒÂ¡ la cita de forma permanente."
       />
 
       {/* OVERLAY PARA DROPDOWN */}
@@ -1206,3 +1204,6 @@ const CitasContent = () => {
 };
 
 export default CitasContent;
+
+
+

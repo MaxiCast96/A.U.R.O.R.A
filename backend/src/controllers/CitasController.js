@@ -67,7 +67,19 @@ citasController.getCitas = async (req, res) => {
             }) // Datos del optometrista + empleado
             .populate("sucursalId"); // Datos de la sucursal
 
-        res.status(200).json(citas);
+        // Adaptar respuesta para citas anónimas: inyectar objeto clienteId sintético con nombre/apellido
+        const adapted = citas.map((c) => {
+            const obj = c.toObject({ virtuals: true });
+            if (!obj.clienteId) {
+                obj.clienteId = {
+                    nombre: obj.clienteNombre || '',
+                    apellido: obj.clienteApellidos || ''
+                };
+            }
+            return obj;
+        });
+
+        res.status(200).json(adapted);
     } catch (error) {
         console.log("Error: " + error);
         res.status(500).json({ message: "Error obteniendo citas: " + error.message });
@@ -89,7 +101,14 @@ citasController.getCitaById = async (req, res) => {
         if (!cita) {
             return res.status(404).json({ message: "Cita no encontrada" });
         }
-        res.status(200).json(cita);
+        const obj = cita.toObject({ virtuals: true });
+        if (!obj.clienteId) {
+            obj.clienteId = {
+                nombre: obj.clienteNombre || '',
+                apellido: obj.clienteApellidos || ''
+            };
+        }
+        res.status(200).json(obj);
     } catch (error) {
         res.status(500).json({ message: "Error obteniendo cita: " + error.message });
     }
