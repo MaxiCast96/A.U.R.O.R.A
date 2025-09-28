@@ -22,6 +22,24 @@ const horaEnRango = (hora, inicio, fin) => {
     return h >= i && h < f;
 };
 
+// Normaliza texto: minúsculas y sin acentos
+const normalize = (s) => (s || "").toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Aliases para día de la semana (para soportar con/sin acento y mayúsculas)
+const getDayAliases = (dia) => {
+    const d = normalize(dia);
+    const map = {
+        domingo: ["domingo", "Domingo"],
+        lunes: ["lunes", "Lunes"],
+        martes: ["martes", "Martes"],
+        miercoles: ["miercoles", "miércoles", "Miercoles", "Miércoles"],
+        jueves: ["jueves", "Jueves"],
+        viernes: ["viernes", "Viernes"],
+        sabado: ["sabado", "sábado", "Sabado", "Sábado"],
+    };
+    return map[d] || [dia];
+};
+
 // SELECT - Obtiene todas las citas con relaciones pobladas
 citasController.getCitas = async (req, res) => {
     try {
@@ -81,24 +99,26 @@ citasController.createCita = async (req, res) => {
         await session.withTransaction(async () => {
             let assignedOptometristaId = optometristaId || undefined;
             const dayStart = new Date(new Date(fecha).setHours(0,0,0,0));
+            const sucIdObj = new mongoose.Types.ObjectId(String(sucursalId));
 
             // Autoasignación dentro de la transacción
             if (!assignedOptometristaId) {
                 const diaSemana = getDiaSemanaES(fecha);
+                const diaAliases = getDayAliases(diaSemana);
 
                 const candidatos = await Optometrista.find({
                     disponible: true,
-                    sucursalesAsignadas: { $in: [sucursalId] },
-                    disponibilidad: { $elemMatch: { dia: diaSemana } }
+                    sucursalesAsignadas: { $in: [sucIdObj] },
+                    disponibilidad: { $elemMatch: { dia: { $in: diaAliases } } }
                 }).session(session);
 
                 const candidatosPorHora = candidatos.filter(opt =>
-                    (opt.disponibilidad || []).some(d => d.dia === diaSemana && horaEnRango(hora, d.horaInicio, d.horaFin))
+                    (opt.disponibilidad || []).some(d => normalize(d.dia) === normalize(diaSemana) && horaEnRango(hora, d.horaInicio, d.horaFin))
                 );
 
                 const ocupaciones = await Citas.find({
                     optometristaId: { $in: candidatosPorHora.map(o => o._id) },
-                    sucursalId,
+                    sucursalId: sucIdObj,
                     fecha: dayStart,
                     hora: hora,
                     estado: { $ne: 'cancelada' }
@@ -113,7 +133,7 @@ citasController.createCita = async (req, res) => {
 
                 const libreIds = libres.map(o => o._id);
                 const conteos = await Citas.aggregate([
-                    { $match: { optometristaId: { $in: libreIds }, sucursalId: new mongoose.Types.ObjectId(String(sucursalId)), fecha: dayStart, estado: { $ne: 'cancelada' } } },
+                    { $match: { optometristaId: { $in: libreIds }, sucursalId: sucIdObj, fecha: dayStart, estado: { $ne: 'cancelada' } } },
                     { $group: { _id: '$optometristaId', total: { $sum: 1 } } }
                 ]).session(session);
 
@@ -130,7 +150,7 @@ citasController.createCita = async (req, res) => {
             // Re-chequeo final de ocupación para evitar carreras
             const choque = await Citas.findOne({
                 optometristaId: assignedOptometristaId,
-                sucursalId,
+                sucursalId: sucIdObj,
                 fecha: dayStart,
                 hora: hora,
                 estado: { $ne: 'cancelada' }
@@ -143,7 +163,7 @@ citasController.createCita = async (req, res) => {
                 clienteId: clienteId || undefined,
                 optometristaId: assignedOptometristaId,
                 sucursalId,
-                fecha,
+                fecha: dayStart, // normalizar a inicio de día para consistencia con consultas
                 hora,
                 estado,
                 motivoCita,
