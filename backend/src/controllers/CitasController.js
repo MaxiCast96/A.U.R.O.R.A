@@ -1,9 +1,26 @@
+import mongoose from "mongoose";
 import Citas from "../models/Citas.js";
-import "../models/Optometrista.js";
+import Optometrista from "../models/Optometrista.js";
 import "../models/Sucursales.js";
 import "../models/Clientes.js";
 
 const citasController = {};
+
+// Utilidad: obtener nombre de día en español a partir de Date
+const getDiaSemanaES = (date) => {
+    const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return dias[new Date(date).getDay()];
+};
+
+// Utilidad: verifica si una hora HH:MM está dentro del rango [inicio, fin)
+const horaEnRango = (hora, inicio, fin) => {
+    if (!hora || !inicio || !fin) return false;
+    const pad = (s) => (s.length === 5 ? s : s.padStart(5, '0'));
+    const h = pad(hora);
+    const i = pad(inicio);
+    const f = pad(fin);
+    return h >= i && h < f;
+};
 
 // SELECT - Obtiene todas las citas con relaciones pobladas
 citasController.getCitas = async (req, res) => {
@@ -57,27 +74,95 @@ citasController.createCita = async (req, res) => {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
 
+    let session;
     try {
         console.log('Datos recibidos para nueva cita:', req.body);
-        // Crea nueva instancia de cita con todos los datos
-        const nuevaCita = new Citas({
-            clienteId: clienteId || undefined,
-            optometristaId: optometristaId || undefined,
-            sucursalId,
-            fecha,
-            hora,
-            estado,
-            motivoCita,
-            tipoLente,
-            notasAdicionales
-        });
+        session = await mongoose.startSession();
+        await session.withTransaction(async () => {
+            let assignedOptometristaId = optometristaId || undefined;
+            const dayStart = new Date(new Date(fecha).setHours(0,0,0,0));
 
-        await nuevaCita.save();
-        console.log('Cita guardada:', nuevaCita);
-        res.status(201).json({ message: "Cita guardada" });
+            // Autoasignación dentro de la transacción
+            if (!assignedOptometristaId) {
+                const diaSemana = getDiaSemanaES(fecha);
+
+                const candidatos = await Optometrista.find({
+                    disponible: true,
+                    sucursalesAsignadas: { $in: [sucursalId] },
+                    disponibilidad: { $elemMatch: { dia: diaSemana } }
+                }).session(session);
+
+                const candidatosPorHora = candidatos.filter(opt =>
+                    (opt.disponibilidad || []).some(d => d.dia === diaSemana && horaEnRango(hora, d.horaInicio, d.horaFin))
+                );
+
+                const ocupaciones = await Citas.find({
+                    optometristaId: { $in: candidatosPorHora.map(o => o._id) },
+                    sucursalId,
+                    fecha: dayStart,
+                    hora: hora,
+                    estado: { $ne: 'cancelada' }
+                }).select('optometristaId').session(session);
+
+                const ocupados = new Set(ocupaciones.map(c => String(c.optometristaId)));
+                const libres = candidatosPorHora.filter(o => !ocupados.has(String(o._id)));
+
+                if (libres.length === 0) {
+                    throw new Error('NO_AVAILABLE_OPTOMETRIST');
+                }
+
+                const libreIds = libres.map(o => o._id);
+                const conteos = await Citas.aggregate([
+                    { $match: { optometristaId: { $in: libreIds }, sucursalId: new mongoose.Types.ObjectId(String(sucursalId)), fecha: dayStart, estado: { $ne: 'cancelada' } } },
+                    { $group: { _id: '$optometristaId', total: { $sum: 1 } } }
+                ]).session(session);
+
+                const countMap = new Map(conteos.map(c => [String(c._id), c.total]));
+                let best = libres[0];
+                let bestCount = countMap.get(String(best._id)) || 0;
+                for (const o of libres.slice(1)) {
+                    const c = countMap.get(String(o._id)) || 0;
+                    if (c < bestCount) { best = o; bestCount = c; }
+                }
+                assignedOptometristaId = best._id;
+            }
+
+            // Re-chequeo final de ocupación para evitar carreras
+            const choque = await Citas.findOne({
+                optometristaId: assignedOptometristaId,
+                sucursalId,
+                fecha: dayStart,
+                hora: hora,
+                estado: { $ne: 'cancelada' }
+            }).session(session);
+            if (choque) {
+                throw new Error('JUST_BOOKED');
+            }
+
+            const nuevaCita = new Citas({
+                clienteId: clienteId || undefined,
+                optometristaId: assignedOptometristaId,
+                sucursalId,
+                fecha,
+                hora,
+                estado,
+                motivoCita,
+                tipoLente,
+                notasAdicionales
+            });
+
+            await nuevaCita.save({ session });
+            console.log('Cita guardada:', nuevaCita);
+            res.status(201).json({ message: "Cita guardada" });
+        });
     } catch (error) {
+        if (error && (error.message === 'NO_AVAILABLE_OPTOMETRIST' || error.message === 'JUST_BOOKED')) {
+            return res.status(409).json({ message: "No hay optometristas disponibles para esa fecha y hora en la sucursal seleccionada" });
+        }
         console.log("Error: " + error);
         res.status(500).json({ message: "Error creando cita: " + error.message });
+    } finally {
+        if (session) session.endSession();
     }
 };
 
