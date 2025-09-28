@@ -719,19 +719,19 @@ const AccesoriosContent = () => {
       title: "En Promoción", 
       value: accesoriosEnPromocion, 
       Icon: Tags,
-      color: "green" 
+      color: "cyan" 
     },
     { 
       title: "Stock Total", 
       value: stockTotal, 
       Icon: ShoppingBag,
-      color: "purple" 
+      color: "cyan" 
     },
     { 
       title: "Valor Inventario", 
       value: valorInventario.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), 
       Icon: DollarSign,
-      color: "yellow" 
+      color: "cyan" 
     }
   ];
 

@@ -113,7 +113,7 @@ npm run build
 | `/productos/accesorios` | Solo accesorios | Producto.jsx |
 | `/productos/personalizables` | Solo productos personalizables | Producto.jsx |
 
-## 🎨 Personalización
+##    Personalización
 
 ### Colores del Tema
 ```css

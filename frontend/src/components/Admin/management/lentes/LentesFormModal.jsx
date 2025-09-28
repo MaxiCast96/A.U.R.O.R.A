@@ -785,7 +785,7 @@ const LentesFormModal = ({
 
   const sections = [
     {
-      title: "👓 Información Básica",
+      title: " Información Básica",
       fields: [
         {
           name: 'nombre',
@@ -849,7 +849,7 @@ const LentesFormModal = ({
       ]
     },
     {
-      title: "🎨 Características Físicas",
+      title: " Características Físicas",
       fields: [
         {
           name: 'material',
@@ -904,7 +904,7 @@ const LentesFormModal = ({
       {/* Sección de medidas */}
       <div className="bg-white border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-          📏 Medidas del Lente
+           Medidas del Lente
         </h3>
         <MedidasFields
           medidas={formData?.medidas}
@@ -925,7 +925,7 @@ const LentesFormModal = ({
       {/* Sección de precios */}
       <div className="bg-white border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-          💰 Información de Precios
+           Información de Precios
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <PriceField
@@ -985,7 +985,7 @@ const LentesFormModal = ({
                 {formData?.precioBase && formData?.precioActual && formData.precioBase > formData.precioActual && (
                   <div className="bg-green-100 border border-green-300 rounded p-3">
                     <p className="text-green-800 text-sm font-medium">
-                      💰 Descuento: ${(formData.precioBase - formData.precioActual).toFixed(2)} 
+                       Descuento: ${(formData.precioBase - formData.precioActual).toFixed(2)} 
                       ({(((formData.precioBase - formData.precioActual) / formData.precioBase) * 100).toFixed(1)}% OFF)
                     </p>
                   </div>
@@ -1006,7 +1006,7 @@ const LentesFormModal = ({
       {/* Sección de fecha */}
       <div className="bg-white border rounded-xl p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-          📅 Información Adicional
+           Información Adicional
         </h3>
         <div className="space-y-2">
           <label className="block text-sm font-medium text-gray-700">

@@ -705,9 +705,9 @@ const Optometristas = () => {
                 <div className="w-full max-w-none">
                     <StatsGrid stats={[
                         { title: 'Total Optometristas', value: totalOptometristas, Icon: Eye, color: 'cyan' },
-                        { title: 'Disponibles', value: optometristasDisponibles, Icon: UserCheck, color: 'green' },
-                        { title: 'No Disponibles', value: optometristasNoDisponibles, Icon: UserX, color: 'red' },
-                        { title: 'Experiencia Promedio', value: `${promedioExperiencia} años`, Icon: Award, color: 'purple' },
+                        { title: 'Disponibles', value: optometristasDisponibles, Icon: UserCheck, color: 'cyan' },
+                        { title: 'No Disponibles', value: optometristasNoDisponibles, Icon: UserX, color: 'cyan' },
+                        { title: 'Experiencia Promedio', value: `${promedioExperiencia} años`, Icon: Award, color: 'cyan' },
                     ]} />
                 </div>
             </div>

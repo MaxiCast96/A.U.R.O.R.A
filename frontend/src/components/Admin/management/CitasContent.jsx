@@ -5,7 +5,7 @@ import {
   AlertTriangle, MapPin, ChevronLeft, ChevronRight, Filter, X, ChevronDown, 
   SortAsc, SortDesc
 } from 'lucide-react';
-import FormModal from '../ui/FormModal';
+import CitasFormModal from '../management/employees/CitasFormModal';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
 import ConfirmationModal from '../ui/ConfirmationModal';
@@ -16,13 +16,12 @@ const initialFormState = {
   clienteId: '',
   optometristaId: '',
   sucursalId: '',
-  fecha: '',
-  hora: '',
-  estado: 'Pendiente',
-  motivoCita: '',
-  tipoLente: '',
-  graduacion: '',
-  notasAdicionales: ''
+  fechaHora: '',
+  tipoConsulta: '',
+  duracionEstimada: 30,
+  estado: 'Programada',
+  motivoConsulta: '',
+  observaciones: ''
 };
 
 // Estados iniciales para filtros
@@ -437,34 +436,77 @@ const CitasContent = () => {
     );
   }, [optometristas]);
 
-  // Handlers existentes
+  // --- MANEJADORES DE FORMULARIO ACTUALIZADOS ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'fechaHora') {
+      // Convertir datetime-local a los campos internos separados
+      if (value) {
+        const dateTime = new Date(value);
+        const fecha = dateTime.toISOString().split('T')[0];
+        const hora = dateTime.toTimeString().slice(0, 5);
+        
+        setFormData(prev => ({
+          ...prev,
+          fechaHora: value,
+          fecha,
+          hora
+        }));
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          fechaHora: '',
+          fecha: '',
+          hora: ''
+        }));
+      }
+    } else {
+      setFormData(prev => ({ 
+        ...prev, 
+        [name]: value,
+        // Mapear campos del modal a campos internos
+        ...(name === 'tipoConsulta' && { motivoCita: value }),
+        ...(name === 'motivoConsulta' && { motivoCita: value }),
+        ...(name === 'observaciones' && { notasAdicionales: value })
+      }));
+    }
   };
 
   const handleOpenAddModal = () => {
     setFormData(initialFormState);
     setShowAddModal(true);
     setSelectedCita(null);
+    setErrors({});
   };
 
   const handleOpenEditModal = (cita) => {
+    // Convertir fecha y hora separadas a datetime-local
+    const fechaHora = cita.fecha && cita.hora 
+      ? `${cita.fecha.slice(0, 10)}T${cita.hora}` 
+      : '';
+
     setFormData({
       clienteId: cita.clienteId?._id || cita.clienteId || '',
       optometristaId: cita.optometristaId?._id || cita.optometristaId || '',
       sucursalId: cita.sucursalId?._id || cita.sucursalId || '',
+      fechaHora: fechaHora,
+      tipoConsulta: cita.motivoCita || 'Examen Rutinario',
+      duracionEstimada: 30,
+      estado: cita.estado || 'Programada',
+      motivoConsulta: cita.motivoCita || '',
+      observaciones: cita.notasAdicionales || '',
+      // Campos internos para compatibilidad
       fecha: cita.fecha ? cita.fecha.slice(0, 10) : '',
       hora: cita.hora || '',
-      estado: cita.estado || 'Pendiente',
       motivoCita: cita.motivoCita || '',
-      tipoLente: cita.tipoLente || '',
-      graduacion: cita.graduacion || '',
       notasAdicionales: cita.notasAdicionales || ''
     });
+    
     setSelectedCita(cita);
     setShowEditModal(true);
     setShowDetailModal(false);
+    setErrors({});
   };
 
   const handleCloseModal = () => {
@@ -473,6 +515,7 @@ const CitasContent = () => {
     setShowDetailModal(false);
     setSelectedCita(null);
     setFormData(initialFormState);
+    setErrors({});
   };
 
   const handleShowDetail = (cita) => {
@@ -480,120 +523,18 @@ const CitasContent = () => {
     setShowDetailModal(true);
   };
 
-  // Opciones para selects
-  const clienteOptions = clientes.map(c => ({
-    value: c._id,
-    label: `${c.nombre} ${c.apellido}`
-  }));
-  const optometristaOptions = optometristas.map(o => ({
-    value: o._id,
-    label: getOptometristaNombre(o)
-  }));
-  const sucursalOptions = sucursales.map(s => ({
-    value: s._id,
-    label: s.nombre
-  }));
-  const estadoOptions = [
-    { value: 'agendada', label: 'Agendada' },
-    { value: 'pendiente', label: 'Pendiente' },
-    { value: 'confirmada', label: 'Confirmada' },
-    { value: 'cancelada', label: 'Cancelada' },
-    { value: 'completada', label: 'Completada' }
-  ];
-
-  // Definición de campos para el FormModal
-  const fields = [
-    {
-      name: 'clienteId',
-      label: 'Cliente',
-      type: 'select',
-      options: clienteOptions,
-      placeholder: 'Seleccione un cliente',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'optometristaId',
-      label: 'Optometrista',
-      type: 'select',
-      options: optometristaOptions,
-      placeholder: 'Seleccione un optometrista',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'sucursalId',
-      label: 'Sucursal',
-      type: 'select',
-      options: sucursalOptions,
-      placeholder: 'Seleccione una sucursal',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'fecha',
-      label: 'Fecha',
-      type: 'date',
-      required: true,
-      colSpan: 1
-    },
-    {
-      name: 'hora',
-      label: 'Hora',
-      type: 'text',
-      placeholder: 'Ej. 10:30',
-      required: true,
-      colSpan: 1
-    },
-    {
-      name: 'estado',
-      label: 'Estado',
-      type: 'select',
-      options: estadoOptions,
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'motivoCita',
-      label: 'Motivo de la cita',
-      type: 'text',
-      placeholder: 'Ej. Examen Visual',
-      required: true,
-      colSpan: 4
-    },
-    {
-      name: 'tipoLente',
-      label: 'Tipo de lente',
-      type: 'text',
-      placeholder: 'Ej. Monofocal',
-      colSpan: 2
-    },
-    {
-      name: 'graduacion',
-      label: 'Graduación',
-      type: 'text',
-      placeholder: 'Ej. -1.25',
-      colSpan: 2
-    },
-    {
-      name: 'notasAdicionales',
-      label: 'Notas adicionales',
-      type: 'textarea',
-      placeholder: 'Observaciones...',
-      colSpan: 4
-    }
-  ];
-
   // Validación simple
   const validate = () => {
     const newErrors = {};
-    fields.forEach(field => {
-      if (field.required && !formData[field.name]) {
-        newErrors[field.name] = 'Este campo es obligatorio';
-      }
-    });
-    if (!formData.tipoLente) newErrors.tipoLente = 'Este campo es obligatorio';
-    if (!formData.graduacion) newErrors.graduacion = 'Este campo es obligatorio';
+    
+    if (!formData.clienteId) newErrors.clienteId = 'El cliente es obligatorio';
+    if (!formData.optometristaId) newErrors.optometristaId = 'El optometrista es obligatorio';
+    if (!formData.sucursalId) newErrors.sucursalId = 'La sucursal es obligatoria';
+    if (!formData.fechaHora) newErrors.fechaHora = 'La fecha y hora son obligatorias';
+    if (!formData.tipoConsulta) newErrors.tipoConsulta = 'El tipo de consulta es obligatorio';
+    if (!formData.duracionEstimada || formData.duracionEstimada < 15) newErrors.duracionEstimada = 'La duración debe ser mínimo 15 minutos';
+    if (!formData.estado) newErrors.estado = 'El estado es obligatorio';
+    
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -601,12 +542,23 @@ const CitasContent = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    
     setLoading(true);
     try {
+      // Preparar datos para enviar al backend
       const dataToSend = {
-        ...formData,
-        fecha: formData.fecha ? new Date(formData.fecha) : undefined
+        clienteId: formData.clienteId,
+        optometristaId: formData.optometristaId,
+        sucursalId: formData.sucursalId,
+        fecha: formData.fecha ? new Date(formData.fecha) : undefined,
+        hora: formData.hora,
+        estado: formData.estado,
+        motivoCita: formData.motivoConsulta || formData.tipoConsulta,
+        tipoLente: '', // Campo requerido por el backend
+        graduacion: '', // Campo requerido por el backend
+        notasAdicionales: formData.observaciones || ''
       };
+      
       if (selectedCita) {
         await axios.put(`${API_URL}/citas/${selectedCita._id}`, dataToSend);
         showNotification('Cita editada correctamente', 'success');
@@ -614,6 +566,7 @@ const CitasContent = () => {
         await axios.post(`${API_URL}/citas`, dataToSend);
         showNotification('Cita creada correctamente', 'success');
       }
+      
       await fetchData();
       handleCloseModal();
     } catch (err) {
@@ -663,7 +616,9 @@ const CitasContent = () => {
     switch(estado) {
       case 'Confirmada': return { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-4 h-4" /> };
       case 'Pendiente': return { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="w-4 h-4" /> };
+      case 'Programada': return { color: 'bg-blue-100 text-blue-800', icon: <Calendar className="w-4 h-4" /> };
       case 'Realizada': return { color: 'bg-blue-100 text-blue-800', icon: <User className="w-4 h-4" /> };
+      case 'Completada': return { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-4 h-4" /> };
       case 'Cancelada': return { color: 'bg-red-100 text-red-800', icon: <XCircle className="w-4 h-4" /> };
       default: return { color: 'bg-gray-100 text-gray-800', icon: <AlertTriangle className="w-4 h-4" /> };
     }
@@ -693,8 +648,8 @@ const CitasContent = () => {
     const citaDate = c.fecha ? c.fecha.slice(0, 10) : '';
     return citaDate === today;
   }).length;
-  const citasPendientes = citas.filter(c => c.estado === 'Pendiente').length;
-  const citasConfirmadas = citas.filter(c => c.estado === 'Confirmada').length;
+  const citasPendientes = citas.filter(c => c.estado === 'Pendiente' || c.estado === 'Programada').length;
+  const citasConfirmadas = citas.filter(c => c.estado === 'Confirmada' || c.estado === 'Completada').length;
 
   // --- RENDERIZADO DEL COMPONENTE ---
   if (loading) {
@@ -941,9 +896,10 @@ const CitasContent = () => {
                   >
                     <option value="todos">Todos los estados</option>
                     <option value="pendiente">Pendiente</option>
+                    <option value="programada">Programada</option>
                     <option value="confirmada">Confirmada</option>
-                    <option value="cancelada">Cancelada</option>
                     <option value="completada">Completada</option>
+                    <option value="cancelada">Cancelada</option>
                   </select>
                 </div>
 
@@ -1179,7 +1135,7 @@ const CitasContent = () => {
       </div>
 
       {/* MODAL DE ALTA/EDICIÓN */}
-      <FormModal
+      <CitasFormModal
         isOpen={showAddModal || showEditModal}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
@@ -1188,8 +1144,10 @@ const CitasContent = () => {
         handleInputChange={handleInputChange}
         errors={errors}
         submitLabel={selectedCita ? 'Guardar cambios' : 'Agendar'}
-        fields={fields}
-        gridCols={4}
+        clientes={clientes}
+        optometristas={optometristas}
+        sucursales={sucursales}
+        selectedCita={selectedCita}
       />
       
       {/* MODAL DE DETALLE DE CITA */}

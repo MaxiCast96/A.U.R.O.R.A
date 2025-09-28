@@ -439,9 +439,9 @@ const Recetas = () => {
     const stats = useMemo(() => {
         const vigentes = recetas.filter(r => r.isVigente).length;
         return [
-            { title: 'Total Recetas', value: recetas.length, Icon: FileText, color: 'blue' },
-            { title: 'Recetas Vigentes', value: vigentes, Icon: CheckCircle, color: 'green' },
-            { title: 'Recetas Vencidas', value: recetas.length - vigentes, Icon: Clock, color: 'red' },
+            { title: 'Total Recetas', value: recetas.length, Icon: FileText, color: 'cyan' },
+            { title: 'Recetas Vigentes', value: vigentes, Icon: CheckCircle, color: 'cyan' },
+            { title: 'Recetas Vencidas', value: recetas.length - vigentes, Icon: Clock, color: 'cyan' },
         ];
     }, [recetas]);
 

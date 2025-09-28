@@ -940,7 +940,7 @@ const CategoriasContent = () => {
   // Estadísticas
   const stats = useMemo(() => [
     { title: 'Total Categorías', value: categorias.length, Icon: Tags, color: 'cyan' },
-    { title: 'Categorías Activas', value: categorias.length, Icon: UserCheck, color: 'green' },
+    { title: 'Categorías Activas', value: categorias.length, Icon: UserCheck, color: 'cyan' },
     { title: 'En Esta Página', value: currentCategorias.length, Icon: Package, color: 'cyan' },
   ], [categorias.length, currentCategorias.length]);
 

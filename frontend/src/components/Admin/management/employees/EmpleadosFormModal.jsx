@@ -749,7 +749,7 @@ const EmpleadosFormModal = ({
                 required: true 
             },
         ]},
-        { title: "💼 Información Laboral", fields: [
+        { title: " Información Laboral", fields: [
             { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursales?.map(s => ({ value: s._id, label: s.nombre })) || [], required: true },
             { name: 'cargo', label: 'Puesto', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
             { name: 'salario', label: 'Salario (USD)', type: 'number', placeholder: '500.00', required: true },

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_CONFIG } from '../../../config/api';
+import MarcasFormModal from './employees/MarcasFormModal';
 
 // ============================================================================
 // CUSTOM HOOKS
@@ -915,10 +916,10 @@ const MarcasContent = () => {
         const paisesUnicos = uniqueCountries.length;
 
         return [
-            { title: 'Total Marcas', value: totalMarcas, Icon: Bookmark },
-            { title: 'Líneas Premium', value: marcasPremium, Icon: Tags },
-            { title: 'Líneas Económicas', value: marcasEconomicas, Icon: Package },
-            { title: 'Países', value: paisesUnicos, Icon: MapPin }
+            { title: 'Total Marcas', value: totalMarcas, Icon: Bookmark, color: 'cyan' },
+            { title: 'Líneas Premium', value: marcasPremium, Icon: Tags, color: 'cyan' },
+            { title: 'Líneas Económicas', value: marcasEconomicas, Icon: Package, color: 'cyan' },
+            { title: 'Países', value: paisesUnicos, Icon: MapPin, color: 'cyan' }
         ];
     }, [marcas, uniqueCountries]);
 
@@ -1434,101 +1435,18 @@ const MarcasContent = () => {
 
             {/* MODALES */}
             {modals.addEdit && (
-                <FormModal
-                    isOpen={modals.addEdit}
-                    onClose={handleCloseModals}
-                    onSubmit={handleSubmit}
-                    title={selectedMarca ? 'Editar Marca' : 'Agregar Nueva Marca'}
-                    formData={formData}
-                    handleInputChange={handleInputChange}
-                    errors={errors}
-                    submitLabel={selectedMarca ? 'Actualizar Marca' : 'Guardar Marca'}
-                    submitIcon={<Save className="w-4 h-4" />}
-                    fields={formFields}
-                    gridCols={2}
-                >
-                    {/* Campo personalizado para el logo */}
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Logo de la Marca
-                        </label>
-                        
-                        {formData.logo ? (
-                            <div className="space-y-3">
-                                <div className="flex justify-center">
-                                    <div className="relative">
-                                        <img
-                                            src={formData.logo}
-                                            alt="Logo preview"
-                                            className="w-32 h-20 object-contain border border-gray-300 rounded-lg bg-white p-2"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={removeImage}
-                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <div className="flex justify-center">
-                                    <button
-                                        type="button"
-                                        onClick={openCloudinaryWidget}
-                                        disabled={uploadingImage}
-                                        className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 transition-all duration-200 flex items-center space-x-2"
-                                    >
-                                        <Camera className="w-4 h-4" />
-                                        <span>Cambiar Logo</span>
-                                    </button>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-cyan-400 transition-colors">
-                                <div className="space-y-4">
-                                    <div className="flex justify-center">
-                                        <Upload className="w-12 h-12 text-gray-400" />
-                                    </div>
-                                    
-                                    <div>
-                                        <p className="text-gray-600 mb-2">Subir logo de la marca</p>
-                                        <p className="text-sm text-gray-500 mb-4">
-                                            PNG, JPG, JPEG o WEBP (máx. 5MB)
-                                        </p>
-                                    </div>
-                                    
-                                    <button
-                                        type="button"
-                                        onClick={openCloudinaryWidget}
-                                        disabled={uploadingImage}
-                                        className="px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 disabled:opacity-50 transition-all duration-200 flex items-center space-x-2 mx-auto"
-                                    >
-                                        {uploadingImage ? (
-                                            <>
-                                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                                <span>Subiendo...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Upload className="w-4 h-4" />
-                                                <span>Seleccionar Archivo</span>
-                                            </>
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                        
-                        {errors.logo && (
-                            <div className="mt-2 text-red-500 text-sm flex items-center space-x-1">
-                                <AlertCircle className="w-4 h-4" />
-                                <span>{errors.logo}</span>
-                            </div>
-                        )}
-                    </div>
-                </FormModal>
-            )}
+    <MarcasFormModal
+        isOpen={modals.addEdit}
+        onClose={handleCloseModals}
+        onSubmit={handleSubmit}
+        title={selectedMarca ? 'Editar Marca' : 'Agregar Nueva Marca'}
+        formData={formData}
+        handleInputChange={handleInputChange}
+        errors={errors}
+        submitLabel={selectedMarca ? 'Actualizar Marca' : 'Guardar Marca'}
+        selectedMarca={selectedMarca}
+    />
+)}
 
             {/* Modal de detalles */}
             {selectedMarca && modals.detail && (

@@ -738,19 +738,19 @@ const LentesContent = () => {
       title: "En Promoción", 
       value: lentesEnPromocion, 
       Icon: TrendingUp,
-      color: "green" 
+      color: "cyan" 
     },
     { 
       title: "Stock Total", 
       value: stockTotal, 
       Icon: Package,
-      color: "purple" 
+      color: "cyan" 
     },
     { 
       title: "Valor Inventario", 
       value: valorInventario.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), 
       Icon: DollarSign,
-      color: "yellow" 
+      color: "cyan" 
     },
   ];
 
