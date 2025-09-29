@@ -180,6 +180,19 @@ const AgendarCitas = () => {
           }
         }
 
+        // Validación: No se pueden programar citas en fechas pasadas
+        const now = new Date();
+        const selDate = new Date(formData.fecha);
+        const [hh, mm] = String(formData.hora).split(':').map((n) => parseInt(n, 10));
+        if (Number.isNaN(hh) || Number.isNaN(mm) || isNaN(selDate.getTime())) {
+          throw new Error('Fecha u hora inválida.');
+        }
+        const selDateTime = new Date(selDate);
+        selDateTime.setHours(hh || 0, mm || 0, 0, 0);
+        if (selDateTime.getTime() < now.getTime()) {
+          throw new Error('No se pueden programar citas en fechas pasadas.');
+        }
+
         const payload = {
           clienteId: clienteId || undefined,
           optometristaId: formData.optometristaId === 'any' ? null : formData.optometristaId,
@@ -194,7 +207,8 @@ const AgendarCitas = () => {
           clienteNombre: formData.nombres || undefined,
           clienteApellidos: formData.apellidos || undefined,
           telefono: formData.telefono || undefined,
-          email: formData.email || undefined
+          email: formData.email || undefined,
+          formaContacto: formData.contacto || undefined
         };
 
         const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.CITAS), {
@@ -321,7 +335,9 @@ const AgendarCitas = () => {
               >
                 <option value="">Seleccionar optometrista</option>
                 <option value="any">Cualquiera</option>
-                {optometristas.map(o => (
+                {optometristas
+                  .filter(o => !formData.sucursalId || (o.sucursalesAsignadas || []).some(s => (s?._id || s) === formData.sucursalId))
+                  .map(o => (
                   <option key={o._id} value={o._id}>
                     {getOptometristaNombre(o)}
                   </option>
@@ -446,6 +462,7 @@ const AgendarCitas = () => {
                       const opt = optometristas.find(o => o._id === formData.optometristaId);
                       const sucMismatch = opt && formData.sucursalId && !(opt.sucursalesAsignadas || []).some(s => (s._id || s) === formData.sucursalId);
                       const now = new Date();
+                      const todayStr = new Date().toDateString();
                       return (
                         <>
                         {sucMismatch && (
@@ -453,17 +470,20 @@ const AgendarCitas = () => {
                             El optometrista seleccionado no atiende en la sucursal elegida. Cambia de sucursal u optometrista.
                           </div>
                         )}
-                        <table className="w-full text-xs sm:text-sm md:text-base">
+                        <table className="w-full text-xs sm:text-sm md:text-base border-separate border-spacing-0">
                           <thead>
                             <tr>
-                              {dayNames.map((dia, i) => (
-                                <th key={dia} className="py-2">
-                                  <div className="flex flex-col items-center">
-                                    <span>{dia}</span>
-                                    <span className="text-[11px] text-gray-500">{formatDM(weekDays[i])}</span>
-                                  </div>
-                                </th>
-                              ))}
+                              {dayNames.map((dia, i) => {
+                                const isToday = weekDays[i].toDateString() === todayStr;
+                                return (
+                                  <th key={dia} className={`py-2 sticky top-0 bg-white ${isToday ? 'text-[#0097c2]' : ''}`}>
+                                    <div className="flex flex-col items-center">
+                                      <span className={`font-semibold ${isToday ? 'text-[#0097c2]' : ''}`}>{dia}</span>
+                                      <span className={`text-[11px] ${isToday ? 'text-[#0097c2]' : 'text-gray-500'}`}>{formatDM(weekDays[i])}</span>
+                                    </div>
+                                  </th>
+                                );
+                              })}
                             </tr>
                           </thead>
                           <tbody>
@@ -483,7 +503,7 @@ const AgendarCitas = () => {
                                   const disabled = !available || isPast;
                                   const selected = !disabled && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
                                   return (
-                                    <td key={`${dia}-${hora}`} className="p-2 text-center">
+                                    <td key={`${dia}-${hora}`} className={`p-2 text-center ${selected ? 'bg-[#e6f7fb] rounded-lg' : ''}`}>
                                       {!disabled ? (
                                         <button
                                           type="button"
@@ -491,7 +511,7 @@ const AgendarCitas = () => {
                                             handleInputChange({ target: { name: "hora", value: hora } });
                                             handleInputChange({ target: { name: "fecha", value: isoStr } });
                                           }}
-                                          className={`w-full py-2 rounded-lg transition-all ${selected ? "bg-[#0097c2] text-white" : "bg-gray-50 hover:bg-gray-100"}`}
+                                          className={`w-full py-2 rounded-lg transition-all border ${selected ? "bg-[#0097c2] text-white border-[#0097c2] shadow" : "bg-white hover:bg-gray-50 border-gray-200"}`}
                                         >
                                           {hora}
                                         </button>

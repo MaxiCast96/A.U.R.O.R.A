@@ -28,6 +28,11 @@ const citaSchema = new mongoose.Schema({
         required: false,
         trim: true,
     },
+    formaContacto: {
+        type: String, // 'telefono' | 'email'
+        required: false,
+        enum: ['telefono', 'email']
+    },
     optometristaId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Optometrista", // Referencia al optometrista asignado (opcional cuando el cliente elige "Cualquiera")

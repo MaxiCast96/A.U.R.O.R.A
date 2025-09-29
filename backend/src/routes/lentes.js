@@ -8,14 +8,10 @@ const router = express.Router();
 
 // GET /api/lentes/populares - Obtener lentes más populares/vendidos
 router.get("/populares", lentesController.getLentesPopulares);
-
 // GET /api/lentes/promociones/activas - Lentes con promociones activas
-// NOTA: Parece que hay un error en el controlador - revisa la implementación
-router.get("/promociones/activas", lentesController.getLentesByIdMarca);
-
+router.get("/promociones/activas", lentesController.getLentesByPromocion);
 // GET /api/lentes/marca/:marcaId - Filtrar lentes por marca específica
-// NOTA: Parece que hay un error en el controlador - revisa la implementación  
-router.get("/marca/:marcaId", lentesController.getLentesByPromocion);
+router.get("/marca/:marcaId", lentesController.getLentesByIdMarca);
 
 // Rutas principales con lógica condicional
 router.route("/")

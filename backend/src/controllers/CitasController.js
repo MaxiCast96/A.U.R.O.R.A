@@ -119,28 +119,45 @@ citasController.createCita = async (req, res) => {
     const {
         clienteId, optometristaId, sucursalId, fecha, hora, estado,
         motivoCita, tipoLente, notasAdicionales,
-        clienteNombre, clienteApellidos, telefono, email
+        clienteNombre, clienteApellidos, telefono, email, formaContacto
     } = req.body;
 
     // Validación de campos requeridos para crear cita (clienteId y optometristaId son opcionales)
     if (!sucursalId || !fecha || !hora || !estado || !motivoCita) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
-
     let session;
     try {
         console.log('Datos recibidos para nueva cita:', req.body);
         session = await mongoose.startSession();
-        await session.withTransaction(async () => {
-            let assignedOptometristaId = optometristaId || undefined;
-            const dayStart = new Date(new Date(fecha).setHours(0,0,0,0));
+        await session.withTransaction(async (s) => {
+            session = s;
+            // Iniciar asignación con el optometrista provisto (puede ser null)
+            let assignedOptometristaId = optometristaId || null;
+            // Validación: no permitir citas en el pasado (combina fecha + hora)
+            const fechaObj = new Date(fecha);
+            if (isNaN(fechaObj.getTime())) {
+                throw new Error('INVALID_DATE');
+            }
+            const [hSel, mSel] = String(hora).split(':').map((n) => parseInt(n, 10));
+            if (Number.isNaN(hSel) || Number.isNaN(mSel)) {
+                throw new Error('INVALID_TIME');
+            }
+            const fechaHoraSeleccionada = new Date(fechaObj);
+            fechaHoraSeleccionada.setHours(hSel || 0, mSel || 0, 0, 0);
+            if (fechaHoraSeleccionada.getTime() < Date.now()) {
+                return res.status(400).json({ message: 'No se pueden programar citas en fechas pasadas' });
+            }
+
+            // Normalizar fecha y hora
+            const dayStart = new Date(fecha);
+            dayStart.setHours(0, 0, 0, 0);
+            const horaNorm = normalizeHora(hora);
             const dayEnd = new Date(dayStart.getTime());
             dayEnd.setDate(dayEnd.getDate() + 1);
             const sucIdObj = new mongoose.Types.ObjectId(String(sucursalId));
-            const horaNorm = normalizeHora(hora);
             const horaList = horaVariants(hora);
 
-            // Autoasignación dentro de la transacción
             if (!assignedOptometristaId) {
                 const diaSemana = getDiaSemanaES(fecha);
                 const diaAliases = getDayAliases(diaSemana);
@@ -198,6 +215,9 @@ citasController.createCita = async (req, res) => {
                 throw new Error('JUST_BOOKED');
             }
 
+            // Determinar forma de contacto por defecto si no viene explícita
+            const formaContactoFinal = formaContacto || (telefono ? 'telefono' : (email ? 'email' : undefined));
+
             const nuevaCita = new Citas({
                 clienteId: clienteId || undefined,
                 optometristaId: assignedOptometristaId,
@@ -212,7 +232,8 @@ citasController.createCita = async (req, res) => {
                 clienteNombre: clienteNombre || undefined,
                 clienteApellidos: clienteApellidos || undefined,
                 telefono: telefono || undefined,
-                email: email || undefined
+                email: email || undefined,
+                formaContacto: formaContactoFinal
             });
 
             await nuevaCita.save({ session });

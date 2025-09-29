@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { 
   Search, Plus, Trash2, Eye, Edit, Calendar, User, Clock, CheckCircle, XCircle, 
@@ -1023,8 +1023,10 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
             <tbody className="divide-y divide-gray-200">
               {currentCitas.map((cita) => {
                 const estadoInfo = getEstadoInfo(cita.estado);
-                const clienteNombre = cita.clienteId ? `${cita.clienteId.nombre || '} ${cita.clienteId.apellido || '}`.trim() : `${cita.clienteNombre || '} ${cita.clienteApellidos || '}`.trim();
-const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
+                const clienteNombre = (cita.clienteId && (cita.clienteId.nombre || cita.clienteId.apellido))
+                  ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.trim()
+                  : `${cita.clienteNombre || ''} ${cita.clienteApellidos || ''}`.trim();
+                const sucursalNombre = cita.sucursalId ? (cita.sucursalId.nombre || '') : '';
                 const optometristaNombre = resolveOptometristaNombre(cita.optometristaId);
                 const servicio = cita.motivoCita || '';
                 
@@ -1033,7 +1035,7 @@ const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
                     <td className="px-6 py-4">
                       <div className="flex items-center space-x-2">
                         <User className="w-5 h-5 text-gray-400" />
-                        <span className="font-medium text-gray-900">{clienteNombre || 'AnÃ³nimo'}</span>
+                        <span className="font-medium text-gray-900">{clienteNombre || 'Anónimo'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{servicio || 'N/A'}</td>
@@ -1156,6 +1158,12 @@ const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
         item={detailCita}
         data={[
           { label: 'Cliente', value: detailCita && detailCita.clienteId ? `${detailCita.clienteId.nombre || ''} ${detailCita.clienteId.apellido || ''}`.trim() : 'N/A' },
+          { label: 'Forma de Contacto', value: (() => {
+            const fc = detailCita?.formaContacto || (detailCita?.telefono ? 'telefono' : (detailCita?.email ? 'email' : null));
+            return fc === 'telefono' ? 'Número Telefónico' : fc === 'email' ? 'Correo Electrónico' : 'N/A';
+          })() },
+          { label: 'Teléfono', value: detailCita && detailCita.telefono ? detailCita.telefono : 'N/A' },
+          { label: 'Correo', value: detailCita && detailCita.email ? detailCita.email : 'N/A' },
           { label: 'Optometrista', value: detailCita ? resolveOptometristaNombre(detailCita.optometristaId) : 'N/A' },
           { label: 'Sucursal', value: detailCita && detailCita.sucursalId ? detailCita.sucursalId.nombre : 'N/A' },
           { label: 'Fecha', value: detailCita && detailCita.fecha ? (new Date(detailCita.fecha)).toLocaleDateString() : 'N/A' },
@@ -1163,7 +1171,7 @@ const sucursalNombre = cita.sucursalId ? cita.sucursalId.nombre || '' : '';
           { label: 'Estado', value: detailCita && detailCita.estado ? detailCita.estado : 'N/A' },
           { label: 'Motivo de la cita', value: detailCita && detailCita.motivoCita ? detailCita.motivoCita : 'N/A' },
           { label: 'Tipo de lente', value: detailCita && detailCita.tipoLente ? detailCita.tipoLente : 'N/A' },
-          { label: 'GraduaciÃƒÂ³n', value: detailCita && detailCita.graduacion ? detailCita.graduacion : 'N/A' },
+          { label: 'Graduación', value: detailCita && detailCita.graduacion ? detailCita.graduacion : 'N/A' },
           { label: 'Notas adicionales', value: detailCita && detailCita.notasAdicionales ? detailCita.notasAdicionales : 'N/A' },
         ]}
         actions={[
