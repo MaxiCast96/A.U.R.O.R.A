@@ -108,7 +108,7 @@ async function createLenteCristal(req, res) {
       promocionId: data.enPromocion ? data.promocionId : undefined,
       imagenes,
       sucursales: Array.isArray(sucursales) ? sucursales : [],
-      fechaCreacion: data.fechaCreacion
+      fechaCreacion: data.fechaCreacion ? new Date(data.fechaCreacion) : new Date()
     });
 
     await doc.save();

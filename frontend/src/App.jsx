@@ -57,6 +57,7 @@ function AnimatedRoutes() {
         
         {/* Rutas de productos específicos */}
         <Route path="/productos/lentes" element={<Producto />} />
+        <Route path="/productos/lentes-cristales" element={<Producto />} />
         <Route path="/productos/accesorios" element={<Producto />} />
         {/* Redirección de ruta eliminada */}
         <Route path="/productos/personalizables" element={<Navigate to="/productos" replace />} />

@@ -47,9 +47,11 @@ const Producto = () => {
   const [pageSize, setPageSize] = useState(12);
   const [pageLentes, setPageLentes] = useState(1);
   const [pageAccesorios, setPageAccesorios] = useState(1);
+  const [pageCristales, setPageCristales] = useState(1);
 
   // Datos del backend usando useApiData con paginación
   const { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes, pagination: paginationLentes } = useApiData('lentes', { page: pageLentes, limit: pageSize });
+  const { data: cristales, loading: loadingCristales, error: errorCristales, success: successCristales, pagination: paginationCristales } = useApiData('lentes-cristales', { page: pageCristales, limit: pageSize });
   const { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, success: successAccesorios, pagination: paginationAccesorios } = useApiData('accesorios', { page: pageAccesorios, limit: pageSize });
   const { data: personalizables, loading: loadingPersonalizables, error: errorPersonalizables, success: successPersonalizables } = useApiData('productosPersonalizados');
   const { data: marcas, loading: loadingMarcas, error: errorMarcas, success: successMarcas } = useApiData('marcas');
@@ -529,13 +531,15 @@ const Producto = () => {
     switch (location.pathname) {
       case "/productos/lentes":
         return { data: lentes, loading: loadingLentes, error: errorLentes, type: 'lentes', pagination: paginationLentes };
+      case "/productos/lentes-cristales":
+        return { data: cristales, loading: loadingCristales, error: errorCristales, type: 'lentes-cristales', pagination: paginationCristales };
       case "/productos/accesorios":
         return { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, type: 'accesorios', pagination: paginationAccesorios };
       default:
         return { 
-          data: [...lentes, ...accesorios], 
-          loading: loadingLentes || loadingAccesorios, 
-          error: errorLentes || errorAccesorios, 
+          data: [...lentes, ...cristales, ...accesorios], 
+          loading: loadingLentes || loadingCristales || loadingAccesorios, 
+          error: errorLentes || errorCristales || errorAccesorios, 
           type: 'todos' 
         };
     }
@@ -606,6 +610,7 @@ const Producto = () => {
   useEffect(() => {
     setPageLentes(1);
     setPageAccesorios(1);
+    setPageCristales(1);
   }, [location.pathname]);
 
   // Función para cambiar de página
