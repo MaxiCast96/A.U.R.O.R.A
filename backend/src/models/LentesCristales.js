@@ -8,7 +8,7 @@ const LenteCristalSchema = new Schema({
   marcaId: { type: Schema.Types.ObjectId, ref: 'Marcas', required: true },
 
   // Propiedades técnicas de cristales
-  material: { type: String, enum: ['Organico', 'Policarbonato', 'Trivex', 'Alto Indice', 'Mineral', 'Otro'], required: true },
+  material: { type: String, enum: ['Vidrio', 'Policarbonato', 'Cr39'], required: true },
   indice: { type: String, enum: ['1.50', '1.56', '1.60', '1.67', '1.74', 'Otro'], required: true },
   tratamientos: [{ type: String }], // AR, BlueCut, Fotocromatico, Polarizado, Endurecido, etc.
   rangoEsferico: {

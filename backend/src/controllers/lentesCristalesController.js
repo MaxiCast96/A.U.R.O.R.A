@@ -65,7 +65,6 @@ async function getLentesCristalesEnPromocion(_req, res) {
       .populate('categoriaId').populate('marcaId').populate('promocionId').populate('sucursales.sucursalId');
     return res.json({ success: true, data: items });
   } catch (error) {
-    return res.status(500).json({ success: false, message: 'Error listando en promoción: ' + error.message });
   }
 }
 
@@ -91,6 +90,11 @@ async function createLenteCristal(req, res) {
       imagenes = data.imagenes;
     }
 
+    // Normalizar promo
+    const enPromoFlag = (data.enPromocion === true || data.enPromocion === 'true');
+    const promoId = data.promocionId || null;
+    const isPromoValid = enPromoFlag && promoId;
+
     const doc = new LentesCristales({
       nombre: data.nombre,
       descripcion: data.descripcion,
@@ -103,9 +107,9 @@ async function createLenteCristal(req, res) {
       rangoCilindrico: data.rangoCilindrico,
       diametro: data.diametro,
       precioBase: data.precioBase,
-      precioActual: data.enPromocion ? data.precioActual : data.precioBase,
-      enPromocion: !!data.enPromocion,
-      promocionId: data.enPromocion ? data.promocionId : undefined,
+      precioActual: isPromoValid ? data.precioActual : data.precioBase,
+      enPromocion: !!isPromoValid,
+      promocionId: isPromoValid ? promoId : undefined,
       imagenes,
       sucursales: Array.isArray(sucursales) ? sucursales : [],
       fechaCreacion: data.fechaCreacion ? new Date(data.fechaCreacion) : new Date()
@@ -140,7 +144,12 @@ async function updateLenteCristal(req, res) {
       }
     }
 
-    const setData = {
+    // Normalizar promo para update
+  const enPromoFlag = (data.enPromocion === true || data.enPromocion === 'true');
+  const promoId = data.promocionId || null;
+  const isPromoValid = enPromoFlag && promoId;
+
+  const setData = {
       nombre: data.nombre,
       descripcion: data.descripcion,
       categoriaId: data.categoriaId,
@@ -152,9 +161,9 @@ async function updateLenteCristal(req, res) {
       rangoCilindrico: data.rangoCilindrico,
       diametro: data.diametro,
       precioBase: data.precioBase,
-      precioActual: data.enPromocion ? data.precioActual : data.precioBase,
-      enPromocion: data.enPromocion,
-      promocionId: data.enPromocion ? data.promocionId : undefined,
+      precioActual: isPromoValid ? data.precioActual : (data.precioBase ?? undefined),
+      enPromocion: isPromoValid ? true : false,
+      promocionId: isPromoValid ? promoId : undefined,
       imagenes,
       sucursales: Array.isArray(sucursales) ? sucursales : undefined,
       fechaCreacion: data.fechaCreacion
