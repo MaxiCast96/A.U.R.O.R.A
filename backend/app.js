@@ -3,11 +3,22 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import database from "./database.js";
-import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
+// Inicializar aplicación Express y middlewares
+const app = express();
+app.use(cookieParser());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://aurora-production-7e57.up.railway.app'
+  ],
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 // Importar rutas
 import empleadosRoutes from "./src/routes/empleados.js";
 import optometristaRoutes from "./src/routes/optometrista.js";
@@ -32,7 +43,18 @@ import registroClientesRoutes from "./src/routes/registroClientes.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import authRoutes from "./src/routes/auth.js";
 import pedidosRoutes from "./src/routes/pedidos.js";
-{{ ... }}
+import categoriaRoutes from "./src/routes/categoria.js";
+import auditoriaRoutes from "./src/routes/auditoria.js";
+// Montaje de rutas principales
+app.use("/api/empleados", empleadosRoutes);
+app.use("/api/optometrista", optometristaRoutes);
+app.use("/api/clientes", clientesRoutes);
+app.use("/api/registroEmpleados", registroEmpleadosRoutes);
+app.use("/api/sucursales", sucursalesRoutes);
+app.use("/api/marcas", marcasRoutes);
+app.use("/api/accesorios", accesoriosRoutes);
+app.use("/api/aros", arosRoutes);
+app.use("/api/lentes", lentesRoutes);
 app.use("/api/categoria", categoriaRoutes);
 app.use("/api/historialMedico", historialMedicoRoutes);
 app.use("/api/citas", citasRoutes);
@@ -48,7 +70,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/recetas", recetasRoutes);
 app.use("/api/registroClientes", registroClientesRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-{{ ... }}
 app.use("/api/auditoria", auditoriaRoutes);
 
 // ================= Helpers =================
