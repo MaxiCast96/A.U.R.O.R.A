@@ -119,6 +119,11 @@ const Navbar = () => {
                 <Link to="/productos/accesorios" className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm">Accesorios</Link>
               </div>
             </li>
+            {user && (
+              <li>
+                <Link to="/cotizaciones" className="hover:text-[#0097c2] h-full flex items-center">Cotizaciones</Link>
+              </li>
+            )}
             <li>
               <Link to="/servicios" className="hover:text-[#0097c2] h-full flex items-center">Servicios</Link>
             </li>
@@ -249,6 +254,8 @@ const Navbar = () => {
               {user && (
                 <Link
                   to="/cotizaciones"
+                  onClick={closeMobileMenu}
+                  className="block py-2 px-3 text-gray-700 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   Cotizaciones
                 </Link>

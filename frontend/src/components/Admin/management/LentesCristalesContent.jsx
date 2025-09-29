@@ -229,8 +229,17 @@ const LentesCristalesContent = () => {
                 <tr key={it._id}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center border">
-                        <Glasses className="w-6 h-6 text-gray-400"/>
+                      <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center border overflow-hidden">
+                        {(Array.isArray(it.imagenes) && it.imagenes[0]) ? (
+                          <img
+                            src={typeof it.imagenes[0] === 'string' ? it.imagenes[0] : (it.imagenes[0]?.secure_url || it.imagenes[0]?.url || '')}
+                            alt={it.nombre}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <Glasses className="w-6 h-6 text-gray-400"/>
+                        )}
                       </div>
                       <div>
                         <div className="font-medium text-gray-900">{it.nombre}</div>

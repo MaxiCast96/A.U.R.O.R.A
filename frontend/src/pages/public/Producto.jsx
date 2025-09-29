@@ -2786,12 +2786,26 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       const first = product.imagenes[0];
       // Evitar retornar cadena vacía que causa warning en <img src>
       if (first && typeof first === 'string' && first.trim() !== '') {
-        const src = first.trim();
+        const raw = first.trim();
         // Rutas legacy dentro de src/ que no son servidas por Vite
-        if (src.startsWith('/src/pages/public/img/')) return '';
-        if (src.startsWith('file://')) return '';
-        if (/^(https?:)?\/\//i.test(src) || src.startsWith('data:') || src.startsWith('/img/')) return src;
+        if (raw.startsWith('/src/pages/public/img/')) return '';
+        if (raw.startsWith('file://')) return '';
+        // URLs absolutas, data URIs o assets públicos
+        if (/^(https?:)?\/\//i.test(raw) || raw.startsWith('data:') || raw.startsWith('/img/')) return raw;
+        // Construir URL Cloudinary si parece ser un public_id relativo
+        const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+        if (cloud && /^[\w\-/]+(\.[a-zA-Z0-9]+)?$/.test(raw)) {
+          return `https://res.cloudinary.com/${cloud}/image/upload/${raw}`;
+        }
         return '';
+      }
+      // Si es objeto (ej. {secure_url, url, public_id})
+      if (first && typeof first === 'object') {
+        const src = first.secure_url || first.url || (first.public_id ? (() => {
+          const cloud = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+          return cloud ? `https://res.cloudinary.com/${cloud}/image/upload/${first.public_id}` : '';
+        })() : '');
+        if (typeof src === 'string' && src.trim()) return src.trim();
       }
       return null;
     }
@@ -3054,7 +3068,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         ); })()}
         {product.enPromocion && (
           <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-            Â¡OFERTA!
+            ¡OFERTA!
           </div>
         )}
       </div>
@@ -3231,7 +3245,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 onClick={closeProductModal}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
-                Ã—
+                ✕
               </button>
             </div>
 
@@ -3322,9 +3336,9 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   </button>
                   <button 
                     className="bg-white border border-[#0097c2] text-[#0097c2] px-4 py-2 rounded-full hover:bg-[#e6f7fb] transition-colors duration-300"
-                    onClick={() => openSolicitudModal(selectedProduct)}
+                    onClick={() => navigate('/cotizaciones')}
                   >
-                    Solicitar a Ã³ptica
+                    Solicitar a Optica
                   </button>
                 </div>
               </div>
