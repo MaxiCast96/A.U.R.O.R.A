@@ -11,6 +11,7 @@ import Optometristas from '../../components/Admin/management/Optometristas'
 import Recetas from '../../components/Admin/management/Recetas';
 import Dashboard from '../../components/Admin/management/DashboardContent';
 import Aros from '../../components/Admin/management/ArosContent.jsx';
+import LentesCristalesContent from '../../components/Admin/management/LentesCristalesContent';
 import Accesorios from '../../components/Admin/management/AccesoriosContent';
 import Personalizados from '../../components/Admin/management/PersonalizadosContent';
 import Categorias from '../../components/Admin/management/CategoriasContent';
@@ -75,6 +76,7 @@ const OpticaDashboard = () => {
     { id: 'empleados', icon: UserCheck, label: 'Empleados', section: 'Personal', allowedRoles: ['Administrador', 'Gerente'] },
     { id: 'optometristas', icon: Eye, label: 'Optometristas', section: 'Personal', allowedRoles: ['Administrador', 'Gerente'] },
     { id: 'aros', icon: Glasses, label: 'Aros', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
+    { id: 'lentes-cristales', icon: Glasses, label: 'Lentes (Cristales)', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
     { id: 'accesorios', icon: ShoppingBag, label: 'Accesorios', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
     { id: 'personalizados', icon: Package, label: 'Personalizados', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Vendedor', 'Empleado'] },
     { id: 'categorias', icon: Tags, label: 'Categorías', section: 'Productos', allowedRoles: ['Administrador', 'Gerente'] },
@@ -259,6 +261,8 @@ const OpticaDashboard = () => {
         return <Optometristas />;
       case 'aros':
         return <Aros />;
+      case 'lentes-cristales':
+        return <LentesCristalesContent />;
       case 'accesorios':
         return <Accesorios />;
       case 'personalizados':
