@@ -28,6 +28,8 @@ export default function LentesCristalesFormModal({ open, onClose, onSubmit, init
       setForm({
         ...form,
         ...initialData,
+        categoriaId: initialData.categoriaId?._id || initialData.categoriaId || '',
+        marcaId: initialData.marcaId?._id || initialData.marcaId || '',
         vision: initialData.vision || 'Sencilla',
         material: initialData.material || 'Vidrio',
         protecciones: initialData.protecciones || [],

@@ -76,6 +76,9 @@ async function createLenteCristal(req, res) {
     }
 
     const data = req.body || {};
+    // Normalizar posibles objetos en IDs
+    const categoriaIdNorm = (data.categoriaId && typeof data.categoriaId === 'object') ? (data.categoriaId._id || data.categoriaId.id || '') : data.categoriaId;
+    const marcaIdNorm = (data.marcaId && typeof data.marcaId === 'object') ? (data.marcaId._id || data.marcaId.id || '') : data.marcaId;
     let imagenes = [];
 
     if (req.files && req.files.length > 0) {
@@ -98,8 +101,8 @@ async function createLenteCristal(req, res) {
     const doc = new LentesCristales({
       nombre: data.nombre,
       descripcion: data.descripcion,
-      categoriaId: data.categoriaId,
-      marcaId: data.marcaId,
+      categoriaId: categoriaIdNorm,
+      marcaId: marcaIdNorm,
       material: data.material,
       indice: data.indice,
       tratamientos: Array.isArray(data.tratamientos) ? data.tratamientos : (data.tratamientos ? [data.tratamientos] : []),
@@ -131,6 +134,8 @@ async function updateLenteCristal(req, res) {
     }
 
     const data = req.body || {};
+    const categoriaIdNormU = (data.categoriaId && typeof data.categoriaId === 'object') ? (data.categoriaId._id || data.categoriaId.id || '') : data.categoriaId;
+    const marcaIdNormU = (data.marcaId && typeof data.marcaId === 'object') ? (data.marcaId._id || data.marcaId.id || '') : data.marcaId;
     let imagenes = data.imagenes || [];
 
     if (req.files && req.files.length > 0) {
@@ -152,8 +157,8 @@ async function updateLenteCristal(req, res) {
   const setData = {
       nombre: data.nombre,
       descripcion: data.descripcion,
-      categoriaId: data.categoriaId,
-      marcaId: data.marcaId,
+      categoriaId: categoriaIdNormU,
+      marcaId: marcaIdNormU,
       material: data.material,
       indice: data.indice,
       tratamientos: Array.isArray(data.tratamientos) ? data.tratamientos : (data.tratamientos ? [data.tratamientos] : undefined),
