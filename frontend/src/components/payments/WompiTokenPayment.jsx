@@ -3,11 +3,11 @@ import API_CONFIG, { buildApiUrl } from "../../config/api";
 
 const WompiTokenPayment = forwardRef(({ amount, email, name, configuracion, datosAdicionales, headers = {}, onResult }, ref) => {
   const [form, setForm] = useState({
-    number: "4242424242424242",
-    exp_month: "08",
-    exp_year: "28",
-    cvc: "123",
-    card_holder: name || "",
+    number: "",
+    exp_month: "",
+    exp_year: "",
+    cvc: "",
+    card_holder: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [tokenTarjeta, setTokenTarjeta] = useState("");
@@ -17,27 +17,16 @@ const WompiTokenPayment = forwardRef(({ amount, email, name, configuracion, dato
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  // Dev-safe tokenization (no envío de PAN): genera un token local
+  // Dev-safe tokenization (no envío de PAN): genera un token local solo si hay datos mínimos
   const handleTokenize = () => {
     const last4 = (form.number || "").slice(-4);
-    const mock = `tok_dev_${Date.now()}_${last4}`;
+    if (!form.number || !form.exp_month || !form.exp_year || !form.cvc || !form.card_holder) return null;
+    const mock = `tok_dev_${Date.now()}_${last4 || '0000'}`;
     setTokenTarjeta(mock);
+    return mock;
   };
 
-  // Auto-tokenize al montar el componente o cuando cambia el titular
-  useEffect(() => {
-    // Si no hay token aún, autogenerarlo (solo mock para dev)
-    if (!tokenTarjeta) {
-      const last4 = (form.number || "").slice(-4) || "0000";
-      const mock = `tok_dev_${Date.now()}_${last4}`;
-      setTokenTarjeta(mock);
-    }
-    // Asegurar que el titular refleje el nombre proporcionado
-    if (name && form.card_holder !== name) {
-      setForm((f) => ({ ...f, card_holder: name }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [name]);
+  // No auto-tokenize ni auto-rellenar nombre: se requiere entrada manual
 
   const handlePay = async () => {
     if (!amount || amount <= 0) {
@@ -47,11 +36,19 @@ const WompiTokenPayment = forwardRef(({ amount, email, name, configuracion, dato
 
     setSubmitting(true);
     try {
-      const token = tokenTarjeta;
+      // Generar token si aún no existe y hay datos
+      let token = tokenTarjeta;
+      if (!token) {
+        token = handleTokenize();
+      }
+      if (!token) {
+        onResult?.({ ok: false, error: "Completa los datos de la tarjeta" });
+        return { ok: false, error: "Completa los datos de la tarjeta" };
+      }
       const payload = {
         monto: Number(amount),
         emailCliente: email || "",
-        nombreCliente: form.card_holder || name || "",
+        nombreCliente: form.card_holder || "",
         tokenTarjeta: token,
         configuracion: {
           emailsNotificacion: "",
@@ -114,12 +111,12 @@ const WompiTokenPayment = forwardRef(({ amount, email, name, configuracion, dato
   return (
     <div className="space-y-3 bg-sky-50 border border-sky-100 rounded-xl p-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
-        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" name="number" value={form.number} onChange={handleChange} placeholder="Número de tarjeta" />
-        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" name="exp_month" value={form.exp_month} onChange={handleChange} placeholder="MM" />
-        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" name="exp_year" value={form.exp_year} onChange={handleChange} placeholder="YY" />
-        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" name="cvc" value={form.cvc} onChange={handleChange} placeholder="CVC" />
+        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" id="cc-number" name="number" value={form.number} onChange={handleChange} placeholder="Número de tarjeta" autoComplete="cc-number" />
+        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" id="cc-exp-month" name="exp_month" value={form.exp_month} onChange={handleChange} placeholder="MM" autoComplete="cc-exp-month" />
+        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" id="cc-exp-year" name="exp_year" value={form.exp_year} onChange={handleChange} placeholder="YY" autoComplete="cc-exp-year" />
+        <input className="border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-sky-300" id="cc-csc" name="cvc" value={form.cvc} onChange={handleChange} placeholder="CVC" autoComplete="cc-csc" />
       </div>
-      <input className="border border-gray-200 rounded-lg px-3 py-2 w-full focus:ring-1 focus:ring-sky-300" name="card_holder" value={form.card_holder} onChange={handleChange} placeholder="Titular" />
+      <input className="border border-gray-200 rounded-lg px-3 py-2 w-full focus:ring-1 focus:ring-sky-300" id="cc-name" name="card_holder" value={form.card_holder} onChange={handleChange} placeholder="Titular (como aparece en la tarjeta)" autoComplete="cc-name" />
       {/* UI de token ocultada para evitar ruido visual */}
     </div>
   );

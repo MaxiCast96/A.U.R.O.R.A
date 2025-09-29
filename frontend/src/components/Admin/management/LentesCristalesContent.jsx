@@ -1,8 +1,8 @@
 // src/components/Admin/management/LentesCristalesContent.jsx
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { API_CONFIG } from '../../../config/api';
-import { Glasses, Plus, RefreshCcw, Edit, Trash2 } from 'lucide-react';
+import { Glasses, Plus, RefreshCcw, Edit, Trash2, Tag } from 'lucide-react';
 import LentesCristalesFormModal from './LentesCristalesFormModal';
 
 const LentesCristalesContent = () => {
@@ -13,6 +13,14 @@ const LentesCristalesContent = () => {
   const [editingItem, setEditingItem] = useState(null);
   const [marcas, setMarcas] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  // filtros
+  const [search, setSearch] = useState('');
+  const [marcaId, setMarcaId] = useState('todos');
+  const [categoriaId, setCategoriaId] = useState('todos');
+  const [promosOnly, setPromosOnly] = useState(false);
+  // ordenamiento
+  const [sortBy, setSortBy] = useState('nombre'); // nombre | marca | precio
+  const [sortDir, setSortDir] = useState('asc');   // asc | desc
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -37,6 +45,33 @@ const LentesCristalesContent = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // lista filtrada y ordenada
+  const filtered = useMemo(() => {
+    const res = (items || []).filter(it => {
+      if (promosOnly && !it.enPromocion) return false;
+      if (marcaId !== 'todos' && (it.marcaId?._id || it.marcaId) !== marcaId) return false;
+      if (categoriaId !== 'todos' && (it.categoriaId?._id || it.categoriaId) !== categoriaId) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        const hay = [it.nombre, it.descripcion, it.material, it.indice]
+          .some(v => (String(v || '')).toLowerCase().includes(q));
+        if (!hay) return false;
+      }
+      return true;
+    });
+    const valOf = (it) => {
+      if (sortBy === 'precio') return (it.enPromocion ? it.precioActual : it.precioBase) ?? 0;
+      if (sortBy === 'marca') return (it.marcaId?.nombre || '').toLowerCase();
+      return (it.nombre || '').toLowerCase();
+    };
+    return res.sort((a,b) => {
+      const A = valOf(a); const B = valOf(b);
+      if (A < B) return sortDir === 'asc' ? -1 : 1;
+      if (A > B) return sortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [items, search, marcaId, categoriaId, promosOnly, sortBy, sortDir]);
+
   const openCreate = () => { setEditingItem(null); setShowModal(true); };
   const openEdit = (it) => { setEditingItem(it); setShowModal(true); };
   const closeModal = () => { setShowModal(false); setEditingItem(null); };
@@ -60,12 +95,19 @@ const LentesCristalesContent = () => {
       if (enPromo && form.precioActual !== undefined) fd.append('precioActual', String(form.precioActual));
       if (enPromo && form.promocionId) fd.append('promocionId', form.promocionId);
       // imágenes
+      // Preservar URLs existentes (si las hay)
+      if (Array.isArray(form.imagenes) && form.imagenes.length > 0) {
+        form.imagenes.forEach((url) => {
+          if (typeof url === 'string' && url.trim()) fd.append('imagenes', url.trim());
+        });
+      }
       (files || []).slice(0, 5).forEach(f => fd.append('imagenes', f));
 
+      const config = { headers: { 'Content-Type': 'multipart/form-data' } };
       if (editingItem && editingItem._id) {
-        await axios.put(`${base}/lentes-cristales/${editingItem._id}`, fd);
+        await axios.put(`${base}/lentes-cristales/${editingItem._id}`, fd, config);
       } else {
-        await axios.post(`${base}/lentes-cristales`, fd);
+        await axios.post(`${base}/lentes-cristales`, fd, config);
       }
       await fetchData();
       closeModal();
@@ -108,8 +150,62 @@ const LentesCristalesContent = () => {
         </div>
       </div>
 
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-3 bg-white border rounded-xl p-3">
+        <div className="flex-1 min-w-[240px]">
+          <input
+            value={search}
+            onChange={e=>setSearch(e.target.value)}
+            placeholder="Buscar por nombre, descripción, material, índice..."
+            className="w-full border rounded-lg px-3 py-2"
+          />
+        </div>
+        <select value={marcaId} onChange={e=>setMarcaId(e.target.value)} className="border rounded-lg px-3 py-2 min-w-[200px]">
+          <option value="todos">Todas las marcas</option>
+          {marcas.map(m => <option key={m._id} value={m._id}>{m.nombre}</option>)}
+        </select>
+        <select value={categoriaId} onChange={e=>setCategoriaId(e.target.value)} className="border rounded-lg px-3 py-2 min-w-[200px]">
+          <option value="todos">Todas las categorías</option>
+          {categorias.map(c => <option key={c._id} value={c._id}>{c.nombre}</option>)}
+        </select>
+        <label className="inline-flex items-center gap-2 text-sm px-3 py-2 bg-gray-50 rounded-lg border">
+          <input type="checkbox" checked={promosOnly} onChange={e=>setPromosOnly(e.target.checked)} /> Solo promociones
+        </label>
+        <select value={sortBy} onChange={e=>setSortBy(e.target.value)} className="border rounded-lg px-3 py-2 min-w-[160px]">
+          <option value="nombre">Ordenar: Nombre</option>
+          <option value="marca">Ordenar: Marca</option>
+          <option value="precio">Ordenar: Precio</option>
+        </select>
+        <select value={sortDir} onChange={e=>setSortDir(e.target.value)} className="border rounded-lg px-3 py-2 min-w-[130px]">
+          <option value="asc">Ascendente</option>
+          <option value="desc">Descendente</option>
+        </select>
+        <button
+          onClick={()=>{ setSearch(''); setMarcaId('todos'); setCategoriaId('todos'); setPromosOnly(false); setSortBy('nombre'); setSortDir('asc'); }}
+          className="px-3 py-2 rounded-lg border hover:bg-gray-100"
+        >Limpiar</button>
+      </div>
+
       {loading && (
-        <div className="bg-white rounded-xl shadow p-6 text-gray-500">Cargando...</div>
+        <div className="bg-white rounded-xl shadow overflow-hidden">
+          <div className="p-4 border-b text-gray-500">Cargando...</div>
+          <div className="divide-y">
+            {[...Array(6)].map((_,i)=>(
+              <div key={i} className="flex items-center justify-between px-6 py-4 animate-pulse">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 border"/>
+                  <div>
+                    <div className="h-4 bg-gray-100 rounded w-40 mb-2"/>
+                    <div className="h-3 bg-gray-100 rounded w-28"/>
+                  </div>
+                </div>
+                <div className="h-4 bg-gray-100 rounded w-24"/>
+                <div className="h-4 bg-gray-100 rounded w-24"/>
+                <div className="h-4 bg-gray-100 rounded w-24"/>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {error && (
@@ -129,7 +225,7 @@ const LentesCristalesContent = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {items.map((it) => (
+              {filtered.map((it) => (
                 <tr key={it._id}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -142,7 +238,11 @@ const LentesCristalesContent = () => {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">{it.marcaId?.nombre || '—'}</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs">
+                      <Tag className="w-3 h-3"/>{it.marcaId?.nombre || '—'}
+                    </span>
+                  </td>
                   <td className="px-6 py-4">{it.material} / {it.indice}</td>
                   <td className="px-6 py-4">${(it.enPromocion ? it.precioActual : it.precioBase)?.toFixed?.(2) || '0.00'}</td>
                   <td className="px-6 py-4 text-right">
@@ -157,9 +257,11 @@ const LentesCristalesContent = () => {
                   </td>
                 </tr>
               ))}
-              {items.length === 0 && (
+              {(filtered.length === 0 && !loading) && (
                 <tr>
-                  <td className="px-6 py-8 text-center text-gray-500" colSpan={5}>Sin datos</td>
+                  <td className="px-6 py-8 text-center text-gray-500" colSpan={5}>
+                    Sin resultados. Ajusta los filtros o agrega un nuevo cristal.
+                  </td>
                 </tr>
               )}
             </tbody>

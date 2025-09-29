@@ -40,7 +40,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
   // Modal para seleccionar Aro cuando se agrega un Cristal
   const [showSelectAroModal, setShowSelectAroModal] = useState(false);
   const [pendingCristal, setPendingCristal] = useState(null);
-  // Filtros y paginaciÃ³n del modal de Aros
+  // Filtros y paginación del modal de Aros
   const [selectAroSearch, setSelectAroSearch] = useState('');
   const [selectAroMarca, setSelectAroMarca] = useState('todos');
   const [selectAroMaterial, setSelectAroMaterial] = useState('todos');
@@ -53,13 +53,13 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
   const { addItem } = useCart() || {};
   const { user } = useAuth();
 
-  // PaginaciÃ³n server-side
+  // Paginación server-side
   const [pageSize, setPageSize] = useState(12);
   const [pageLentes, setPageLentes] = useState(1);
   const [pageAccesorios, setPageAccesorios] = useState(1);
   const [pageCristales, setPageCristales] = useState(1);
 
-  // Datos del backend usando useApiData con paginaciÃ³n
+  // Datos del backend usando useApiData con paginación
   const { data: lentes, loading: loadingLentes, error: errorLentes, success: successLentes, pagination: paginationLentes } = useApiData('lentes', { page: pageLentes, limit: pageSize });
   const { data: cristales, loading: loadingCristales, error: errorCristales, success: successCristales, pagination: paginationCristales } = useApiData('lentes-cristales', { page: pageCristales, limit: pageSize });
   const { data: accesorios, loading: loadingAccesorios, error: errorAccesorios, success: successAccesorios, pagination: paginationAccesorios } = useApiData('accesorios', { page: pageAccesorios, limit: pageSize });
@@ -89,19 +89,13 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     const derivedMin = prices.length ? Math.min(...prices) : 0;
     const derivedMax = prices.length ? Math.max(...prices) : 10000;
 
-    // Asegurar que el rango se ajuste cuando cambian datos (solo si realmente cambia)
+    // Asegurar que el rango se ajuste cuando cambian datos
     useEffect(() => {
-      let pageNeedsReset = false;
-      setSelectAroPriceRange(prev => {
-        const next = {
-          min: Math.max(derivedMin, prev?.min ?? derivedMin),
-          max: Math.min(derivedMax, prev?.max ?? derivedMax)
-        };
-        const changed = (next.min !== prev?.min) || (next.max !== prev?.max);
-        pageNeedsReset = changed;
-        return changed ? next : prev;
-      });
-      if (pageNeedsReset) setSelectAroPage(1);
+      setSelectAroPriceRange(prev => ({
+        min: Math.max(derivedMin, prev.min ?? derivedMin),
+        max: Math.min(derivedMax, prev.max ?? derivedMax)
+      }));
+      setSelectAroPage(1);
     }, [derivedMin, derivedMax]);
 
     const uniqueMarcas = ['todos', ...Array.from(new Set(allAros.map(a => a?.marcaId?.nombre).filter(Boolean)))];
@@ -135,7 +129,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   </p>
                 )}
               </div>
-              <button onClick={closeSelectAroModal} className="text-slate-500 hover:text-slate-700">×</button>
+              <button onClick={closeSelectAroModal} className="text-slate-500 hover:text-slate-700">✕</button>
             </div>
           </div>
           <div className="p-6 space-y-4">
@@ -147,15 +141,11 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 value={selectAroSearch}
                 onChange={(e) => { setSelectAroSearch(e.target.value); setSelectAroPage(1); }}
                 className="md:col-span-2 w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-                id="selectAroSearch"
-                name="selectAroSearch"
               />
               <select
                 value={selectAroMarca}
                 onChange={(e) => { setSelectAroMarca(e.target.value); setSelectAroPage(1); }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-                id="selectAroMarca"
-                name="selectAroMarca"
               >
                 {uniqueMarcas.map(m => (
                   <option key={m} value={m}>{m === 'todos' ? 'Todas las marcas' : m}</option>
@@ -165,8 +155,6 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 value={selectAroMaterial}
                 onChange={(e) => { setSelectAroMaterial(e.target.value); setSelectAroPage(1); }}
                 className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-                id="selectAroMaterial"
-                name="selectAroMaterial"
               >
                 {uniqueMateriales.map(m => (
                   <option key={m} value={m}>{m === 'todos' ? 'Todos los materiales' : m}</option>
@@ -180,8 +168,6 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   value={selectAroPriceRange.min}
                   onChange={(e) => { setSelectAroPriceRange(r => ({ ...r, min: Number(e.target.value) })); setSelectAroPage(1); }}
                   className="w-1/2 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-                  id="selectAroPriceMin"
-                  name="selectAroPriceMin"
                 />
                 <span className="text-slate-500 text-sm">-</span>
                 <input
@@ -191,8 +177,6 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   value={selectAroPriceRange.max}
                   onChange={(e) => { setSelectAroPriceRange(r => ({ ...r, max: Number(e.target.value) })); setSelectAroPage(1); }}
                   className="w-1/2 px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
-                  id="selectAroPriceMax"
-                  name="selectAroPriceMax"
                 />
               </div>
             </div>
@@ -206,7 +190,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 {pageItems && pageItems.length > 0 ? (
                   pageItems.map((aro) => {
                     const price = Number(aro?.precioActual ?? aro?.precioBase ?? 0);
-                    const marca = aro?.marcaId?.nombre || 'â€”';
+                    const marca = aro?.marcaId?.nombre || '—';
                     const img = getProductImage(aro);
                     return (
                       <div key={aro._id} className="border border-slate-200 rounded-lg overflow-hidden flex flex-col">
@@ -238,7 +222,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 )}
               </div>
             )}
-            {/* PaginaciÃ³n */}
+            {/* Paginación */}
             <div className="flex items-center justify-between pt-2">
               <div className="text-slate-600 text-sm">
                 Mostrando {filteredAros.length === 0 ? 0 : (start + 1)} - {Math.min(start + pageItems.length, filteredAros.length)} de {filteredAros.length}
@@ -484,7 +468,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         material: 'Metal',
         color: 'Dorado',
         tipoLente: 'Graduado',
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Lente1.png']
       },
       {
         _id: '2',
@@ -497,7 +481,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         material: 'Plástico',
         color: 'Negro',
         tipoLente: 'Polarizado',
-        imagenes: ['/img/Lente2.png']
+        imagenes: ['/src/pages/public/img/Lente2.png']
       },
       {
         _id: '3',
@@ -510,7 +494,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         material: 'Metal',
         color: 'Plateado',
         tipoLente: 'Graduado',
-        imagenes: ['/img/Lente3.png']
+        imagenes: ['/src/pages/public/img/Lente3.png']
       },
       {
         _id: '4',
@@ -520,10 +504,10 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 240,
         categoriaId: { nombre: 'Lentes Deportivos' },
         marcaId: { nombre: 'Prada' },
-        material: 'PlÃ¡stico',
+        material: 'Plástico',
         color: 'Rojo',
         tipoLente: 'Polarizado',
-        imagenes: ['/img/Lente5.png']
+        imagenes: ['/src/pages/public/img/Lente5.png']
       },
       {
         _id: '5',
@@ -536,7 +520,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         material: 'Metal',
         color: 'Negro',
         tipoLente: 'Graduado',
-        imagenes: ['/img/Lente6.png']
+        imagenes: ['/src/pages/public/img/Lente6.png']
       },
       {
         _id: '6',
@@ -549,7 +533,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         material: 'Plástico',
         color: 'Verde',
         tipoLente: 'Polarizado',
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Lente1.png']
       },
       {
         _id: '7',
@@ -562,7 +546,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         material: 'Plástico',
         color: 'Marrón',
         tipoLente: 'Polarizado',
-        imagenes: ['/img/Lente2.png']
+        imagenes: ['/src/pages/public/img/Lente2.png']
       },
       {
         _id: '8',
@@ -572,10 +556,10 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 200,
         categoriaId: { nombre: 'Lentes Deportivos' },
         marcaId: { nombre: 'Costa' },
-        material: 'PlÃ¡stico',
+        material: 'Plástico',
         color: 'Azul',
         tipoLente: 'Polarizado',
-        imagenes: ['/img/Lente3.png']
+        imagenes: ['/src/pages/public/img/Lente3.png']
       }
     ],
     accesorios: [
@@ -587,7 +571,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 20,
         categoriaId: { nombre: 'Accesorios' },
         marcaId: { nombre: 'Genérico' },
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Accesorio.png']
       },
       {
         _id: '2',
@@ -597,7 +581,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 12,
         categoriaId: { nombre: 'Accesorios' },
         marcaId: { nombre: 'Genérico' },
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Accesorio.png']
       },
       {
         _id: '3',
@@ -607,7 +591,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 15,
         categoriaId: { nombre: 'Accesorios' },
         marcaId: { nombre: 'Genérico' },
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Accesorio.png']
       },
       {
         _id: '4',
@@ -617,7 +601,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 18,
         categoriaId: { nombre: 'Accesorios' },
         marcaId: { nombre: 'Genérico' },
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Accesorio.png']
       },
       {
         _id: '5',
@@ -627,7 +611,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 30,
         categoriaId: { nombre: 'Accesorios' },
         marcaId: { nombre: 'Genérico' },
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Accesorio.png']
       },
       {
         _id: '6',
@@ -637,7 +621,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioActual: 40,
         categoriaId: { nombre: 'Accesorios' },
         marcaId: { nombre: 'Genérico' },
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Accesorio.png']
       }
     ],
     personalizables: [
@@ -651,7 +635,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         productoBaseId: { nombre: 'Base Premium', descripcion: 'Producto base de alta calidad' },
         marcaId: { nombre: 'Personalizado' },
         estado: 'pendiente',
-        imagenes: ['/img/Lente4.png']
+        imagenes: ['/src/pages/public/img/Lente4.png']
       },
       {
         _id: '2',
@@ -663,7 +647,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         productoBaseId: { nombre: 'Base Deportivo', descripcion: 'Base para actividades deportivas' },
         marcaId: { nombre: 'Personalizado' },
         estado: 'en_proceso',
-        imagenes: ['/img/Lente5.png']
+        imagenes: ['/src/pages/public/img/Lente5.png']
       },
       {
         _id: '3',
@@ -675,7 +659,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         productoBaseId: { nombre: 'Base Lujo', descripcion: 'Base de materiales premium' },
         marcaId: { nombre: 'Personalizado' },
         estado: 'completado',
-        imagenes: ['/img/Lente6.png']
+        imagenes: ['/src/pages/public/img/Lente6.png']
       },
       {
         _id: '4',
@@ -684,10 +668,10 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         precioCalculado: 280,
         categoria: 'Personalizado',
         clienteId: { nombre: 'Cliente', apellido: 'Infantil' },
-        productoBaseId: { nombre: 'Base Infantil', descripcion: 'Base segura para niÃ±os' },
+        productoBaseId: { nombre: 'Base Infantil', descripcion: 'Base segura para niños' },
         marcaId: { nombre: 'Personalizado' },
         estado: 'pendiente',
-        imagenes: ['']
+        imagenes: ['/src/pages/public/img/Lente1.png']
       },
       {
         _id: '5',
@@ -699,15 +683,15 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         productoBaseId: { nombre: 'Base Digital', descripcion: 'Base con filtro azul' },
         marcaId: { nombre: 'Personalizado' },
         estado: 'en_proceso',
-        imagenes: ['/img/Lente2.png']
+        imagenes: ['/src/pages/public/img/Lente2.png']
       }
     ]
   };
 
-  // Filtrar productos segÃºn bÃºsqueda y filtros activos
+  // Filtrar productos según búsqueda y filtros activos
   const filterProducts = (products) => {
     if (!Array.isArray(products)) {
-      console.warn('filterProducts: products no es un array vÃ¡lido:', products);
+      console.warn('filterProducts: products no es un array válido:', products);
       return [];
     }
     
@@ -717,7 +701,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         return false;
       }
 
-      // Filtro por bÃºsqueda (mÃ¡s inteligente)
+      // Filtro por búsqueda (más inteligente)
       const searchLower = searchTerm.toLowerCase();
       const matchesSearch = !searchTerm || 
                            (product.nombre && product.nombre.toLowerCase().includes(searchLower)) ||
@@ -726,7 +710,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                            (product.color && product.color.toLowerCase().includes(searchLower)) ||
                            (product.tipoLente && product.tipoLente.toLowerCase().includes(searchLower));
       
-      // Filtro por categorÃ­a
+      // Filtro por categoría
       const matchesCategory = selectedCategory === 'todos' || 
                              (product.categoriaId && product.categoriaId.nombre === selectedCategory) ||
                              (product.categoria === selectedCategory);
@@ -747,7 +731,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       const price = product.precioActual || product.precioBase || product.precioCalculado || 0;
       const matchesPrice = price >= priceRange.min && price <= priceRange.max;
 
-      // Filtro por promociÃ³n (si estÃ¡ activo)
+      // Filtro por promoción (si está activo)
       const hasPromo = (product.precioBase && product.precioActual && product.precioActual < product.precioBase) || product.enPromocion === true;
       const matchesPromo = !promoOnly || hasPromo;
       
@@ -755,11 +739,11 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     });
   };
 
-  // FunciÃ³n para ordenar productos
+  // Función para ordenar productos
   const sortProducts = (products) => {
-    // Validar que products sea un array vÃ¡lido
+    // Validar que products sea un array válido
     if (!Array.isArray(products)) {
-      console.warn('sortProducts: products no es un array vÃ¡lido:', products);
+      console.warn('sortProducts: products no es un array válido:', products);
       return [];
     }
     
@@ -794,7 +778,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos segÃºn la ruta
+  // Función para obtener productos según la ruta
   const getCurrentProducts = () => {
     switch (location.pathname) {
       case "/productos/lentes":
@@ -815,7 +799,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
 
 
 
-  // FunciÃ³n para manejar el estado de carga y errores
+  // Función para manejar el estado de carga y errores
   const getLoadingState = () => {
     const currentProducts = getCurrentProducts();
     const filteredProducts = filterProducts(currentProducts.data);
@@ -827,7 +811,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     };
   };
 
-  // FunciÃ³n para obtener mensajes de estado
+  // Función para obtener mensajes de estado
   const getStatusMessage = () => {
     const currentProducts = getCurrentProducts();
     const filteredProducts = filterProducts(currentProducts.data);
@@ -852,11 +836,11 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return `Mostrando ${currentProducts.data.length} productos`;
   };
 
-  // Estado para paginaciÃ³n client-side (mantener para listas combinadas y fallback)
+  // Estado para paginación client-side (mantener para listas combinadas y fallback)
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(12);
 
-  // FunciÃ³n para obtener productos paginados
+  // Función para obtener productos paginados
   const getPaginatedProducts = () => {
     const currentProducts = getCurrentProducts();
     const filteredProducts = filterProducts(currentProducts.data);
@@ -874,26 +858,26 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     };
   };
 
-  // Reset pÃ¡ginas server-side al cambiar de ruta
+  // Reset páginas server-side al cambiar de ruta
   useEffect(() => {
     setPageLentes(1);
     setPageAccesorios(1);
     setPageCristales(1);
   }, [location.pathname]);
 
-  // FunciÃ³n para cambiar de pÃ¡gina
+  // Función para cambiar de página
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
     // Scroll al inicio de la lista de productos
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Resetear pÃ¡gina cuando cambien los filtros
+  // Resetear página cuando cambien los filtros
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedCategory, selectedMarca, selectedMaterial, selectedColor, priceRange, sortBy]);
 
-  // FunciÃ³n para exportar datos de productos
+  // Función para exportar datos de productos
   const exportProducts = () => {
     const currentProducts = getCurrentProducts();
     const filteredProducts = filterProducts(currentProducts.data);
@@ -930,7 +914,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     document.body.removeChild(link);
   };
 
-  // FunciÃ³n para exportar solo los productos filtrados
+  // Función para exportar solo los productos filtrados
   const exportFilteredProducts = () => {
     const currentProducts = getCurrentProducts();
     const filteredProducts = filterProducts(currentProducts.data);
@@ -971,7 +955,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     document.body.removeChild(link);
   };
 
-  // FunciÃ³n para limpiar filtros
+  // Función para limpiar filtros
   const clearFilters = () => {
     setSearchTerm('');
     setSearchInput('');
@@ -984,12 +968,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     setCurrentPage(1);
   };
 
-  // FunciÃ³n para obtener filtros activos
+  // Función para obtener filtros activos
   const getActiveFilters = () => {
     const filters = [];
     
-    if (searchTerm) filters.push(`BÃºsqueda: "${searchTerm}"`);
-    if (selectedCategory !== 'todos') filters.push(`CategorÃ­a: ${selectedCategory}`);
+    if (searchTerm) filters.push(`Búsqueda: "${searchTerm}"`);
+    if (selectedCategory !== 'todos') filters.push(`Categoría: ${selectedCategory}`);
     if (selectedMarca !== 'todos') filters.push(`Marca: ${selectedMarca}`);
     if (selectedMaterial !== 'todos') filters.push(`Material: ${selectedMaterial}`);
     if (selectedColor !== 'todos') filters.push(`Color: ${selectedColor}`);
@@ -999,7 +983,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return filters;
   };
 
-  // FunciÃ³n para aplicar filtros predefinidos
+  // Función para aplicar filtros predefinidos
   const applyPresetFilter = (preset) => {
     switch (preset) {
       case 'ofertas':
@@ -1026,10 +1010,10 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     setCurrentPage(1);
   };
 
-  // Estado para historial de bÃºsquedas
+  // Estado para historial de búsquedas
   const [searchHistory, setSearchHistory] = useState([]);
 
-  // FunciÃ³n para agregar bÃºsqueda al historial
+  // Función para agregar búsqueda al historial
   const addToSearchHistory = (search) => {
     if (search && !searchHistory.includes(search)) {
       const newHistory = [search, ...searchHistory.filter(item => item !== search)].slice(0, 10);
@@ -1037,7 +1021,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para guardar historial en localStorage
+  // Función para guardar historial en localStorage
   const saveSearchHistory = () => {
     try {
       localStorage.setItem('aurora-search-history', JSON.stringify(searchHistory));
@@ -1046,7 +1030,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para cargar historial desde localStorage
+  // Función para cargar historial desde localStorage
   const loadSearchHistory = () => {
     try {
       const savedHistory = localStorage.getItem('aurora-search-history');
@@ -1058,19 +1042,19 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para usar bÃºsqueda del historial
+  // Función para usar búsqueda del historial
   const useSearchFromHistory = (search) => {
     setSearchTerm(search);
     setSearchInput(search);
     setCurrentPage(1);
   };
 
-  // FunciÃ³n para limpiar historial
+  // Función para limpiar historial
   const clearSearchHistory = () => {
     setSearchHistory([]);
   };
 
-  // Agregar bÃºsqueda al historial cuando se realice
+  // Agregar búsqueda al historial cuando se realice
   useEffect(() => {
     if (searchTerm && searchTerm.length > 2) {
       addToSearchHistory(searchTerm);
@@ -1080,7 +1064,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
   // Estado para favoritos
   const [favorites, setFavorites] = useState([]);
 
-  // FunciÃ³n para agregar/quitar de favoritos
+  // Función para agregar/quitar de favoritos
   const toggleFavorite = (productId) => {
     setFavorites(prev => 
       prev.includes(productId) 
@@ -1089,25 +1073,25 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     );
   };
 
-  // FunciÃ³n para verificar si un producto es favorito
+  // Función para verificar si un producto es favorito
   const isFavorite = (productId) => favorites.includes(productId);
 
-  // FunciÃ³n para obtener solo favoritos
+  // Función para obtener solo favoritos
   const getFavoritesOnly = () => {
     const currentProducts = getCurrentProducts();
     return currentProducts.data.filter(product => favorites.includes(product._id));
   };
 
-  // FunciÃ³n para limpiar favoritos
+  // Función para limpiar favoritos
   const clearFavorites = () => {
     setFavorites([]);
   };
 
-  // Estado para comparaciÃ³n de productos
+  // Estado para comparación de productos
   const [compareList, setCompareList] = useState([]);
   const maxCompareItems = 4;
 
-  // FunciÃ³n para agregar/quitar producto de comparaciÃ³n
+  // Función para agregar/quitar producto de comparación
   const toggleCompare = (productId) => {
     setCompareList(prev => {
       if (prev.includes(productId)) {
@@ -1115,27 +1099,27 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       } else if (prev.length < maxCompareItems) {
         return [...prev, productId];
       } else {
-        // Reemplazar el Ãºltimo elemento si ya hay mÃ¡ximo
+        // Reemplazar el último elemento si ya hay máximo
         return [...prev.slice(1), productId];
       }
     });
   };
 
-  // FunciÃ³n para verificar si un producto estÃ¡ en comparaciÃ³n
+  // Función para verificar si un producto está en comparación
   const isInCompare = (productId) => compareList.includes(productId);
 
-  // FunciÃ³n para obtener productos para comparar
+  // Función para obtener productos para comparar
   const getCompareProducts = () => {
     const currentProducts = getCurrentProducts();
     return currentProducts.data.filter(product => compareList.includes(product._id));
   };
 
-  // FunciÃ³n para limpiar comparaciÃ³n
+  // Función para limpiar comparación
   const clearCompare = () => {
     setCompareList([]);
   };
 
-  // FunciÃ³n para comparar productos
+  // Función para comparar productos
   const compareProducts = () => {
     const productsToCompare = getCompareProducts();
     if (productsToCompare.length < 2) {
@@ -1143,15 +1127,15 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       return;
     }
     
-    // AquÃ­ podrÃ­as abrir un modal de comparaciÃ³n o navegar a una pÃ¡gina de comparaciÃ³n
+    // Aquí podrías abrir un modal de comparación o navegar a una página de comparación
   };
 
-  // FunciÃ³n para cambiar modo de vista
+  // Función para cambiar modo de vista
   const toggleViewMode = () => {
     setViewMode(prev => prev === 'grid' ? 'list' : 'grid');
   };
 
-  // FunciÃ³n para obtener productos ordenados y filtrados
+  // Función para obtener productos ordenados y filtrados
   const getDisplayProducts = () => {
     const currentProducts = getCurrentProducts();
     const filteredProducts = filterProducts(currentProducts.data);
@@ -1165,7 +1149,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     };
   };
 
-  // FunciÃ³n para obtener sugerencias de bÃºsqueda
+  // Función para obtener sugerencias de búsqueda
   const getSearchSuggestions = () => {
     const currentProducts = getCurrentProducts();
     const allNames = currentProducts.data.map(p => p.nombre).filter(Boolean);
@@ -1178,7 +1162,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     ).slice(0, 5);
   };
 
-  // FunciÃ³n para obtener filtros disponibles basados en productos actuales
+  // Función para obtener filtros disponibles basados en productos actuales
   const getAvailableFilters = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1204,9 +1188,9 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     };
   };
 
-  // FunciÃ³n para obtener filtros disponibles desde el backend
+  // Función para obtener filtros disponibles desde el backend
   const getBackendAvailableFilters = () => {
-    // Usar directamente los datos del backend para categorÃ­as y marcas
+    // Usar directamente los datos del backend para categorías y marcas
     const availableCategories = categorias?.map(cat => cat.nombre) || [];
     const availableBrands = marcas?.map(marca => marca.nombre) || [];
     
@@ -1232,12 +1216,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     };
   };
 
-  // FunciÃ³n para obtener opciones de filtros dinÃ¡micas
+  // Función para obtener opciones de filtros dinámicas
   const getFilterOptions = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
     
-    // Obtener opciones Ãºnicas de cada filtro
+    // Obtener opciones únicas de cada filtro
     const categories = [...new Set(products.map(p => p.categoriaId?.nombre || p.categoria).filter(Boolean))];
     const brands = [...new Set(products.map(p => p.marcaId?.nombre).filter(Boolean))];
     const materials = [...new Set(products.map(p => p.material).filter(Boolean))];
@@ -1246,7 +1230,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return { categories, brands, materials, colors };
   };
 
-  // FunciÃ³n para obtener opciones de filtros desde el backend
+  // Función para obtener opciones de filtros desde el backend
   const getBackendFilterOptions = () => {
     // Usar directamente los datos del backend
     const categories = categorias?.map(cat => cat.nombre) || [];
@@ -1261,7 +1245,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return { categories, brands, materials, colors };
   };
 
-  // FunciÃ³n para obtener el conteo de productos por opciÃ³n de filtro
+  // Función para obtener el conteo de productos por opción de filtro
   const getFilterOptionCount = (filterType, optionValue) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1280,7 +1264,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener el conteo de productos por opciÃ³n de filtro del backend
+  // Función para obtener el conteo de productos por opción de filtro del backend
   const getBackendFilterOptionCount = (filterType, optionValue) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1299,7 +1283,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para aplicar filtros mÃºltiples
+  // Función para aplicar filtros múltiples
   const applyMultipleFilters = (filters) => {
     if (filters.categories) setSelectedCategory(filters.categories);
     if (filters.brands) setSelectedMarca(filters.brands);
@@ -1308,7 +1292,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     setCurrentPage(1);
   };
 
-  // FunciÃ³n para guardar filtros en localStorage
+  // Función para guardar filtros en localStorage
   const saveFiltersToStorage = () => {
     const filters = {
       searchTerm,
@@ -1324,7 +1308,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     localStorage.setItem('aurora-product-filters', JSON.stringify(filters));
   };
 
-  // FunciÃ³n para cargar filtros desde localStorage
+  // Función para cargar filtros desde localStorage
   const loadFiltersFromStorage = () => {
     try {
       const savedFilters = localStorage.getItem('aurora-product-filters');
@@ -1357,12 +1341,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     saveFiltersToStorage();
   }, [searchTerm, selectedCategory, selectedMarca, selectedMaterial, selectedColor, priceRange, sortBy, viewMode]);
 
-  // Guardar historial de bÃºsqueda cuando cambie
+  // Guardar historial de búsqueda cuando cambie
   useEffect(() => {
     saveSearchHistory();
   }, [searchHistory]);
 
-  // FunciÃ³n para obtener estadÃ­sticas de filtros
+  // Función para obtener estadísticas de filtros
   const getFilterStats = () => {
     const currentProducts = getCurrentProducts();
     const totalProducts = currentProducts.data.length;
@@ -1379,7 +1363,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     };
   };
 
-  // FunciÃ³n para obtener estadÃ­sticas detalladas de filtros
+  // Función para obtener estadísticas detalladas de filtros
   const getDetailedFilterStats = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1418,7 +1402,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return stats;
   };
 
-  // FunciÃ³n para obtener estadÃ­sticas detalladas de filtros desde el backend
+  // Función para obtener estadísticas detalladas de filtros desde el backend
   const getBackendDetailedFilterStats = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1436,7 +1420,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       }
     };
     
-    // Usar datos del backend para categorÃ­as y marcas
+    // Usar datos del backend para categorías y marcas
     categorias?.forEach(cat => {
       stats.categories[cat.nombre] = 0;
     });
@@ -1445,7 +1429,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       stats.brands[marca.nombre] = 0;
     });
     
-    // Contar productos en cada categorÃ­a y marca
+    // Contar productos en cada categoría y marca
     products.forEach(product => {
       const category = product.categoriaId?.nombre || product.categoria;
       const brand = product.marcaId?.nombre;
@@ -1471,14 +1455,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return stats;
   };
 
-  // FunciÃ³n para obtener filtros avanzados
+  // Función para obtener filtros avanzados
   const getAdvancedFilters = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
     
     const advancedFilters = {
       priceRanges: [
-        { label: 'EconÃ³mico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Económico ($0 - $100)', min: 0, max: 100, count: 0 },
         { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
         { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
         { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }
@@ -1511,14 +1495,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return advancedFilters;
   };
 
-  // FunciÃ³n para obtener filtros avanzados desde el backend
+  // Función para obtener filtros avanzados desde el backend
   const getBackendAdvancedFilters = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
     
     const advancedFilters = {
       priceRanges: [
-        { label: 'EconÃ³mico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Económico ($0 - $100)', min: 0, max: 100, count: 0 },
         { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
         { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
         { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }
@@ -1551,7 +1535,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return advancedFilters;
   };
 
-  // FunciÃ³n para aplicar filtros avanzados
+  // Función para aplicar filtros avanzados
   const applyAdvancedFilter = (filterType, filterValue) => {
     switch (filterType) {
       case 'priceRange':
@@ -1566,15 +1550,15 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     setCurrentPage(1);
   };
 
-  // FunciÃ³n para obtener consejos de filtrado
+  // Función para obtener consejos de filtrado
   const getFilterTips = () => {
     const tips = [
-      'ðŸ’¡ Usa mÃºltiples filtros para encontrar exactamente lo que buscas',
-      'ðŸ” La bÃºsqueda funciona con nombre, descripciÃ³n y caracterÃ­sticas',
+      '💡 Usa múltiples filtros para encontrar exactamente lo que buscas',
+      '🔍 La búsqueda funciona con nombre, descripción y características',
       '  Los filtros de precio te ayudan a encontrar opciones en tu presupuesto',
       '   Combina colores y materiales para un look personalizado',
-      'â­ Los filtros rÃ¡pidos te dan acceso a categorÃ­as populares',
-      'ðŸ“± Los filtros se guardan automÃ¡ticamente para tu prÃ³xima visita'
+      '⭐ Los filtros rápidos te dan acceso a categorías populares',
+      '📱 Los filtros se guardan automáticamente para tu próxima visita'
     ];
     
     return tips[Math.floor(Math.random() * tips.length)];
@@ -1582,7 +1566,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
 
 
 
-  // FunciÃ³n para obtener recomendaciones personalizadas
+  // Función para obtener recomendaciones personalizadas
   const getPersonalizedRecommendations = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1611,14 +1595,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return similarProducts;
   };
 
-  // FunciÃ³n para obtener productos recientemente vistos
+  // Función para obtener productos recientemente vistos
   const getRecentlyViewed = () => {
     const recentlyViewedIds = JSON.parse(localStorage.getItem('aurora-recently-viewed') || '[]');
     const currentProducts = getCurrentProducts();
     return currentProducts.data.filter(p => recentlyViewedIds.includes(p._id)).slice(0, 4);
   };
 
-  // FunciÃ³n para agregar producto a recientemente vistos
+  // Función para agregar producto a recientemente vistos
   const addToRecentlyViewed = (productId) => {
     try {
       const recentlyViewed = JSON.parse(localStorage.getItem('aurora-recently-viewed') || '[]');
@@ -1629,12 +1613,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para limpiar recientemente vistos
+  // Función para limpiar recientemente vistos
   const clearRecentlyViewed = () => {
     localStorage.removeItem('aurora-recently-viewed');
   };
 
-  // FunciÃ³n para obtener productos mÃ¡s populares
+  // Función para obtener productos más populares
   const getPopularProducts = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1657,7 +1641,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     });
   };
 
-  // FunciÃ³n para obtener productos relacionados
+  // Función para obtener productos relacionados
   const getRelatedProducts = (currentProduct) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1677,7 +1661,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return related;
   };
 
-  // FunciÃ³n para obtener productos por temporada
+  // Función para obtener productos por temporada
   const getSeasonalProducts = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1703,7 +1687,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return products.slice(0, 4); // Productos generales para otras temporadas
   };
 
-  // FunciÃ³n para obtener productos por ocasiÃ³n
+  // Función para obtener productos por ocasión
   const getProductsByOccasion = (occasion) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1735,7 +1719,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por presupuesto
+  // Función para obtener productos por presupuesto
   const getProductsByBudget = (budget) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1759,7 +1743,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por edad
+  // Función para obtener productos por edad
   const getProductsByAge = (ageGroup) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1769,7 +1753,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         return products.filter(p => 
           p.categoriaId?.nombre === 'Lentes Infantiles' ||
           p.categoria === 'Lentes Infantiles' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Azul' ||
           p.color === 'Rosa'
         ).slice(0, 4);
@@ -1792,7 +1776,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por estilo
+  // Función para obtener productos por estilo
   const getProductsByStyle = (style) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1810,7 +1794,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         return products.filter(p => 
           p.marcaId?.nombre === 'Oakley' ||
           p.marcaId?.nombre === 'Tom Ford' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Negro' ||
           p.color === 'Azul'
         ).slice(0, 4);
@@ -1826,7 +1810,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por actividad
+  // Función para obtener productos por actividad
   const getProductsByActivity = (activity) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1837,7 +1821,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoriaId?.nombre === 'Lentes de Sol' ||
           p.categoria === 'Lentes de Sol' ||
           p.tipoLente === 'Polarizado' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Verde'
         ).slice(0, 4);
       case 'deportes':
@@ -1859,7 +1843,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por clima
+  // Función para obtener productos por clima
   const getProductsByWeather = (weather) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1870,7 +1854,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoriaId?.nombre === 'Lentes de Sol' ||
           p.categoria === 'Lentes de Sol' ||
           p.tipoLente === 'Polarizado' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Verde'
         ).slice(0, 4);
       case 'nublado':
@@ -1884,14 +1868,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         return products.filter(p => 
           p.categoriaId?.nombre === 'Lentes Graduados' ||
           p.categoria === 'Lentes Graduados' ||
-          p.material === 'PlÃ¡stico'
+          p.material === 'Plástico'
         ).slice(0, 4);
       default:
         return products.slice(0, 4);
     }
   };
 
-  // FunciÃ³n para obtener productos por ocasiÃ³n especial
+  // Función para obtener productos por ocasión especial
   const getProductsBySpecialOccasion = (occasion) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1926,7 +1910,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por temporada
+  // Función para obtener productos por temporada
   const getProductsBySeason = (season) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1948,11 +1932,11 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.marcaId?.nombre === 'Oakley' ||
           p.marcaId?.nombre === 'Maui Jim'
         ).slice(0, 4);
-      case 'otoÃ±o':
+      case 'otoño':
         return products.filter(p => 
           p.categoriaId?.nombre === 'Lentes Graduados' ||
           p.categoria === 'Lentes Graduados' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Negro' ||
           p.marcaId?.nombre === 'Persol'
         ).slice(0, 4);
@@ -1969,7 +1953,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tendencia
+  // Función para obtener productos por tendencia
   const getProductsByTrend = (trend) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -1987,7 +1971,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         return products.filter(p => 
           p.marcaId?.nombre === 'Oakley' ||
           p.marcaId?.nombre === 'Tom Ford' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Negro' ||
           p.color === 'Azul'
         ).slice(0, 4);
@@ -2004,7 +1988,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por color
+  // Función para obtener productos por color
   const getProductsByColor = (color) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2014,7 +1998,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     ).slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos por material
+  // Función para obtener productos por material
   const getProductsByMaterial = (material) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2024,7 +2008,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     ).slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos por tipo de lente
+  // Función para obtener productos por tipo de lente
   const getProductsByLensType = (lensType) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2034,7 +2018,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     ).slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos por rango de precio
+  // Función para obtener productos por rango de precio
   const getProductsByPriceRange = (minPrice, maxPrice) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2045,7 +2029,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }).slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos por marca especÃ­fica
+  // Función para obtener productos por marca específica
   const getProductsByBrand = (brand) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2055,7 +2039,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     ).slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos por categorÃ­a especÃ­fica
+  // Función para obtener productos por categoría específica
   const getProductsByCategory = (category) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2066,7 +2050,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     ).slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos con descuento
+  // Función para obtener productos con descuento
   const getDiscountedProducts = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2080,7 +2064,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }).slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos nuevos
+  // Función para obtener productos nuevos
   const getNewProducts = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2089,12 +2073,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return products.slice(0, 6);
   };
 
-  // FunciÃ³n para obtener productos mÃ¡s vendidos
+  // Función para obtener productos más vendidos
   const getBestSellers = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
     
-    // Simular productos mÃ¡s vendidos basado en popularidad
+    // Simular productos más vendidos basado en popularidad
     const bestSellers = products.map(p => {
       const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
       const discount = p.precioActual && p.precioBase ? 
@@ -2114,12 +2098,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     });
   };
 
-  // FunciÃ³n para obtener productos recomendados
+  // Función para obtener productos recomendados
   const getRecommendedProducts = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
     
-    // Simular recomendaciones basadas en mÃºltiples factores
+    // Simular recomendaciones basadas en múltiples factores
     const recommended = products.map(p => {
       const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
       const discount = p.precioActual && p.precioBase ? 
@@ -2140,7 +2124,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     });
   };
 
-  // FunciÃ³n para obtener productos por ubicaciÃ³n
+  // Función para obtener productos por ubicación
   const getProductsByLocation = (location) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2154,7 +2138,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.marcaId?.nombre === 'Maui Jim' ||
           p.marcaId?.nombre === 'Costa'
         ).slice(0, 4);
-      case 'montaÃ±a':
+      case 'montaña':
         return products.filter(p => 
           p.categoriaId?.nombre === 'Lentes de Sol' ||
           p.categoria === 'Lentes de Sol' ||
@@ -2174,7 +2158,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por profesiÃ³n
+  // Función para obtener productos por profesión
   const getProductsByProfession = (profession) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2208,7 +2192,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por hobby
+  // Función para obtener productos por hobby
   const getProductsByHobby = (hobby) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2235,14 +2219,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoriaId?.nombre === 'Lentes Deportivos' ||
           p.categoria === 'Lentes Deportivos' ||
           p.marcaId?.nombre === 'Oakley' ||
-          p.material === 'PlÃ¡stico'
+          p.material === 'Plástico'
         ).slice(0, 4);
       default:
         return products.slice(0, 4);
     }
   };
 
-  // FunciÃ³n para obtener productos por estilo de vida
+  // Función para obtener productos por estilo de vida
   const getProductsByLifestyle = (lifestyle) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2254,7 +2238,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoria === 'Lentes Deportivos' ||
           p.marcaId?.nombre === 'Oakley' ||
           p.marcaId?.nombre === 'Costa' ||
-          p.material === 'PlÃ¡stico'
+          p.material === 'Plástico'
         ).slice(0, 4);
       case 'elegante':
         return products.filter(p => 
@@ -2276,7 +2260,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por ocasiÃ³n de regalo
+  // Función para obtener productos por ocasión de regalo
   const getProductsByGiftOccasion = (giftOccasion) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2314,7 +2298,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por temporada de moda
+  // Función para obtener productos por temporada de moda
   const getProductsByFashionSeason = (fashionSeason) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2329,13 +2313,13 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.color === 'Azul' ||
           p.color === 'Amarillo'
         ).slice(0, 4);
-      case 'otoÃ±o_invierno':
+      case 'otoño_invierno':
         return products.filter(p => 
           p.categoriaId?.nombre === 'Lentes Graduados' ||
           p.categoria === 'Lentes Graduados' ||
           p.categoriaId?.nombre === 'Lentes de Lujo' ||
           p.categoria === 'Lentes de Lujo' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Negro' ||
           p.color === 'Gris'
         ).slice(0, 4);
@@ -2344,7 +2328,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de rostro
+  // Función para obtener productos por tipo de rostro
   const getProductsByFaceShape = (faceShape) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2354,7 +2338,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         return products.filter(p => 
           p.marcaId?.nombre === 'Ray-Ban' ||
           p.marcaId?.nombre === 'Oakley' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Negro' ||
           p.color === 'Azul'
         ).slice(0, 4);
@@ -2378,7 +2362,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de piel
+  // Función para obtener productos por tipo de piel
   const getProductsBySkinTone = (skinTone) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2396,9 +2380,9 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         return products.filter(p => 
           p.marcaId?.nombre === 'Ray-Ban' ||
           p.marcaId?.nombre === 'Oakley' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Verde' ||
-          p.material === 'PlÃ¡stico'
+          p.material === 'Plástico'
         ).slice(0, 4);
       case 'oscura':
         return products.filter(p => 
@@ -2413,7 +2397,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de cabello
+  // Función para obtener productos por tipo de cabello
   const getProductsByHairColor = (hairColor) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2427,13 +2411,13 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.color === 'Plateado' ||
           p.material === 'Metal'
         ).slice(0, 4);
-      case 'castaÃ±o':
+      case 'castaño':
         return products.filter(p => 
           p.marcaId?.nombre === 'Ray-Ban' ||
           p.marcaId?.nombre === 'Oakley' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Verde' ||
-          p.material === 'PlÃ¡stico'
+          p.material === 'Plástico'
         ).slice(0, 4);
       case 'negro':
         return products.filter(p => 
@@ -2448,7 +2432,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de vestimenta
+  // Función para obtener productos por tipo de vestimenta
   const getProductsByClothingStyle = (clothingStyle) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2470,7 +2454,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoria === 'Lentes de Sol' ||
           p.marcaId?.nombre === 'Ray-Ban' ||
           p.marcaId?.nombre === 'Oakley' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Azul' ||
           p.color === 'Verde'
         ).slice(0, 4);
@@ -2480,7 +2464,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoria === 'Lentes Deportivos' ||
           p.marcaId?.nombre === 'Oakley' ||
           p.marcaId?.nombre === 'Costa' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Negro' ||
           p.color === 'Rojo'
         ).slice(0, 4);
@@ -2489,7 +2473,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de evento
+  // Función para obtener productos por tipo de evento
   const getProductsByEventType = (eventType) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2521,7 +2505,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoria === 'Lentes de Sol' ||
           p.marcaId?.nombre === 'Ray-Ban' ||
           p.marcaId?.nombre === 'Oakley' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Azul' ||
           p.color === 'Verde'
         ).slice(0, 4);
@@ -2530,7 +2514,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de viaje
+  // Función para obtener productos por tipo de viaje
   const getProductsByTravelType = (travelType) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2546,14 +2530,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.color === 'Azul' ||
           p.color === 'Verde'
         ).slice(0, 4);
-      case 'montaÃ±a':
+      case 'montaña':
         return products.filter(p => 
           p.categoriaId?.nombre === 'Lentes de Sol' ||
           p.categoria === 'Lentes de Sol' ||
           p.tipoLente === 'Polarizado' ||
           p.marcaId?.nombre === 'Oakley' ||
           p.marcaId?.nombre === 'Ray-Ban' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Negro'
         ).slice(0, 4);
       case 'ciudad':
@@ -2570,7 +2554,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de clima
+  // Función para obtener productos por tipo de clima
   const getProductsByClimateType = (climateType) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2602,7 +2586,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoria === 'Lentes de Sol' ||
           p.marcaId?.nombre === 'Ray-Ban' ||
           p.marcaId?.nombre === 'Persol' ||
-          p.color === 'MarrÃ³n' ||
+          p.color === 'Marrón' ||
           p.color === 'Verde'
         ).slice(0, 4);
       default:
@@ -2610,7 +2594,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para obtener productos por tipo de deporte
+  // Función para obtener productos por tipo de deporte
   const getProductsBySportType = (sportType) => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2623,7 +2607,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.tipoLente === 'Polarizado' ||
           p.marcaId?.nombre === 'Costa' ||
           p.marcaId?.nombre === 'Maui Jim' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Azul'
         ).slice(0, 4);
       case 'terrestre':
@@ -2632,7 +2616,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoria === 'Lentes Deportivos' ||
           p.marcaId?.nombre === 'Oakley' ||
           p.marcaId?.nombre === 'Ray-Ban' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Negro' ||
           p.color === 'Rojo'
         ).slice(0, 4);
@@ -2641,7 +2625,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           p.categoriaId?.nombre === 'Lentes Deportivos' ||
           p.categoria === 'Lentes Deportivos' ||
           p.marcaId?.nombre === 'Oakley' ||
-          p.material === 'PlÃ¡stico' ||
+          p.material === 'Plástico' ||
           p.color === 'Negro' ||
           p.color === 'Azul'
         ).slice(0, 4);
@@ -2650,7 +2634,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }
   };
 
-  // FunciÃ³n para mostrar modal de producto
+  // Función para mostrar modal de producto
   const showProductDetails = (product) => {
     setSelectedProduct(product);
     setShowProductModal(true);
@@ -2658,13 +2642,13 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     addToRecentlyViewed(product._id);
   };
 
-  // FunciÃ³n para cerrar modal de producto
+  // Función para cerrar modal de producto
   const closeProductModal = () => {
     setShowProductModal(false);
     setSelectedProduct(null);
   };
 
-  // FunciÃ³n para obtener productos similares al seleccionado
+  // Función para obtener productos similares al seleccionado
   const getSimilarProducts = (product) => {
     if (!product) return [];
     
@@ -2685,7 +2669,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return similar;
   };
 
-  // FunciÃ³n para obtener productos complementarios
+  // Función para obtener productos complementarios
   const getComplementaryProducts = (product) => {
     if (!product) return [];
     
@@ -2709,12 +2693,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return [];
   };
 
-  // FunciÃ³n para obtener productos por popularidad
+  // Función para obtener productos por popularidad
   const getProductsByPopularity = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
     
-    // Simular popularidad basada en mÃºltiples factores
+    // Simular popularidad basada en múltiples factores
     const popularProducts = products.map(p => {
       const price = p.precioActual || p.precioBase || p.precioCalculado || 0;
       const discount = p.precioActual && p.precioBase ? 
@@ -2735,7 +2719,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     });
   };
 
-  // FunciÃ³n para obtener productos por novedad
+  // Función para obtener productos por novedad
   const getProductsByNewness = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2744,7 +2728,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     return products.slice(0, 8);
   };
 
-  // FunciÃ³n para obtener productos por tendencia
+  // Función para obtener productos por tendencia
   const getProductsByTrending = () => {
     const currentProducts = getCurrentProducts();
     const products = currentProducts.data;
@@ -2770,9 +2754,9 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     });
   };
 
-  // FunciÃ³n para cerrar modal (ya definida arriba)
+  // Función para cerrar modal (ya definida arriba)
 
-  // FunciÃ³n para formatear precio
+  // Función para formatear precio
   const formatPrice = (price) => {
     return new Intl.NumberFormat('es-SV', {
       style: 'currency',
@@ -2780,33 +2764,28 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     }).format(price);
   };
 
-  // FunciÃ³n para obtener imagen del producto
+  // Función para obtener imagen del producto
   const getProductImage = (product) => {
     if (product && product.imagenes && product.imagenes.length > 0) {
       const first = product.imagenes[0];
       // Evitar retornar cadena vacía que causa warning en <img src>
       if (first && typeof first === 'string' && first.trim() !== '') {
-        const src = first.trim();
-        // Rutas legacy dentro de src/ que no son servidas por Vite
-        if (src.startsWith('/src/pages/public/img/')) return '';
-        if (src.startsWith('file://')) return '';
-        if (/^(https?:)?\/\//i.test(src) || src.startsWith('data:') || src.startsWith('/img/')) return src;
-        return '';
+        return first;
       }
       return null;
     }
-    // Imágenes por defecto segú́n el tipo
+    // Imágenes por defecto según el tipo
     switch (getCurrentProducts().type) {
       case 'lentes':
-        return '';
+        return '/src/pages/public/img/Lente1.png';
       case 'accesorios':
-        return '';
+        return '/src/pages/public/img/Accesorio.png';
       default:
-        return '';
+        return '/src/pages/public/img/Lente1.png';
     }
   };
 
-  // SecciÃ³n de filtros (JSX constante para evitar remount y pÃ©rdida de foco)
+  // Sección de filtros (JSX constante para evitar remount y pérdida de foco)
   const filterSection = (
     <div className="bg-white p-4 rounded-lg shadow-md mb-6">
       <div className="flex justify-between items-center mb-4">
@@ -2835,7 +2814,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
               onClick={() => setSearchInput('')}
               className="absolute right-2 top-2 text-gray-400 hover:text-gray-600"
             >
-              X
+              ×
             </button>
           )}
         </div>
@@ -3002,7 +2981,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           <button
             onClick={() => setViewMode('grid')}
             className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-[#0097c2] text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            title="Vista de cuadrÃ­cula"
+            title="Vista de cuadrícula"
           >
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -3054,7 +3033,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         ); })()}
         {product.enPromocion && (
           <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-            Â¡OFERTA!
+            ¡OFERTA!
           </div>
         )}
       </div>
@@ -3116,28 +3095,28 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
             <h3 className="text-lg font-semibold mb-4">Solicitud de producto personalizado</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudNombre">Nombre</label>
-                <input id="solicitudNombre" name="nombre" value={solicitudForm.nombre} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm text-gray-600">Nombre</label>
+                <input name="nombre" value={solicitudForm.nombre} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudTipoLente">Tipo de lente</label>
-                <input id="solicitudTipoLente" name="tipoLente" value={solicitudForm.tipoLente} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm text-gray-600">Tipo de lente</label>
+                <input name="tipoLente" value={solicitudForm.tipoLente} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudMaterial">Material</label>
-                <input id="solicitudMaterial" name="material" value={solicitudForm.material} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm text-gray-600">Material</label>
+                <input name="material" value={solicitudForm.material} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudColor">Color</label>
-                <input id="solicitudColor" name="color" value={solicitudForm.color} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
+                <label className="block text-sm text-gray-600">Color</label>
+                <input name="color" value={solicitudForm.color} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600" htmlFor="solicitudDescripcion">DescripciÃ³n</label>
-                <textarea id="solicitudDescripcion" name="descripcion" value={solicitudForm.descripcion} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={3} />
+                <label className="block text-sm text-gray-600">Descripción</label>
+                <textarea name="descripcion" value={solicitudForm.descripcion} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={3} />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600" htmlFor="solicitudInstrucciones">Instrucciones adicionales</label>
-                <textarea id="solicitudInstrucciones" name="instruccionesAdicionales" value={solicitudForm.instruccionesAdicionales} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={2} />
+                <label className="block text-sm text-gray-600">Instrucciones adicionales</label>
+                <textarea name="instruccionesAdicionales" value={solicitudForm.instruccionesAdicionales} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={2} />
               </div>
             </div>
             <div className="mt-6 flex gap-3 justify-end">
@@ -3231,12 +3210,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 onClick={closeProductModal}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
-                Ã—
+                ×
               </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* ImÃ¡genes */}
+              {/* Imágenes */}
               <div>
                 {(() => { const src = getProductImage(selectedProduct); return src ? (
                   <img 
@@ -3249,7 +3228,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 ); })()}
               </div>
 
-              {/* InformaciÃ³n del producto */}
+              {/* Información del producto */}
               <div>
                 <p className="text-gray-600 mb-4">{selectedProduct.descripcion}</p>
                 
@@ -3263,7 +3242,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   
                   {selectedProduct.categoriaId?.nombre && (
                     <div>
-                      <span className="font-semibold text-gray-700">CategorÃ­a:</span>
+                      <span className="font-semibold text-gray-700">Categoría:</span>
                       <span className="ml-2 text-gray-600">{selectedProduct.categoriaId.nombre}</span>
                     </div>
                   )}
@@ -3304,7 +3283,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   </div>
                 </div>
 
-                {/* Botones de acciÃ³n */}
+                {/* Botones de acción */}
                 <div className="flex space-x-3">
                   <button 
                     className="bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
@@ -3324,7 +3303,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                     className="bg-white border border-[#0097c2] text-[#0097c2] px-4 py-2 rounded-full hover:bg-[#e6f7fb] transition-colors duration-300"
                     onClick={() => openSolicitudModal(selectedProduct)}
                   >
-                    Solicitar a Ã³ptica
+                    Solicitar a óptica
                   </button>
                 </div>
               </div>
@@ -3400,10 +3379,10 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 {type === 'personalizables' ? (
                   <div className="bg-white rounded-xl shadow-md p-6 border border-dashed border-[#0097c2]">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 rounded-lg bg-[#0097c2] text-white flex items-center justify-center text-2xl">âœ¨</div>
+                      <div className="w-14 h-14 rounded-lg bg-[#0097c2] text-white flex items-center justify-center text-2xl">✨</div>
                       <div className="flex-1">
                         <h3 className="text-xl font-bold text-gray-800">Crea tu Producto Personalizado</h3>
-                        <p className="text-gray-600 text-sm">Elige base, materiales, color, tipo de lente y modificaciones del catÃ¡logo.</p>
+                        <p className="text-gray-600 text-sm">Elige base, materiales, color, tipo de lente y modificaciones del catálogo.</p>
                       </div>
                       <button
                         onClick={() => navigate('/cotizaciones/crear', { state: { openPersonalizado: true } })}
@@ -3697,5 +3676,3 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
 };
 
 export default Producto;
-
-

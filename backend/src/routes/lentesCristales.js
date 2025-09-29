@@ -3,13 +3,14 @@ import express from 'express';
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import controller from '../controllers/lentesCristalesController.js';
 
 const router = express.Router();
 
 // ==== Multer setup (images optional) ====
-const tempDir = path.join(process.cwd(), 'temp');
-if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+// Use OS temp directory to ensure write access in production platforms (e.g., Railway)
+const tempDir = os.tmpdir();
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, tempDir),

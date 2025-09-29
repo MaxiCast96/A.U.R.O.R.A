@@ -88,9 +88,7 @@ const Navbar = () => {
           {/* Menú de escritorio */}
           <ul className="hidden xl:flex space-x-3 sm:space-x-4 lg:space-x-6 font-medium text-sm sm:text-base">
             <li>
-              <Link to="/" className="hover:text-[#0097c2] h-full flex items-center">
-                Inicio
-              </Link>
+              <Link to="/" className="hover:text-[#0097c2] h-full flex items-center">Inicio</Link>
             </li>
             <li className="relative">
               <div className="h-full flex items-center">
@@ -98,68 +96,39 @@ const Navbar = () => {
                   to="/productos"
                   className="hover:text-[#0097c2] flex items-center gap-1"
                   onMouseEnter={() => setIsProductMenuOpen(true)}
+                  onMouseLeave={() => setIsProductMenuOpen(false)}
                 >
                   Productos
                   <svg
-                    className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform inline-block ml-1 ${
-                      isProductMenuOpen ? "rotate-180" : ""
-                    }`}
+                    className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform inline-block ml-1 ${isProductMenuOpen ? "rotate-180" : ""}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </Link>
               </div>
               <div
-                className={`absolute left-0 mt-0 w-40 sm:w-48 bg-white shadow-lg rounded-lg py-1 sm:py-2 z-50 ${
-                  isProductMenuOpen ? "block" : "hidden"
-                }`}
+                className={`absolute left-0 mt-0 w-40 sm:w-48 bg-white shadow-lg rounded-lg py-1 sm:py-2 z-50 ${isProductMenuOpen ? "block" : "hidden"}`}
                 onMouseEnter={() => setIsProductMenuOpen(true)}
                 onMouseLeave={() => setIsProductMenuOpen(false)}
               >
-                <Link
-                  to="/productos/lentes"
-                  className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm"
-                >
-                  Lentes
-                </Link>
-                <Link
-                  to="/productos/accesorios"
-                  className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm"
-                >
-                  Accesorios
-                </Link>
+                <Link to="/productos/lentes" className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm">Lentes</Link>
+                <Link to="/productos/lentes-cristales" className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm">Cristales</Link>
+                <Link to="/productos/accesorios" className="block px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-gray-100 hover:text-[#0097c2] text-sm">Accesorios</Link>
               </div>
             </li>
             <li>
-              <Link to="/cotizaciones" className="hover:text-[#0097c2] h-full flex items-center">
-                Cotizaciones
-              </Link>
+              <Link to="/servicios" className="hover:text-[#0097c2] h-full flex items-center">Servicios</Link>
             </li>
             <li>
-              <Link to="/servicios" className="hover:text-[#0097c2] h-full flex items-center">
-                Servicios
-              </Link>
+              <Link to="/agendar" className="hover:text-[#0097c2] h-full flex items-center">Agendar Citas</Link>
             </li>
             <li>
-              <Link to="/agendar" className="hover:text-[#0097c2] h-full flex items-center">
-                Agendar Citas
-              </Link>
-            </li>
-            <li>
-              <Link to="/nosotros" className="hover:text-[#0097c2] h-full flex items-center">
-                Nosotros
-              </Link>
+              <Link to="/nosotros" className="hover:text-[#0097c2] h-full flex items-center">Nosotros</Link>
             </li>
           </ul>
-
           {/* Botón de sesión/perfil */}
           <div className="flex items-center space-x-2">
             {/* Carrito */}
@@ -257,22 +226,29 @@ const Navbar = () => {
                       Lentes
                     </Link>
                     <Link
-                      to="/productos/accesorios"
+                      to="/productos/lentes-cristales"
                       onClick={closeMobileMenu}
                       className="block py-2 px-3 text-gray-600 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors text-sm"
                     >
-                      Accesorios
+                      Cristales
                     </Link>
-                  </div>
-                )}
+                    <Link
+                    to="/productos/accesorios"
+                    onClick={() => {
+                      closeMobileMenu();
+                    }}
+                    className="block py-2 px-3 text-gray-600 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors text-sm"
+                >
+                  Accesorios
+                </Link>
               </div>
+            )}
+          </div>
 
               {/* Mostrar cotizaciones solo si el usuario está autenticado */}
               {user && (
                 <Link
                   to="/cotizaciones"
-                  onClick={closeMobileMenu}
-                  className="block py-2 px-3 text-gray-700 hover:text-[#0097c2] hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   Cotizaciones
                 </Link>

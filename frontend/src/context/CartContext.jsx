@@ -71,11 +71,27 @@ export const CartProvider = ({ children }) => {
 
     try {
       const precio = product.precioActual ?? product.precioBase ?? 0;
+      // Try to carry an image to the backend so it returns it in cart items
+      let imagen = '';
+      try {
+        const imgCandidates = [];
+        if (Array.isArray(product?.imagenes) && product.imagenes[0]) imgCandidates.push(product.imagenes[0]);
+        if (product?.imagen) imgCandidates.push(product.imagen);
+        if (product?.imagenUrl) imgCandidates.push(product.imagenUrl);
+        if (product?.imageUrl) imgCandidates.push(product.imageUrl);
+        const first = imgCandidates.find(s => typeof s === 'string' && s.trim().length > 0);
+        if (first) {
+          let src = first.trim();
+          if (src.startsWith('/src/pages/public/img/')) src = src.replace('/src/pages/public/img/','/img/');
+          imagen = src;
+        }
+      } catch (_) {}
       const payload = {
         productoId: product._id,
         nombre: product.nombre,
         precio,
-        cantidad: qty
+        cantidad: qty,
+        imagen
       };
       const res = await fetch(`${baseUrl}${CARRITO}/${targetCartId}/productos`, {
         method: 'POST',
