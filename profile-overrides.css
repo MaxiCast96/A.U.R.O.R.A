@@ -1,0 +1,69 @@
+/* Minimal overrides for Perfil page, scoped by body[data-route="perfil"] */
+
+/* Remove gradients and use clean white surfaces */
+body[data-route="perfil"] .bg-gradient-to-b,
+body[data-route="perfil"] .bg-gradient-to-r {
+  background: #ffffff !important;
+  background-image: none !important;
+}
+
+/* Header text/buttons on white background */
+body[data-route="perfil"] h1 {
+  color: #0f172a !important; /* slate-900 */
+}
+
+/* Tailwind utility classes to tame on this page */
+body[data-route="perfil"] .text-white { color: #334155 !important; } /* slate-600 */
+body[data-route="perfil"] .text-white\/90 { color: #334155 !important; }
+body[data-route="perfil"] .bg-white\/10 { background-color: transparent !important; }
+body[data-route="perfil"] .hover\:bg-white\/15:hover { background-color: #f8fafc !important; } /* slate-50 */
+
+/* Avatar badge: subtle primary */
+body[data-route="perfil"] .bg-white\/20 { background-color: #eff6ff !important; } /* blue-50 */
+body[data-route="perfil"] .text-white.text-2xl.font-bold { color: #1d4ed8 !important; } /* blue-700 */
+
+/* Cards: stronger, consistent borders */
+body[data-route="perfil"] .border-slate-100 { border-color: #e2e8f0 !important; } /* slate-200 */
+body[data-route="perfil"] .bg-slate-50 { background-color: #ffffff !important; }
+
+/* Alerts: consistent rounded and readable colors */
+body[data-route="perfil"] .bg-red-50 { background-color: #fff1f2 !important; } /* rose-50 */
+body[data-route="perfil"] .border-red-200 { border-color: #fecdd3 !important; } /* rose-200 */
+body[data-route="perfil"] .text-red-700 { color: #be123c !important; } /* rose-700 */
+
+body[data-route="perfil"] .bg-green-50 { background-color: #ecfdf5 !important; } /* emerald-50 */
+body[data-route="perfil"] .border-green-200 { border-color: #a7f3d0 !important; } /* emerald-200 */
+body[data-route="perfil"] .text-green-700 { color: #047857 !important; } /* emerald-700 */
+
+/* Inputs: consistent borders and focus ring */
+body[data-route="perfil"] input[type="text"],
+body[data-route="perfil"] input[type="tel"],
+body[data-route="perfil"] input[type="email"],
+body[data-route="perfil"] input[type="number"] {
+  border-color: #cbd5e1 !important; /* slate-300 */
+  box-shadow: none !important;
+}
+body[data-route="perfil"] input:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4) !important; /* blue ring */
+}
+
+/* Secondary buttons: outline neutral */
+body[data-route="perfil"] .bg-slate-100.text-slate-700:hover { background-color: #f8fafc !important; }
+body[data-route="perfil"] .bg-slate-100.text-slate-700 {
+  background-color: transparent !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* Primary buttons keep blue */
+body[data-route="perfil"] .bg-blue-600:hover { background-color: #2563eb !important; }
+
+/* Quick actions: neutral hover instead of color tints */
+body[data-route="perfil"] .hover\:bg-blue-50:hover,
+body[data-route="perfil"] .hover\:bg-emerald-50:hover {
+  background-color: #f8fafc !important; /* slate-50 */
+}
+body[data-route="perfil"] .hover\:border-blue-300:hover,
+body[data-route="perfil"] .hover\:border-emerald-300:hover {
+  border-color: #cbd5e1 !important; /* slate-300 */
+}

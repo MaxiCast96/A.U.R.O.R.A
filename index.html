@@ -9,10 +9,47 @@
     <link rel="shortcut icon" type="image/png" href="/A.U.R.O.R.A/assets/logo-DwsyEPxV.png" />
     <link rel="apple-touch-icon" href="/A.U.R.O.R.A/assets/logo-DwsyEPxV.png" />
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/A.U.R.O.R.A/assets/index-BIl-JJOY.js"></script>
-    <link rel="stylesheet" crossorigin href="/A.U.R.O.R.A/assets/index-BjjRJ_mX.css">
+    <link rel="stylesheet" href="/A.U.R.O.R.A/profile-overrides.css" />
+    <script type="module" crossorigin src="/A.U.R.O.R.A/assets/index-DG4lR1H0.js"></script>
+    <link rel="stylesheet" crossorigin href="/A.U.R.O.R.A/assets/index-BXKaPlC8.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Replace blocked file:// image sources with a public placeholder
+      (function(){
+        const placeholder = '/img/placeholder.svg';
+        const fixImg = (img) => {
+          try {
+            if (!img || !img.src) return;
+            if (img.src.startsWith('file://')) {
+              img.src = placeholder;
+            }
+          } catch (_) {}
+        };
+        // Initial pass
+        Array.from(document.images).forEach(fixImg);
+        // Observe dynamic changes
+        const obs = new MutationObserver((mutations) => {
+          for (const m of mutations) {
+            if (m.type === 'attributes' && m.attributeName === 'src' && m.target.tagName === 'IMG') {
+              fixImg(m.target);
+            }
+            m.addedNodes && m.addedNodes.forEach(node => {
+              if (node.tagName === 'IMG') fixImg(node);
+              if (node.querySelectorAll) node.querySelectorAll('img').forEach(fixImg);
+            });
+          }
+        });
+        obs.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
+      })();
+
+      // Register service worker to fallback old /src image paths
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/img-fallback-sw.js').catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
