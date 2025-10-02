@@ -3,11 +3,22 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import dotenv from "dotenv";
-import database from "./database.js";
-import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
+// Inicializar aplicación Express y middlewares
+const app = express();
+app.use(cookieParser());
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'https://aurora-production-7e57.up.railway.app',
+    'https://maxicast96.github.io'
+  ],
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Importar rutas
 import empleadosRoutes from "./src/routes/empleados.js";
@@ -17,8 +28,8 @@ import registroEmpleadosRoutes from "./src/routes/registroEmpleados.js";
 import sucursalesRoutes from "./src/routes/sucursales.js";
 import marcasRoutes from "./src/routes/marcas.js";
 import accesoriosRoutes from "./src/routes/accesorios.js";
+import arosRoutes from "./src/routes/aros.js";
 import lentesRoutes from "./src/routes/lentes.js";
-import categoriaRoutes from "./src/routes/categoria.js";
 import historialMedicoRoutes from "./src/routes/historialMedico.js";
 import citasRoutes from "./src/routes/citas.js";
 import CarritoRoutes from "./src/routes/carrito.js";
@@ -26,49 +37,16 @@ import promocionesRoutes from "./src/routes/promociones.js";
 import cotizacionesRoutes from "./src/routes/cotizaciones.js";
 import productosPersonalizadosRoutes from "./src/routes/productosPersonalizados.js";
 import catalogoModificacionesRoutes from "./src/routes/catalogoModificaciones.js";
-import ventasRoutes from "./src/routes/ventas.js";
+import lentesCristalesRoutes from "./src/routes/lentesCristales.js";
+import VentasRoutes from "./src/routes/ventas.js";
 import recetasRoutes from "./src/routes/recetas.js";
 import registroClientesRoutes from "./src/routes/registroClientes.js";
 import dashboardRoutes from "./src/routes/dashboard.js";
 import authRoutes from "./src/routes/auth.js";
 import pedidosRoutes from "./src/routes/pedidos.js";
+import categoriaRoutes from "./src/routes/categoria.js";
 import auditoriaRoutes from "./src/routes/auditoria.js";
-import { auditLogger } from "./src/middlewares/audit.js";
-
-// Mantener viva la BD
-function keepDatabaseAlive() {
-    setInterval(async () => {
-        try {
-            await database.query('SELECT 1');
-            console.log('Ping a la base de datos exitoso');
-        } catch (error) {
-            console.error('Error al hacer ping a la base de datos:', error);
-        }
-    }, 300000);
-}
-keepDatabaseAlive();
-
-const app = express();
-
-// Middleware global
-app.use(cookieParser());
-app.use(cors({
-    origin: ['http://localhost:5173', 'aurora-production-7e57.up.railway.app', 'https://maxicast96.github.io', 'http://localhost:4000'],
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-app.use(express.json());
-
-// Auditoría: registrar después de json, antes de rutas
-app.use(auditLogger);
-
-// Servir archivos estáticos de uploads (imágenes)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// Prefijos de rutas
+// Montaje de rutas principales
 app.use("/api/empleados", empleadosRoutes);
 app.use("/api/optometrista", optometristaRoutes);
 app.use("/api/clientes", clientesRoutes);
@@ -76,6 +54,7 @@ app.use("/api/registroEmpleados", registroEmpleadosRoutes);
 app.use("/api/sucursales", sucursalesRoutes);
 app.use("/api/marcas", marcasRoutes);
 app.use("/api/accesorios", accesoriosRoutes);
+app.use("/api/aros", arosRoutes);
 app.use("/api/lentes", lentesRoutes);
 app.use("/api/categoria", categoriaRoutes);
 app.use("/api/historialMedico", historialMedicoRoutes);
@@ -85,7 +64,8 @@ app.use("/api/promociones", promocionesRoutes);
 app.use("/api/cotizaciones", cotizacionesRoutes);
 app.use("/api/productosPersonalizados", productosPersonalizadosRoutes);
 app.use("/api/catalogoModificaciones", catalogoModificacionesRoutes);
-app.use("/api/ventas", ventasRoutes);
+app.use("/api/lentes-cristales", lentesCristalesRoutes);
+app.use("/api/ventas", VentasRoutes);
 app.use("/api/pedidos", pedidosRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/recetas", recetasRoutes);

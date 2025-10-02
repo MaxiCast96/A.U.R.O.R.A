@@ -19,7 +19,6 @@ const AgendarCitas = () => {
     fecha: "",
     hora: "",
     tipoLente: "",
-    graduacion: "",
     notasAdicionales: "",
     contacto: "telefono",
   });
@@ -109,7 +108,7 @@ const AgendarCitas = () => {
   // Recalcular horarios y grid de horas cuando cambia el optometrista
   useEffect(() => {
     const empty = { Lun: [], Mar: [], Mie: [], Jue: [], Vie: [], Sab: [], Dom: [] };
-    if (!formData.optometristaId) {
+    if (!formData.optometristaId || formData.optometristaId === 'any') {
       setHorarios(empty);
       setHorasGrid(["9:00", "10:00", "11:00", "12:00", "13:00"]);
       return;
@@ -170,31 +169,46 @@ const AgendarCitas = () => {
       setError(null);
       setSuccess(false);
       try {
-        // Requiere inicio de sesión para asociar la cita al cliente
+        // Asociar cliente si está logueado; permitir citas anónimas
         const clienteId = user?._id || user?.id;
-        if (!clienteId) {
-          throw new Error('Inicia sesión para agendar tu cita.');
-        }
 
         // Validaciones mínimas requeridas por backend
-        const required = ['sucursalId', 'optometristaId', 'fecha', 'hora', 'motivo', 'tipoLente', 'graduacion'];
+        const required = ['sucursalId', 'optometristaId', 'fecha', 'hora', 'motivo', 'tipoLente'];
         for (const k of required) {
           if (!formData[k]) {
             throw new Error('Completa todos los campos requeridos.');
           }
         }
 
+        // Validación: No se pueden programar citas en fechas pasadas
+        const now = new Date();
+        const selDate = new Date(formData.fecha);
+        const [hh, mm] = String(formData.hora).split(':').map((n) => parseInt(n, 10));
+        if (Number.isNaN(hh) || Number.isNaN(mm) || isNaN(selDate.getTime())) {
+          throw new Error('Fecha u hora inválida.');
+        }
+        const selDateTime = new Date(selDate);
+        selDateTime.setHours(hh || 0, mm || 0, 0, 0);
+        if (selDateTime.getTime() < now.getTime()) {
+          throw new Error('No se pueden programar citas en fechas pasadas.');
+        }
+
         const payload = {
-          clienteId,
-          optometristaId: formData.optometristaId,
+          clienteId: clienteId || undefined,
+          optometristaId: formData.optometristaId === 'any' ? null : formData.optometristaId,
           sucursalId: formData.sucursalId,
           fecha: formData.fecha ? new Date(formData.fecha) : null,
           hora: formData.hora,
           estado: 'pendiente',
           motivoCita: formData.motivo,
           tipoLente: formData.tipoLente,
-          graduacion: formData.graduacion,
-          notasAdicionales: formData.notasAdicionales || ''
+          notasAdicionales: formData.notasAdicionales || '',
+          // Datos de contacto anónimo
+          clienteNombre: formData.nombres || undefined,
+          clienteApellidos: formData.apellidos || undefined,
+          telefono: formData.telefono || undefined,
+          email: formData.email || undefined,
+          formaContacto: formData.contacto || undefined
         };
 
         const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.CITAS), {
@@ -219,7 +233,6 @@ const AgendarCitas = () => {
           fecha: "",
           hora: "",
           tipoLente: "",
-          graduacion: "",
           notasAdicionales: "",
           contacto: "telefono",
         });
@@ -321,7 +334,10 @@ const AgendarCitas = () => {
                 required
               >
                 <option value="">Seleccionar optometrista</option>
-                {optometristas.map(o => (
+                <option value="any">Cualquiera</option>
+                {optometristas
+                  .filter(o => !formData.sucursalId || (o.sucursalesAsignadas || []).some(s => (s?._id || s) === formData.sucursalId))
+                  .map(o => (
                   <option key={o._id} value={o._id}>
                     {getOptometristaNombre(o)}
                   </option>
@@ -339,130 +355,184 @@ const AgendarCitas = () => {
                 required
               />
             </div>
-            <div>
-              <input
-                type="text"
-                name="graduacion"
-                placeholder="Graduación (Ej. -1.25)"
-                value={formData.graduacion}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all"
-                required
-              />
-            </div>
           </div>
         );
       case 2:
         return (
           <div className="space-y-6">
             <div className="bg-white rounded-lg shadow-sm p-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
-                <h3 className="text-sm font-medium">Selecciona una hora</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const d = new Date(weekStart);
-                      d.setDate(weekStart.getDate() - 7);
-                      setWeekStart(d);
-                    }}
-                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
-                  >
-                    ◀ Semana anterior
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWeekStart(getMonday(new Date()))}
-                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
-                  >
-                    Esta semana
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const d = new Date(weekStart);
-                      d.setDate(weekStart.getDate() + 7);
-                      setWeekStart(d);
-                    }}
-                    className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
-                  >
-                    Semana siguiente ▶
-                  </button>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                {(() => {
-                  const weekDays = getWeekDays();
-                  const formatDM = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
-                  const hours = horasGrid;
-                  const opt = optometristas.find(o => o._id === formData.optometristaId);
-                  const sucMismatch = opt && formData.sucursalId && !(opt.sucursalesAsignadas || []).some(s => (s._id || s) === formData.sucursalId);
-                  const now = new Date();
-                  return (
-                    <>
-                    {sucMismatch && (
-                      <div className="mb-3 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
-                        El optometrista seleccionado no atiende en la sucursal elegida. Cambia de sucursal u optometrista.
+              {formData.optometristaId === 'any' ? (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Fecha</label>
+                      <div className="relative">
+                        <input
+                          type="date"
+                          name="fecha"
+                          value={formData.fecha ? String(formData.fecha).slice(0,10) : ''}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all shadow-sm"
+                          required
+                        />
+                        <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
                       </div>
-                    )}
-                    <table className="w-full text-xs sm:text-sm md:text-base">
-                      <thead>
-                        <tr>
-                          {dayNames.map((dia, i) => (
-                            <th key={dia} className="py-2">
-                              <div className="flex flex-col items-center">
-                                <span>{dia}</span>
-                                <span className="text-[11px] text-gray-500">{formatDM(weekDays[i])}</span>
-                              </div>
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {hours.map((hora) => (
-                          <tr key={hora}>
-                            {dayNames.map((dia, i) => {
-                              const dayDate = weekDays[i];
-                              const iso = new Date(dayDate.getTime());
-                              iso.setHours(0, 0, 0, 0);
-                              const isoStr = iso.toISOString();
-                              const available = horarios[dia]?.includes(hora);
-                              // Calcular si el slot ya pasó
-                              const [hh, mm] = hora.split(":").map((x) => parseInt(x, 10));
-                              const slotDate = new Date(dayDate.getTime());
-                              slotDate.setHours(hh || 0, mm || 0, 0, 0);
-                              const isPast = slotDate.getTime() < now.getTime();
-                              const disabled = !available || isPast;
-                              const selected = !disabled && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
-                              return (
-                                <td key={`${dia}-${hora}`} className="p-2 text-center">
-                                  {!disabled ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleInputChange({ target: { name: "hora", value: hora } });
-                                        handleInputChange({ target: { name: "fecha", value: isoStr } });
-                                      }}
-                                      className={`w-full py-2 rounded-lg transition-all ${selected ? "bg-[#0097c2] text-white" : "bg-gray-50 hover:bg-gray-100"}`}
-                                    >
-                                      {hora}
-                                    </button>
-                                  ) : (
-                                    <span className="text-gray-400">No disponible</span>
-                                  )}
-                                </td>
-                              );
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                    </>
-                  );
-                })()}
-              </div>
-              {Object.values(horarios).every(arr => arr.length === 0) && (
-                <div className="text-center text-gray-500 mt-4">No hay horarios disponibles actualmente.</div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Hora</label>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          name="hora"
+                          value={formData.hora}
+                          onChange={handleInputChange}
+                          className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all shadow-sm"
+                          required
+                        />
+                        <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs text-gray-500 mb-2">Selecciona rápidamente una hora recomendada</p>
+                    <div className="flex flex-wrap gap-2">
+                      {['09:00','09:30','10:00','10:30','11:00','14:00','14:30','15:00','15:30','16:00'].map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => handleInputChange({ target: { name: 'hora', value: t } })}
+                          className={`px-3 py-1.5 rounded-full text-sm border transition-all ${formData.hora === t ? 'bg-[#0097c2] text-white border-[#0097c2]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="rounded-lg border border-dashed border-gray-200 p-3 bg-gray-50 text-xs text-gray-600">
+                    Consejo: Si necesitas un optometrista específico, vuelve y selecciona su nombre para ver su disponibilidad exacta por día.
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
+                    <h3 className="text-sm font-medium">Selecciona una hora</h3>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(weekStart);
+                          d.setDate(weekStart.getDate() - 7);
+                          setWeekStart(d);
+                        }}
+                        className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                      >
+                        ◀ Semana anterior
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setWeekStart(getMonday(new Date()))}
+                        className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                      >
+                        Esta semana
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const d = new Date(weekStart);
+                          d.setDate(weekStart.getDate() + 7);
+                          setWeekStart(d);
+                        }}
+                        className="px-3 py-1 text-sm rounded bg-gray-100 hover:bg-gray-200"
+                      >
+                        Semana siguiente ▶
+                      </button>
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    {(() => {
+                      const weekDays = getWeekDays();
+                      const formatDM = (d) => `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+                      const hours = horasGrid;
+                      const opt = optometristas.find(o => o._id === formData.optometristaId);
+                      const sucMismatch = opt && formData.sucursalId && !(opt.sucursalesAsignadas || []).some(s => (s._id || s) === formData.sucursalId);
+                      const now = new Date();
+                      const todayStr = new Date().toDateString();
+                      return (
+                        <>
+                        {sucMismatch && (
+                          <div className="mb-3 text-xs sm:text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                            El optometrista seleccionado no atiende en la sucursal elegida. Cambia de sucursal u optometrista.
+                          </div>
+                        )}
+                        <table className="w-full text-xs sm:text-sm md:text-base border-separate border-spacing-0">
+                          <thead>
+                            <tr>
+                              {dayNames.map((dia, i) => {
+                                const isToday = weekDays[i].toDateString() === todayStr;
+                                return (
+                                  <th key={dia} className={`py-2 sticky top-0 bg-white ${isToday ? 'text-[#0097c2]' : ''}`}>
+                                    <div className="flex flex-col items-center">
+                                      <span className={`font-semibold ${isToday ? 'text-[#0097c2]' : ''}`}>{dia}</span>
+                                      <span className={`text-[11px] ${isToday ? 'text-[#0097c2]' : 'text-gray-500'}`}>{formatDM(weekDays[i])}</span>
+                                    </div>
+                                  </th>
+                                );
+                              })}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {hours.map((hora) => (
+                              <tr key={hora}>
+                                {dayNames.map((dia, i) => {
+                                  const dayDate = weekDays[i];
+                                  const iso = new Date(dayDate.getTime());
+                                  iso.setHours(0, 0, 0, 0);
+                                  const isoStr = iso.toISOString();
+                                  const available = horarios[dia]?.includes(hora);
+                                  // Calcular si el slot ya pasó
+                                  const [hh, mm] = hora.split(":").map((x) => parseInt(x, 10));
+                                  const slotDate = new Date(dayDate.getTime());
+                                  slotDate.setHours(hh || 0, mm || 0, 0, 0);
+                                  const isPast = slotDate.getTime() < now.getTime();
+                                  const disabled = !available || isPast;
+                                  const selected = !disabled && formData.hora === hora && formData.fecha && new Date(formData.fecha).toDateString() === iso.toDateString();
+                                  return (
+                                    <td key={`${dia}-${hora}`} className={`p-2 text-center ${selected ? 'bg-[#e6f7fb] rounded-lg' : ''}`}>
+                                      {!disabled ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleInputChange({ target: { name: "hora", value: hora } });
+                                            handleInputChange({ target: { name: "fecha", value: isoStr } });
+                                          }}
+                                          className={`w-full py-2 rounded-lg transition-all border ${selected ? "bg-[#0097c2] text-white border-[#0097c2] shadow" : "bg-white hover:bg-gray-50 border-gray-200"}`}
+                                        >
+                                          {hora}
+                                        </button>
+                                      ) : (
+                                        <span className="text-gray-400">No disponible</span>
+                                      )}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        </>
+                      );
+                    })()}
+                  </div>
+                  {Object.values(horarios).every(arr => arr.length === 0) && (
+                    <div className="text-center text-gray-500 mt-4">No hay horarios disponibles actualmente.</div>
+                  )}
+                </>
               )}
             </div>
           </div>

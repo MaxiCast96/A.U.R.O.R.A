@@ -3,14 +3,15 @@ import { useLocation } from 'react-router-dom';
 import Sidebar from '../../components/Admin/Sidebar';
 import '../../App.css';
 import { 
-  LayoutDashboard, Users, UserCheck, Eye, Package, Glasses, ShoppingBag, Tags, Bookmark, Calendar, FileText, Receipt, Settings, Search, Filter, Trash2, Edit, Plus, TrendingUp, TrendingDown, Clock, MapPin, Percent, Menu, X, Building, CheckCircle, DollarSign, Building2, Tag, XCircle,Image, Phone, Mail, UserX, Award, ChevronDown, User, LogOut, AlertCircle, Save, Check
+  LayoutDashboard, Users, UserCheck, Eye, Package, Glasses, ShoppingBag, Tags, Bookmark, Calendar, FileText, Receipt, Settings, MapPin, Percent, DollarSign
 } from 'lucide-react';
 import Clientes from '../../components/Admin/management/Clientes';
 import Empleados from '../../components/Admin/management/Empleados';
 import Optometristas from '../../components/Admin/management/Optometristas'
 import Recetas from '../../components/Admin/management/Recetas';
 import Dashboard from '../../components/Admin/management/DashboardContent';
-import Lentes from '../../components/Admin/management/LentesContent';
+import Aros from '../../components/Admin/management/ArosContent.jsx';
+import LentesCristalesContent from '../../components/Admin/management/LentesCristalesContent';
 import Accesorios from '../../components/Admin/management/AccesoriosContent';
 import Personalizados from '../../components/Admin/management/PersonalizadosContent';
 import Categorias from '../../components/Admin/management/CategoriasContent';
@@ -74,7 +75,8 @@ const OpticaDashboard = () => {
     { id: 'clientes', icon: Users, label: 'Clientes', section: 'Personal', allowedRoles: ['Administrador', 'Gerente', 'Vendedor', 'Recepcionista', 'Optometrista', 'Empleado'] },
     { id: 'empleados', icon: UserCheck, label: 'Empleados', section: 'Personal', allowedRoles: ['Administrador', 'Gerente'] },
     { id: 'optometristas', icon: Eye, label: 'Optometristas', section: 'Personal', allowedRoles: ['Administrador', 'Gerente'] },
-    { id: 'lentes', icon: Glasses, label: 'Lentes', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
+    { id: 'aros', icon: Glasses, label: 'Aros', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
+    { id: 'lentes-cristales', icon: Glasses, label: 'Lentes (Cristales)', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
     { id: 'accesorios', icon: ShoppingBag, label: 'Accesorios', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
     { id: 'personalizados', icon: Package, label: 'Personalizados', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Vendedor', 'Empleado'] },
     { id: 'categorias', icon: Tags, label: 'Categorías', section: 'Productos', allowedRoles: ['Administrador', 'Gerente'] },
@@ -257,8 +259,10 @@ const OpticaDashboard = () => {
         return <Empleados />;
       case 'optometristas':
         return <Optometristas />;
-      case 'lentes':
-        return <Lentes />;
+      case 'aros':
+        return <Aros />;
+      case 'lentes-cristales':
+        return <LentesCristalesContent />;
       case 'accesorios':
         return <Accesorios />;
       case 'personalizados':
@@ -274,7 +278,6 @@ const OpticaDashboard = () => {
       case 'historial': 
         return <HistorialMedico />;
       case 'recetas': 
-        return <Recetas />;
       case 'sucursales':
         return <Sucursales />;
       case 'promociones':

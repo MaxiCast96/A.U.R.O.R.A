@@ -111,30 +111,20 @@ promocionSchema.pre('save', function(next) {
 
     // Validar fechas
     if (this.fechaFin <= this.fechaInicio) {
-        next(new Error('La fecha de fin debe ser posterior a la fecha de inicio'));
         return;
     }
 
-    // Validar límite de usos
     if (this.limiteUsos !== null && this.usos > this.limiteUsos) {
         next(new Error('Los usos no pueden exceder el límite establecido'));
-        return;
     }
-
     next();
 });
-
-// Índices para mejor rendimiento
-promocionSchema.index({ codigoPromo: 1 });
-promocionSchema.index({ activo: 1, fechaInicio: 1, fechaFin: 1 });
-promocionSchema.index({ mostrarEnCarrusel: 1, prioridad: -1 });
-promocionSchema.index({ aplicaA: 1 });
 
 // Método para verificar si la promoción está vigente
 promocionSchema.methods.estaVigente = function() {
     const ahora = new Date();
-    return this.activo && 
-           this.fechaInicio <= ahora && 
+    return this.activo &&
+           this.fechaInicio <= ahora &&
            this.fechaFin >= ahora &&
            (this.limiteUsos === null || this.usos < this.limiteUsos);
 };

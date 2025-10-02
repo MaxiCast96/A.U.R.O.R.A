@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import React from "react";
 import "./App.css";
 import {
@@ -40,6 +40,17 @@ function AnimatedRoutes() {
   const location = useLocation();
   const { loading } = useAuth();
 
+  // Set a data-route attribute on <body> for route-scoped public CSS overrides
+  useEffect(() => {
+    const path = location.pathname || "/";
+    // Example: "/perfil" => "perfil"; other routes => their first segment
+    const first = path.replace(/^\/+/, "").split("/")[0] || "home";
+    document.body.setAttribute("data-route", first);
+    return () => {
+      // do not remove on unmount to keep consistent across route changes
+    };
+  }, [location.pathname]);
+
   // Mostrar spinner mientras se verifica la autenticación
   if (loading) {
     return <LoadingSpinner message="Verificando autenticación..." />;
@@ -59,6 +70,7 @@ function AnimatedRoutes() {
         
         {/* Rutas de productos específicos */}
         <Route path="/productos/lentes" element={<Producto />} />
+        <Route path="/productos/lentes-cristales" element={<Producto />} />
         <Route path="/productos/accesorios" element={<Producto />} />
         {/* Redirección de ruta eliminada */}
         <Route path="/productos/personalizables" element={<Navigate to="/productos" replace />} />

@@ -1,9 +1,59 @@
+import mongoose from "mongoose";
 import Citas from "../models/Citas.js";
-import "../models/Optometrista.js";
+import Optometrista from "../models/Optometrista.js";
 import "../models/Sucursales.js";
 import "../models/Clientes.js";
 
 const citasController = {};
+
+// Utilidad: obtener nombre de día en español a partir de Date
+const getDiaSemanaES = (date) => {
+    const dias = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+    return dias[new Date(date).getDay()];
+};
+
+// Utilidad: verifica si una hora HH:MM está dentro del rango [inicio, fin)
+const horaEnRango = (hora, inicio, fin) => {
+    if (!hora || !inicio || !fin) return false;
+    const pad = (s) => (s.length === 5 ? s : s.padStart(5, '0'));
+    const h = pad(hora);
+    const i = pad(inicio);
+    const f = pad(fin);
+    return h >= i && h < f;
+};
+
+// Normaliza texto: minúsculas y sin acentos
+const normalize = (s) => (s || "").toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Aliases para día de la semana (para soportar con/sin acento y mayúsculas)
+const getDayAliases = (dia) => {
+    const d = normalize(dia);
+    const map = {
+        domingo: ["domingo", "Domingo"],
+        lunes: ["lunes", "Lunes"],
+        martes: ["martes", "Martes"],
+        miercoles: ["miercoles", "miércoles", "Miercoles", "Miércoles"],
+        jueves: ["jueves", "Jueves"],
+        viernes: ["viernes", "Viernes"],
+        sabado: ["sabado", "sábado", "Sabado", "Sábado"],
+    };
+    return map[d] || [dia];
+};
+
+// Normaliza hora a formato HH:MM y genera variantes equivalentes (para comparar registros antiguos)
+const normalizeHora = (h) => {
+    if (!h) return '';
+    const [hh, mm] = h.split(':');
+    const HH = String(parseInt(hh || '0', 10)).padStart(2, '0');
+    const MM = String(parseInt(mm || '0', 10)).padStart(2, '0');
+    return `${HH}:${MM}`;
+};
+const horaVariants = (h) => {
+    const norm = normalizeHora(h);
+    // Variante sin cero a la izquierda en hora (para datos antiguos '9:00')
+    const alt = norm.startsWith('0') ? norm.slice(1) : norm;
+    return [norm, alt];
+};
 
 // SELECT - Obtiene todas las citas con relaciones pobladas
 citasController.getCitas = async (req, res) => {
@@ -17,7 +67,19 @@ citasController.getCitas = async (req, res) => {
             }) // Datos del optometrista + empleado
             .populate("sucursalId"); // Datos de la sucursal
 
-        res.status(200).json(citas);
+        // Adaptar respuesta para citas anónimas: inyectar objeto clienteId sintético con nombre/apellido
+        const adapted = citas.map((c) => {
+            const obj = c.toObject({ virtuals: true });
+            if (!obj.clienteId) {
+                obj.clienteId = {
+                    nombre: obj.clienteNombre || '',
+                    apellido: obj.clienteApellidos || ''
+                };
+            }
+            return obj;
+        });
+
+        res.status(200).json(adapted);
     } catch (error) {
         console.log("Error: " + error);
         res.status(500).json({ message: "Error obteniendo citas: " + error.message });
@@ -39,9 +101,15 @@ citasController.getCitaById = async (req, res) => {
         if (!cita) {
             return res.status(404).json({ message: "Cita no encontrada" });
         }
-        res.status(200).json(cita);
+        const obj = cita.toObject({ virtuals: true });
+        if (!obj.clienteId) {
+            obj.clienteId = {
+                nombre: obj.clienteNombre || '',
+                apellido: obj.clienteApellidos || ''
+            };
+        }
+        res.status(200).json(obj);
     } catch (error) {
-        console.log("Error: " + error);
         res.status(500).json({ message: "Error obteniendo cita: " + error.message });
     }
 };
@@ -50,37 +118,136 @@ citasController.getCitaById = async (req, res) => {
 citasController.createCita = async (req, res) => {
     const {
         clienteId, optometristaId, sucursalId, fecha, hora, estado,
-        motivoCita, tipoLente, graduacion, notasAdicionales
+        motivoCita, tipoLente, notasAdicionales,
+        clienteNombre, clienteApellidos, telefono, email, formaContacto
     } = req.body;
 
-    // Validación de campos requeridos para crear cita
-    if (!clienteId || !optometristaId || !sucursalId || !fecha || !hora || !estado || !motivoCita) {
-
+    // Validación de campos requeridos para crear cita (clienteId y optometristaId son opcionales)
+    if (!sucursalId || !fecha || !hora || !estado || !motivoCita) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
-
+    let session;
     try {
-        console.log('Datos recibidos para nueva cita:', req.body); // Log para debugging
-                // Crea nueva instancia de cita con todos los datos
-        const nuevaCita = new Citas({
-            clienteId,
-            optometristaId,
-            sucursalId,
-            fecha,
-            hora,
-            estado,
-            motivoCita,
-            tipoLente,
-            graduacion,
-            notasAdicionales
-        });
+        console.log('Datos recibidos para nueva cita:', req.body);
+        session = await mongoose.startSession();
+        await session.withTransaction(async (s) => {
+            session = s;
+            // Iniciar asignación con el optometrista provisto (puede ser null)
+            let assignedOptometristaId = optometristaId || null;
+            // Validación: no permitir citas en el pasado (combina fecha + hora)
+            const fechaObj = new Date(fecha);
+            if (isNaN(fechaObj.getTime())) {
+                throw new Error('INVALID_DATE');
+            }
+            const [hSel, mSel] = String(hora).split(':').map((n) => parseInt(n, 10));
+            if (Number.isNaN(hSel) || Number.isNaN(mSel)) {
+                throw new Error('INVALID_TIME');
+            }
+            const fechaHoraSeleccionada = new Date(fechaObj);
+            fechaHoraSeleccionada.setHours(hSel || 0, mSel || 0, 0, 0);
+            if (fechaHoraSeleccionada.getTime() < Date.now()) {
+                return res.status(400).json({ message: 'No se pueden programar citas en fechas pasadas' });
+            }
 
-        await nuevaCita.save(); // Guarda en base de datos
-        console.log('Cita guardada:', nuevaCita);
-        res.status(201).json({ message: "Cita guardada" });
+            // Normalizar fecha y hora
+            const dayStart = new Date(fecha);
+            dayStart.setHours(0, 0, 0, 0);
+            const horaNorm = normalizeHora(hora);
+            const dayEnd = new Date(dayStart.getTime());
+            dayEnd.setDate(dayEnd.getDate() + 1);
+            const sucIdObj = new mongoose.Types.ObjectId(String(sucursalId));
+            const horaList = horaVariants(hora);
+
+            if (!assignedOptometristaId) {
+                const diaSemana = getDiaSemanaES(fecha);
+                const diaAliases = getDayAliases(diaSemana);
+
+                const candidatos = await Optometrista.find({
+                    disponible: true,
+                    sucursalesAsignadas: { $in: [sucIdObj] },
+                    disponibilidad: { $elemMatch: { dia: { $in: diaAliases } } }
+                }).session(session);
+
+                const candidatosPorHora = candidatos.filter(opt =>
+                    (opt.disponibilidad || []).some(d => normalize(d.dia) === normalize(diaSemana) && horaEnRango(horaNorm, d.horaInicio, d.horaFin))
+                );
+
+                const ocupaciones = await Citas.find({
+                    optometristaId: { $in: candidatosPorHora.map(o => o._id) },
+                    sucursalId: sucIdObj,
+                    fecha: { $gte: dayStart, $lt: dayEnd },
+                    hora: { $in: horaList },
+                    estado: { $ne: 'cancelada' }
+                }).select('optometristaId').session(session);
+
+                const ocupados = new Set(ocupaciones.map(c => String(c.optometristaId)));
+                const libres = candidatosPorHora.filter(o => !ocupados.has(String(o._id)));
+
+                if (libres.length === 0) {
+                    throw new Error('NO_AVAILABLE_OPTOMETRIST');
+                }
+
+                const libreIds = libres.map(o => o._id);
+                const conteos = await Citas.aggregate([
+                    { $match: { optometristaId: { $in: libreIds }, sucursalId: sucIdObj, fecha: { $gte: dayStart, $lt: dayEnd }, estado: { $ne: 'cancelada' } } },
+                    { $group: { _id: '$optometristaId', total: { $sum: 1 } } }
+                ]).session(session);
+
+                const countMap = new Map(conteos.map(c => [String(c._id), c.total]));
+                let best = libres[0];
+                let bestCount = countMap.get(String(best._id)) || 0;
+                for (const o of libres.slice(1)) {
+                    const c = countMap.get(String(o._id)) || 0;
+                    if (c < bestCount) { best = o; bestCount = c; }
+                }
+                assignedOptometristaId = best._id;
+            }
+
+            // Re-chequeo final de ocupación para evitar carreras
+            const choque = await Citas.findOne({
+                optometristaId: assignedOptometristaId,
+                sucursalId: sucIdObj,
+                fecha: { $gte: dayStart, $lt: dayEnd },
+                hora: { $in: horaList },
+                estado: { $ne: 'cancelada' }
+            }).session(session);
+            if (choque) {
+                throw new Error('JUST_BOOKED');
+            }
+
+            // Determinar forma de contacto por defecto si no viene explícita
+            const formaContactoFinal = formaContacto || (telefono ? 'telefono' : (email ? 'email' : undefined));
+
+            const nuevaCita = new Citas({
+                clienteId: clienteId || undefined,
+                optometristaId: assignedOptometristaId,
+                sucursalId,
+                fecha: dayStart, // normalizar a inicio de día para consistencia con consultas
+                hora: horaNorm,
+                estado,
+                motivoCita,
+                tipoLente,
+                notasAdicionales,
+                // Datos de contacto anónimo opcionales
+                clienteNombre: clienteNombre || undefined,
+                clienteApellidos: clienteApellidos || undefined,
+                telefono: telefono || undefined,
+                email: email || undefined,
+                formaContacto: formaContactoFinal
+            });
+
+            await nuevaCita.save({ session });
+            console.log('Cita guardada:', nuevaCita);
+            res.status(201).json({ message: "Cita guardada" });
+        });
     } catch (error) {
+        if (error && (error.message === 'NO_AVAILABLE_OPTOMETRIST' || error.message === 'JUST_BOOKED')) {
+            return res.status(409).json({ message: "No hay optometristas disponibles para esa fecha y hora en la sucursal seleccionada" });
+        }
         console.log("Error: " + error);
-        res.status(500).json({ message: "Error creando cita: " + error.message }); // Log de confirmación
+        res.status(500).json({ message: "Error creando cita: " + error.message });
+    } finally {
+        if (session) session.endSession();
     }
 };
 
@@ -88,11 +255,11 @@ citasController.createCita = async (req, res) => {
 citasController.updateCita = async (req, res) => {
     const {
         clienteId, optometristaId, sucursalId, fecha, hora, estado,
-        motivoCita, tipoLente, graduacion, notasAdicionales
+        motivoCita, tipoLente, notasAdicionales
     } = req.body;
 
-    // Validación de campos obligatorios para actualización
-    if (!clienteId || !optometristaId || !sucursalId || !fecha || !hora || !estado || !motivoCita) {
+    // Validación de campos obligatorios para actualización (clienteId y optometristaId son opcionales)
+    if (!sucursalId || !fecha || !hora || !estado || !motivoCita) {
         return res.status(400).json({ message: "Faltan campos obligatorios" });
     }
 
@@ -101,18 +268,17 @@ citasController.updateCita = async (req, res) => {
         const updatedCita = await Citas.findByIdAndUpdate(
             req.params.id,
             {
-                clienteId,
-                optometristaId,
+                clienteId: clienteId || undefined,
+                optometristaId: optometristaId || undefined,
                 sucursalId,
                 fecha,
                 hora,
                 estado,
                 motivoCita,
                 tipoLente,
-                graduacion,
                 notasAdicionales
             },
-            { new: true } // Retorna documento actualizado
+            { new: true }
         );
         if (!updatedCita) {
             return res.status(404).json({ message: "Cita no encontrada" });

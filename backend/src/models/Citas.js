@@ -4,13 +4,39 @@ import mongoose from "mongoose";
 const citaSchema = new mongoose.Schema({
     clienteId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Clientes", // Referencia al cliente que agenda la cita
-        required: true,
+        ref: "Clientes", // Referencia al cliente que agenda la cita (opcional para citas públicas)
+        required: false,
+    },
+    // Datos de contacto opcionales para citas sin cliente registrado
+    clienteNombre: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    clienteApellidos: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    telefono: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    email: {
+        type: String,
+        required: false,
+        trim: true,
+    },
+    formaContacto: {
+        type: String, // 'telefono' | 'email'
+        required: false,
+        enum: ['telefono', 'email']
     },
     optometristaId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "Optometrista", // Referencia al optometrista asignado
-        required: true,
+        ref: "Optometrista", // Referencia al optometrista asignado (opcional cuando el cliente elige "Cualquiera")
+        required: false,
     },
     sucursalId: {
         type: mongoose.Schema.Types.ObjectId,
@@ -38,14 +64,17 @@ const citaSchema = new mongoose.Schema({
         type: String,
         required: true, // Tipo de lente que necesita el cliente
     },
-    graduacion: {
-        type: String,
-        required: true, // Graduación actual o aproximada
-    },
     notasAdicionales: {
         type: String,
         default: "", // Notas extras sobre la cita
     }
 }, { timestamps: true }); // Agrega createdAt y updatedAt
+
+// Evitar doble asignación: un optometrista no puede tener dos citas en misma sucursal, fecha (día) y hora
+// Nota: usamos índice parcial para ignorar citas canceladas
+citaSchema.index(
+    { optometristaId: 1, sucursalId: 1, fecha: 1, hora: 1 },
+    { unique: true, partialFilterExpression: { estado: { $ne: 'cancelada' } } }
+);
 
 export default mongoose.model("Citas", citaSchema);

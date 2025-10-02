@@ -16,6 +16,11 @@ const ProductNavigation = () => {
       icon: '👓'
     },
     {
+      path: '/productos/lentes-cristales',
+      label: 'Lentes (Cristales)',
+      icon: '🔍'
+    },
+    {
       path: '/productos/accesorios',
       label: 'Accesorios',
       icon: '👜'
