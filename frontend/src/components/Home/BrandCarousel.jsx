@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Award, TrendingUp } from 'lucide-react';
+import { motion as Motion } from 'framer-motion';
 
 const BrandsCarousel = ({
   brands = [],
@@ -13,24 +13,28 @@ const BrandsCarousel = ({
   const items = Array.isArray(brands) ? brands.filter(b => b.logo || b.image || b.imagen) : [];
   
   const isControlled = !!onSlideChange;
-  // initialize in the middle segment to allow smooth backward/forward moves
   const [currentIndex, setCurrentIndex] = useState(() => {
     const base = Array.isArray(items) ? items.length : 0;
-    return Math.max(0, base); // start at the first index of the middle segment
+    return Math.max(0, base);
   });
   const setSlideState = isControlled ? onSlideChange : setCurrentIndex;
 
-  // Helper to wrap an index within the infinite list length
   const total = Math.max(1, (Array.isArray(items) && items.length > 0) ? items.length * 3 : 1);
   const normalize = (idx) => ((idx % total) + total) % total;
   
-  const generatePlaceholder = (width = 160, height = 120) => {
+  const generatePlaceholder = (width = 180, height = 140) => {
     const svg = `
       <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-        <rect width="100%" height="100%" fill="#f3f4f6"/>
-        <rect x="20%" y="20%" width="60%" height="60%" fill="#d1d5db" rx="4"/>
-        <text x="50%" y="55%" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">
-          Logo
+        <defs>
+          <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:0.1" />
+            <stop offset="100%" style="stop-color:#0891b2;stop-opacity:0.2" />
+          </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#grad)" rx="12"/>
+        <rect x="25%" y="30%" width="50%" height="40%" fill="#06b6d4" opacity="0.15" rx="8"/>
+        <text x="50%" y="55%" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="500" fill="#0891b2" text-anchor="middle">
+          PREMIUM
         </text>
       </svg>
     `;
@@ -39,17 +43,14 @@ const BrandsCarousel = ({
 
   const infiniteItems = items.length > 0 ? [...items, ...items, ...items] : [];
 
-  // When items change, reset to middle segment for seamless navigation
   useEffect(() => {
     if (!isControlled) {
-      setCurrentIndex(items.length); // beginning of the middle copy
+      setCurrentIndex(items.length);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length]);
 
   const getVisibleBrands = () => {
     if (infiniteItems.length === 0) return [];
-    // Build visible window using modular indexing to properly wrap near edges
     const count = Math.min(visibleItems, infiniteItems.length);
     const visible = Array.from({ length: count }, (_, i) => infiniteItems[normalize(currentIndex + i)]);
     const centerIndex = Math.floor((count - 1) / 2);
@@ -58,9 +59,9 @@ const BrandsCarousel = ({
       const distanceFromCenter = Math.abs(idx - centerIndex);
       const maxDistance = Math.max(centerIndex, count - 1 - centerIndex);
       const normalizedDistance = maxDistance > 0 ? distanceFromCenter / maxDistance : 0;
-      const scale = 0.8 + (1 - normalizedDistance) * 0.2;
-      const opacity = 0.6 + (1 - normalizedDistance) * 0.4;
-      const leftPercent = count > 1 ? (idx / (count - 1)) * 60 + 20 : 50;
+      const scale = 0.75 + (1 - normalizedDistance) * 0.25;
+      const opacity = 0.4 + (1 - normalizedDistance) * 0.6;
+      const leftPercent = count > 1 ? (idx / (count - 1)) * 70 + 15 : 50;
       const isCenter = idx === centerIndex;
 
       return {
@@ -75,12 +76,11 @@ const BrandsCarousel = ({
     });
   };
 
-  // autoplay solo si no es controlado
   useEffect(() => {
     if (!isControlled && items.length > visibleItems) {
       const interval = setInterval(() => {
         setSlideState(prev => normalize((typeof prev === 'number' ? prev : currentIndex) + 1));
-      }, 5000);
+      }, 6000);
       return () => clearInterval(interval);
     }
   }, [isControlled, items.length, visibleItems, setSlideState, normalize, currentIndex]);
@@ -90,24 +90,42 @@ const BrandsCarousel = ({
 
   if (loading) {
     return (
-      <section className="w-full py-16 text-center">
-        Cargando marcas...
+      <section className="w-full py-24 bg-gradient-to-br from-gray-50 to-cyan-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="text-center">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-cyan-500 rounded-full animate-pulse"></div>
+              <div className="h-8 bg-gray-200 rounded-lg w-48 animate-pulse"></div>
+            </div>
+            <div className="h-4 bg-gray-200 rounded-lg w-64 mx-auto animate-pulse"></div>
+          </div>
+        </div>
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="w-full py-16 text-center text-red-500">
-        Error al cargar marcas: {String(error)}
+      <section className="w-full py-24 bg-gradient-to-br from-gray-50 to-cyan-50">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-8 inline-block">
+            <p className="text-red-600 font-medium">Error al cargar nuestras marcas</p>
+            <p className="text-red-500 text-sm mt-2">{String(error)}</p>
+          </div>
+        </div>
       </section>
     );
   }
 
   if (!items.length) {
     return (
-      <section className="w-full py-16 text-center text-gray-500">
-        No hay marcas disponibles
+      <section className="w-full py-24 bg-gradient-to-br from-gray-50 to-cyan-50">
+        <div className="max-w-7xl mx-auto px-6 text-center">
+          <div className="bg-white/80 backdrop-blur-sm border border-cyan-100 rounded-2xl p-12 inline-block shadow-lg">
+            <Award className="w-12 h-12 text-cyan-500 mx-auto mb-4" />
+            <p className="text-gray-600 font-medium">Próximamente nuevas marcas premium</p>
+          </div>
+        </div>
       </section>
     );
   }
@@ -115,18 +133,54 @@ const BrandsCarousel = ({
   const visibleBrands = getVisibleBrands();
 
   return (
-    <section className="w-full relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 relative z-10">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Nuestras Marcas</h2>
-          <p className="text-gray-600 text-lg">Descubre la calidad de nuestras marcas asociadas</p>
+    <section className="w-full relative overflow-hidden bg-gradient-to-br from-white via-gray-50 to-cyan-50">
+      {/* Decorative elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 w-32 h-32 bg-cyan-500/5 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-40 h-40 bg-cyan-400/10 rounded-full blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-cyan-500/5 to-blue-500/5 rounded-full blur-3xl"></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 relative z-10 py-24">
+        {/* Header */}
+        <div className="text-center mb-16">
+          
+          {/* Bottom CTA */}
+        <div className="text-center mt-16">
+          <div className="inline-flex items-center gap-4 bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-cyan-100 shadow-lg">
+            <Award className="w-8 h-8 text-cyan-500" />
+            <div className="text-left">
+              <p className="font-semibold text-gray-900">Calidad Garantizada</p>
+              <p className="text-sm text-gray-600">Productos certificados por nuestros colaboradores</p>
+            </div>
+          </div>
         </div>
 
-        <div className="overflow-hidden relative w-full min-h-[400px] flex items-center justify-center">
+        <br/>
+          <Motion.h2 className="text-5xl font-bold text-gray-900 mb-6 leading-tight">
+          
+            Nuestras <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">Marcas</span>
+        
+          </Motion.h2>
+          <p className="text-gray-600 text-xl max-w-2xl mx-auto leading-relaxed">
+            Colaboramos exclusivamente con las marcas de confianza para ofrecerte 
+            <span className="font-semibold text-cyan-700"> calidad excepcional</span> en cada producto
+          </p>
+
+          
+        </div>
+
+        {/* Carousel */}
+        <div className="relative w-full min-h-[500px] flex items-center justify-center">
+          {/* Background glow for center item */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-80 h-80 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-full blur-3xl"></div>
+          </div>
+
           {visibleBrands.map((brand) => (
             <div
               key={`${brand._id || brand.id || 'brand'}-${brand.globalIndex}`}
-              className="absolute transition-all duration-700 ease-in-out cursor-pointer"
+              className="absolute transition-all duration-1000 ease-out cursor-pointer group"
               style={{
                 transform: `translateX(-50%) scale(${brand.scale})`,
                 opacity: brand.opacity,
@@ -150,28 +204,50 @@ const BrandsCarousel = ({
                 <div className="mt-4 text-center">
                   <p className={`text-base font-semibold ${brand.isCenter ? 'text-gray-800' : 'text-gray-600'}`}>{brand.nombre || brand.name || 'Marca'}</p>
                 </div>
-              </Link>
+              </a>
             </div>
           ))}
         </div>
 
+        {/* Dots indicator */}
         {items.length > 1 && (
-          <>
-            <button
-              onClick={prevSlide}
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition"
-            >
-              <ChevronLeft className="w-6 h-6 text-gray-700" />
-            </button>
-            <button
-              onClick={nextSlide}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-lg hover:scale-110 transition"
-            >
-              <ChevronRight className="w-6 h-6 text-gray-700" />
-            </button>
-          </>
+          <div className="flex justify-center mt-12 gap-3">
+            {items.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setSlideState(items.length + idx)}
+                className={`
+                  w-3 h-3 rounded-full transition-all duration-300
+                  ${normalize(currentIndex) % items.length === idx 
+                    ? 'bg-cyan-500 shadow-lg shadow-cyan-500/50' 
+                    : 'bg-gray-300 hover:bg-gray-400'
+                  }
+                `}
+              />
+            ))}
+          </div>
         )}
+
+        
       </div>
+
+      {/* Navigation - FUERA del contenedor max-w-7xl */}
+      {items.length > 1 && (
+        <>
+          <button
+            onClick={prevSlide}
+            className="absolute left-0 top-1/2 transform -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 lg:w-14 lg:h-24 bg-white/90 backdrop-blur-sm hover:bg-white text-cyan-600 rounded-r-full shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-200 hover:border-cyan-300 flex items-center justify-center z-50 pl-1"
+          >
+            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 transition-colors" />
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-0 top-1/2 transform -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 lg:w-14 lg:h-24 bg-white/90 backdrop-blur-sm hover:bg-white text-cyan-600 rounded-l-full shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-200 hover:border-cyan-300 flex items-center justify-center z-50 pr-1"
+          >
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 transition-colors" />
+          </button>
+        </>
+      )}
     </section>
   );
 };

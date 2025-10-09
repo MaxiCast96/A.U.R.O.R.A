@@ -9,71 +9,89 @@ import useData from "../../hooks/useData";
 
 //imagenes
 import Lente1 from "../public/img/Lente1.png";
-// Nota: solo se usa Lente1 como imagen de respaldo en el hero
 
 const Home = () => {
-  // Eliminado useLocation y estado no utilizado
+  // ==================== STATE MANAGEMENT ====================
   const [currentPopularSlide, setCurrentPopularSlide] = useState(0);
+  const [promoIndex, setPromoIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [sucursalIndex, setSucursalIndex] = useState(0);
+  const [isSucursalHover, setIsSucursalHover] = useState(false);
+  const [sucursalPageSize, setSucursalPageSize] = useState(4);
+
+  // ==================== REFS ====================
+  const autoplayRef = useRef(null);
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
+
+  // ==================== CONSTANTS ====================
   const brandsVisibleItems = 5;
 
-  // TODOS los datos se manejan en el componente padre (Home)
+  // ==================== DATA FETCHING ====================
   const {
     data: promociones,
     loading: loadingPromos,
     error: errorPromos,
   } = useData("promociones");
+
   const {
     data: brands,
     loading: loadingBrands,
     error: errorBrands,
   } = useData("marcas");
+
   const {
     data: populars,
     loading: loadingPopulars,
     error: errorPopulars,
   } = useData("lentes?popular=true");
+
   const {
     data: sucursales,
     loading: loadingSucursales,
     error: errorSucursales,
   } = useData('sucursales');
 
-  const [promoIndex, setPromoIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-
-  // Aseguro que los datos sean arrays aunque data sea null
+  // ==================== COMPUTED VALUES ====================
   const safePromociones = promociones || [];
+  const safeBrands = brands || [];
+  const safePopulars = populars || [];
+  const safeSucursales = Array.isArray(sucursales) ? sucursales : [];
+  const totalSucursalPages = Math.max(1, Math.ceil((safeSucursales.length || 0) / sucursalPageSize));
+
+  // ==================== HELPER FUNCTIONS ====================
   const getPromoTitle = (p) => {
     if (!p) return "";
     const base = p.nombre || p.titulo;
     if (base && base.trim()) return base;
-    // Derivar del descuento si no hay título
     const tipo = p.tipoDescuento;
     const valor = p.valorDescuento;
     if (tipo === 'porcentaje' && typeof valor === 'number') return `-${valor}% en óptica`;
     if (tipo === 'monto_fijo' && typeof valor === 'number') return `Ahorra $${valor}`;
     return "";
   };
+
   const getPromoDesc = (p) => {
     if (!p) return "";
     if (p.descripcion && p.descripcion.trim()) return p.descripcion;
-    // Descripción derivada
     if (p.aplicaA === 'categoria') return 'Válido en categorías seleccionadas';
     if (p.aplicaA === 'lente') return 'Aplicable a lentes seleccionados';
     return 'Promoción por tiempo limitado';
   };
+
   const getPromoImage = (p) => {
     if (!p) return null;
-    // Check for image in different possible locations
     return p.imagenPromocion || p.imagen || p.bannerUrl || p.imagenUrl || null;
   };
+
+  // ==================== MEMOIZED VALUES ====================
   const heroPromos = React.useMemo(() => {
     const now = new Date();
     const list = Array.isArray(safePromociones) ? safePromociones.slice() : [];
     const active = list.filter(p => {
       const inicio = p?.fechaInicio ? new Date(p.fechaInicio) : null;
       const fin = p?.fechaFin ? new Date(p.fechaFin) : null;
-      const isActiveFlag = p?.activo !== false; // default true if undefined
+      const isActiveFlag = p?.activo !== false;
       const inWindow = (!inicio || inicio <= now) && (!fin || fin >= now);
       return isActiveFlag && inWindow;
     });
@@ -85,80 +103,11 @@ const Home = () => {
     });
   }, [safePromociones]);
 
-  // Promo actual clamped por longitud para evitar índices fuera de rango
   const currentPromo = heroPromos.length > 0
     ? heroPromos[promoIndex % heroPromos.length]
     : null;
 
-  // Asegurar que el índice no se salga cuando cambia el número de promos
-  useEffect(() => {
-    if (promoIndex > 0 && promoIndex >= heroPromos.length) {
-      setPromoIndex(0);
-    }
-  }, [heroPromos.length]);
-  const safeBrands = brands || [];
-  const safePopulars = populars || [];
-  const safeSucursales = Array.isArray(sucursales) ? sucursales : [];
-  const [sucursalIndex, setSucursalIndex] = useState(0); // índice de página
-  const [isSucursalHover, setIsSucursalHover] = useState(false);
-  const [sucursalPageSize, setSucursalPageSize] = useState(1);
-  const autoplayRef = useRef(null);
-  const touchStartX = useRef(null);
-  const touchEndX = useRef(null);
-
-  // Paginación por páginas (no por item) para evitar duplicados visuales
-  const totalSucursalPages = Math.max(1, Math.ceil((safeSucursales.length || 0) / sucursalPageSize));
-
-  // Detectar tamaño para mostrar 1 en móvil y 2 en md+
-  useEffect(() => {
-    const updatePageSize = () => {
-      setSucursalPageSize(window.innerWidth >= 768 ? 2 : 1);
-    };
-    updatePageSize();
-    window.addEventListener('resize', updatePageSize);
-    return () => window.removeEventListener('resize', updatePageSize);
-  }, []);
-
-  // Clamp de índice si cambian cantidad de páginas
-  useEffect(() => {
-    if (sucursalIndex >= totalSucursalPages) setSucursalIndex(0);
-  }, [totalSucursalPages]);
-
-  // Autoplay de sucursales por página
-  useEffect(() => {
-    if (!safeSucursales.length) return;
-    if (isSucursalHover) return; // pausar en hover
-    autoplayRef.current && clearInterval(autoplayRef.current);
-    autoplayRef.current = setInterval(() => {
-      setSucursalIndex((i) => (i + 1) % totalSucursalPages);
-    }, 5000);
-    return () => autoplayRef.current && clearInterval(autoplayRef.current);
-  }, [totalSucursalPages, safeSucursales.length, isSucursalHover]);
-
-  // Gestos de swipe
-  const onTouchStart = (e) => {
-    touchStartX.current = e.changedTouches[0].clientX;
-    touchEndX.current = null;
-  };
-  const onTouchMove = (e) => {
-    touchEndX.current = e.changedTouches[0].clientX;
-  };
-  const onTouchEnd = () => {
-    if (touchStartX.current == null || touchEndX.current == null) return;
-    const delta = touchEndX.current - touchStartX.current;
-    const threshold = 50;
-    if (delta > threshold) {
-      // swipe right -> anterior página
-      setSucursalIndex((i) => (i - 1 + totalSucursalPages) % totalSucursalPages);
-    } else if (delta < -threshold) {
-      // swipe left -> siguiente página
-      setSucursalIndex((i) => (i + 1) % totalSucursalPages);
-    }
-    touchStartX.current = null;
-    touchEndX.current = null;
-  };
-
-  // Handlers para el carrusel de productos populares (se pasan como props)
+  // ==================== EVENT HANDLERS ====================
   const handlePopularSlideChange = (newSlide) => {
     setCurrentPopularSlide(newSlide);
   };
@@ -183,14 +132,68 @@ const Home = () => {
     }
   };
 
-  // Efecto para la animación automática
+  const onTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].clientX;
+    touchEndX.current = null;
+  };
+
+  const onTouchMove = (e) => {
+    touchEndX.current = e.changedTouches[0].clientX;
+  };
+
+  const onTouchEnd = () => {
+    if (touchStartX.current == null || touchEndX.current == null) return;
+    const delta = touchEndX.current - touchStartX.current;
+    const threshold = 50;
+    if (delta > threshold) {
+      setSucursalIndex((i) => (i - 1 + totalSucursalPages) % totalSucursalPages);
+    } else if (delta < -threshold) {
+      setSucursalIndex((i) => (i + 1) % totalSucursalPages);
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  // ==================== EFFECTS ====================
+  useEffect(() => {
+    if (promoIndex > 0 && promoIndex >= heroPromos.length) {
+      setPromoIndex(0);
+    }
+  }, [heroPromos.length]);
+
+  useEffect(() => {
+    const updatePageSize = () => {
+      const width = window.innerWidth;
+      if (width < 640) setSucursalPageSize(1);
+      else if (width < 768) setSucursalPageSize(2);
+      else if (width < 1024) setSucursalPageSize(3);
+      else setSucursalPageSize(4);
+    };
+    updatePageSize();
+    window.addEventListener('resize', updatePageSize);
+    return () => window.removeEventListener('resize', updatePageSize);
+  }, []);
+
+  useEffect(() => {
+    if (sucursalIndex >= totalSucursalPages) setSucursalIndex(0);
+  }, [totalSucursalPages]);
+
+  useEffect(() => {
+    if (!safeSucursales.length) return;
+    if (isSucursalHover) return;
+    autoplayRef.current && clearInterval(autoplayRef.current);
+    autoplayRef.current = setInterval(() => {
+      setSucursalIndex((i) => (i + 1) % totalSucursalPages);
+    }, 5000);
+    return () => autoplayRef.current && clearInterval(autoplayRef.current);
+  }, [totalSucursalPages, safeSucursales.length, isSucursalHover]);
+
   useEffect(() => {
     const autoAnimate = setInterval(() => {
       if (!isAnimating) {
         handleNextPromo();
       }
-    }, 5000); // Cambia cada 5 segundos
-
+    }, 5000);
     return () => clearInterval(autoAnimate);
   }, [isAnimating]);
 
@@ -200,328 +203,394 @@ const Home = () => {
         (prev) => (prev + 1) % Math.ceil(safePopulars.length / 3)
       );
     }, 4000);
-
-    return () => {
-      clearInterval(popularTimer);
-    };
+    return () => clearInterval(popularTimer);
   }, [safePopulars.length]);
 
-  // Reemplaza las variantes de animación existentes con estas más sutiles
+  // ==================== ANIMATION VARIANTS ====================
   const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
+    initial: { opacity: 0, y: 30 },
     animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.5, ease: "easeOut" },
+    transition: { duration: 0.6, ease: "easeOut" },
   };
 
   const fadeIn = {
     initial: { opacity: 0 },
     animate: { opacity: 1 },
-    transition: { duration: 0.4 },
+    transition: { duration: 0.5 },
   };
 
   const staggerContainer = {
     animate: {
       transition: {
-        staggerChildren: 0.05,
+        staggerChildren: 0.1,
       },
     },
   };
 
-  // Simplifica las animaciones del hero y sections
+  // ==================== MAIN RENDER ====================
   return (
     <PageTransition>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        className="bg-white min-h-screen flex flex-col font-['Lato']"
+        transition={{ duration: 0.5 }}
+        className="bg-white min-h-screen flex flex-col"
       >
         <Navbar />
 
-        {/* Hero inspirado en NovoTec - Carrusel con colores de la óptica */}
-        <motion.section
+        {/* Hero Section - Enhanced with Dynamic Background */}
+<section className="relative min-h-[90vh] flex items-center overflow-hidden">
+  {/* Dynamic Background with Blurred Promo Image */}
+  <div className="absolute inset-0">
+    <div />
+    <AnimatePresence mode="wait">
+      {currentPromo && getPromoImage(currentPromo) && (
+        <motion.div
+          key={`bg-${promoIndex}`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          className="w-full relative py-0 px-0 overflow-hidden"
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="absolute inset-0"
         >
-          {/* Contenedor principal ampliado sin sombras */}
-          <div className="relative w-full h-[500px] sm:h-[550px] md:h-[600px] lg:h-[650px] bg-white overflow-hidden">
-            {loadingPromos ? (
-              <div className="flex items-center justify-center h-full bg-gray-50">
-                <div className="text-center">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      duration: 2,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                    className="w-12 h-12 border-3 border-gray-300 border-t-[#0097c2] rounded-full mx-auto mb-4"
-                  />
-                  <p className="text-lg font-medium text-gray-600">
-                    Cargando promociones...
-                  </p>
-                </div>
-              </div>
-            ) : errorPromos ? (
-              <div className="flex items-center justify-center h-full bg-gray-50 text-center">
-                <div>
-                  <svg
-                    className="w-12 h-12 mx-auto mb-4 text-red-400"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
-                  </svg>
-                  <p className="text-lg font-medium text-red-600">
-                    Error al cargar promociones
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="relative h-full">
-                {/* Contenido principal */}
-                <div className="grid lg:grid-cols-2 h-full">
-                  {/* Sección de contenido (lado izquierdo) */}
-                  <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 xl:p-20 bg-gray-50 lg:bg-transparent relative">
-                    <AnimatePresence mode="wait">
-                      {heroPromos.length > 0 ? (
-                        <motion.div
-                          key={`content-${promoIndex}`}
-                          initial={{ opacity: 0, x: -50 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 50 }}
-                          transition={{ duration: 0.4, ease: "easeOut" }}
-                          className="space-y-6"
-                        >
-                          {/* Título principal */}
-                          <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2, duration: 0.5 }}
-                            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold text-gray-900 leading-tight"
-                          >
-                            {getPromoTitle(currentPromo)}
-                          </motion.h1>
+          <div
+            className="w-full h-full bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${getPromoImage(currentPromo)})`,
+              filter: 'blur(5px) brightness(0.3)',
+            }}
+          />
+          <div className="absolute inset-0 bg-cyan-500/30" />
+        </motion.div>
+      )}
+    </AnimatePresence>
+    <div className="absolute inset-0 bg-white/80 z-20" />
+  </div>
 
-                          {/* Descripción */}
-                          <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -20 }}
-                            transition={{ delay: 0.3, duration: 0.5 }}
-                            className="text-lg md:text-xl lg:text-2xl text-gray-600 font-light max-w-lg"
-                          >
-                            {getPromoDesc(currentPromo)}
-                          </motion.p>
-                          {/* Acciones de promoción */}
-                          <div className="pt-2">
-                            <Link
-                              to="/productos?enPromocion=true"
-                              className="inline-flex items-center bg-[#0097c2] hover:bg-[#0083a8] text-white px-5 py-2.5 rounded-xl font-semibold shadow transition-all duration-300"
-                            >
-                              Ver más
-                              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                              </svg>
-                            </Link>
-                          </div>
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="content-empty"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="space-y-2"
-                        >
-                          <p className="text-base text-gray-500">Sin promociones activas por ahora.</p>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Sección de imagen (lado derecho) */}
-                  <div className="relative flex items-center justify-center p-8 md:p-12 lg:p-16 bg-gradient-to-br">
-                    {/* Elementos decorativos de fondo */}
-                    <div className="absolute inset-0 overflow-hidden">
-                      <motion.div
-                        animate={{
-                          scale: [1, 1.1, 1],
-                          opacity: [0.1, 0.2, 0.1],
-                        }}
-                        transition={{
-                          duration: 6,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                        className="absolute top-20 right-20 w-32 h-32 bg-[#0097c2]/20 rounded-full blur-2xl"
-                      />
-                      <motion.div
-                        animate={{
-                          scale: [1.1, 1, 1.1],
-                          opacity: [0.05, 0.15, 0.05],
-                        }}
-                        transition={{
-                          duration: 8,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                        className="absolute bottom-20 left-10 w-40 h-40 bg-[#0097c2]/15 rounded-full blur-3xl"
-                      />
-
-                      {/* Patrón de ondas sutil */}
-                      <div className="absolute inset-0 opacity-5">
-                        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxwYXR0ZXJuIGlkPSJ3YXZlIiBwYXR0ZXJuVW5pdHM9InVzZXJTcGFjZU9uVXNlIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiPjxwYXRoIGQ9Ik0wIDUwIEMyMCAzMCA0MCAzMCA2MCA1MCBDODAgNzAgMTAwIDcwIDEwMCA1MCIgc3Ryb2tlPSIjMDA5N2MyIiBzdHJva2Utd2lkdGg9IjEiIGZpbGw9Im5vbmUiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjd2F2ZSkiLz48L3N2Zz4=')]"></div>
-                      </div>
-                    </div>
-
-                    {/* Imagen del producto */}
-                    <AnimatePresence mode="wait">
-                      {heroPromos.length > 0 ? (
-                        <motion.div
-                          key={`image-${promoIndex}`}
-                          initial={{ opacity: 0, scale: 0.9, y: 30 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.9, y: -30 }}
-                          transition={{ duration: 0.4, ease: "easeOut" }}
-                          className="relative z-10"
-                        >
-                          <motion.div 
-                            className="w-full h-full flex items-center justify-center"
-                            animate={{ y: [0, -8, 0] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                          >
-                            <img
-                              src={getPromoImage(currentPromo) || Lente1}
-                              alt={getPromoTitle(currentPromo)}
-                              className="max-w-full max-h-full object-contain"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = Lente1;
-                              }}
-                            />
-                          </motion.div>
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="image-empty"
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="relative z-10"
-                        >
-                          <img
-                            src={Lente1}
-                            alt="Lentes de la óptica"
-                            className="w-80 h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px] xl:w-[500px] xl:h-[500px] object-contain"
-                          />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Controles de navegación minimalistas */}
-                {heroPromos.length > 1 && (
-                  <>
-                    <motion.button
-                      whileHover={{ scale: 1.1, backgroundColor: "#0083a8" }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={handlePrevPromo}
-                      className="absolute left-6 top-1/2 -translate-y-1/2 bg-[#0097c2] hover:bg-[#0083a8] text-white rounded-full p-3 transition-all duration-300 z-20"
-                      aria-label="Anterior"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 19l-7-7 7-7"
-                        />
-                      </svg>
-                    </motion.button>
-
-                    <motion.button
-                      whileHover={{ scale: 1.1, backgroundColor: "#0083a8" }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={handleNextPromo}
-                      className="absolute right-6 top-1/2 -translate-y-1/2 bg-[#0097c2] hover:bg-[#0083a8] text-white rounded-full p-3 transition-all duration-300 z-20"
-                      aria-label="Siguiente"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </motion.button>
-
-                    {/* Indicadores minimalistas */}
-                    <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
-                      {heroPromos.map((_, index) => (
-                        <motion.button
-                          key={index}
-                          whileHover={{ scale: 1.2 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => setPromoIndex(index)}
-                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                            index === promoIndex
-                              ? "bg-[#0097c2] w-8"
-                              : "bg-gray-300 hover:bg-gray-400"
-                          }`}
-                          aria-label={`Ir a promoción ${index + 1}`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+  {/* Floating Elements */}
+  <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#0097c2]/10 to-transparent rounded-full blur-3xl z-30" />
+  <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#00b4e4]/10 to-transparent rounded-full blur-3xl z-30" />
+  
+  <div className="relative w-full max-w-7xl mx-auto px-6 lg:px-8 z-40">
+    {loadingPromos ? (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 border-4 border-gray-200 border-t-[#0097c2] rounded-full animate-spin mx-auto" />
+          <p className="text-xl font-medium text-gray-600">Cargando promociones...</p>
+        </div>
+      </div>
+    ) : errorPromos ? (
+      <div className="flex items-center justify-center min-h-[60vh] text-center">
+        <div className="space-y-4">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            </svg>
           </div>
-        </motion.section>
-        {/* División clara entre hero y marcas */}
-        <section className="w-full" aria-hidden>
-          <div className="max-w-7xl mx-auto px-4">
-            <div className="h-px bg-gradient-to-r from-transparent via-gray-300 to-transparent" />
+          <p className="text-xl font-medium text-red-600">Error al cargar promociones</p>
+        </div>
+      </div>
+    ) : (
+      <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
+        {/* Content Section */}
+        <div className="space-y-8 order-2 lg:order-1">
+          <AnimatePresence mode="wait">
+            {heroPromos.length > 0 ? (
+              <motion.div
+                key={`content-${promoIndex}`}
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 leading-tight tracking-tight">
+                  {getPromoTitle(currentPromo)}
+                </h1>
+
+                <p className="text-lg lg:text-xl text-gray-600 leading-relaxed max-w-lg">
+                  {getPromoDesc(currentPromo)}
+                </p>
+
+                <div className="flex flex-wrap gap-4 pt-4">
+                  <Link
+                    to="/productos?enPromocion=true"
+                    className="group inline-flex items-center px-8 py-4 bg-cyan-600 hover:from-[#0083a8] hover:to-[#0097c2] text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                  >
+                    Más información
+                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                  </Link>
+                  <Link
+                    to="/servicios"
+                    className="group inline-flex items-center px-8 py-4 border-2 border-gray-300 hover:border-[#0097c2] text-gray-700 hover:text-[#0097c2] rounded-2xl font-semibold text-lg transition-all duration-300 hover:shadow-lg backdrop-blur-sm bg-white/80"
+                  >
+                    Nuestros Servicios
+                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
+                    </svg>
+                  </Link>
+                </div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="content-empty"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                className="space-y-6"
+              >
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 leading-tight">
+                  Cuidamos tu Visión
+                </h1>
+                <p className="text-lg lg:text-xl text-gray-600 leading-relaxed">
+                  Profesionales en salud visual con más de 10 años de experiencia
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Image Section */}
+        <div className="relative flex items-center justify-center order-1 lg:order-2">
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0097c2]/10 to-[#00b4e4]/10 rounded-full blur-3xl" />
+          
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`image-${promoIndex}`}
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 1 }}
+              className="relative z-10 w-full"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-[#0097c2]/20 to-transparent rounded-3xl blur-xl" />
+                <img
+                  src={getPromoImage(currentPromo) || Lente1}
+                  alt={getPromoTitle(currentPromo) || "Lentes profesionales"}
+                  className="relative w-full max-w-2xl mx-auto object-contain drop-shadow-2xl"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = Lente1;
+                  }}
+                />
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </div>
+    )}
+  </div>
+
+  {/* Navigation Controls - FUERA del contenedor max-w-7xl */}
+  {heroPromos.length > 1 && (
+    <>
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={handlePrevPromo}
+        className="absolute left-0 top-[55%] -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 lg:w-14 lg:h-24 bg-white/90 backdrop-blur-sm hover:bg-white text-[#0097c2] rounded-r-full shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center z-50 border border-white/20 pl-1"
+      >
+        <svg className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </motion.button>
+
+      <motion.button
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={handleNextPromo}
+        className="absolute right-0 top-[55%] -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 lg:w-14 lg:h-24 bg-white/90 backdrop-blur-sm hover:bg-white text-[#0097c2] rounded-l-full shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center z-50 border border-white/20 pr-1"
+      >
+        <svg className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </motion.button>
+
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-50">
+        {heroPromos.map((_, index) => (
+          <motion.button
+            key={index}
+            whileHover={{ scale: 1.2 }}
+            whileTap={{ scale: 0.8 }}
+            onClick={() => setPromoIndex(index)}
+            className={`transition-all duration-300 ${
+              index === promoIndex
+                ? "w-10 h-3 bg-[#0097c2] rounded-full shadow-lg"
+                : "w-3 h-3 bg-gray-300 hover:bg-gray-400 rounded-full"
+            }`}
+          />
+        ))}
+      </div>
+    </>
+  )}
+</section>
+
+
+
+        {/* Brands Carousel - Enhanced */}
+        <section className="py-16 bg-gradient-to-b from-white to-gray-50 relative overflow-hidden">
+      
+          <div className="relative">
+
+            <BrandsCarousel
+              brands={safeBrands}
+              loading={loadingBrands}
+              error={errorBrands}
+              visibleItems={brandsVisibleItems}
+            />
           </div>
         </section>
 
-        {/* Carrusel de Marcas - AHORA RECIBE DATOS COMO PROPS */}
-        <BrandsCarousel
-          brands={safeBrands}
-          loading={loadingBrands}
-          error={errorBrands}
-          visibleItems={brandsVisibleItems}
-        />
+        {/* Popular Products - Compact */}
+        <section className="py-16 bg-gradient-to-b from-gray-50 to-white relative">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-blue-50/20 via-transparent to-transparent" />
+          <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+            <motion.div
+              variants={fadeIn}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <motion.h2 initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            Lentes <span className="text-cyan-600">Destacados</span>
+          </motion.h2>
+          <motion.p initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Descubre nuestra selección de lentes más vendidos, elegidos por miles de clientes satisfechos
+          </motion.p>
 
-        <PopularCarousel
-          items={safePopulars}
-          loading={loadingPopulars}
-          error={errorPopulars}
-          currentSlide={currentPopularSlide}
-          onSlideChange={handlePopularSlideChange}
-        />
+            </motion.div>
+            
+            {/* Wrapper con estilos personalizados para PopularCarousel */}
+            <div className="popular-carousel-wrapper">
+              <style jsx>{`
+                .popular-carousel-wrapper .popular-item {
+                  max-width: 280px !important;
+                }
+                @media (max-width: 640px) {
+                  .popular-carousel-wrapper .popular-item {
+                    max-width: 250px !important;
+                  }
+                }
+              `}</style>
+              <PopularCarousel
+                items={safePopulars}
+                loading={loadingPopulars}
+                error={errorPopulars}
+                currentSlide={currentPopularSlide}
+                onSlideChange={handlePopularSlideChange}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Services Section */}
+        <section className="py-20 bg-white relative">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <motion.div
+              variants={fadeIn}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              className="text-center mb-16"
+            >
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4"
+              >
+                Nuestros Servicios
+              </motion.h2>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-lg text-gray-600 max-w-2xl mx-auto"
+              >
+                Ofrecemos servicios profesionales de alta calidad para el cuidado integral de tu visión
+              </motion.p>
+            </motion.div>
+
+            <motion.div
+              variants={staggerContainer}
+              initial="initial"
+              whileInView="animate"
+              viewport={{ once: true }}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8"
+            >
+              {[
+                {
+                  icon: (
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                      <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  ),
+                  title: "Examen Visual Completo",
+                  description: "Evaluación profesional con equipos de última generación para detectar problemas visuales."
+                },
+                {
+                  icon: (
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/>
+                    </svg>
+                  ),
+                  title: "Garantía de Calidad",
+                  description: "Todos nuestros productos incluyen garantía completa contra defectos de fabricación."
+                },
+                {
+                  icon: (
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M8.25 18.75a1.5 1.5 0 01-3 0V8.25a1.5 1.5 0 013 0v10.5zM12 12.75a1.5 1.5 0 01-3 0V6.75a1.5 1.5 0 013 0v6zM15.75 16.5a1.5 1.5 0 01-3 0V11.25a1.5 1.5 0 013 0v5.25zM21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                  ),
+                  title: "Entrega Rápida",
+                  description: "Procesamiento eficiente de pedidos con entrega en tiempo récord sin comprometer calidad."
+                },
+                {
+                  icon: (
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
+                    </svg>
+                  ),
+                  title: "Envío Gratuito",
+                  description: "Envío sin costo adicional en compras superiores a $75. Cobertura en todo el país."
+                }
+              ].map((service, index) => (
+                <motion.div
+                  key={index}
+                  variants={fadeInUp}
+                  whileHover={{ y: -8, scale: 1.02 }}
+                  className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group"
+                >
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#0097c2] to-[#00b4e4] text-white rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                    {service.icon}
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-4 group-hover:text-[#0097c2] transition-colors">
+                    {service.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {service.description}
+                  </p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </section>
 
         <br />
         <br />
         <br />
         <br />
 
-        {/* Servici os con animaciones más sutiles */}
+        {/* Servicios con animaciones más sutiles */}
         <motion.section
           variants={fadeIn}
           initial="initial"
@@ -1036,8 +1105,7 @@ const Home = () => {
                     >
                       <path
                         strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
+                        strokeLinejoin="round"strokeWidth={2}
                         d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
                       />
                       <path

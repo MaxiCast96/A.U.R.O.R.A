@@ -19,6 +19,7 @@ import PerfilPage from "./pages/private/PerfilPage";
 // Importación de las páginas públicas
 import Home from "./pages/public/Home";
 import Producto from "./pages/public/Producto";
+import ProductoDetalle from "./pages/public/ProductPage";
 import Cotizaciones from "./pages/public/Cotizaciones";
 import Servicio from "./pages/public/Servicio";
 import AgendarCitas from "./pages/public/AgendarCitas";
@@ -61,6 +62,7 @@ function AnimatedRoutes() {
         {/* Rutas públicas */}
         <Route path="/" element={<Home />} />
         <Route path="/productos" element={<Producto />} />
+        <Route path="/producto/:id" element={<ProductoDetalle />} /> {/* NUEVA RUTA */}
         <Route path="/servicios" element={<Servicio />} />
         <Route path="/agendar" element={<AgendarCitas />} />
         <Route path="/nosotros" element={<Nosotros />} />

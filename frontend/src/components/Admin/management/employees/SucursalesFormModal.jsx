@@ -259,7 +259,7 @@ const SucursalesFormModal = ({
       title: "Información General",
       fields: [
         { name: 'nombre', label: 'Nombre de la Sucursal', type: 'text', placeholder: 'Ej: Sucursal Centro', required: true },
-        { name: 'codigo', label: 'Código de Sucursal', type: 'text', placeholder: 'Ej: SUC-001', required: true },
+       
         { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'sucursal@email.com', required: true },
         { name: 'telefono', label: 'Teléfono', type: 'text', required: true },
       ]
@@ -296,25 +296,8 @@ const SucursalesFormModal = ({
     {
       title: "Información Operacional",
       fields: [
-        { 
-          name: 'horarioApertura', 
-          label: 'Horario de Apertura', 
-          type: 'time', 
-          required: true 
-        },
-        { 
-          name: 'horarioCierre', 
-          label: 'Horario de Cierre', 
-          type: 'time', 
-          required: true 
-        },
-        { 
-          name: 'gerente', 
-          label: 'Nombre del Gerente', 
-          type: 'text', 
-          placeholder: 'Juan Carlos Pérez',
-          required: true 
-        },
+      
+        
         { 
           name: 'estado', 
           label: 'Estado de la Sucursal', 
@@ -355,29 +338,7 @@ const SucursalesFormModal = ({
         </div>
       ))}
 
-      {/* Resumen de la sucursal */}
-      {formData?.nombre && formData?.departamento && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-          <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
-            <Building2 className="w-5 h-5 mr-2" />
-            Resumen de la Sucursal
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Nombre:</span> {formData.nombre}</p>
-              <p><span className="font-medium">Código:</span> {formData.codigo}</p>
-              <p><span className="font-medium">Ubicación:</span> {formData.municipio}, {formData.departamento}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Gerente:</span> {formData.gerente}</p>
-              <p><span className="font-medium">Estado:</span> {formData.estado}</p>
-              {formData.horarioApertura && formData.horarioCierre && (
-                <p><span className="font-medium">Horario:</span> {formData.horarioApertura} - {formData.horarioCierre}</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 

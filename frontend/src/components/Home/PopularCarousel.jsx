@@ -59,8 +59,6 @@ const ProductCard = ({ product, itemWidthPercent, onQuickView }) => {
 const PopularCarousel = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [itemsToShow, setItemsToShow] = useState(3);
   const [quickView, setQuickView] = useState(null);
 
   useEffect(() => {
@@ -68,7 +66,7 @@ const PopularCarousel = () => {
       try {
         const response = await fetch('https://aurora-production-7e57.up.railway.app/api/lentes/populares');
         const data = await response.json();
-        setProducts(data);
+        setProducts(data.slice(0, 8));
       } catch (error) {
         console.error('Error fetching products:', error);
       } finally {
@@ -79,119 +77,212 @@ const PopularCarousel = () => {
     fetchProducts();
   }, []);
 
-  useEffect(() => {
-    const calcItems = () => {
-      const w = window.innerWidth;
-      if (w < 640) return 1; // sm-
-      if (w < 1024) return 2; // md
-      return 3; // lg+
-    };
-    const apply = () => setItemsToShow(calcItems());
-    apply();
-    window.addEventListener('resize', apply);
-    return () => window.removeEventListener('resize', apply);
-  }, []);
-
-  const nextSlide = () => {
-    setCurrentIndex(prev => (prev + 1) % Math.ceil(products.length / itemsToShow));
+  const handleQuickView = (product) => {
+    setQuickView(product);
   };
 
-  const prevSlide = () => {
-    setCurrentIndex(prev => (prev - 1 + Math.ceil(products.length / itemsToShow)) % Math.ceil(products.length / itemsToShow));
-  };
-
-  if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <div className="animate-pulse flex space-x-4">
-        {[...Array(itemsToShow)].map((_, i) => (
-          <div key={i} className="bg-gray-100 rounded-lg w-64 h-64" />
-        ))}
-      </div>
-    </div>
-  );
-
-  if (products.length === 0) return (
-    <div className="text-center py-12 text-gray-500">
-      No hay productos disponibles
-    </div>
-  );
-
-  return (
-    <div className="relative z-[2000] isolate pointer-events-auto" onClickCapture={() => { try { console.log('[PopularCarousel] container capture click'); } catch {} }}>
-      <div className="max-w-6xl mx-auto px-4 py-12 pointer-events-auto">
-      <h2 className="text-2xl font-light text-center mb-8 text-gray-800">Lentes Destacados</h2>
-      
-      <div className="relative">
-        <div className="overflow-hidden">
-          <div 
-            className="flex transition-transform duration-300 ease-out pointer-events-auto"
-            onClick={() => {
-              try { console.log('[PopularCarousel] Track click'); } catch {}
-            }}
-            style={{ 
-              transform: `translateX(-${currentIndex * (100 / itemsToShow)}%)`,
-              width: `${(products.length / itemsToShow) * 100}%`
-            }}
-          >
-            {products.map(product => (
-              <ProductCard key={product._id} product={product} itemWidthPercent={100 / itemsToShow} onQuickView={setQuickView} />
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-b from-gray-50 to-white py-20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="h-8 bg-gray-200 rounded-lg w-64 mx-auto mb-4 animate-pulse"></div>
+            <div className="h-4 bg-gray-100 rounded-lg w-96 mx-auto animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {[...Array(8)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square bg-gray-200 rounded-2xl mb-6"></div>
+                <div className="h-6 bg-gray-200 rounded-lg mb-3"></div>
+                <div className="h-4 bg-gray-100 rounded-lg mb-6 w-3/4"></div>
+                <div className="flex gap-3">
+                  <div className="flex-1 h-12 bg-gray-200 rounded-xl"></div>
+                </div>
+              </div>
             ))}
           </div>
         </div>
-
-        <button
-          onClick={prevSlide}
-          className="absolute left-0 top-1/2 -translate-y-1/2 bg-white border border-gray-200 rounded-full p-2 shadow-sm -ml-4 hover:bg-gray-50 transition-colors"
-          aria-label="Anterior"
-        >
-          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        
-        <button
-          onClick={nextSlide}
-          className="absolute right-0 top-1/2 -translate-y-1/2 bg-white border border-gray-200 rounded-full p-2 shadow-sm -mr-4 hover:bg-gray-50 transition-colors"
-          aria-label="Siguiente"
-        >
-          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-          </svg>
-        </button>
       </div>
+    );
+  }
 
-      <div className="flex justify-center mt-6 space-x-1">
-        {[...Array(Math.ceil(products.length / itemsToShow))].map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrentIndex(i)}
-            className={`w-2 h-2 rounded-full transition-all ${currentIndex === i ? 'bg-gray-600' : 'bg-gray-200'}`}
-            aria-label={`Ir a slide ${i + 1}`}
-          />
-        ))}
+  if (products.length === 0) {
+    return (
+      <div className="bg-gradient-to-b from-gray-50 to-white py-20">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+          <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 rounded-full flex items-center justify-center">
+            <Award className="w-12 h-12 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No hay productos destacados</h3>
+          <p className="text-gray-500">Vuelve pronto para ver nuestros productos más vendidos</p>
+        </div>
       </div>
+    );
+  }
 
-      {quickView && ReactDOM.createPortal(
-        (
-          <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={() => setQuickView(null)}>
-            <div className="bg-white rounded-lg max-w-2xl w-full overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-              <div className="grid md:grid-cols-2">
-                <div className="bg-gray-50 flex items-center justify-center">
-                  {quickView.imagenes?.[0] ? (
-                    <img src={quickView.imagenes[0]} alt={quickView.nombre} className="object-contain w-full h-full p-6" />
-                  ) : (
-                    <div className="text-gray-300 h-64 flex items-center justify-center">Sin imagen</div>
-                  )}
+  return (
+    <div className="bg-gradient-to-b from-gray-50 to-white py-20 relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-50/20 via-transparent to-transparent" />
+      
+      <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+        {/* Products Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-12">
+          {products.map((product, index) => {
+            const discount = product.enPromocion && product.precioBase > product.precioActual 
+              ? Math.round(100 - (product.precioActual / product.precioBase * 100))
+              : 0;
+
+            return (
+              <div
+                key={product._id}
+                className="group relative bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-2"
+              >
+                {/* Ranking Badge */}
+                <div className="absolute top-4 left-4 z-10 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-lg">
+                  {index + 1}
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">{quickView.nombre}</h3>
-                  {quickView.descripcion && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-5">{quickView.descripcion}</p>
+
+                {/* Discount Badge */}
+                {discount > 0 && (
+                  <div className="absolute top-4 right-4 z-10 bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-xs font-semibold shadow-lg">
+                    -{discount}%
+                  </div>
+                )}
+
+                {/* Image */}
+                <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                  {product.imagenes?.[0] ? (
+                    <img
+                      src={product.imagenes[0]}
+                      alt={product.nombre}
+                      className="w-full h-full object-contain p-6 transition-all duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Eye className="w-12 h-12 text-gray-300" />
+                    </div>
                   )}
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="text-2xl font-bold text-gray-900">${quickView.precioActual?.toFixed(2)}</span>
+                  
+                  {/* Overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="font-bold text-lg text-gray-900 mb-4 line-clamp-2 min-h-[3.5rem]">
+                    {product.nombre}
+                  </h3>
+
+                  {/* Price */}
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <span className="text-2xl font-bold text-gray-900">
+                        ${product.precioActual?.toFixed(2)}
+                      </span>
+                      {product.precioBase && product.precioBase > product.precioActual && (
+                        <span className="text-sm text-gray-400 line-through ml-2">
+                          ${product.precioBase.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {index < 3 && (
+                      <div className="flex items-center gap-1 text-cyan-600">
+                        <Award className="w-4 h-4" />
+                        <span className="text-xs font-semibold">TOP {index + 1}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Button */}
+                  <button
+                    onClick={() => handleQuickView(product)}
+                    className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-300 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group/btn"
+                  >
+                    <Eye className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                    Ver Detalles
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* CTA Section */}
+        <div className="text-center">
+          <Link
+            to="/productos"
+            className="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold py-4 px-8 rounded-xl border border-gray-200 hover:border-cyan-300 transition-all duration-300 shadow-md hover:shadow-lg"
+          >
+            <Search className="w-5 h-5" />
+            Ver Todos los Productos
+            <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </Link>
+        </div>
+      </div>
+
+      {/* Quick View Modal */}
+      {quickView && ReactDOM.createPortal(
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-200" 
+          onClick={() => setQuickView(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300" 
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close Button */}
+            <button
+              onClick={() => setQuickView(null)}
+              className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white rounded-full p-2 shadow-lg transition-all duration-200 hover:scale-110"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+
+            <div className="grid md:grid-cols-2">
+              {/* Image Section */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8 md:p-12">
+                {quickView.imagenes?.[0] ? (
+                  <img 
+                    src={quickView.imagenes[0]} 
+                    alt={quickView.nombre} 
+                    className="object-contain w-full h-full max-h-96"
+                  />
+                ) : (
+                  <div className="text-gray-300 h-64 flex items-center justify-center">
+                    <Eye className="w-24 h-24" />
+                  </div>
+                )}
+              </div>
+
+              {/* Content Section */}
+              <div className="p-8 md:p-12 flex flex-col">
+                <div className="flex-1">
+                  <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                    {quickView.nombre}
+                  </h3>
+                  
+                  {quickView.descripcion && (
+                    <p className="text-gray-600 text-base mb-6 leading-relaxed">
+                      {quickView.descripcion}
+                    </p>
+                  )}
+
+                  {/* Price Section */}
+                  <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-200">
+                    <span className="text-4xl font-bold text-gray-900">
+                      ${quickView.precioActual?.toFixed(2)}
+                    </span>
                     {quickView.precioBase && quickView.precioActual && quickView.precioBase > quickView.precioActual && (
-                      <span className="text-sm text-gray-400 line-through">${quickView.precioBase.toFixed(2)}</span>
+                      <>
+                        <span className="text-xl text-gray-400 line-through">
+                          ${quickView.precioBase.toFixed(2)}
+                        </span>
+                        <span className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                          -{Math.round(100 - (quickView.precioActual / quickView.precioBase * 100))}% OFF
+                        </span>
+                      </>
                     )}
                   </div>
                   <div className="flex gap-2">
@@ -210,13 +301,11 @@ const PopularCarousel = () => {
                   </div>
                 </div>
               </div>
-              <div className="p-3 text-right">
-                <button type="button" className="text-gray-500 hover:text-gray-700 text-sm" onClick={() => setQuickView(null)}>Cerrar</button>
-              </div>
             </div>
           </div>
-        ), document.body)}
-      </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
