@@ -1086,7 +1086,7 @@ const PersonalizadosContent = () => {
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     <PageHeader 
                         title="Productos Personalizados" 
-                        buttonLabel="AÃ±adir Personalizado" 
+                        buttonLabel="Agregar Personalizado" 
                         onButtonClick={() => setShowAddModal(true)} 
                     />
                     
