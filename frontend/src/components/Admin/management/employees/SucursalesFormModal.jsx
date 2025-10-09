@@ -314,9 +314,7 @@ const SucursalesFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <Building2 className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <MapPin className="w-5 h-5 mr-2 text-green-600" />}
-            {sectionIndex === 2 && <Clock className="w-5 h-5 mr-2 text-orange-600" />}
+           
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

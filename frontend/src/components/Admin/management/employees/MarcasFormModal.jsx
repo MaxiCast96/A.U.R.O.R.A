@@ -369,8 +369,7 @@ const MarcasFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <Tag className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Package className="w-5 h-5 mr-2 text-green-600" />}
+           
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -389,27 +388,7 @@ const MarcasFormModal = ({
         </div>
       ))}
 
-      {/* Resumen de la marca */}
-      {formData?.nombre && formData?.paisOrigen && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-          <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
-            <Tag className="w-5 h-5 mr-2" />
-            Resumen de la Marca
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Nombre:</span> {formData.nombre}</p>
-              <p><span className="font-medium">País:</span> {formData.paisOrigen}</p>
-              <p><span className="font-medium">Estado:</span> {formData.estado}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Logo:</span> {formData.logo ? 'Cargado' : 'No disponible'}</p>
-              <p><span className="font-medium">Sitio Web:</span> {formData.sitioWeb ? 'Configurado' : 'No disponible'}</p>
-              <p><span className="font-medium">Email:</span> {formData.email ? 'Configurado' : 'No disponible'}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 

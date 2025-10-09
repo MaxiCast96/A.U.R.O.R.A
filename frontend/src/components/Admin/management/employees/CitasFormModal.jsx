@@ -303,9 +303,7 @@ const CitasFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <User className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Calendar className="w-5 h-5 mr-2 text-green-600" />}
-            {sectionIndex === 2 && <Stethoscope className="w-5 h-5 mr-2 text-purple-600" />}
+            
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -345,28 +343,7 @@ const CitasFormModal = ({
         </div>
       )}
 
-      {/* Resumen de la cita */}
-      {formData?.clienteId && formData?.fechaHora && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-            <Calendar className="w-5 h-5 mr-2" />
-            Resumen de la Cita
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Cliente:</span> {getClienteNombre()}</p>
-              <p><span className="font-medium">Fecha:</span> {formData.fechaHora ? new Date(formData.fechaHora).toLocaleDateString('es-ES') : 'No especificada'}</p>
-              <p><span className="font-medium">Hora:</span> {formData.fechaHora ? new Date(formData.fechaHora).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : 'No especificada'}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Sucursal:</span> {getSucursalNombre()}</p>
-              <p><span className="font-medium">Tipo:</span> {formData.tipoConsulta}</p>
-              <p><span className="font-medium">Duración:</span> {formData.duracionEstimada} minutos</p>
-              <p><span className="font-medium">Estado:</span> {formData.estado}</p>
-            </div>
-          </div>
-        </div>
-      )}
+     
 
       {/* Alertas de validación */}
       {dateTimeError && (

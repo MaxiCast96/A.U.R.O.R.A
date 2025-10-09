@@ -475,6 +475,10 @@ const EmpleadosFormModal = ({
     onReturnToOptometristaEdit 
 }) => {
     const [validationErrors, setValidationErrors] = useState({});
+    // NUEVOS ESTADOS PARA LOADING Y ERROR
+    const [isLoading, setIsLoading] = useState(false);
+    const [isError, setIsError] = useState(false);
+    const [hasValidationErrors, setHasValidationErrors] = useState(false);
     
     const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
     
@@ -636,6 +640,8 @@ const EmpleadosFormModal = ({
       }
 
       setValidationErrors(newErrors);
+      // Actualizar el estado de errores de validación
+      setHasValidationErrors(Object.keys(newErrors).length > 0);
     };
 
     // Manejar cambios con validación
@@ -758,7 +764,7 @@ const EmpleadosFormModal = ({
         ]}
     ];
 
-    const handleFormSubmit = () => {
+    const handleFormSubmit = async () => {
         // Validar todos los campos antes de enviar
         const fieldsToValidate = [
             'nombre', 'apellido', 'dui', 'telefono', 'correo', 'cargo', 
@@ -777,9 +783,29 @@ const EmpleadosFormModal = ({
             validateField(field, value);
         });
 
-        // Si hay errores de validación, no enviar
-        if (Object.keys(validationErrors).length === 0) {
-            onSubmit();
+        // Si hay errores de validación, activar el estado de error y no enviar
+        if (Object.keys(validationErrors).length > 0) {
+            setHasValidationErrors(true);
+            return;
+        }
+
+        // Si no hay errores de validación, resetear el estado
+        setHasValidationErrors(false);
+
+        // Iniciar loading
+        setIsLoading(true);
+        setIsError(false);
+
+        try {
+            // Ejecutar el onSubmit original
+            await onSubmit();
+            // El loading se detendrá cuando el modal se cierre
+        } catch (error) {
+            // Manejar error de API
+            setIsError(true);
+            console.error('Error al guardar empleado:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -933,7 +959,11 @@ const EmpleadosFormModal = ({
             fields={[]} 
             gridCols={1} 
             size="xl"
-            submitDisabled={Object.keys(validationErrors).length > 0}
+            // NUEVAS PROPS
+            isLoading={isLoading}
+            isError={isError}
+            hasValidationErrors={hasValidationErrors}
+            errorDuration={1000} // 1 segundo como solicitaste
         >
             {customContent}
         </FormModal>

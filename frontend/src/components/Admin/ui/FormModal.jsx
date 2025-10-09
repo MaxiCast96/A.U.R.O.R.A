@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Save, AlertCircle } from 'lucide-react';
 
 // Componentes auxiliares
@@ -274,9 +274,79 @@ const FormModal = ({
   fields = [],
   children,
   customFields = {},
-  gridCols = 2
+  gridCols = 2,
+  // NUEVAS PROPS PARA LOADING Y ERROR
+  isLoading = false,
+  isError = false,
+  hasValidationErrors = false,
+  errorDuration = 1000 // Reducido a 1 segundo como solicitaste
 }) => {
-  if (!isOpen) return null;
+  // Estado local para manejar el error temporal
+  const [localError, setLocalError] = useState(false);
+
+  // Efecto para manejar el estado de error temporal (tanto de validación como de API)
+  useEffect(() => {
+    if (isError || hasValidationErrors) {
+      setLocalError(true);
+      const timer = setTimeout(() => {
+        setLocalError(false);
+      }, errorDuration);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isError, hasValidationErrors, errorDuration]);
+
+  // Determinar el estado actual del botón
+  const getButtonState = () => {
+    if (isLoading) return 'loading';
+    if (localError) return 'error';
+    return 'normal';
+  };
+
+  const buttonState = getButtonState();
+
+  // Obtener configuración del botón según el estado
+  const getButtonConfig = () => {
+    switch (buttonState) {
+      case 'loading':
+        return {
+          bgColor: 'bg-cyan-500',
+          hoverColor: 'bg-cyan-500',
+          text: 'Procesando...',
+          icon: <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />,
+          disabled: true
+        };
+      case 'error':
+        return {
+          bgColor: 'bg-red-500',
+          hoverColor: 'bg-red-600',
+          text: 'Error',
+          icon: <X className="w-4 h-4" />,
+          disabled: false
+        };
+      default:
+        return {
+          bgColor: 'bg-cyan-500',
+          hoverColor: 'bg-cyan-600',
+          text: submitLabel,
+          icon: submitIcon || <Save className="w-4 h-4" />,
+          disabled: false
+        };
+    }
+  };
+
+  const buttonConfig = getButtonConfig();
+
+  // CORRECCIÓN: Manejar el envío del formulario correctamente
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // No permitir envío si está cargando
+    if (!isLoading) {
+      onSubmit(e);
+    }
+  };
 
   const renderField = (field, index) => {
     const { name, label, type, options, required, colSpan = 1, nested, hidden, ...fieldProps } = field;
@@ -390,12 +460,7 @@ const FormModal = ({
     );
   };
 
-  // CORRECCIÓN: Manejar el envío del formulario correctamente
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onSubmit(e);
-  };
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
@@ -410,6 +475,7 @@ const FormModal = ({
               type="button" 
               onClick={onClose} 
               className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-1.5 sm:p-2 transition-all duration-200 hover:scale-110"
+              disabled={isLoading}
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
@@ -430,16 +496,18 @@ const FormModal = ({
           <button 
             type="button" 
             onClick={onClose} 
-            className="w-full sm:w-auto px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105 text-sm sm:text-base"
+            className="w-full sm:w-auto px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
             Cancelar
           </button>
           <button 
             type="submit" 
-            className="w-full sm:w-auto px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
+            className={`w-full sm:w-auto px-4 py-2 ${buttonConfig.bgColor} text-white rounded-lg hover:${buttonConfig.hoverColor} transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
+            disabled={buttonConfig.disabled || isLoading}
           >
-            {submitIcon || <Save className="w-4 h-4" />}
-            <span>{submitLabel}</span>
+            {buttonConfig.icon}
+            <span>{buttonConfig.text}</span>
           </button>
         </div>
       </form>
