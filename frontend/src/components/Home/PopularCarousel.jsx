@@ -1,7 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
-import { Link } from 'react-router-dom';
-import { Eye, Search, Award, X } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+
+const ProductCard = ({ product, itemWidthPercent, onQuickView }) => {
+  const [imageError, setImageError] = useState(false);
+  const handleQuickView = () => {
+    try {
+      console.log('[PopularCarousel] Ver detalles click', product?._id || product?.nombre || product);
+    } catch {}
+    onQuickView(product);
+  };
+  return (
+    <div className="flex-shrink-0 px-2" style={{ width: `${itemWidthPercent}%` }}>
+      <div className="bg-white border border-gray-100 rounded-lg overflow-hidden hover:shadow-md transition-shadow relative z-10 pointer-events-auto">
+        <div className="aspect-square bg-gray-50 flex items-center justify-center">
+          {product.imagenes?.[0] && !imageError ? (
+            <img
+              src={product.imagenes[0]}
+              alt={product.nombre}
+              className="object-contain h-full w-full p-4"
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <span className="text-gray-300">Sin imagen</span>
+          )}
+        </div>
+        <div className="p-4">
+          <h3 className="font-medium text-gray-800 mb-1 truncate" title={product.nombre}>{product.nombre}</h3>
+          <div className="flex justify-between items-center mb-3 pointer-events-auto">
+            <span className="text-gray-700 font-semibold">${product.precioActual?.toFixed(2)}</span>
+            {product.enPromocion && (
+              <span className="text-xs px-2 py-1 rounded bg-[#e6f7fb] text-[#0097c2]">
+                -{Math.round(100 - (product.precioActual / product.precioBase * 100))}%
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2 pointer-events-auto">
+            <button
+              type="button"
+              onClick={handleQuickView}
+              className="flex-1 text-sm px-3 py-2 rounded-lg font-medium transition-colors pointer-events-auto bg-[#0097c2] hover:bg-[#0083a8] text-white shadow-sm"
+            >
+              Ver detalles
+            </button>
+            <Link
+              to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?q=${encodeURIComponent(product.nombre || '')}`}
+              className="text-sm px-3 py-2 rounded-lg font-medium transition-colors pointer-events-auto border border-[#0097c2] text-[#0097c2] hover:bg-[#e6f7fb]"
+            >
+              Ver similares
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PopularCarousel = () => {
   const [products, setProducts] = useState([]);
@@ -232,24 +285,20 @@ const PopularCarousel = () => {
                       </>
                     )}
                   </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                  <Link
-                    to={`/productos?q=${encodeURIComponent(quickView.nombre || '')}`}
-                    className="flex-1 px-6 py-3 rounded-xl font-semibold transition-all duration-300 border-2 border-cyan-500 text-cyan-600 hover:bg-cyan-50 text-center"
-                    onClick={() => setQuickView(null)}
-                  >
-                    Ver Similares
-                  </Link>
-                  <Link
-                    to={`/productos?enPromocion=true`}
-                    className="px-6 py-3 rounded-xl font-semibold transition-all duration-300 bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white shadow-lg hover:shadow-xl"
-                    onClick={() => setQuickView(null)}
-                  >
-                    Ver Promociones
-                  </Link>
+                  <div className="flex gap-2">
+                    <Link
+                      to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?q=${encodeURIComponent(quickView.nombre || '')}`}
+                      className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors border border-[#0097c2] text-[#0097c2] hover:bg-[#e6f7fb] text-center"
+                    >
+                      Ver similares
+                    </Link>
+                    <Link
+                      to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?enPromocion=true`}
+                      className="px-4 py-2 rounded-lg font-medium transition-colors bg-[#0097c2] hover:bg-[#0083a8] text-white"
+                    >
+                      Ver promociones
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>

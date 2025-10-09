@@ -32,3 +32,25 @@ pedidosController.getPedidoById = async (req, res) => {
 };
 
 export default pedidosController;
+
+// PATCH /api/pedidos/:id/estado - actualizar estado del pedido
+pedidosController.updateEstado = async (req, res) => {
+  try {
+    const { estado } = req.body || {};
+    if (!estado) return res.status(400).json({ message: 'estado requerido' });
+    const permitido = ['creado','en_proceso','enviado','entregado','cancelado'];
+    if (!permitido.includes(estado)) {
+      return res.status(400).json({ message: 'estado inválido' });
+    }
+    const pedido = await pedidosModel.findByIdAndUpdate(
+      req.params.id,
+      { estado },
+      { new: true }
+    ).populate('clienteId','nombre apellido correo telefono');
+    if (!pedido) return res.status(404).json({ message: 'Pedido no encontrado' });
+    return res.json({ message: 'Estado de pedido actualizado', pedido });
+  } catch (error) {
+    console.log('Error: ' + error);
+    return res.status(500).json({ message: 'Error actualizando estado de pedido: ' + error.message });
+  }
+};

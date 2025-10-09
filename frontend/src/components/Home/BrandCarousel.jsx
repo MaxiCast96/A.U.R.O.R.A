@@ -188,74 +188,23 @@ const BrandsCarousel = ({
                 left: `${brand.leftPercent}%`,
               }}
             >
-              <a 
-                href={`/productos?marca=${encodeURIComponent(brand.nombre || brand.name || '')}`}
-                className="block"
-              >
-                <div className={`relative transition-all duration-500 ${brand.isCenter ? 'transform hover:scale-110' : 'transform hover:scale-105'}`}>
-                  {/* Card container */}
-                  <div className={`
-                    relative bg-white/90 backdrop-blur-sm rounded-3xl p-8 border transition-all duration-500
-                    ${brand.isCenter 
-                      ? 'shadow-2xl border-cyan-200 ring-2 ring-cyan-100' 
-                      : 'shadow-lg border-gray-200 hover:border-cyan-200'
+              <Link to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?marca=${encodeURIComponent(brand.nombre || brand.name || '')}`}>
+                <img
+                  src={brand.logo || brand.imagen || brand.image || generatePlaceholder()}
+                  alt={brand.nombre || brand.name || 'Marca'}
+                  className={`h-48 w-auto object-contain transition-all duration-300 hover:scale-125 block shadow-xl rounded-xl bg-white p-6 border border-gray-200 ${brand.isCenter ? '' : 'filter grayscale'}`}
+                  onError={(e) => {
+                    if (!e.currentTarget.dataset.fallbackSet) {
+                      e.currentTarget.src = generatePlaceholder();
+                      e.currentTarget.alt = 'Logo no disponible';
+                      e.currentTarget.dataset.fallbackSet = 'true';
                     }
-                    group-hover:shadow-2xl group-hover:bg-white
-                  `}>
-                    
-                    
-
-                    {/* Logo container */}
-                    <div className="relative mb-6">
-                      <div className={`
-                        w-48 h-36 mx-auto rounded-2xl overflow-hidden transition-all duration-500 flex items-center justify-center
-                        ${brand.isCenter ? 'bg-gradient-to-br from-cyan-50 to-blue-50' : 'bg-gray-50'}
-                      `}>
-                        <img
-                          src={brand.logo || brand.imagen || brand.image || generatePlaceholder()}
-                          alt={brand.nombre || brand.name || 'Marca Premium'}
-                          className={`
-                            max-w-full max-h-full object-contain transition-all duration-500
-                            ${brand.isCenter ? '' : 'filter grayscale group-hover:grayscale-0'}
-                          `}
-                          onError={(e) => {
-                            if (!e.currentTarget.dataset.fallbackSet) {
-                              e.currentTarget.src = generatePlaceholder();
-                              e.currentTarget.alt = 'Marca Premium';
-                              e.currentTarget.dataset.fallbackSet = 'true';
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Brand info */}
-                    <div className="text-center">
-                      <h3 className={`
-                        font-bold text-lg mb-2 transition-colors duration-300
-                        ${brand.isCenter ? 'text-gray-900' : 'text-gray-700 group-hover:text-gray-900'}
-                      `}>
-                        {brand.nombre || brand.name || 'Marca Premium'}
-                      </h3>
-                      
-                      <div className={`
-                        flex items-center justify-center gap-2 transition-opacity duration-300
-                        ${brand.isCenter ? 'opacity-100' : 'opacity-60 group-hover:opacity-100'}
-                      `}>
-                        <div className="flex items-center gap-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star key={i} className="w-3 h-3 text-cyan-400 fill-cyan-400" />
-                          ))}
-                        </div>
-                       
-                      </div>
-                    </div>
-
-                    {/* Hover glow effect */}
-                    <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-cyan-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
-                  </div>
+                  }}
+                />
+                <div className="mt-4 text-center">
+                  <p className={`text-base font-semibold ${brand.isCenter ? 'text-gray-800' : 'text-gray-600'}`}>{brand.nombre || brand.name || 'Marca'}</p>
                 </div>
-              </a>
+              </Link>
             </div>
           ))}
         </div>

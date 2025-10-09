@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+﻿import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { 
   Search, Plus, Trash2, Eye, Edit, Package, Clock, UserCheck, ChevronDown, Tags,
   Filter, X, SortAsc, SortDesc, CheckCircle, TrendingUp, DollarSign
@@ -36,8 +36,8 @@ const INITIAL_FILTERS = {
 
 // Opciones de ordenamiento
 const SORT_OPTIONS = [
-  { value: 'fechaSolicitud-desc', label: 'Más Recientes Primero', icon: Package },
-  { value: 'fechaSolicitud-asc', label: 'Más Antiguos Primero', icon: Package },
+  { value: 'fechaSolicitud-desc', label: 'MÃ¡s Recientes Primero', icon: Package },
+  { value: 'fechaSolicitud-asc', label: 'MÃ¡s Antiguos Primero', icon: Package },
   { value: 'nombre-asc', label: 'Nombre A-Z', icon: Tags },
   { value: 'nombre-desc', label: 'Nombre Z-A', icon: Tags },
   { value: 'precioCalculado-desc', label: 'Precio: Mayor a Menor', icon: DollarSign },
@@ -48,7 +48,7 @@ const SORT_OPTIONS = [
 const TABLE_COLUMNS = [
   { header: 'Producto', key: 'producto' },
   { header: 'Cliente', key: 'cliente' },
-  { header: 'Categoría', key: 'categoria' },
+  { header: 'CategorÃ­a', key: 'categoria' },
   { header: 'Color', key: 'color' },
   { header: 'Precio', key: 'precio' },
   { header: 'Fecha', key: 'fecha' },
@@ -59,7 +59,7 @@ const TABLE_COLUMNS = [
 // --- COMPONENTE SKELETON LOADER MEMOIZADO ---
 const SkeletonLoader = React.memo(() => (
   <div className="animate-pulse">
-    {/* Skeleton para las estadísticas */}
+    {/* Skeleton para las estadÃ­sticas */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       {Array.from({ length: 3 }, (_, i) => (
         <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
@@ -167,7 +167,7 @@ const SkeletonLoader = React.memo(() => (
 const getIconComponent = (iconName) => {
   if (!iconName) return <Tags className="w-4 h-4" />;
   
-  // Mapeo de iconos comunes (puedes expandir esto según los iconos disponibles)
+  // Mapeo de iconos comunes (puedes expandir esto segÃºn los iconos disponibles)
   const iconMap = {
     Tags: Tags,
     Package: Package,
@@ -185,7 +185,7 @@ const getIconComponent = (iconName) => {
   return <IconComponent className="w-4 h-4" />;
 };
 
-// Componente para el dropdown de categorías
+// Componente para el dropdown de categorÃ­as
 const CategoryDropdown = ({ 
   categories, 
   selectedCategory, 
@@ -212,7 +212,7 @@ const CategoryDropdown = ({
           {selectedCategory === 'todas' ? (
             <>
               <Package className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700">Todas las categorías</span>
+              <span className="text-gray-700">Todas las categorÃ­as</span>
             </>
           ) : selectedCategoryData ? (
             <>
@@ -222,7 +222,7 @@ const CategoryDropdown = ({
           ) : (
             <>
               <Tags className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700">Seleccionar categoría</span>
+              <span className="text-gray-700">Seleccionar categorÃ­a</span>
             </>
           )}
         </div>
@@ -242,7 +242,7 @@ const CategoryDropdown = ({
             {loading ? (
               <div className="p-4 text-center text-gray-500">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500 mx-auto mb-2"></div>
-                Cargando categorías...
+                Cargando categorÃ­as...
               </div>
             ) : error ? (
               <div className="p-4 text-center text-red-500">
@@ -250,7 +250,7 @@ const CategoryDropdown = ({
               </div>
             ) : (
               <>
-                {/* Opción "Todos" */}
+                {/* OpciÃ³n "Todos" */}
                 <button
                   onClick={() => handleCategorySelect('todas')}
                   className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 ${
@@ -262,13 +262,13 @@ const CategoryDropdown = ({
                       <Package className="w-4 h-4 text-gray-500" />
                     </div>
                     <div>
-                      <div className="font-medium">Todas las categorías</div>
+                      <div className="font-medium">Todas las categorÃ­as</div>
                       <div className="text-xs text-gray-500">Ver todos los productos</div>
                     </div>
                   </div>
                 </button>
 
-                {/* Categorías */}
+                {/* CategorÃ­as */}
                 {categories.map((category) => (
                   <button
                     key={category._id}
@@ -291,7 +291,7 @@ const CategoryDropdown = ({
 
                 {categories.length === 0 && !loading && (
                   <div className="p-4 text-center text-gray-500">
-                    No hay categorías disponibles
+                    No hay categorÃ­as disponibles
                   </div>
                 )}
               </>
@@ -548,7 +548,7 @@ const PersonalizadosContent = () => {
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('¿Eliminar este personalizado? Esta acción no se puede deshacer.')) return;
+        if (!window.confirm('Â¿Eliminar este personalizado? Esta acciÃ³n no se puede deshacer.')) return;
         try {
             const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}`);
             const res = await fetch(url, {
@@ -566,25 +566,35 @@ const PersonalizadosContent = () => {
         }
     };
 
-    const handleEstadoChange = async (id, nuevoEstado) => {
-        try {
-            const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${id}/estado`);
+    const handleEstadoChange = async (producto, nuevoEstado) => {
+    try {
+        if (producto?.source === 'pedido' && producto?.pedidoId) {
+            const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PEDIDOS}/${producto.pedidoId}/estado`);
             const res = await fetch(url, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 credentials: API_CONFIG.FETCH_CONFIG.credentials,
                 body: JSON.stringify({ estado: nuevoEstado })
             });
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.message || `Error ${res.status}`);
-            }
-            setRefreshKey(k => k + 1);
-            showSuccess('Estado actualizado', 2000);
-        } catch (err) {
-            showError(err.message || 'Error al actualizar estado', 3500);
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
+        } else {
+            const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS}/${producto.id}/estado`);
+            const res = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: API_CONFIG.FETCH_CONFIG.credentials,
+                body: JSON.stringify({ estado: nuevoEstado })
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
         }
-    };
+        setRefreshKey(k => k + 1);
+        showSuccess('Estado actualizado', 2000);
+    } catch (err) {
+        showError(err.message || 'Error al actualizar estado', 3500);
+    }
+};
 
     const handleOpenViewModal = (item) => {
         setSelectedItem(item);
@@ -640,7 +650,7 @@ const PersonalizadosContent = () => {
                     rows.push({
                         id: `${ped._id}:${idx}`,
                         nombre: it.nombre || 'Personalizado',
-                        descripcion: it.categoria ? `Categoría: ${it.categoria}` : '',
+                        descripcion: it.categoria ? `CategorÃ­a: ${it.categoria}` : '',
                         categoria: it.categoria || 'Personalizado',
                         color: '-',
                         precio: formatPrice(typeof it.subtotal === 'number' ? it.subtotal : (Number(it.precioUnitario||0) * Number(it.cantidad||1))),
@@ -670,9 +680,9 @@ const PersonalizadosContent = () => {
         return [...productosPersonalizados, ...pedidosPersonalizados];
     }, [productosPersonalizados, pedidosPersonalizados]);
 
-    // Función para aplicar filtros avanzados
+    // FunciÃ³n para aplicar filtros avanzados
     const applyAdvancedFilters = useCallback((personalizado) => {
-        // Filtro por categoría
+        // Filtro por categorÃ­a
         if (selectedCategory !== 'todas' && personalizado.categoria !== selectedCategory) {
             return false;
         }
@@ -744,7 +754,7 @@ const PersonalizadosContent = () => {
         return true;
     }, [selectedCategory, filters]);
 
-    // Función para ordenar datos
+    // FunciÃ³n para ordenar datos
     const sortData = useCallback((data) => {
         return [...data].sort((a, b) => {
             let valueA, valueB;
@@ -772,11 +782,11 @@ const PersonalizadosContent = () => {
         });
     }, [sortBy, sortOrder]);
 
-    // Lógica de filtrado, ordenamiento y paginación
+    // LÃ³gica de filtrado, ordenamiento y paginaciÃ³n
     const filteredAndSortedPersonalizados = useMemo(() => {
         let currentPersonalizados = allPersonalizados;
 
-        // Filtro por término de búsqueda
+        // Filtro por tÃ©rmino de bÃºsqueda
         if (searchTerm) {
             const searchLower = searchTerm.toLowerCase();
             currentPersonalizados = currentPersonalizados.filter(
@@ -798,7 +808,7 @@ const PersonalizadosContent = () => {
 
     const { paginatedData: currentPersonalizados, ...paginationProps } = usePagination(filteredAndSortedPersonalizados, ITEMS_PER_PAGE);
 
-    // Cargar estadísticas rápidas desde backend con fallback al cálculo local
+    // Cargar estadÃ­sticas rÃ¡pidas desde backend con fallback al cÃ¡lculo local
     useEffect(() => {
         let cancelled = false;
         const loadStats = async () => {
@@ -816,7 +826,7 @@ const PersonalizadosContent = () => {
                     : lista.reduce((acc, e) => acc + (e.count || 0), 0);
                 if (!cancelled) setStats({ total, enProceso, completado });
             } catch (err) {
-                // Fallback a cálculo local
+                // Fallback a cÃ¡lculo local
                 const total = allPersonalizados.length;
                 const enProceso = allPersonalizados.filter(p => p.estado === 'En Proceso').length;
                 const completado = allPersonalizados.filter(p => p.estado === 'Completado').length;
@@ -841,7 +851,7 @@ const PersonalizadosContent = () => {
                 }
             } catch (error) {
                 console.error('Error fetching categories:', error);
-                setCategoryError('No se pudieron cargar las categorías');
+                setCategoryError('No se pudieron cargar las categorÃ­as');
             } finally {
                 setLoadingCategories(false);
             }
@@ -850,7 +860,7 @@ const PersonalizadosContent = () => {
         fetchCategories();
     }, []);
 
-    // Obtener opciones únicas para filtros
+    // Obtener opciones Ãºnicas para filtros
     const uniqueMateriales = useMemo(() => {
         const materiales = allPersonalizados
             .map(p => p.material)
@@ -881,7 +891,7 @@ const PersonalizadosContent = () => {
         label: c.nombre || c.fullName || c.razonSocial || c.email || String(c._id)
     })) : []), [clientesData]);
 
-    // Opciones de categorías para el select
+    // Opciones de categorÃ­as para el select
     const categoriaOptions = useMemo(() => {
         if (loadingCategories) return [];
         return categories.map(cat => ({
@@ -913,7 +923,7 @@ const PersonalizadosContent = () => {
 
     const convertirAPedido = async (cotizacionId) => {
         if (!cotizacionId) {
-            showError('Este personalizado no tiene cotización vinculada', 3000);
+            showError('Este personalizado no tiene cotizaciÃ³n vinculada', 3000);
             return;
         }
         try {
@@ -925,14 +935,14 @@ const PersonalizadosContent = () => {
             });
             const data = await res.json().catch(() => ({}));
             if (!res.ok) throw new Error(data.message || `Error ${res.status}`);
-            showSuccess('Cotización convertida en pedido', 2500);
+            showSuccess('CotizaciÃ³n convertida en pedido', 2500);
             setRefreshKey(k => k + 1);
         } catch (err) {
             showError(err.message || 'No se pudo convertir a pedido', 4000);
         }
     };
 
-    // Función para renderizar filas
+    // FunciÃ³n para renderizar filas
     const renderRow = useCallback((producto) => {
         return (
             <>
@@ -955,9 +965,8 @@ const PersonalizadosContent = () => {
                 <td className="px-6 py-4">
                     <select
                         value={producto.backendEstado || 'pendiente'}
-                        onChange={(e) => handleEstadoChange(producto.id, e.target.value)}
+                        onChange={(e) => handleEstadoChange(producto, e.target.value)}
                         className="px-3 py-1 border rounded-lg text-sm"
-                        disabled={producto.source === 'pedido'}
                     >
                         {estadoOptions.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -970,7 +979,6 @@ const PersonalizadosContent = () => {
                             className="p-1.5 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110"
                             title="Eliminar"
                             onClick={() => producto.source === 'pedido' ? null : handleDelete(producto.id)}
-                            disabled={producto.source === 'pedido'}
                             aria-label={`Eliminar ${producto.nombre}`}
                         >
                             <Trash2 className="w-4 h-4" />
@@ -987,7 +995,6 @@ const PersonalizadosContent = () => {
                             className="p-1.5 text-green-600 bg-white hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110"
                             title="Editar"
                             onClick={() => producto.source === 'pedido' ? null : prepareEdit(producto.id)}
-                            disabled={producto.source === 'pedido'}
                             aria-label={`Editar ${producto.nombre}`}
                         >
                             <Edit className="w-4 h-4" />
@@ -995,7 +1002,7 @@ const PersonalizadosContent = () => {
                         {producto.source !== 'pedido' && (
                             <button
                                 className={`p-1.5 ${producto.cotizacionId ? 'text-cyan-700 hover:bg-cyan-50' : 'text-gray-400 cursor-not-allowed'} rounded-lg transition-colors`}
-                                title={producto.cotizacionId ? 'Convertir cotización a pedido' : 'Sin cotización vinculada'}
+                                title={producto.cotizacionId ? 'Convertir cotizaciÃ³n a pedido' : 'Sin cotizaciÃ³n vinculada'}
                                 disabled={!producto.cotizacionId}
                                 onClick={() => convertirAPedido(producto.cotizacionId)}
                             >
@@ -1039,7 +1046,7 @@ const PersonalizadosContent = () => {
             </ToastContainer>
             <div className="animate-fade-in">
 
-                {/* Estadísticas rápidas */}
+                {/* EstadÃ­sticas rÃ¡pidas */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
     <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
         <div className="flex items-center justify-between">
@@ -1079,14 +1086,14 @@ const PersonalizadosContent = () => {
                 <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                     <PageHeader 
                         title="Productos Personalizados" 
-                        buttonLabel="Añadir Personalizado" 
+                        buttonLabel="Agregar Personalizado" 
                         onButtonClick={() => setShowAddModal(true)} 
                     />
                     
-                    {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+                    {/* BARRA DE BÃšSQUEDA Y CONTROLES */}
                     <div className="px-6 py-4 border-b bg-gray-50">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-                            {/* Barra de búsqueda */}
+                            {/* Barra de bÃºsqueda */}
                             <div className="relative flex-1 max-w-md">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                                 <input
@@ -1144,7 +1151,7 @@ const PersonalizadosContent = () => {
                                     )}
                                 </div>
 
-                                {/* Dropdown de categorías */}
+                                {/* Dropdown de categorÃ­as */}
                                 <CategoryDropdown
                                     categories={categories}
                                     selectedCategory={selectedCategory}
@@ -1153,7 +1160,7 @@ const PersonalizadosContent = () => {
                                     error={categoryError}
                                 />
 
-                                {/* Botón de filtros */}
+                                {/* BotÃ³n de filtros */}
                                 <button
                                     onClick={() => {
                                         setShowFiltersPanel(!showFiltersPanel);
@@ -1192,7 +1199,7 @@ const PersonalizadosContent = () => {
                             </div>
                         </div>
 
-                        {/* Información de resultados */}
+                        {/* InformaciÃ³n de resultados */}
                         <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
                             <span>
                                 {filteredAndSortedPersonalizados.length} personalizado{filteredAndSortedPersonalizados.length !== 1 ? 's' : ''} 
@@ -1347,7 +1354,7 @@ const PersonalizadosContent = () => {
                                                 className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                 min="0"
                                                 step="0.01"
-                                                aria-label="Precio mínimo"
+                                                aria-label="Precio mÃ­nimo"
                                             />
                                             <input
                                                 type="number"
@@ -1357,7 +1364,7 @@ const PersonalizadosContent = () => {
                                                 className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                                                 min="0"
                                                 step="0.01"
-                                                aria-label="Precio máximo"
+                                                aria-label="Precio mÃ¡ximo"
                                             />
                                         </div>
                                     </div>
@@ -1406,7 +1413,7 @@ const PersonalizadosContent = () => {
                                     </div>
                                 </div>
 
-                                {/* Botones de acción del panel de filtros */}
+                                {/* Botones de acciÃ³n del panel de filtros */}
                                 <div className="mt-6 flex justify-end space-x-3">
                                     <button
                                         onClick={clearAllFilters}
@@ -1434,7 +1441,7 @@ const PersonalizadosContent = () => {
                                 renderRow={renderRow}
                                 isLoading={false}
                                 noDataMessage="No se encontraron productos personalizados"
-                                noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Comienza creando tu primer producto personalizado'}
+                                noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de bÃºsqueda' : 'Comienza creando tu primer producto personalizado'}
                             />
                         </div>
 
@@ -1462,7 +1469,7 @@ const PersonalizadosContent = () => {
     />
 )}
 
-{/* Modal Editar - DESPUÉS */}
+{/* Modal Editar - DESPUÃ‰S */}
 {showEditModal && (
     <PersonalizadosFormModal
         isOpen={showEditModal}
@@ -1492,19 +1499,19 @@ const PersonalizadosContent = () => {
                     data={selectedItem ? [
                         { label: 'ID', value: selectedItem.id },
                         { label: 'Nombre', value: selectedItem.nombre },
-                        { label: 'Descripción', value: selectedItem.descripcion || '-' },
+                        { label: 'DescripciÃ³n', value: selectedItem.descripcion || '-' },
                         { label: 'Cliente', value: selectedItem.cliente || '-' },
-                        { label: 'Categoría', value: selectedItem.categoria || '-' },
+                        { label: 'CategorÃ­a', value: selectedItem.categoria || '-' },
                         { label: 'Material', value: selectedItem.material || '-' },
                         { label: 'Color', value: selectedItem.color || '-' },
                         { label: 'Tipo de Lente', value: selectedItem.tipoLente || '-' },
                         { label: 'Precio', value: selectedItem.precio || '-' },
                         { label: 'Fecha', value: selectedItem.fechaCreacion || '-' },
                         { label: 'Estado', value: selectedItem.estado || '-' },
-                        selectedItem.cotizacionId ? { label: 'Cotización ID', value: selectedItem.cotizacionId } : null,
+                        selectedItem.cotizacionId ? { label: 'CotizaciÃ³n ID', value: selectedItem.cotizacionId } : null,
                         selectedItem.pedidoId ? { label: 'Pedido ID', value: selectedItem.pedidoId } : null,
                         { label: 'Origen', value: selectedItem.source === 'pedido' ? 'Pedido' : 'Personalizado' },
-                        { label: 'Reciente', value: selectedItem.isRecent ? 'Sí (últimas 24h)' : 'No' },
+                        { label: 'Reciente', value: selectedItem.isRecent ? 'SÃ­ (Ãºltimas 24h)' : 'No' },
                     ].filter(Boolean) : []}
                 />
             )}
@@ -1522,3 +1529,4 @@ const PersonalizadosContent = () => {
 };
 
 export default PersonalizadosContent;
+

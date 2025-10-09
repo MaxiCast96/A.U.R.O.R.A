@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { API_CONFIG } from '../../../config/api';
 import { Glasses, Filter, RefreshCcw, Plus, Edit, Trash2, Star, Tag } from 'lucide-react';
+import ArosFormModal from './aros/ArosFormModal.jsx';
 
 const Badge = ({ children, className = '' }) => (
   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${className}`}>{children}</span>
@@ -26,9 +27,33 @@ const ArosContent = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Modal state for Add/Edit
+  const [showModal, setShowModal] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [formData, setFormData] = useState({
+    nombre: '',
+    descripcion: '',
+    categoriaId: '',
+    marcaId: '',
+    material: '',
+    color: '',
+    tipoLente: '',
+    precioBase: 0,
+    precioActual: 0,
+    linea: '',
+    medidas: { anchoPuente: '', altura: '', ancho: '' },
+    imagenes: [],
+    enPromocion: false,
+    promocionId: '',
+    fechaCreacion: new Date().toISOString().split('T')[0],
+    sucursales: [],
+  });
+  const [formErrors, setFormErrors] = useState({});
+
   const [search, setSearch] = useState('');
   const [marcas, setMarcas] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
   const [marcaId, setMarcaId] = useState('todos');
   const [categoriaId, setCategoriaId] = useState('todos');
   const [promosOnly, setPromosOnly] = useState(false);
@@ -41,14 +66,123 @@ const ArosContent = () => {
   const [limit] = useState(12);
   const [pagination, setPagination] = useState({ total: 0, page: 1, limit: 12, totalPages: 1 });
 
+  // Handlers: Add/Edit modal + form
+  const openAdd = () => {
+    setSelectedItem(null);
+    setFormData({
+      nombre: '', descripcion: '', categoriaId: '', marcaId: '', material: '', color: '', tipoLente: '',
+      precioBase: 0, precioActual: 0, linea: '', medidas: { anchoPuente: '', altura: '', ancho: '' }, imagenes: [],
+      enPromocion: false, promocionId: '', fechaCreacion: new Date().toISOString().split('T')[0], sucursales: []
+    });
+    setFormErrors({});
+    setShowModal(true);
+  };
+
+  const openEdit = (it) => {
+    if (!it) return;
+    const normalizeImages = (images) => Array.isArray(images)
+      ? images.map(img => typeof img === 'string' ? img : (img?.secure_url || img?.url || '')).filter(Boolean)
+      : [];
+    const normalizeSucursales = (sucs) => Array.isArray(sucs)
+      ? sucs.map(s => ({
+          sucursalId: s.sucursalId?._id || s.sucursalId || s._id || '',
+          nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || s.nombre || '',
+          stock: parseInt(s.stock) || 0,
+        })) : [];
+    setSelectedItem(it);
+    setFormData({
+      nombre: it.nombre || '',
+      descripcion: it.descripcion || '',
+      categoriaId: it.categoriaId?._id || it.categoriaId || '',
+      marcaId: it.marcaId?._id || it.marcaId || '',
+      material: it.material || '',
+      color: it.color || '',
+      tipoLente: it.tipoLente || '',
+      precioBase: Number(it.precioBase) || 0,
+      precioActual: Number(it.precioActual || it.precioBase) || 0,
+      linea: it.linea || '',
+      medidas: {
+        anchoPuente: it.medidas?.anchoPuente || '',
+        altura: it.medidas?.altura || '',
+        ancho: it.medidas?.ancho || '',
+      },
+      imagenes: normalizeImages(it.imagenes),
+      enPromocion: !!it.enPromocion,
+      promocionId: it.promocionId?._id || it.promocionId || '',
+      fechaCreacion: it.fechaCreacion ? new Date(it.fechaCreacion).toISOString().split('T')[0] : '',
+      sucursales: normalizeSucursales(it.sucursales),
+    });
+    setFormErrors({});
+    setShowModal(true);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target || {};
+    if (!name) return;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const validate = (data) => {
+    const errs = {};
+    if (!data.nombre?.trim()) errs.nombre = 'El nombre es requerido';
+    if (!data.descripcion?.trim()) errs.descripcion = 'La descripción es requerida';
+    if (!data.categoriaId) errs.categoriaId = 'La categoría es requerida';
+    if (!data.marcaId) errs.marcaId = 'La marca es requerida';
+    if (!data.material?.trim()) errs.material = 'El material es requerido';
+    if (!data.color?.trim()) errs.color = 'El color es requerido';
+    if (!data.tipoLente?.trim()) errs.tipoLente = 'El tipo es requerido';
+    if (!data.precioBase || data.precioBase <= 0) errs.precioBase = 'Precio base inválido';
+    if (data.enPromocion) {
+      if (!data.promocionId) errs.promocionId = 'Seleccione una promoción';
+      if (!data.precioActual || data.precioActual <= 0) errs.precioActual = 'Precio promo inválido';
+      if (data.precioActual >= data.precioBase) errs.precioActual = 'Debe ser menor al precio base';
+    }
+    return errs;
+  };
+
+  const handleSubmit = async (e) => {
+    if (e?.preventDefault) e.preventDefault();
+    const errs = validate(formData);
+    setFormErrors(errs);
+    if (Object.keys(errs).length) return;
+
+    try {
+      const payload = {
+        ...formData,
+        precioBase: Number(formData.precioBase),
+        precioActual: formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase),
+        sucursales: Array.isArray(formData.sucursales) ? formData.sucursales.map(s => ({
+          sucursalId: typeof s.sucursalId === 'object' ? s.sucursalId?._id : s.sucursalId,
+          nombreSucursal: s.nombreSucursal,
+          stock: Number(s.stock || 0),
+        })) : [],
+      };
+
+      if (selectedItem?._id) {
+        await axios.put(`${base}/aros/${selectedItem._id}`, payload);
+      } else {
+        await axios.post(`${base}/aros`, payload);
+      }
+      setShowModal(false);
+      setSelectedItem(null);
+      await fetchData();
+    } catch (err) {
+      alert(err?.response?.data?.message || err.message);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [arosRes, marcasRes, catRes] = await Promise.all([
+      const [arosRes, marcasRes, catRes, sucsRes] = await Promise.all([
         axios.get(`${base}/aros`, { params: { page, limit } }),
         axios.get(`${base}/marcas`),
         axios.get(`${base}/categoria`),
+        axios.get(`${base}/sucursales`),
       ]);
       const payload = arosRes.data || {};
       const data = Array.isArray(payload.data) ? payload.data : (Array.isArray(payload) ? payload : []);
@@ -56,6 +190,7 @@ const ArosContent = () => {
       if (payload.pagination) setPagination(payload.pagination);
       setMarcas(Array.isArray(marcasRes.data?.data) ? marcasRes.data.data : (marcasRes.data || []));
       setCategorias(Array.isArray(catRes.data?.data) ? catRes.data.data : (catRes.data || []));
+      setSucursales(Array.isArray(sucsRes.data?.data) ? sucsRes.data.data : (sucsRes.data || []));
     } catch (e) {
       setError(e?.response?.data?.message || e.message);
     } finally {
@@ -110,15 +245,15 @@ const ArosContent = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gestión de Lentes</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gestión de Aros</h1>
           <p className="text-sm text-gray-500">Administra el catálogo: búsqueda, filtros y promociones</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={fetchData} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border hover:bg-gray-100">
             <RefreshCcw className="w-4 h-4"/> Refrescar
           </button>
-          <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">
-            <Plus className="w-4 h-4"/> Nuevo lente
+          <button onClick={openAdd} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">
+            <Plus className="w-4 h-4"/> Nuevo aro
           </button>
         </div>
       </div>
@@ -224,7 +359,7 @@ const ArosContent = () => {
                 <div className="text-xs text-gray-500">Stock total: {totalStock(it)}</div>
               </div>
               <div className="px-4 py-3 border-t flex items-center justify-end gap-2 bg-gray-50">
-                <button className="px-3 py-2 rounded-lg border hover:bg-gray-100 inline-flex items-center gap-2 text-sm">
+                <button onClick={() => openEdit(it)} className="px-3 py-2 rounded-lg border hover:bg-gray-100 inline-flex items-center gap-2 text-sm">
                   <Edit className="w-4 h-4" /> Editar
                 </button>
                 <button onClick={() => handleDelete(it._id)} className="px-3 py-2 rounded-lg border hover:bg-red-50 text-red-600 inline-flex items-center gap-2 text-sm">
@@ -241,8 +376,8 @@ const ArosContent = () => {
               <div className="font-medium text-gray-700">Sin resultados</div>
               <div className="text-sm text-gray-500">Ajusta los filtros o crea un nuevo lente</div>
               <div className="mt-4">
-                <button className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">
-                  <Plus className="w-4 h-4"/> Nuevo lente
+                <button onClick={openAdd} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">
+                  <Plus className="w-4 h-4"/> Nuevo aro
                 </button>
               </div>
             </div>
@@ -269,6 +404,24 @@ const ArosContent = () => {
           </button>
         </div>
       </div>
+
+      {/* Modal de Aros (reutiliza formulario de Lentes) */}
+      <ArosFormModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSubmit={handleSubmit}
+        title={selectedItem ? 'Editar Aro' : 'Agregar Aro'}
+        formData={formData}
+        setFormData={setFormData}
+        handleInputChange={handleInputChange}
+        errors={formErrors}
+        isEditing={!!selectedItem}
+        categorias={categorias}
+        marcas={marcas}
+        promociones={[]}
+        sucursales={sucursales}
+        selectedLente={selectedItem}
+      />
     </div>
   );
 };

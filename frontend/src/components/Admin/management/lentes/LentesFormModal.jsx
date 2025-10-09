@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
 import { Camera, Upload, X, Package, Edit3, Eye, EyeOff, Plus, Trash2, AlertCircle, Check, Loader, DollarSign, Tag, Glasses, Ruler } from 'lucide-react';
-
 // Componente de subida de imágenes usando Cloudinary
 const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 5 }) => {
   const [isUploading, setIsUploading] = useState(false);
@@ -29,74 +28,21 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
     }
   }, []);
 
-  const handleOpenWidget = () => {
-    if (!window.cloudinary) {
-      alert('El sistema de carga de imágenes no está disponible. Por favor, recarga la página.');
-      return;
-    }
-
-    const widget = window.cloudinary.createUploadWidget({
-      cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
-      uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
-      sources: ['local', 'camera', 'url'],
-      folder: "lentes",
-      multiple: true,
-      maxFiles: Math.max(1, maxImages - currentImages.length),
-      cropping: false,
-      maxImageFileSize: 10000000,
-      clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
-      transformation: [
-        { quality: 'auto', fetch_format: 'auto' }
-      ],
-      styles: {
-        palette: {
-          window: "#FFFFFF",
-          windowBorder: "#0891B2",
-          tabIcon: "#0891B2",
-          link: "#0891B2",
-          action: "#0891B2"
+  // Suppress noisy extension-related unhandled promise rejections
+  useEffect(() => {
+    const handler = (event) => {
+      try {
+        const reason = event?.reason;
+        const msg = (reason && (reason.message || String(reason))) || '';
+        if (typeof msg === 'string' && msg.includes('A listener indicated an asynchronous response by returning true')) {
+          event.preventDefault();
+          console.warn('[ImageUploadComponent] Ignored extension-related unhandledrejection');
         }
-      },
-      text: {
-        es: {
-          "queue.title": "Subir Imágenes",
-          "local.browse": "Seleccionar",
-          "camera.capture": "Tomar foto"
-        }
-      }
-    }, (error, result) => {
-      if (error) {
-        console.error('Error uploading:', error);
-        setIsUploading(false);
-        setUploadingCount(0);
-        return;
-      }
-      
-      if (result && result.event === "queues-start") {
-        setIsUploading(true);
-        setUploadingCount(result.info.files?.length || 1);
-      }
-      
-      if (result && result.event === "success") {
-        const newImageUrl = result.info.secure_url;
-        const newImages = [...currentImages, newImageUrl];
-        onImagesChange(newImages);
-        console.log('Image uploaded successfully:', newImageUrl);
-      }
-      
-      if (result && result.event === "queues-end") {
-        setIsUploading(false);
-        setUploadingCount(0);
-      }
-    });
-
-    widget.open();
-  };
-
-  const removeImage = (index) => {
-    const newImages = currentImages.filter((_, i) => i !== index);
-    onImagesChange(newImages);
-  };
+      } catch {}
+    };
+    window.addEventListener('unhandledrejection', handler);
+    return () => window.removeEventListener('unhandledrejection', handler);
+  }, []);
 
   const moveImage = (fromIndex, toIndex) => {
     const newImages = [...currentImages];
@@ -123,6 +69,82 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
     }
     
     return null;
+  };
+
+  // Hardened Cloudinary widget opener
+  const handleOpenWidget = () => {
+    try {
+      const cloudName = import.meta?.env?.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = import.meta?.env?.VITE_CLOUDINARY_UPLOAD_PRESET;
+      if (!cloudName || !uploadPreset) {
+        alert('Configuración de Cloudinary incompleta. Verifica VITE_CLOUDINARY_CLOUD_NAME y VITE_CLOUDINARY_UPLOAD_PRESET.');
+        return;
+      }
+      if (!window.cloudinary || typeof window.cloudinary.createUploadWidget !== 'function') {
+        alert('El sistema de carga de imágenes no está disponible. Por favor, recarga la página.');
+        return;
+      }
+
+      const widget = window.cloudinary.createUploadWidget({
+        cloudName,
+        uploadPreset,
+        sources: ['local', 'camera', 'url'],
+        folder: 'lentes',
+        multiple: true,
+        maxFiles: Math.max(1, maxImages - currentImages.length),
+        cropping: false,
+        maxImageFileSize: 10000000,
+        clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
+        transformation: [{ quality: 'auto', fetch_format: 'auto' }],
+        styles: {
+          palette: {
+            window: '#FFFFFF',
+            windowBorder: '#0891B2',
+            tabIcon: '#0891B2',
+            link: '#0891B2',
+            action: '#0891B2'
+          }
+        },
+        text: {
+          es: {
+            'queue.title': 'Subir Imágenes',
+            'local.browse': 'Seleccionar',
+            'camera.capture': 'Tomar foto'
+          }
+        }
+      }, (error, result) => {
+        if (error) {
+          console.error('Error uploading:', error);
+          setIsUploading(false);
+          setUploadingCount(0);
+          return;
+        }
+        if (result && result.event === 'queues-start') {
+          setIsUploading(true);
+          setUploadingCount(result.info.files?.length || 1);
+        }
+        if (result && result.event === 'success') {
+          const newImageUrl = result.info.secure_url;
+          const newImages = [...currentImages, newImageUrl];
+          onImagesChange(newImages);
+          console.log('Image uploaded successfully:', newImageUrl);
+        }
+        if (result && result.event === 'queues-end') {
+          setIsUploading(false);
+          setUploadingCount(0);
+        }
+      });
+
+      widget.open();
+    } catch (err) {
+      console.warn('[ImageUploadComponent] No se pudo abrir el widget de Cloudinary:', err?.message || err);
+    }
+  };
+
+  // Restore removeImage used by the UI
+  const removeImage = (index) => {
+    const newImages = currentImages.filter((_, i) => i !== index);
+    onImagesChange(newImages);
   };
 
   return (
