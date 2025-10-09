@@ -134,7 +134,7 @@ const BrandsCarousel = ({
                 left: `${brand.leftPercent}%`,
               }}
             >
-              <Link to={`/productos?marca=${encodeURIComponent(brand.nombre || brand.name || '')}`}>
+              <Link to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?marca=${encodeURIComponent(brand.nombre || brand.name || '')}`}>
                 <img
                   src={brand.logo || brand.imagen || brand.image || generatePlaceholder()}
                   alt={brand.nombre || brand.name || 'Marca'}

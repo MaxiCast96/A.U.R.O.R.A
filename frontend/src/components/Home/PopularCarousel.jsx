@@ -44,7 +44,7 @@ const ProductCard = ({ product, itemWidthPercent, onQuickView }) => {
               Ver detalles
             </button>
             <Link
-              to={`/productos?q=${encodeURIComponent(product.nombre || '')}`}
+              to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?q=${encodeURIComponent(product.nombre || '')}`}
               className="text-sm px-3 py-2 rounded-lg font-medium transition-colors pointer-events-auto border border-[#0097c2] text-[#0097c2] hover:bg-[#e6f7fb]"
             >
               Ver similares
@@ -196,13 +196,13 @@ const PopularCarousel = () => {
                   </div>
                   <div className="flex gap-2">
                     <Link
-                      to={`/productos?q=${encodeURIComponent(quickView.nombre || '')}`}
+                      to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?q=${encodeURIComponent(quickView.nombre || '')}`}
                       className="flex-1 px-4 py-2 rounded-lg font-medium transition-colors border border-[#0097c2] text-[#0097c2] hover:bg-[#e6f7fb] text-center"
                     >
                       Ver similares
                     </Link>
                     <Link
-                      to={`/productos?enPromocion=true`}
+                      to={`${(import.meta?.env?.BASE_URL || '/').replace(/\/$/, '')}/productos?enPromocion=true`}
                       className="px-4 py-2 rounded-lg font-medium transition-colors bg-[#0097c2] hover:bg-[#0083a8] text-white"
                     >
                       Ver promociones

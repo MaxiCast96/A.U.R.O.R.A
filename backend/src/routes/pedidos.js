@@ -12,4 +12,8 @@ router.route('/')
 router.route('/:id')
   .get(pedidosController.getPedidoById);
 
+// PATCH /api/pedidos/:id/estado - actualizar estado del pedido
+router.route('/:id/estado')
+  .patch(pedidosController.updateEstado);
+
 export default router;

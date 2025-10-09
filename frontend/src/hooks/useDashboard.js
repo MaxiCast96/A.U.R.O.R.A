@@ -7,14 +7,14 @@ import { API_CONFIG } from '../config/api';
 const { BASE_URL, ENDPOINTS } = API_CONFIG;
 
 export const useDashboard = () => {
-    const { user, token } = useAuth();
+    const { user, token, logout } = useAuth();
     const [dashboardData, setDashboardData] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     const fetchDashboardData = async () => {
         if (!token) {
-            setError('No hay token de autenticación');
+            setError('No hay token de autenticación. Inicia sesión para ver el dashboard.');
             setLoading(false);
             return;
         }
@@ -38,7 +38,16 @@ export const useDashboard = () => {
             }
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            setError(error.response?.data?.message || 'Error al obtener datos del dashboard');
+            const status = error?.response?.status;
+            if (status === 401) {
+                // Sesión inválida/expirada: limpiar y pedir login
+                try { logout && logout(); } catch {}
+                setError('Sesión expirada o no autorizada. Vuelve a iniciar sesión.');
+            } else if (status === 403) {
+                setError('Acceso denegado. Tu usuario no tiene permisos para ver el dashboard.');
+            } else {
+                setError(error.response?.data?.message || 'Error al obtener datos del dashboard');
+            }
         } finally {
             setLoading(false);
         }
