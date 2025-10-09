@@ -204,7 +204,7 @@ const BrandsCarousel = ({
                 <div className="mt-4 text-center">
                   <p className={`text-base font-semibold ${brand.isCenter ? 'text-gray-800' : 'text-gray-600'}`}>{brand.nombre || brand.name || 'Marca'}</p>
                 </div>
-              </a>
+              </Link>
             </div>
           ))}
         </div>
