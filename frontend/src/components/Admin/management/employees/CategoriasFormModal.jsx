@@ -121,6 +121,34 @@ const CategoriasFormModal = ({
   isEditing = false,
   selectedCategoria = null
 }) => {
+  // NUEVOS ESTADOS PARA LOADING Y ERROR
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
+  const handleFormSubmit = async () => {
+    // Validar campos requeridos
+    const requiredFields = ['nombre', 'codigo', 'tipoProducto', 'estado'];
+    const hasErrors = requiredFields.some(field => !formData[field]);
+    
+    if (hasErrors) {
+      setHasValidationErrors(true);
+      return;
+    }
+
+    setHasValidationErrors(false);
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      await onSubmit();
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar categoría:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sections = [
     {
@@ -219,7 +247,7 @@ const CategoriasFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -229,6 +257,11 @@ const CategoriasFormModal = ({
       fields={[]}
       gridCols={1}
       size="lg"
+      // NUEVAS PROPS
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
+      errorDuration={1000}
     >
       {customContent}
     </FormModal>

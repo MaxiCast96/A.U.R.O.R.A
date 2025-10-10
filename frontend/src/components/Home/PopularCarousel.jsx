@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
+import { Award, Eye, Search } from 'lucide-react';
 
 const ProductCard = ({ product, itemWidthPercent, onQuickView }) => {
   const [imageError, setImageError] = useState(false);

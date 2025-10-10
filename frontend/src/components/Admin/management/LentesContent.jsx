@@ -8,7 +8,6 @@ import { usePagination } from '../../../hooks/admin/usePagination';
 // Componentes de UI
 import PageHeader from '../ui/PageHeader';
 import StatsGrid from '../ui/StatsGrid';
-import FilterBar from '../ui/FilterBar';
 import DataTable from '../ui/DataTable';
 import Pagination from '../ui/Pagination';
 import ConfirmationModal from '../ui/ConfirmationModal';
@@ -18,8 +17,9 @@ import LentesFormModal from '../management/lentes/LentesFormModal';
 
 // Iconos
 import { 
-  Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, Image as ImageIcon, 
-  Building2, Palette, Layers, Filter, X, ChevronDown, SortAsc, SortDesc, CheckCircle 
+  Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, 
+  Building2, Palette, Layers, Filter, X, ChevronDown, SortAsc, SortDesc, CheckCircle,
+  RefreshCcw
 } from 'lucide-react';
 
 // Configuración
@@ -805,201 +805,188 @@ const LentesContent = () => {
         </td>
         
         <td className="px-6 py-4">
-          <div className="space-y-1 text-sm">
+          <div className="space-y-1">
             <div className="flex items-center space-x-2">
               <Palette className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="truncate">{lente.color}</span>
+              <span className="text-sm text-gray-900">{lente.color}</span>
             </div>
-            <div className="text-gray-500 truncate">
-              {lente.material} • {lente.tipoLente}
+            <div className="flex items-center space-x-2">
+              <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-500">{lente.material}</span>
             </div>
-            {lente.linea && (
-              <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block">
-                {lente.linea}
-              </div>
-            )}
-            {lente.medidas && (
-              <div className="text-xs text-gray-400">
-                {lente.medidas.ancho}×{lente.medidas.altura}×{lente.medidas.anchoPuente}mm
+            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800">
+              {lente.tipoLente}
+            </div>
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="space-y-1">
+            <div className={`text-sm font-medium ${lente.enPromocion ? 'text-green-600' : 'text-gray-900'}`}>
+              {lente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' })}
+            </div>
+            {lente.enPromocion && (
+              <div className="text-xs text-gray-500 line-through">
+                {lente.precioBase?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' })}
               </div>
             )}
           </div>
         </td>
         
         <td className="px-6 py-4">
+          <div className="text-sm text-gray-900">
+            {stockTotal}
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
           <div className="space-y-1">
-            {lente.enPromocion ? (
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg font-bold text-green-600">
-                    ${(lente.precioActual || 0).toFixed(2)}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    OFERTA
-                  </span>
-                </div>
-                <div className="text-sm text-gray-500 line-through">
-                  ${(lente.precioBase || 0).toFixed(2)}
-                </div>
-                {lente.promocionId?.nombre && (
-                  <div className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full inline-block">
-                    {lente.promocionId.nombre}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <span className="text-lg font-semibold text-gray-900">
-                ${(lente.precioBase || 0).toFixed(2)}
+            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+              tieneStock 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {tieneStock ? 'En Stock' : 'Sin Stock'}
+            </span>
+            {lente.enPromocion && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                En Promoción
               </span>
             )}
           </div>
         </td>
         
         <td className="px-6 py-4">
-          <div className="space-y-1">
-            <div className={`text-sm font-medium ${tieneStock ? 'text-green-600' : 'text-red-600'}`}>
-              {stockTotal} unidades
-            </div>
-            <div className="text-xs text-gray-500">
-              en {lente.sucursales?.length || 0} sucursal(es)
-            </div>
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="flex flex-col space-y-1">
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              lente.enPromocion 
-                ? 'bg-yellow-100 text-yellow-800' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {lente.enPromocion ? '  Promoción' : 'Precio normal'}
-            </span>
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              tieneStock 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {tieneStock ? '  Disponible' : '⌛ Sin stock'}
-            </span>
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="flex space-x-1">
-            <button 
-              onClick={() => handleOpenDeleteModal(lente)} 
-              className="p-1.5 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110" 
-              title="Eliminar"
-              aria-label={`Eliminar lente ${lente.nombre}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => handleOpenDetailModal(lente)} 
-              className="p-1.5 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => handleOpenDetailModal(lente)}
+              className="text-gray-400 hover:text-cyan-600 transition-colors p-1 rounded-lg hover:bg-cyan-50"
               title="Ver detalles"
-              aria-label={`Ver detalles de ${lente.nombre}`}
             >
-              <Eye className="w-4 h-4" />
+              <Eye className="w-5 h-5" />
             </button>
-            <button 
-              onClick={() => handleOpenEditModal(lente)} 
-              className="p-1.5 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
+            <button
+              onClick={() => handleOpenEditModal(lente)}
+              className="text-gray-400 hover:text-blue-600 transition-colors p-1 rounded-lg hover:bg-blue-50"
               title="Editar"
-              aria-label={`Editar lente ${lente.nombre}`}
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => handleOpenDeleteModal(lente)}
+              className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-lg hover:bg-red-50"
+              title="Eliminar"
+            >
+              <Trash2 className="w-5 h-5" />
             </button>
           </div>
         </td>
       </>
     );
-  }, [getTotalStock, handleOpenDeleteModal, handleOpenDetailModal, handleOpenEditModal]);
+  }, [getTotalStock, handleOpenDetailModal, handleOpenEditModal, handleOpenDeleteModal]);
 
-  // --- RENDERIZADO DEL COMPONENTE ---
+  // --- RENDERIZADO PRINCIPAL ---
   if (loading) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <Alert alert={alert} />
-        <SkeletonLoader />
-      </div>
-    );
+    return <SkeletonLoader />;
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Alerta */}
-      <Alert alert={alert} />
-      
-      {/* Estadísticas */}
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-none">
-          <StatsGrid stats={stats} />
-        </div>
-      </div>
-      
-      {/* Tabla principal */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <PageHeader 
-          title="Gestión de Lentes" 
-          buttonLabel="Agregar Lente" 
-          onButtonClick={handleOpenAddModal} 
+    <div className="min-h-screen bg-gray-50">
+      {/* Alertas */}
+      {alert && (
+        <Alert
+          type={alert.type}
+          message={alert.message}
+          onClose={() => setAlert(null)}
         />
-        
-        {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+      )}
+
+      {/* Header de la página */}
+      <PageHeader
+        title="Gestión de Lentes"
+        description="Administra el catálogo de lentes de la óptica"
+        icon={Glasses}
+        buttonText="Agregar Lente"
+        onButtonClick={handleOpenAddModal}
+      />
+
+      {/* Estadísticas */}
+      <StatsGrid stats={stats} />
+
+      {/* Contenedor principal */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        {/* Header de la tabla */}
+        <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
+          <div className="flex justify-between items-center">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Lista de Lentes</h2>
+              <p className="text-cyan-100 text-sm mt-1">
+                {filteredAndSortedLentes.length} lentes encontrados
+              </p>
+            </div>
+            <button
+              onClick={fetchData}
+              className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
+              title="Actualizar datos"
+            >
+              <RefreshCcw className="w-4 h-4" />
+              <span className="text-sm">Actualizar</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Barra de búsqueda y filtros */}
         <div className="px-6 py-4 border-b bg-gray-50">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-            {/* Barra de búsqueda */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Buscar por nombre, marca, material o color..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                aria-label="Buscar lentes"
-              />
+            {/* Búsqueda */}
+            <div className="flex-1 max-w-md">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <input
+                  type="text"
+                  placeholder="Buscar lentes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                />
+              </div>
             </div>
 
-            {/* Controles de filtro y ordenamiento */}
+            {/* Controles de ordenamiento y filtros */}
             <div className="flex items-center space-x-3">
               {/* Dropdown de ordenamiento */}
               <div className="relative">
                 <button
-                  onClick={() => {
-                    setShowSortDropdown(!showSortDropdown);
-                    setShowFiltersPanel(false);
-                  }}
+                  onClick={() => setShowSortDropdown(!showSortDropdown)}
                   className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  aria-expanded={showSortDropdown}
-                  aria-haspopup="true"
-                  aria-label="Opciones de ordenamiento"
                 >
-                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                  <span className="text-sm font-medium">Ordenar</span>
-                  <ChevronDown className="w-4 h-4" />
+                  <SortAsc className="w-4 h-4 text-gray-400" />
+                  <span className="text-sm text-gray-700">
+                    {SORT_OPTIONS.find(opt => opt.value === `${sortBy}-${sortOrder}`)?.label || 'Ordenar por'}
+                  </span>
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
                 </button>
-                
+
                 {showSortDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                    <div className="py-2">
+                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                    <div className="p-2">
                       {SORT_OPTIONS.map((option) => {
-                        const IconComponent = option.icon;
-                        const isActive = `${sortBy}-${sortOrder}` === option.value;
+                        const Icon = option.icon;
                         return (
                           <button
                             key={option.value}
                             onClick={() => handleSortChange(option.value)}
-                            className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                              isActive ? 'bg-cyan-50 text-cyan-600 font-medium' : 'text-gray-700'
+                            className={`w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors ${
+                              `${sortBy}-${sortOrder}` === option.value
+                                ? 'bg-cyan-50 text-cyan-700'
+                                : 'text-gray-700 hover:bg-gray-50'
                             }`}
-                            aria-pressed={isActive}
                           >
-                            <IconComponent className="w-4 h-4" />
+                            <Icon className="w-4 h-4" />
                             <span>{option.label}</span>
-                            {isActive && <CheckCircle className="w-4 h-4 ml-auto" />}
+                            {`${sortBy}-${sortOrder}` === option.value && (
+                              <CheckCircle className="w-4 h-4 ml-auto" />
+                            )}
                           </button>
                         );
                       })}
@@ -1010,53 +997,31 @@ const LentesContent = () => {
 
               {/* Botón de filtros */}
               <button
-                onClick={() => {
-                  setShowFiltersPanel(!showFiltersPanel);
-                  setShowSortDropdown(false);
-                }}
-                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-all duration-200 ${
-                  hasActiveFilters() 
-                    ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg' 
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${
+                  hasActiveFilters()
+                    ? 'bg-cyan-50 border-cyan-200 text-cyan-700'
+                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                 }`}
-                aria-expanded={showFiltersPanel}
-                aria-label="Filtros avanzados"
               >
                 <Filter className="w-4 h-4" />
-                <span className="text-sm font-medium">Filtros</span>
+                <span className="text-sm">Filtros</span>
                 {hasActiveFilters() && (
-                  <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
-                    {[
-                      searchTerm && 1,
-                      filters.categoria !== 'todas' && 1,
-                      filters.marca !== 'todas' && 1,
-                      filters.tipoLente !== 'todos' && 1,
-                      filters.enPromocion !== 'todos' && 1,
-                      filters.stock !== 'todos' && 1,
-                      filters.material !== 'todos' && 1,
-                      filters.color !== 'todos' && 1,
-                      filters.precioMin && 1,
-                      filters.precioMax && 1,
-                      filters.fechaDesde && 1,
-                      filters.fechaHasta && 1
-                    ].filter(Boolean).length}
-                  </span>
+                  <span className="w-2 h-2 bg-cyan-500 rounded-full"></span>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Información de resultados */}
-          <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
-            <span>
-              {filteredAndSortedLentes.length} lente{filteredAndSortedLentes.length !== 1 ? 's' : ''} 
-              {hasActiveFilters() && ` (filtrado${filteredAndSortedLentes.length !== 1 ? 's' : ''} de ${lentes.length})`}
-            </span>
+          {/* Resumen de filtros activos */}
+          <div className="mt-3 flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              Mostrando {currentLentes.length} de {filteredAndSortedLentes.length} lentes
+            </div>
             {hasActiveFilters() && (
               <button
                 onClick={clearAllFilters}
-                className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1"
-                aria-label="Limpiar todos los filtros"
+                className="flex items-center space-x-1 text-sm text-red-600 hover:text-red-700 transition-colors"
               >
                 <X className="w-4 h-4" />
                 <span>Limpiar filtros</span>
@@ -1065,326 +1030,232 @@ const LentesContent = () => {
           </div>
         </div>
 
-        {/* PANEL DE FILTROS */}
+        {/* Panel de filtros avanzados */}
         {showFiltersPanel && (
-          <div className="border-b bg-white" role="region" aria-labelledby="filtros-titulo">
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 id="filtros-titulo" className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
-                <button
-                  onClick={() => setShowFiltersPanel(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                  aria-label="Cerrar panel de filtros"
+          <div className="px-6 py-4 border-b bg-gray-50">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Categoría */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Categoría
+                </label>
+                <select
+                  value={filters.categoria}
+                  onChange={(e) => handleFilterChange('categoria', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                 >
-                  <X className="w-5 h-5" />
-                </button>
+                  <option value="todas">Todas las categorías</option>
+                  {categorias.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {/* Filtro por Categoría */}
-                <div>
-                  <label htmlFor="filter-categoria" className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoría
-                  </label>
-                  <select
-                    id="filter-categoria"
-                    value={filters.categoria}
-                    onChange={(e) => handleFilterChange('categoria', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todas">Todas las categorías</option>
-                    {categorias.map(categoria => (
-                      <option key={categoria._id} value={categoria._id}>{categoria.nombre}</option>
-                    ))}
-                  </select>
-                </div>
 
-                {/* Filtro por Marca */}
-                <div>
-                  <label htmlFor="filter-marca" className="block text-sm font-medium text-gray-700 mb-2">
-                    Marca
-                  </label>
-                  <select
-                    id="filter-marca"
-                    value={filters.marca}
-                    onChange={(e) => handleFilterChange('marca', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todas">Todas las marcas</option>
-                    {marcas.map(marca => (
-                      <option key={marca._id} value={marca._id}>{marca.nombre}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Marca */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Marca
+                </label>
+                <select
+                  value={filters.marca}
+                  onChange={(e) => handleFilterChange('marca', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                >
+                  <option value="todas">Todas las marcas</option>
+                  {marcas.map((marca) => (
+                    <option key={marca._id} value={marca._id}>
+                      {marca.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {/* Filtro por Tipo de Lente */}
-                <div>
-                  <label htmlFor="filter-tipo-lente" className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Lente
-                  </label>
-                  <select
-                    id="filter-tipo-lente"
-                    value={filters.tipoLente}
-                    onChange={(e) => handleFilterChange('tipoLente', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos los tipos</option>
-                    <option value="monofocal">Monofocal</option>
-                    <option value="bifocal">Bifocal</option>
-                    <option value="progresivo">Progresivo</option>
-                    <option value="ocupacional">Ocupacional</option>
-                  </select>
-                </div>
+              {/* Tipo de Lente */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo de Lente
+                </label>
+                <select
+                  value={filters.tipoLente}
+                  onChange={(e) => handleFilterChange('tipoLente', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                >
+                  <option value="todos">Todos los tipos</option>
+                  <option value="graduado">Graduado</option>
+                  <option value="sol">Sol</option>
+                  <option value="contacto">Contacto</option>
+                  <option value="proteccion">Protección</option>
+                </select>
+              </div>
 
-                {/* Filtro por Promoción */}
-                <div>
-                  <label htmlFor="filter-promocion" className="block text-sm font-medium text-gray-700 mb-2">
-                    Promoción
-                  </label>
-                  <select
-                    id="filter-promocion"
-                    value={filters.enPromocion}
-                    onChange={(e) => handleFilterChange('enPromocion', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos</option>
-                    <option value="con_promocion">Con promoción</option>
-                    <option value="sin_promocion">Sin promoción</option>
-                  </select>
-                </div>
+              {/* Promoción */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Promoción
+                </label>
+                <select
+                  value={filters.enPromocion}
+                  onChange={(e) => handleFilterChange('enPromocion', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="con_promocion">En promoción</option>
+                  <option value="sin_promocion">Sin promoción</option>
+                </select>
+              </div>
 
-                {/* Filtro por Stock */}
-                <div>
-                  <label htmlFor="filter-stock" className="block text-sm font-medium text-gray-700 mb-2">
-                    Stock
-                  </label>
-                  <select
-                    id="filter-stock"
-                    value={filters.stock}
-                    onChange={(e) => handleFilterChange('stock', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos</option>
-                    <option value="con_stock">Con stock</option>
-                    <option value="sin_stock">Sin stock</option>
-                  </select>
-                </div>
+              {/* Stock */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Stock
+                </label>
+                <select
+                  value={filters.stock}
+                  onChange={(e) => handleFilterChange('stock', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                >
+                  <option value="todos">Todos</option>
+                  <option value="con_stock">Con stock</option>
+                  <option value="sin_stock">Sin stock</option>
+                </select>
+              </div>
 
-                {/* Filtro por Material */}
-                <div>
-                  <label htmlFor="filter-material" className="block text-sm font-medium text-gray-700 mb-2">
-                    Material
-                  </label>
-                  <select
-                    id="filter-material"
-                    value={filters.material}
-                    onChange={(e) => handleFilterChange('material', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos los materiales</option>
-                    {uniqueMateriales.map(material => (
-                      <option key={material} value={material}>{material}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Material */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Material
+                </label>
+                <select
+                  value={filters.material}
+                  onChange={(e) => handleFilterChange('material', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                >
+                  <option value="todos">Todos los materiales</option>
+                  {uniqueMateriales.map((material) => (
+                    <option key={material} value={material}>
+                      {material}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {/* Filtro por Color */}
-                <div>
-                  <label htmlFor="filter-color" className="block text-sm font-medium text-gray-700 mb-2">
-                    Color
-                  </label>
-                  <select
-                    id="filter-color"
-                    value={filters.color}
-                    onChange={(e) => handleFilterChange('color', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos los colores</option>
-                    {uniqueColores.map(color => (
-                      <option key={color} value={color}>{color}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Color */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Color
+                </label>
+                <select
+                  value={filters.color}
+                  onChange={(e) => handleFilterChange('color', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                >
+                  <option value="todos">Todos los colores</option>
+                  {uniqueColores.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                {/* Filtro por Rango de Precio */}
-                <div className="md:col-span-2 lg:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Precio</label>
-                  <div className="flex space-x-2">
-                    <input
-                      type="number"
-                      placeholder="Min $"
-                      value={filters.precioMin}
-                      onChange={(e) => handleFilterChange('precioMin', e.target.value)}
-                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      min="0"
-                      step="0.01"
-                      aria-label="Precio mínimo"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Max $"
-                      value={filters.precioMax}
-                      onChange={(e) => handleFilterChange('precioMax', e.target.value)}
-                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      min="0"
-                      step="0.01"
-                      aria-label="Precio máximo"
-                    />
-                  </div>
-                </div>
-
-                {/* Filtro por Fecha de Creación */}
-                <div className="md:col-span-2 lg:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Creación</label>
-                  <div className="flex space-x-2">
-                    <div className="flex-1">
-                      <input
-                        type="date"
-                        value={filters.fechaDesde}
-                        onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                        aria-label="Fecha desde"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <input
-                        type="date"
-                        value={filters.fechaHasta}
-                        onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                        aria-label="Fecha hasta"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex text-xs text-gray-500 mt-1 space-x-4">
-                    <span>Desde</span>
-                    <span>Hasta</span>
-                  </div>
+              {/* Rango de precios */}
+              <div className="lg:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rango de Precio (USD)
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="number"
+                    placeholder="Mínimo"
+                    value={filters.precioMin}
+                    onChange={(e) => handleFilterChange('precioMin', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Máximo"
+                    value={filters.precioMax}
+                    onChange={(e) => handleFilterChange('precioMax', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
                 </div>
               </div>
 
-              {/* Botones de acción del panel de filtros */}
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={clearAllFilters}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Limpiar Todo
-                </button>
-                <button
-                  onClick={() => setShowFiltersPanel(false)}
-                  className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                >
-                  Aplicar Filtros
-                </button>
+              {/* Rango de fechas */}
+              <div className="lg:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rango de Fecha de Creación
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="date"
+                    value={filters.fechaDesde}
+                    onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                  <input
+                    type="date"
+                    value={filters.fechaHasta}
+                    onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
         )}
-        
-        {/* TABLA DE DATOS */}
-        <div className="overflow-x-auto">
-          <div style={{ minWidth: '1200px' }}>
-            <DataTable
-              columns={TABLE_COLUMNS}
-              data={currentLentes}
-              renderRow={renderRow}
-              isLoading={false}
-              noDataMessage="No se encontraron lentes"
-              noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Aún no hay lentes registrados'}
-            />
-          </div>
-        </div>
-        
+
+        {/* Tabla de datos */}
+        <DataTable
+          columns={TABLE_COLUMNS}
+          data={currentLentes}
+          renderRow={renderRow}
+          emptyMessage="No se encontraron lentes que coincidan con los criterios de búsqueda."
+        />
+
+        {/* Paginación */}
         <Pagination {...paginationProps} />
       </div>
 
-      {/* MODALES */}
-      {/* Modal de formulario */}
-      <LentesFormModal
-        isOpen={showAddEditModal}
-        onClose={handleCloseModals}
-        onSubmit={handleFormSubmit}
-        title={selectedLente ? "Editar Lente" : "Agregar Nuevo Lente"}
-        formData={formData}
-        setFormData={setFormData}
-        handleInputChange={handleInputChange}
-        errors={errors}
-        isEditing={!!selectedLente}
-        categorias={categorias}
-        marcas={marcas}
-        promociones={promociones}
-        sucursales={sucursales}
-        selectedLente={selectedLente}
-      />
+      {/* Modales */}
+      {showAddEditModal && (
+        <LentesFormModal
+          isOpen={showAddEditModal}
+          onClose={handleCloseModals}
+          onSubmit={handleFormSubmit}
+          formData={formData}
+          handleInputChange={handleInputChange}
+          errors={errors}
+          categorias={categorias}
+          marcas={marcas}
+          promociones={promociones}
+          sucursales={sucursales}
+          selectedLente={selectedLente}
+        />
+      )}
 
-      {/* Modal de detalles mejorado */}
-      <DetailModal
-        isOpen={showDetailModal}
-        onClose={handleCloseModals}
-        title="Detalles del Lente"
-        item={selectedLente}
-        data={selectedLente ? [
-          { label: "Nombre", value: selectedLente.nombre },
-          { label: "Descripción", value: selectedLente.descripcion },
-          { label: "Categoría", value: selectedLente.categoriaId?.nombre || selectedLente.categoriaId },
-          { label: "Marca", value: selectedLente.marcaId?.nombre || selectedLente.marcaId },
-          { label: "Línea", value: selectedLente.linea },
-          { label: "Material", value: selectedLente.material },
-          { label: "Color", value: selectedLente.color },
-          { label: "Tipo de Lente", value: selectedLente.tipoLente },
-          { label: "Precio Base", value: `${(selectedLente.precioBase || 0).toFixed(2)}` },
-          { 
-            label: "Precio Actual", 
-            value: `${(selectedLente.precioActual || selectedLente.precioBase || 0).toFixed(2)}`,
-            color: selectedLente.enPromocion ? 'text-green-600' : 'text-gray-900'
-          },
-          { 
-            label: "Estado", 
-            value: selectedLente.enPromocion ? 'En Promoción' : 'Precio Normal',
-            color: selectedLente.enPromocion ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-          },
-          ...(selectedLente.enPromocion && selectedLente.promocionId ? [{
-            label: "Promoción Aplicada",
-            value: selectedLente.promocionId?.nombre || 'Promoción sin nombre',
-            color: 'text-orange-600'
-          }] : []),
-          { label: "Ancho Puente", value: `${selectedLente.medidas?.anchoPuente || 'N/A'} mm` },
-          { label: "Altura", value: `${selectedLente.medidas?.altura || 'N/A'} mm` },
-          { label: "Ancho", value: `${selectedLente.medidas?.ancho || 'N/A'} mm` },
-          { 
-            label: "Stock Total", 
-            value: `${getTotalStock(selectedLente)} unidades`
-          },
-          { 
-            label: "Disponibilidad por Sucursal", 
-            value: selectedLente.sucursales?.map(s => 
-              `${s.nombreSucursal || s.sucursalId?.nombre}: ${s.stock || 0} unidades`
-            ).join(' | ') || 'Sin stock'
-          },
-          { label: "Imágenes", value: `${selectedLente.imagenes?.length || 0} imagen(es)` },
-          { label: "Fecha de Creación", value: selectedLente.fechaCreacion ? new Date(selectedLente.fechaCreacion).toLocaleDateString('es-ES') : 'N/A' }
-        ] : []}
-      />
+      {showDetailModal && selectedLente && (
+        <DetailModal
+          isOpen={showDetailModal}
+          onClose={handleCloseModals}
+          title="Detalles del Lente"
+          data={selectedLente}
+          type="lente"
+        />
+      )}
 
-      {/* Modal de confirmación de eliminación */}
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={handleCloseModals}
-        onConfirm={handleDelete}
-        title="Confirmar Eliminación"
-        message={`¿Estás seguro de que deseas eliminar el lente "${selectedLente?.nombre}"? Esta acción no se puede deshacer.`}
-        confirmLabel="Sí, eliminar"
-        cancelLabel="Cancelar"
-        type="danger"
-      />
-
-      {/* OVERLAY PARA DROPDOWN */}
-      {showSortDropdown && (
-        <div 
-          className="fixed inset-0 z-10" 
-          onClick={() => setShowSortDropdown(false)}
-          aria-hidden="true"
+      {showDeleteModal && selectedLente && (
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={handleCloseModals}
+          onConfirm={handleDelete}
+          title="Eliminar Lente"
+          message={`¿Estás seguro de que deseas eliminar el lente "${selectedLente.nombre}"? Esta acción no se puede deshacer.`}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          variant="danger"
         />
       )}
     </div>

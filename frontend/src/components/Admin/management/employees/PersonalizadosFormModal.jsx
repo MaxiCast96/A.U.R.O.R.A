@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import FormModal from '../../ui/FormModal';
 import { User, Package, Settings, Calendar, DollarSign, AlertCircle, Save, Glasses, Star } from 'lucide-react';
 
+// Función auxiliar para obtener valores anidados
+const getNestedValue = (obj, path) => {
+  const keys = path.split('.');
+  let current = obj;
+  for (const key of keys) {
+    current = current?.[key];
+    if (current === undefined) return '';
+  }
+  return current || '';
+};
+
 // Componente para campos de entrada mejorados
 const EnhancedField = ({ 
   field, 
@@ -223,6 +234,48 @@ const PersonalizadosFormModal = ({
   selectedPersonalizado = null
 }) => {
   const isEditing = !!selectedPersonalizado;
+  // NUEVOS ESTADOS PARA LOADING Y ERROR
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
+  // CORRECCIÓN: Manejar el evento correctamente
+  const handleFormSubmit = async (e) => {
+    // Prevenir el comportamiento por defecto del formulario
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    // Validar campos requeridos
+    const requiredFields = ['clienteId', 'productoBaseId', 'nombre', 'categoria', 'descripcion', 'marcaId', 'material', 'color', 'tipoLente', 'precioCalculado', 'fechaEntregaEstimada'];
+    const hasErrors = requiredFields.some(field => !formData[field]);
+    
+    // Validar campos anidados
+    const nestedRequired = ['cotizacion.total', 'cotizacion.validaHasta'];
+    const hasNestedErrors = nestedRequired.some(field => {
+      const value = getNestedValue(formData, field);
+      return !value;
+    });
+    
+    if (hasErrors || hasNestedErrors) {
+      setHasValidationErrors(true);
+      return;
+    }
+
+    setHasValidationErrors(false);
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      // CORRECCIÓN: Pasar el evento a onSubmit
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar producto personalizado:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sections = [
     {
@@ -373,8 +426,6 @@ const PersonalizadosFormModal = ({
       ))}
 
       
-
-      
     </div>
   );
 
@@ -382,7 +433,7 @@ const PersonalizadosFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -392,21 +443,15 @@ const PersonalizadosFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      // NUEVAS PROPS
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
+      errorDuration={1000}
     >
       {customContent}
     </FormModal>
   );
-};
-
-// Función auxiliar para obtener valores anidados
-const getNestedValue = (obj, path) => {
-  const keys = path.split('.');
-  let current = obj;
-  for (const key of keys) {
-    current = current?.[key];
-    if (current === undefined) return '';
-  }
-  return current || '';
 };
 
 export default PersonalizadosFormModal;

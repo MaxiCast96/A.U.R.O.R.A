@@ -21,7 +21,7 @@ const StatCard = ({ title, value, icon }) => (
   </div>
 );
 
-const ArosContent = () => {
+const LentesCristalesContent = () => {
   const base = API_CONFIG.BASE_URL;
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -426,4 +426,4 @@ const ArosContent = () => {
   );
 };
 
-export default ArosContent;
+export default LentesCristalesContent;

@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Sidebar from '../../components/Admin/Sidebar';
 import '../../App.css';
 import { 
-  LayoutDashboard, Users, UserCheck, Eye, Package, Glasses, ShoppingBag, Tags, Bookmark, Calendar, FileText, Receipt, Settings, MapPin, Percent, DollarSign
+  LayoutDashboard, Users, UserCheck, Eye, Package, Glasses, ShoppingBag, Tags, Bookmark, Calendar, FileText, Receipt, Settings, MapPin, Percent, DollarSign, Diamond
 } from 'lucide-react';
 import Clientes from '../../components/Admin/management/Clientes';
 import Empleados from '../../components/Admin/management/Empleados';
@@ -76,7 +76,7 @@ const OpticaDashboard = () => {
     { id: 'empleados', icon: UserCheck, label: 'Empleados', section: 'Personal', allowedRoles: ['Administrador', 'Gerente'] },
     { id: 'optometristas', icon: Eye, label: 'Optometristas', section: 'Personal', allowedRoles: ['Administrador', 'Gerente'] },
     { id: 'aros', icon: Glasses, label: 'Aros', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
-    { id: 'lentes-cristales', icon: Glasses, label: 'Lentes (Cristales)', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
+    { id: 'lentes-cristales', icon: Diamond, label: 'Lentes (Cristales)', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
     { id: 'accesorios', icon: ShoppingBag, label: 'Accesorios', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Empleado'] },
     { id: 'personalizados', icon: Package, label: 'Personalizados', section: 'Productos', allowedRoles: ['Administrador', 'Gerente', 'Técnico', 'Vendedor', 'Empleado'] },
     { id: 'categorias', icon: Tags, label: 'Categorías', section: 'Productos', allowedRoles: ['Administrador', 'Gerente'] },

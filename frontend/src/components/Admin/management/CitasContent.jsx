@@ -676,7 +676,7 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">Citas para Hoy</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">{totalCitasHoy}</p>
+              <p className="text-3xl font-bold text-cyan-600 mt-2">{totalCitasHoy}</p>
             </div>
             <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
               <Calendar className="w-6 h-6 text-cyan-600" />
@@ -687,10 +687,10 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">Pendientes</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-2">{citasPendientes}</p>
+              <p className="text-3xl font-bold text-cyan-600 mt-2">{citasPendientes}</p>
             </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-              <Clock className="w-6 h-6 text-yellow-600" />
+            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+              <Clock className="w-6 h-6 text-cyan-600" />
             </div>
           </div>
         </div>
@@ -698,10 +698,10 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-500 text-sm font-medium">Confirmadas</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{citasConfirmadas}</p>
+              <p className="text-3xl font-bold text-cyan-600 mt-2">{citasConfirmadas}</p>
             </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-green-600" />
+            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
+              <CheckCircle className="w-6 h-6 text-cyan-600" />
             </div>
           </div>
         </div>
@@ -710,7 +710,7 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="bg-cyan-500 text-white p-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">GestiÃƒÂ³n de Citas</h2>
+            <h2 className="text-2xl font-bold">Gestión de Citas</h2>
             <button
               onClick={handleOpenAddModal}
               className="bg-white text-cyan-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2"
@@ -1122,12 +1122,12 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
                 </option>
               ))}
             </select>
-            <span className="text-gray-700">por pÃƒÂ¡gina</span>
+            <span className="text-gray-700">por página</span>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={goToFirstPage} disabled={currentPage === 0} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{"<<"}</button>
             <button onClick={goToPreviousPage} disabled={currentPage === 0} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{"<"}</button>
-            <span className="text-gray-700 font-medium">PÃƒÂ¡gina {currentPage + 1} de {totalPages}</span>
+            <span className="text-gray-700 font-medium">Página {currentPage + 1} de {totalPages}</span>
             <button onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{">"}</button>
             <button onClick={goToLastPage} disabled={currentPage === totalPages - 1} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{">>"}</button>
           </div>
