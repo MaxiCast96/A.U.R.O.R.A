@@ -185,7 +185,7 @@ const getIconComponent = (iconName) => {
   return <IconComponent className="w-4 h-4" />;
 };
 
-// Componente para el dropdown de categorÃ­as
+// Componente para el dropdown de categorías
 const CategoryDropdown = ({ 
   categories, 
   selectedCategory, 
@@ -212,7 +212,7 @@ const CategoryDropdown = ({
           {selectedCategory === 'todas' ? (
             <>
               <Package className="w-4 h-4 text-gray-500" />
-              <span className="text-gray-700">Todas las categorÃ­as</span>
+              <span className="text-gray-700">Todas las categorías</span>
             </>
           ) : selectedCategoryData ? (
             <>
@@ -242,7 +242,7 @@ const CategoryDropdown = ({
             {loading ? (
               <div className="p-4 text-center text-gray-500">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-cyan-500 mx-auto mb-2"></div>
-                Cargando categorÃ­as...
+                Cargando categorías...
               </div>
             ) : error ? (
               <div className="p-4 text-center text-red-500">
@@ -262,13 +262,13 @@ const CategoryDropdown = ({
                       <Package className="w-4 h-4 text-gray-500" />
                     </div>
                     <div>
-                      <div className="font-medium">Todas las categorÃ­as</div>
+                      <div className="font-medium">Todas las categorías</div>
                       <div className="text-xs text-gray-500">Ver todos los productos</div>
                     </div>
                   </div>
                 </button>
 
-                {/* CategorÃ­as */}
+                {/* categorías */}
                 {categories.map((category) => (
                   <button
                     key={category._id}
@@ -291,7 +291,7 @@ const CategoryDropdown = ({
 
                 {categories.length === 0 && !loading && (
                   <div className="p-4 text-center text-gray-500">
-                    No hay categorÃ­as disponibles
+                    No hay categorías disponibles
                   </div>
                 )}
               </>
@@ -851,7 +851,7 @@ const PersonalizadosContent = () => {
                 }
             } catch (error) {
                 console.error('Error fetching categories:', error);
-                setCategoryError('No se pudieron cargar las categorÃ­as');
+                setCategoryError('No se pudieron cargar las categorías');
             } finally {
                 setLoadingCategories(false);
             }
@@ -891,7 +891,7 @@ const PersonalizadosContent = () => {
         label: c.nombre || c.fullName || c.razonSocial || c.email || String(c._id)
     })) : []), [clientesData]);
 
-    // Opciones de categorÃ­as para el select
+    // Opciones de categorías para el select
     const categoriaOptions = useMemo(() => {
         if (loadingCategories) return [];
         return categories.map(cat => ({
@@ -1151,7 +1151,7 @@ const PersonalizadosContent = () => {
                                     )}
                                 </div>
 
-                                {/* Dropdown de categorÃ­as */}
+                                {/* Dropdown de categorías */}
                                 <CategoryDropdown
                                     categories={categories}
                                     selectedCategory={selectedCategory}

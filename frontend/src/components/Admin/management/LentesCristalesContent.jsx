@@ -139,21 +139,23 @@ const LentesCristalesContent = () => {
   const [filters, setFilters] = useState(INITIAL_FILTERS);
 
   const initialFormData = {
-    nombre: '',
-    descripcion: '',
-    tipo: '',
-    material: '',
-    indiceRefraccion: '',
-    tratamiento: '',
-    color: '',
-    diametro: '',
-    esferico: '',
-    cilindrico: '',
-    precio: 0,
-    stock: 0,
-    sucursales: [],
-    fechaCreacion: new Date().toISOString().split('T')[0],
-  };
+  nombre: '',
+  descripcion: '',
+  categoriaId: '',
+  marcaId: '',
+  material: '',
+  color: '',
+  tipoLente: '',
+  precioBase: 0,
+  precioActual: 0,
+  linea: '',
+  medidas: { anchoPuente: '', altura: '', ancho: '' },
+  imagenes: [],
+  enPromocion: false,
+  promocionId: '',
+  fechaCreacion: new Date().toISOString().split('T')[0],
+  sucursales: [],
+};
 
   const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm(
     initialFormData,

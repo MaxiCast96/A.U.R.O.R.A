@@ -106,13 +106,48 @@ async function deleteAros(req, res) {
 
 // UPDATE - Actualiza aros existentes
 async function updateAros(req, res) {
+    console.log('╔════════════════════════════════════════╗');
+    console.log('║   🔧 UPDATE AROS - BACKEND            ║');
+    console.log('╚════════════════════════════════════════╝');
+    
+    console.log('\n📥 req.body recibido:', JSON.stringify(req.body, null, 2));
+    console.log('📥 req.params.id:', req.params.id);
+    console.log('📥 Content-Type:', req.headers['content-type']);
+    
+    // CRÍTICO: Validar que req.body existe
+    if (!req.body || Object.keys(req.body).length === 0) {
+        console.error('❌ req.body está vacío o undefined');
+        return res.status(400).json({ 
+            success: false, 
+            message: 'No se recibieron datos en el body' 
+        });
+    }
+    
     let sucursales = req.body.sucursales;
-    try { console.log('[updateAros] params.id:', req.params.id); } catch {}
-    try { console.log('[updateAros] raw sucursales:', typeof req.body.sucursales, req.body.sucursales); } catch {}
-
+    console.log('🏪 sucursales raw (tipo):', typeof sucursales);
+    console.log('🏪 sucursales raw (valor):', sucursales);
+    
+    // Parsear sucursales si viene como string (form-data)
     if (typeof sucursales === "string") {
-        try { sucursales = JSON.parse(sucursales); } 
-        catch (e) { return res.json({ message: "Error en el formato de sucursales" }); }
+        try {
+            sucursales = JSON.parse(sucursales);
+            console.log('✅ Sucursales parseadas:', sucursales);
+        } catch (e) {
+            console.error('❌ Error parseando sucursales:', e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: "Error en el formato de sucursales: " + e.message 
+            });
+        }
+    }
+    
+    // Validar que sucursales existe después del parsing
+    if (!sucursales) {
+        console.error('❌ Sucursales es undefined después del parsing');
+        return res.status(400).json({ 
+            success: false, 
+            message: 'El campo sucursales es requerido' 
+        });
     }
 
     const {
@@ -153,13 +188,17 @@ async function updateAros(req, res) {
 
         let sucursalesLimpias = [];
         if (Array.isArray(sucursales)) {
+            console.log('🔄 Procesando', sucursales.length, 'sucursales...');
             sucursalesLimpias = sucursales
                 .map((s) => {
                     const id = (s && s.sucursalId && typeof s.sucursalId === 'object' && s.sucursalId._id)
                         ? s.sucursalId._id : s?.sucursalId;
                     const idStr = typeof id === 'string' ? id : '';
                     const valido = /^[a-fA-F0-9]{24}$/.test(idStr);
-                    if (!valido) return null;
+                    if (!valido) {
+                        console.warn('⚠️ Sucursal con ID inválido:', s);
+                        return null;
+                    }
                     return {
                         sucursalId: idStr,
                         nombreSucursal: s?.nombreSucursal || '',
@@ -167,6 +206,13 @@ async function updateAros(req, res) {
                     };
                 })
                 .filter(Boolean);
+            console.log('✅ Sucursales procesadas:', sucursalesLimpias.length);
+        } else {
+            console.error('❌ sucursales no es un array:', typeof sucursales);
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Sucursales debe ser un array' 
+            });
         }
 
         const setData = {
@@ -201,6 +247,8 @@ async function updateAros(req, res) {
             delete setData.promocionId;
         }
 
+        console.log('📤 Actualizando documento con', Object.keys(setData).length, 'campos');
+        
         const updated = await Aros.findByIdAndUpdate(
             req.params.id,
             updateDoc,
@@ -211,9 +259,10 @@ async function updateAros(req, res) {
             return res.status(404).json({ success: false, message: "Aro no encontrado" });
         }
 
+        console.log('✅ Aro actualizado exitosamente');
         res.json({ success: true, message: "Aro actualizado", data: updated });
     } catch (error) {
-        console.log("Error actualizando aros: ", error);
+        console.error("❌ Error actualizando aros:", error);
         const status = error.name === 'ValidationError' ? 400 : 500;
         res.status(status).json({ success: false, message: "Error actualizando aros: " + error.message });
     }

@@ -18,8 +18,7 @@ import LentesFormModal from '../management/lentes/LentesFormModal';
 // Iconos
 import { 
   Search, Plus, Trash2, Eye, Edit, Glasses, TrendingUp, Package, DollarSign, Tag, 
-  Building2, Palette, Layers, Filter, X, ChevronDown, SortAsc, SortDesc, CheckCircle,
-  RefreshCcw
+  Building2, Palette, Layers, Filter, X, ChevronDown, SortAsc, SortDesc, CheckCircle
 } from 'lucide-react';
 
 // Configuración
@@ -63,12 +62,12 @@ const TABLE_COLUMNS = [
   { header: 'Acciones', key: 'acciones' }
 ];
 
-// Helpers para usar BASE_URL dinámico + fallback per-request
+// Helpers de API
 const getBase = () => API_CONFIG.BASE_URL;
 const PROD_FALLBACK = 'https://aurora-production-7e57.up.railway.app/api';
 const withBase = (path, base = getBase()) => `${base}${path}`;
 
-// --- COMPONENTE SKELETON LOADER MEMOIZADO ---
+// --- COMPONENTE SKELETON LOADER ---
 const SkeletonLoader = React.memo(() => (
   <div className="animate-pulse">
     {/* Skeleton para las estadísticas */}
@@ -187,22 +186,24 @@ const SkeletonLoader = React.memo(() => (
 ));
 
 const LentesContent = () => {
-  // --- ESTADOS PRINCIPALES ---
+  // Estados principales
   const [lentes, setLentes] = useState([]);
-  const [categorias, setCategorias] = useState([]);
-  const [marcas, setMarcas] = useState([]);
-  const [promociones, setPromociones] = useState([]);
-  const [sucursales, setSucursales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLente, setSelectedLente] = useState(null);
   const [alert, setAlert] = useState(null);
-
-  // --- ESTADOS DE MODALES ---
+  
+  // Estados de modales
   const [showAddEditModal, setShowAddEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // --- ESTADOS DE FILTROS Y ORDENAMIENTO ---
+  // Estados para datos relacionados
+  const [categorias, setCategorias] = useState([]);
+  const [marcas, setMarcas] = useState([]);
+  const [promociones, setPromociones] = useState([]);
+  const [sucursales, setSucursales] = useState([]);
+
+  // Estados de filtros y ordenamiento
   const [searchTerm, setSearchTerm] = useState('');
   const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -210,7 +211,7 @@ const LentesContent = () => {
   const [sortOrder, setSortOrder] = useState('desc');
   const [filters, setFilters] = useState(INITIAL_FILTERS);
 
-  // --- DATOS INICIALES DEL FORMULARIO ---
+  // Datos iniciales del formulario
   const initialFormData = {
     nombre: '',
     descripcion: '',
@@ -222,11 +223,7 @@ const LentesContent = () => {
     precioBase: 0,
     precioActual: 0,
     linea: '',
-    medidas: {
-      anchoPuente: '',
-      altura: '',
-      ancho: ''
-    },
+    medidas: { anchoPuente: '', altura: '', ancho: '' },
     imagenes: [],
     enPromocion: false,
     promocionId: '',
@@ -234,59 +231,48 @@ const LentesContent = () => {
     sucursales: [],
   };
 
-  // --- HOOK DE FORMULARIO CON VALIDACIÓN ---
-  const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm(
+  // Hook de formulario con validación
+  const { formData, setFormData, handleInputChange, resetForm, errors, validateForm } = useForm(
     initialFormData,
     (data) => {
       const newErrors = {};
       
-      // Validaciones básicas
       if (!data.nombre?.trim()) newErrors.nombre = 'El nombre es requerido';
       if (!data.descripcion?.trim()) newErrors.descripcion = 'La descripción es requerida';
       if (!data.categoriaId) newErrors.categoriaId = 'La categoría es requerida';
       if (!data.marcaId) newErrors.marcaId = 'La marca es requerida';
       if (!data.material?.trim()) newErrors.material = 'El material es requerido';
       if (!data.color?.trim()) newErrors.color = 'El color es requerido';
-      if (!data.tipoLente?.trim()) newErrors.tipoLente = 'El tipo de lente es requerido';
+      if (!data.tipoLente) newErrors.tipoLente = 'El tipo de lente es requerido';
       if (!data.linea?.trim()) newErrors.linea = 'La línea es requerida';
 
-      // Validaciones de precios
       if (!data.precioBase || data.precioBase <= 0) {
         newErrors.precioBase = 'El precio base debe ser mayor a 0';
       }
 
       if (data.enPromocion) {
-        if (!data.promocionId) {
-          newErrors.promocionId = 'Debe seleccionar una promoción';
-        }
-        
+        if (!data.promocionId) newErrors.promocionId = 'Debe seleccionar una promoción';
         if (!data.precioActual || data.precioActual <= 0) {
           newErrors.precioActual = 'El precio promocional debe ser mayor a 0';
         } else if (data.precioActual >= data.precioBase) {
           newErrors.precioActual = 'El precio promocional debe ser menor al precio base';
         }
       }
-
-      // Validación de Medidas
+      
       if (data.medidas) {
-        if (!data.medidas.anchoPuente || data.medidas.anchoPuente <= 0) 
-          newErrors['medidas.anchoPuente'] = 'Ancho de puente inválido';
-        if (!data.medidas.altura || data.medidas.altura <= 0) 
-          newErrors['medidas.altura'] = 'Altura inválida';
-        if (!data.medidas.ancho || data.medidas.ancho <= 0) 
-          newErrors['medidas.ancho'] = 'Ancho inválido';
+        if (!data.medidas.anchoPuente || data.medidas.anchoPuente <= 0) newErrors['medidas.anchoPuente'] = 'Ancho de puente inválido';
+        if (!data.medidas.altura || data.medidas.altura <= 0) newErrors['medidas.altura'] = 'Altura inválida';
+        if (!data.medidas.ancho || data.medidas.ancho <= 0) newErrors['medidas.ancho'] = 'Ancho inválido';
       }
 
-      // Validación de Imágenes
       if (!data.imagenes || data.imagenes.length === 0) {
-        newErrors.imagenes = 'Se requiere al menos una imagen';
+        newErrors.imagenes = 'Debe agregar al menos una imagen';
       }
 
-      // Validación de Stock por Sucursal
       if (!data.sucursales || data.sucursales.length === 0) {
         newErrors.sucursales = 'Debe seleccionar al menos una sucursal';
       }
-
+      
       const hasInvalidStock = data.sucursales?.some(s => s.stock < 0);
       if (hasInvalidStock) {
         newErrors.sucursales = 'El stock no puede ser negativo';
@@ -296,7 +282,7 @@ const LentesContent = () => {
     }
   );
 
-  // --- FUNCIONES UTILITARIAS ---
+  // Funciones utilitarias
   const showAlert = useCallback((type, message) => {
     setAlert({ type, message });
     const timer = setTimeout(() => setAlert(null), 5000);
@@ -307,7 +293,7 @@ const LentesContent = () => {
     return lente.sucursales ? lente.sucursales.reduce((sum, s) => sum + (s.stock || 0), 0) : 0;
   }, []);
 
-  // --- FUNCIÓN PARA MANEJAR ORDENAMIENTO ---
+  // Función para manejar ordenamiento
   const handleSortChange = useCallback((sortValue) => {
     const [field, order] = sortValue.split('-');
     setSortBy(field);
@@ -315,7 +301,7 @@ const LentesContent = () => {
     setShowSortDropdown(false);
   }, []);
 
-  // --- FUNCIÓN PARA ORDENAR DATOS ---
+  // Función para ordenar datos
   const sortData = useCallback((data) => {
     return [...data].sort((a, b) => {
       let valueA, valueB;
@@ -347,24 +333,20 @@ const LentesContent = () => {
     });
   }, [sortBy, sortOrder, getTotalStock]);
 
-  // --- FUNCIÓN PARA APLICAR FILTROS AVANZADOS ---
+  // Función para aplicar filtros avanzados
   const applyAdvancedFilters = useCallback((lente) => {
-    // Filtro por categoría
     if (filters.categoria !== 'todas' && lente.categoriaId?._id !== filters.categoria) {
       return false;
     }
 
-    // Filtro por marca
     if (filters.marca !== 'todas' && lente.marcaId?._id !== filters.marca) {
       return false;
     }
 
-    // Filtro por tipo de lente
     if (filters.tipoLente !== 'todos' && lente.tipoLente?.toLowerCase() !== filters.tipoLente.toLowerCase()) {
       return false;
     }
 
-    // Filtro por promoción
     if (filters.enPromocion === 'con_promocion' && !lente.enPromocion) {
       return false;
     }
@@ -372,7 +354,6 @@ const LentesContent = () => {
       return false;
     }
 
-    // Filtro por stock
     const stockTotal = getTotalStock(lente);
     if (filters.stock === 'con_stock' && stockTotal <= 0) {
       return false;
@@ -381,17 +362,14 @@ const LentesContent = () => {
       return false;
     }
 
-    // Filtro por material
     if (filters.material !== 'todos' && lente.material?.toLowerCase() !== filters.material.toLowerCase()) {
       return false;
     }
 
-    // Filtro por color
     if (filters.color !== 'todos' && lente.color?.toLowerCase() !== filters.color.toLowerCase()) {
       return false;
     }
 
-    // Filtro por precio
     const precio = lente.enPromocion ? lente.precioActual : lente.precioBase;
     if (filters.precioMin && parseFloat(precio || 0) < parseFloat(filters.precioMin)) {
       return false;
@@ -400,7 +378,6 @@ const LentesContent = () => {
       return false;
     }
 
-    // Filtro por fecha de creación
     if (filters.fechaDesde) {
       const fechaDesde = new Date(filters.fechaDesde);
       if (new Date(lente.fechaCreacion || new Date(0)) < fechaDesde) {
@@ -418,12 +395,12 @@ const LentesContent = () => {
     return true;
   }, [filters, getTotalStock]);
 
-  // --- FETCH DE DATOS ---
+  // Fetch de datos
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const baseNow = getBase();
-      const doFetch = async (base) => Promise.all([
+      const doFetch = (base) => Promise.all([
         axios.get(withBase('/lentes', base)),
         axios.get(withBase('/categoria', base)),
         axios.get(withBase('/marcas', base)),
@@ -431,32 +408,33 @@ const LentesContent = () => {
         axios.get(withBase('/sucursales', base)),
       ]);
       
-      let lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes;
+      let res;
       try {
-        [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await doFetch(baseNow);
+        res = await doFetch(baseNow);
       } catch (err) {
-        const isConnRefused = err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK';
-        const isLocal = baseNow.includes('localhost');
-        if (isConnRefused && isLocal) {
-          [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = await doFetch(PROD_FALLBACK);
+        if ((err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK') && baseNow.includes('localhost')) {
+          res = await doFetch(PROD_FALLBACK);
           API_CONFIG.BASE_URL = PROD_FALLBACK;
         } else {
           throw err;
         }
       }
       
-      const lentesData = Array.isArray(lentesRes.data)
-        ? lentesRes.data
-        : (Array.isArray(lentesRes.data?.data) ? lentesRes.data.data : []);
-      
-      setLentes(lentesData);
-      setCategorias(categoriasRes.data);
-      setMarcas(marcasRes.data);
-      setPromociones(promocionesRes.data);
-      setSucursales(sucursalesRes.data);
+      const [lentesRes, categoriasRes, marcasRes, promocionesRes, sucursalesRes] = res;
+      setLentes(Array.isArray(lentesRes.data) ? lentesRes.data : lentesRes.data?.data || []);
+      setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : categoriasRes.data?.data || []);
+      setMarcas(Array.isArray(marcasRes.data) ? marcasRes.data : marcasRes.data?.data || []);
+      setPromociones(Array.isArray(promocionesRes.data) ? promocionesRes.data : promocionesRes.data?.data || []);
+      setSucursales(Array.isArray(sucursalesRes.data) ? sucursalesRes.data : sucursalesRes.data?.data || []);
       
     } catch (error) {
+      console.error("Error fetching data:", error);
       showAlert('error', 'Error al cargar los datos: ' + (error.response?.data?.message || error.message));
+      setLentes([]);
+      setCategorias([]);
+      setMarcas([]);
+      setPromociones([]);
+      setSucursales([]);
     } finally {
       setLoading(false);
     }
@@ -466,11 +444,10 @@ const LentesContent = () => {
     fetchData();
   }, [fetchData]);
 
-  // --- LÓGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÓN ---
+  // Lógica de filtrado, ordenamiento y paginación
   const filteredAndSortedLentes = useMemo(() => {
     let currentLentes = Array.isArray(lentes) ? lentes : [];
 
-    // Filtro por término de búsqueda
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       currentLentes = currentLentes.filter(
@@ -479,22 +456,18 @@ const LentesContent = () => {
           lente.descripcion?.toLowerCase().includes(searchLower) ||
           lente.material?.toLowerCase().includes(searchLower) ||
           lente.color?.toLowerCase().includes(searchLower) ||
-          lente.tipoLente?.toLowerCase().includes(searchLower) ||
-          lente.linea?.toLowerCase().includes(searchLower) ||
-          lente.categoriaId?.nombre?.toLowerCase().includes(searchLower) ||
-          lente.marcaId?.nombre?.toLowerCase().includes(searchLower)
+          lente.marcaId?.nombre?.toLowerCase().includes(searchLower) ||
+          lente.categoriaId?.nombre?.toLowerCase().includes(searchLower)
       );
     }
 
-    // Aplicar filtros avanzados
     currentLentes = currentLentes.filter(applyAdvancedFilters);
-
     return sortData(currentLentes);
   }, [lentes, searchTerm, applyAdvancedFilters, sortData]);
-
+  
   const { paginatedData: currentLentes, ...paginationProps } = usePagination(filteredAndSortedLentes, ITEMS_PER_PAGE);
 
-  // --- FUNCIONES PARA MANEJAR FILTROS ---
+  // Funciones para manejar filtros
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({
       ...prev,
@@ -511,7 +484,7 @@ const LentesContent = () => {
     return searchTerm || 
            filters.categoria !== 'todas' || 
            filters.marca !== 'todas' || 
-           filters.tipoLente !== 'todos' || 
+           filters.tipoLente !== 'todos' ||
            filters.enPromocion !== 'todos' || 
            filters.stock !== 'todos' || 
            filters.material !== 'todos' || 
@@ -522,7 +495,7 @@ const LentesContent = () => {
            filters.fechaHasta;
   }, [searchTerm, filters]);
 
-  // --- OBTENER OPCIONES ÚNICAS ---
+  // Obtener opciones únicas
   const uniqueMateriales = useMemo(() => {
     const materiales = lentes
       .map(l => l.material)
@@ -539,15 +512,22 @@ const LentesContent = () => {
     return colores.sort();
   }, [lentes]);
 
-  // --- FUNCIONES DE MODAL ---
+  const uniqueTiposLente = useMemo(() => {
+    const tipos = lentes
+      .map(l => l.tipoLente)
+      .filter(Boolean)
+      .filter((tipo, index, arr) => arr.indexOf(tipo) === index);
+    return tipos.sort();
+  }, [lentes]);
+
+  // Funciones de manejo de modales
   const handleCloseModals = useCallback(() => {
     setShowAddEditModal(false);
     setShowDetailModal(false);
     setShowDeleteModal(false);
     setSelectedLente(null);
     resetForm();
-    setErrors({});
-  }, [resetForm, setErrors]);
+  }, [resetForm]);
 
   const handleOpenAddModal = useCallback(() => {
     resetForm();
@@ -557,59 +537,61 @@ const LentesContent = () => {
   }, [resetForm, setFormData]);
 
   const handleOpenEditModal = useCallback((lente) => {
-    setSelectedLente(lente);
+  setSelectedLente(lente);
+  
+  const normalizeImages = (images) => {
+    if (!images || !Array.isArray(images)) return [];
     
-    // Normalizar imágenes
-    const normalizeImages = (images) => {
-      if (!images || !Array.isArray(images)) return [];
-      return images.map(img => {
-        if (typeof img === 'string') {
-          return img.startsWith('http') ? img : `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img}`;
-        }
-        if (typeof img === 'object' && img !== null) {
-          return img.secure_url || img.url || (img.public_id ? `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img.public_id}` : '');
-        }
-        return '';
-      }).filter(url => url && url.length > 0);
-    };
+    return images.map(img => {
+      if (typeof img === 'string') {
+        return img;
+      }
+      
+      if (typeof img === 'object' && img !== null) {
+        return img.secure_url || img.url || '';
+      }
+      
+      return '';
+    }).filter(url => url && url.length > 0);
+  };
 
-    // Normalizar sucursales
-    const normalizeSucursales = (sucursales) => {
-      if (!sucursales || !Array.isArray(sucursales)) return [];
-      return sucursales.map(s => ({
-        sucursalId: s.sucursalId?._id || s.sucursalId || s._id || '',
-        nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || s.nombre || '',
-        stock: parseInt(s.stock) || 0
-      }));
-    };
+  const normalizeSucursales = (sucursales) => {
+    if (!sucursales || !Array.isArray(sucursales)) return [];
+    
+    return sucursales.map(s => ({
+      sucursalId: s.sucursalId?._id || s.sucursalId || '',
+      nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || '',
+      stock: parseInt(s.stock) || 0
+    }));
+  };
 
-    const editData = {
-      nombre: lente.nombre || '',
-      descripcion: lente.descripcion || '',
-      categoriaId: lente.categoriaId?._id || lente.categoriaId || '',
-      marcaId: lente.marcaId?._id || lente.marcaId || '',
-      material: lente.material || '',
-      color: lente.color || '',
-      tipoLente: lente.tipoLente || '',
-      precioBase: parseFloat(lente.precioBase) || 0,
-      precioActual: parseFloat(lente.precioActual || lente.precioBase) || 0,
-      linea: lente.linea || '',
-      medidas: {
-        anchoPuente: lente.medidas?.anchoPuente || '',
-        altura: lente.medidas?.altura || '',
-        ancho: lente.medidas?.ancho || '',
-      },
-      imagenes: normalizeImages(lente.imagenes),
-      enPromocion: Boolean(lente.enPromocion),
-      promocionId: lente.promocionId?._id || lente.promocionId || '',
-      fechaCreacion: lente.fechaCreacion ? new Date(lente.fechaCreacion).toISOString().split('T')[0] : '',
-      sucursales: normalizeSucursales(lente.sucursales)
-    };
-
-    setFormData(editData);
-    setShowAddEditModal(true);
-  }, [setFormData]);
-
+  const editData = {
+    nombre: lente.nombre || '',
+    descripcion: lente.descripcion || '',
+    categoriaId: lente.categoriaId?._id || lente.categoriaId || '',
+    marcaId: lente.marcaId?._id || lente.marcaId || '',
+    material: lente.material || '',
+    color: lente.color || '',
+    tipoLente: lente.tipoLente || '',
+    precioBase: parseFloat(lente.precioBase) || 0,
+    precioActual: parseFloat(lente.precioActual || lente.precioBase) || 0,
+    linea: lente.linea || '',
+    medidas: {
+      anchoPuente: lente.medidas?.anchoPuente || '',
+      altura: lente.medidas?.altura || '',
+      ancho: lente.medidas?.ancho || '',
+    },
+    imagenes: normalizeImages(lente.imagenes),
+    enPromocion: Boolean(lente.enPromocion),
+    promocionId: lente.promocionId?._id || lente.promocionId || '',
+    fechaCreacion: lente.fechaCreacion ? new Date(lente.fechaCreacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    sucursales: normalizeSucursales(lente.sucursales)
+  };
+  
+  setFormData(editData);
+  setShowAddEditModal(true);
+}, [setFormData]);
+  
   const handleOpenDetailModal = useCallback((lente) => {
     setSelectedLente(lente);
     setShowDetailModal(true);
@@ -620,111 +602,274 @@ const LentesContent = () => {
     setShowDeleteModal(true);
   }, []);
 
-  // --- FUNCIÓN DE ENVÍO DEL FORMULARIO ---
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
+// Función de envío del formulario
+ const handleFormSubmit = async (e) => {
+  e.preventDefault();
+  
+  console.log('╔════════════════════════════════════════╗');
+  console.log('║   🚀 INICIANDO SUBMIT DEL FORMULARIO   ║');
+  console.log('╚════════════════════════════════════════╝');
+  
+  console.log('\n📋 PASO 1: Datos del formulario ANTES de validación');
+  console.log('formData completo:', JSON.parse(JSON.stringify(formData)));
+  console.log('selectedLente:', selectedLente ? selectedLente._id : 'null (modo creación)');
+  console.log('Modo:', selectedLente ? '📝 EDICIÓN' : '➕ CREACIÓN');
+  
+  console.log('\n✓ PASO 2: Validando formulario...');
+  if (!validateForm()) {
+    console.error('❌ Validación FALLÓ. Errores:', errors);
+    showAlert('error', 'Por favor, corrige los errores del formulario.');
+    return;
+  }
+  console.log('✅ Validación exitosa');
+
+  try {
+    const baseNow = getBase();
+    console.log('\n🌐 PASO 3: URL Base:', baseNow);
+    let response;
     
-    if (!validateForm()) {
-      showAlert('error', 'Por favor, corrige los errores del formulario.');
-      return;
-    }
-
-    try {
-      const medidas = formData.medidas || {};
-      let dataToSend = {
-        nombre: formData.nombre?.trim(),
-        descripcion: formData.descripcion?.trim(),
-        categoriaId: formData.categoriaId,
-        marcaId: formData.marcaId,
-        material: formData.material?.trim(),
-        color: formData.color?.trim(),
-        tipoLente: formData.tipoLente?.trim(),
-        precioBase: Number(formData.precioBase),
-        precioActual: formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase),
-        linea: formData.linea?.trim(),
-        medidas: {
-          anchoPuente: Number(medidas.anchoPuente),
-          altura: Number(medidas.altura),
-          ancho: Number(medidas.ancho),
-        },
-        imagenes: Array.isArray(formData.imagenes) ? formData.imagenes : [],
-        enPromocion: !!formData.enPromocion,
-        promocionId: formData.enPromocion ? formData.promocionId : undefined,
-        fechaCreacion: formData.fechaCreacion,
-        sucursales: Array.isArray(formData.sucursales) ? formData.sucursales
-          .map(s => ({
-            sucursalId: typeof s.sucursalId === 'object' && s.sucursalId?._id ? s.sucursalId._id : s.sucursalId,
-            nombreSucursal: s.nombreSucursal || (sucursales.find(x => x._id === (typeof s.sucursalId === 'object' ? s.sucursalId?._id : s.sucursalId))?.nombre) || '',
-            stock: Number(s.stock ?? 0),
-          }))
-          .filter(s => typeof s.sucursalId === 'string' && /^[a-fA-F0-9]{24}$/.test(s.sucursalId))
-          : [],
-      };
-
-      const baseNow = getBase();
-      const safeRequest = async (fn) => {
-        try {
-          return await fn(baseNow);
-        } catch (err) {
-          const isConnRefused = err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK';
-          const isLocal = baseNow.includes('localhost');
-          if (isConnRefused && isLocal) {
-            API_CONFIG.BASE_URL = PROD_FALLBACK;
-            return await fn(PROD_FALLBACK);
-          }
-          throw err;
-        }
-      };
-
-      if (selectedLente) {
-        await safeRequest((base) => axios.put(withBase(`/lentes/${selectedLente._id}`, base), dataToSend));
-        showAlert('success', 'Lente actualizado exitosamente');
-      } else {
-        await safeRequest((base) => axios.post(withBase('/lentes', base), dataToSend));
-        showAlert('success', 'Lente creado exitosamente');
+    if (selectedLente) {
+      console.log('\n╔═══════════════════════════════════════════╗');
+      console.log('║   📄 MODO ACTUALIZACIÓN (PUT FormData)    ║');
+      console.log('╚═══════════════════════════════════════════╝');
+      
+      console.log('\n🔧 Construyendo FormData para UPDATE...');
+      
+      // 🔥 VALIDACIÓN CRÍTICA: Asegurarse de que sucursales existe
+      if (!formData.sucursales || !Array.isArray(formData.sucursales)) {
+        console.error('❌ ERROR: formData.sucursales no es un array válido:', formData.sucursales);
+        showAlert('error', 'Error: Debe seleccionar al menos una sucursal');
+        return;
       }
       
-      fetchData();
-      handleCloseModals();
-    } catch (error) {
-      showAlert('error', 'Error al guardar el lente: ' + (error.response?.data?.message || error.message));
-      console.error('Error saving lente:', error.response?.data || error.message);
-    }
-  };
+      const dataToSend = new FormData();
+      
+      // Campos básicos
+      dataToSend.append('nombre', formData.nombre);
+      dataToSend.append('descripcion', formData.descripcion);
+      dataToSend.append('categoriaId', formData.categoriaId);
+      dataToSend.append('marcaId', formData.marcaId);
+      dataToSend.append('material', formData.material);
+      dataToSend.append('color', formData.color);
+      dataToSend.append('tipoLente', formData.tipoLente);
+      dataToSend.append('precioBase', Number(formData.precioBase));
+      dataToSend.append('precioActual', formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase));
+      dataToSend.append('linea', formData.linea);
+      dataToSend.append('fechaCreacion', formData.fechaCreacion);
+      dataToSend.append('enPromocion', formData.enPromocion);
+      
+      if (formData.enPromocion && formData.promocionId) {
+        dataToSend.append('promocionId', formData.promocionId);
+        console.log('🎯 Promoción agregada:', formData.promocionId);
+      }
+      
+      // ✅ Medidas como JSON string (el backend lo espera así)
+      const medidasJSON = JSON.stringify({
+        anchoPuente: Number(formData.medidas.anchoPuente),
+        altura: Number(formData.medidas.altura),
+        ancho: Number(formData.medidas.ancho)
+      });
+      dataToSend.append('medidas', medidasJSON);
+      console.log('📏 Medidas JSON:', medidasJSON);
+      
+      // ✅ Imágenes como JSON string (son URLs de Cloudinary)
+      const imagenesJSON = JSON.stringify(formData.imagenes || []);
+      dataToSend.append('imagenes', imagenesJSON);
+      console.log('🖼️ Imágenes JSON:', imagenesJSON);
+      console.log('🖼️ Cantidad de imágenes:', formData.imagenes?.length);
+      
+      // ✅ Sucursales como JSON string (CRÍTICO: el backend parsea esto en línea 103-107)
+      const sucursalesData = formData.sucursales.map(s => ({
+        sucursalId: s.sucursalId,
+        nombreSucursal: s.nombreSucursal || '',
+        stock: Number(s.stock) || 0
+      }));
+      const sucursalesJSON = JSON.stringify(sucursalesData);
+      dataToSend.append('sucursales', sucursalesJSON);
+      console.log('🏪 Sucursales JSON:', sucursalesJSON);
+      console.log('🏪 Sucursales count:', sucursalesData.length);
 
+      console.log('\n📦 FormData completo para UPDATE:');
+      for (let [key, value] of dataToSend.entries()) {
+        const displayValue = typeof value === 'string' && value.length > 100 
+          ? value.substring(0, 100) + '...' 
+          : value;
+        console.log(`  ${key}:`, displayValue);
+      }
+      
+      const updateUrl = withBase(`/lentes/${selectedLente._id}`, baseNow);
+      console.log('\n🌐 URL de actualización:', updateUrl);
+      console.log('🔑 ID del lente:', selectedLente._id);
+      
+      console.log('\n📡 Enviando PUT request con FormData...');
+      response = await axios.put(
+        updateUrl, 
+        dataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      console.log('✅ PUT exitoso!');
+      showAlert('success', 'Lente actualizado exitosamente');
+      
+    } else {
+      console.log('\n╔═══════════════════════════════════════════╗');
+      console.log('║   🆕 MODO CREACIÓN (POST con FormData)    ║');
+      console.log('╚═══════════════════════════════════════════╝');
+      
+      console.log('\n🔧 Construyendo FormData...');
+      const dataToSend = new FormData();
+      
+      // Campos básicos
+      dataToSend.append('nombre', formData.nombre);
+      dataToSend.append('descripcion', formData.descripcion);
+      dataToSend.append('categoriaId', formData.categoriaId);
+      dataToSend.append('marcaId', formData.marcaId);
+      dataToSend.append('material', formData.material);
+      dataToSend.append('color', formData.color);
+      dataToSend.append('tipoLente', formData.tipoLente);
+      dataToSend.append('precioBase', Number(formData.precioBase));
+      dataToSend.append('precioActual', formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase));
+      dataToSend.append('linea', formData.linea);
+      dataToSend.append('fechaCreacion', formData.fechaCreacion);
+      dataToSend.append('enPromocion', formData.enPromocion);
+      
+      if (formData.enPromocion && formData.promocionId) {
+        dataToSend.append('promocionId', formData.promocionId);
+        console.log('🎯 Promoción agregada a FormData:', formData.promocionId);
+      }
+      
+      const medidasJSON = JSON.stringify({
+        anchoPuente: Number(formData.medidas.anchoPuente),
+        altura: Number(formData.medidas.altura),
+        ancho: Number(formData.medidas.ancho)
+      });
+      dataToSend.append('medidas', medidasJSON);
+      console.log('📏 Medidas JSON:', medidasJSON);
+      
+      const imagenesJSON = JSON.stringify(formData.imagenes || []);
+      dataToSend.append('imagenes', imagenesJSON);
+      console.log('🖼️ Imágenes JSON:', imagenesJSON);
+      
+      const sucursalesData = (formData.sucursales || []).map(s => ({
+        sucursalId: s.sucursalId,
+        nombreSucursal: s.nombreSucursal,
+        stock: Number(s.stock) || 0
+      }));
+      const sucursalesJSON = JSON.stringify(sucursalesData);
+      dataToSend.append('sucursales', sucursalesJSON);
+      console.log('🏪 Sucursales JSON:', sucursalesJSON);
+
+      console.log('\n📦 FormData completo:');
+      for (let [key, value] of dataToSend.entries()) {
+        console.log(`  ${key}:`, typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value);
+      }
+      
+      const createUrl = withBase('/lentes', baseNow);
+      console.log('\n🌐 URL de creación:', createUrl);
+      
+      console.log('\n📡 Enviando POST request...');
+      response = await axios.post(
+        createUrl, 
+        dataToSend,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      
+      console.log('✅ POST exitoso!');
+      showAlert('success', 'Lente creado exitosamente');
+    }
+    
+    console.log('\n✅ RESPUESTA DEL SERVIDOR:');
+    console.log('Status:', response.status);
+    console.log('Status Text:', response.statusText);
+    console.log('Data:', response.data);
+    
+    console.log('\n🔄 Recargando datos...');
+    await fetchData();
+    console.log('✅ Datos recargados');
+    
+    console.log('\n🚪 Cerrando modales...');
+    handleCloseModals();
+    
+    console.log('\n╔════════════════════════════════════════╗');
+    console.log('║   ✅ SUBMIT COMPLETADO EXITOSAMENTE    ║');
+    console.log('╚════════════════════════════════════════╝\n');
+    
+  } catch (error) {
+    console.log('\n╔════════════════════════════════════════╗');
+    console.log('║   ❌ ERROR EN EL SUBMIT                ║');
+    console.log('╚════════════════════════════════════════╝');
+    
+    console.error('\n🔥 Error completo:', error);
+    console.error('\n📛 Error name:', error.name);
+    console.error('📛 Error message:', error.message);
+    console.error('📛 Error code:', error.code);
+    
+    if (error.response) {
+      console.error('\n📡 RESPUESTA DEL SERVIDOR (error.response):');
+      console.error('  Status:', error.response.status);
+      console.error('  Status Text:', error.response.statusText);
+      console.error('  Headers:', error.response.headers);
+      console.error('  Data:', error.response.data);
+      
+      if (error.response.data) {
+        console.error('\n📝 Detalles del error del servidor:');
+        console.error('  Message:', error.response.data.message);
+        console.error('  Error:', error.response.data.error);
+        console.error('  Details:', error.response.data.details);
+        console.error('  Stack:', error.response.data.stack);
+      }
+    } else if (error.request) {
+      console.error('\n📡 REQUEST ENVIADO (error.request):');
+      console.error('  Request:', error.request);
+      console.error('  No se recibió respuesta del servidor');
+    } else {
+      console.error('\n⚠️ Error al configurar la request:', error.message);
+    }
+    
+    console.error('\n🔧 Config de la request:', error.config);
+    
+    const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+    console.error('\n💬 Mensaje de error final:', errorMessage);
+    
+    showAlert('error', `Error al guardar el lente: ${errorMessage}`);
+    
+    console.log('\n╔════════════════════════════════════════╗');
+    console.log('║   ❌ FIN DEL ERROR LOGGING             ║');
+    console.log('╚════════════════════════════════════════╝\n');
+  }
+};
+
+  // Función de eliminación
   const handleDelete = async () => {
     if (!selectedLente) return;
     
     try {
-      const baseNow = getBase();
-      const safeRequest = async (base) => {
-        try {
-          return await axios.delete(withBase(`/lentes/${selectedLente._id}`, base));
-        } catch (err) {
-          const isConnRefused = err?.message?.includes('ERR_CONNECTION_REFUSED') || err?.code === 'ERR_NETWORK';
-          const isLocal = baseNow.includes('localhost');
-          if (isConnRefused && isLocal) {
-            API_CONFIG.BASE_URL = PROD_FALLBACK;
-            return await axios.delete(withBase(`/lentes/${selectedLente._id}`, PROD_FALLBACK));
-          }
-          throw err;
-        }
-      };
-
-      await safeRequest(baseNow);
+      await axios.delete(withBase(`/lentes/${selectedLente._id}`, getBase()));
       showAlert('success', 'Lente eliminado exitosamente');
-      fetchData();
+      await fetchData();
       handleCloseModals();
     } catch (error) {
-      showAlert('error', 'Error al eliminar el lente: ' + (error.response?.data?.message || error.message));
+      console.error("Error deleting lente:", error);
+      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+      showAlert('error', `Error al eliminar el lente: ${errorMessage}`);
     }
   };
 
-  // --- ESTADÍSTICAS ---
+  // Calcular estadísticas
   const lentesArr = Array.isArray(lentes) ? lentes : [];
   const totalLentes = lentesArr.length;
   const lentesEnPromocion = lentesArr.filter(l => l.enPromocion).length;
-  const stockTotal = lentesArr.reduce((sum, l) => sum + getTotalStock(l), 0);
+  const stockTotal = lentesArr.reduce((total, lente) => {
+    return total + getTotalStock(lente);
+  }, 0);
   const valorInventario = lentesArr.reduce((sum, l) => sum + ((l.precioActual || l.precioBase || 0) * getTotalStock(l)), 0);
 
   const stats = [
@@ -751,10 +896,10 @@ const LentesContent = () => {
       value: valorInventario.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), 
       Icon: DollarSign,
       color: "cyan" 
-    },
+    }
   ];
 
-  // --- FUNCIÓN PARA RENDERIZAR FILAS ---
+  // Función para renderizar filas
   const renderRow = useCallback((lente) => {
     const stockTotal = getTotalStock(lente);
     const tieneStock = stockTotal > 0;
@@ -798,195 +943,203 @@ const LentesContent = () => {
             <div className="flex items-center space-x-2">
               <Layers className="w-4 h-4 text-gray-400 flex-shrink-0" />
               <span className="text-sm text-gray-500 truncate">
-                {lente.categoriaId?.nombre || 'Sin categoría'}
+                {lente.categoriaId?.nombre || lente.categoriaId || 'Sin categoría'}
               </span>
             </div>
           </div>
         </td>
         
         <td className="px-6 py-4">
-          <div className="space-y-1">
+          <div className="space-y-1 text-sm">
             <div className="flex items-center space-x-2">
               <Palette className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-900">{lente.color}</span>
+              <span className="truncate">{lente.color}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-500">{lente.material}</span>
+            <div className="text-gray-500 truncate">
+              {lente.material}
             </div>
-            <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-100 text-cyan-800">
-              {lente.tipoLente}
-            </div>
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="space-y-1">
-            <div className={`text-sm font-medium ${lente.enPromocion ? 'text-green-600' : 'text-gray-900'}`}>
-              {lente.precioActual?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' })}
-            </div>
-            {lente.enPromocion && (
-              <div className="text-xs text-gray-500 line-through">
-                {lente.precioBase?.toLocaleString('es-SV', { style: 'currency', currency: 'USD' })}
+            {lente.tipoLente && (
+              <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block">
+                {lente.tipoLente}
               </div>
             )}
           </div>
         </td>
         
         <td className="px-6 py-4">
-          <div className="text-sm text-gray-900">
-            {stockTotal}
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
           <div className="space-y-1">
-            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              tieneStock 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {tieneStock ? 'En Stock' : 'Sin Stock'}
-            </span>
-            {lente.enPromocion && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                En Promoción
+            {lente.enPromocion ? (
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-lg font-bold text-green-600">
+                    ${(lente.precioActual || 0).toFixed(2)}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                    OFERTA
+                  </span>
+                </div>
+                <div className="text-sm text-gray-500 line-through">
+                  ${(lente.precioBase || 0).toFixed(2)}
+                </div>
+                {lente.promocionId?.nombre && (
+                  <div className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full inline-block">
+                    {lente.promocionId.nombre}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <span className="text-lg font-semibold text-gray-900">
+                ${(lente.precioBase || 0).toFixed(2)}
               </span>
             )}
           </div>
         </td>
         
         <td className="px-6 py-4">
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => handleOpenDetailModal(lente)}
-              className="text-gray-400 hover:text-cyan-600 transition-colors p-1 rounded-lg hover:bg-cyan-50"
-              title="Ver detalles"
-            >
-              <Eye className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => handleOpenEditModal(lente)}
-              className="text-gray-400 hover:text-blue-600 transition-colors p-1 rounded-lg hover:bg-blue-50"
-              title="Editar"
-            >
-              <Edit className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => handleOpenDeleteModal(lente)}
-              className="text-gray-400 hover:text-red-600 transition-colors p-1 rounded-lg hover:bg-red-50"
+          <div className="space-y-1">
+            <div className={`text-sm font-medium ${tieneStock ? 'text-green-600' : 'text-red-600'}`}>
+              {stockTotal} unidades
+            </div>
+            <div className="text-xs text-gray-500">
+              en {lente.sucursales?.length || 0} sucursal(es)
+            </div>
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="flex flex-col space-y-1">
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              lente.enPromocion 
+                ? 'bg-yellow-100 text-yellow-800' 
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {lente.enPromocion ? '🏷️ Promoción' : 'Precio normal'}
+            </span>
+            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              tieneStock 
+                ? 'bg-green-100 text-green-800' 
+                : 'bg-red-100 text-red-800'
+            }`}>
+              {tieneStock ? '✓ Disponible' : '⊘ Sin stock'}
+            </span>
+          </div>
+        </td>
+        
+        <td className="px-6 py-4">
+          <div className="flex space-x-1">
+            <button 
+              onClick={() => handleOpenDeleteModal(lente)} 
+              className="p-1.5 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110" 
               title="Eliminar"
+              aria-label={`Eliminar lente ${lente.nombre}`}
             >
-              <Trash2 className="w-5 h-5" />
+              <Trash2 className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => handleOpenDetailModal(lente)} 
+              className="p-1.5 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              title="Ver detalles"
+              aria-label={`Ver detalles de ${lente.nombre}`}
+            >
+              <Eye className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={() => handleOpenEditModal(lente)} 
+              className="p-1.5 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
+              title="Editar"
+              aria-label={`Editar lente ${lente.nombre}`}
+            >
+              <Edit className="w-4 h-4" />
             </button>
           </div>
         </td>
       </>
     );
-  }, [getTotalStock, handleOpenDetailModal, handleOpenEditModal, handleOpenDeleteModal]);
+  }, [getTotalStock, handleOpenDeleteModal, handleOpenDetailModal, handleOpenEditModal]);
 
-  // --- RENDERIZADO PRINCIPAL ---
+  // Renderizado del componente
   if (loading) {
-    return <SkeletonLoader />;
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <Alert alert={alert} />
+        <SkeletonLoader />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Alertas */}
-      {alert && (
-        <Alert
-          type={alert.type}
-          message={alert.message}
-          onClose={() => setAlert(null)}
-        />
-      )}
-
-      {/* Header de la página */}
-      <PageHeader
-        title="Gestión de Lentes"
-        description="Administra el catálogo de lentes de la óptica"
-        icon={Glasses}
-        buttonText="Agregar Lente"
-        onButtonClick={handleOpenAddModal}
-      />
-
+    <div className="space-y-6 animate-fade-in">
+      {/* Alerta */}
+      <Alert alert={alert} />
+      
       {/* Estadísticas */}
-      <StatsGrid stats={stats} />
-
-      {/* Contenedor principal */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        {/* Header de la tabla */}
-        <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
-          <div className="flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold text-white">Lista de Lentes</h2>
-              <p className="text-cyan-100 text-sm mt-1">
-                {filteredAndSortedLentes.length} lentes encontrados
-              </p>
-            </div>
-            <button
-              onClick={fetchData}
-              className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors"
-              title="Actualizar datos"
-            >
-              <RefreshCcw className="w-4 h-4" />
-              <span className="text-sm">Actualizar</span>
-            </button>
-          </div>
+      <div className="w-full flex justify-center">
+        <div className="w-full max-w-none">
+          <StatsGrid stats={stats} />
         </div>
-
-        {/* Barra de búsqueda y filtros */}
+      </div>
+      
+      {/* Tabla principal */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <PageHeader 
+          title="Gestión de Lentes" 
+          buttonLabel="Agregar Lente" 
+          onButtonClick={handleOpenAddModal} 
+        />
+        
+        {/* BARRA DE BÚSQUEDA Y CONTROLES */}
         <div className="px-6 py-4 border-b bg-gray-50">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-            {/* Búsqueda */}
-            <div className="flex-1 max-w-md">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Buscar lentes..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
-                />
-              </div>
+            {/* Barra de búsqueda */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, marca, material o color..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                aria-label="Buscar lentes"
+              />
             </div>
 
-            {/* Controles de ordenamiento y filtros */}
+            {/* Controles de filtro y ordenamiento */}
             <div className="flex items-center space-x-3">
               {/* Dropdown de ordenamiento */}
               <div className="relative">
                 <button
-                  onClick={() => setShowSortDropdown(!showSortDropdown)}
+                  onClick={() => {
+                    setShowSortDropdown(!showSortDropdown);
+                    setShowFiltersPanel(false);
+                  }}
                   className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  aria-expanded={showSortDropdown}
+                  aria-haspopup="true"
+                  aria-label="Opciones de ordenamiento"
                 >
-                  <SortAsc className="w-4 h-4 text-gray-400" />
-                  <span className="text-sm text-gray-700">
-                    {SORT_OPTIONS.find(opt => opt.value === `${sortBy}-${sortOrder}`)?.label || 'Ordenar por'}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+                  <span className="text-sm font-medium">Ordenar</span>
+                  <ChevronDown className="w-4 h-4" />
                 </button>
-
+                
                 {showSortDropdown && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-                    <div className="p-2">
+                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
+                    <div className="py-2">
                       {SORT_OPTIONS.map((option) => {
-                        const Icon = option.icon;
+                        const IconComponent = option.icon;
+                        const isActive = `${sortBy}-${sortOrder}` === option.value;
                         return (
                           <button
                             key={option.value}
                             onClick={() => handleSortChange(option.value)}
-                            className={`w-full flex items-center space-x-3 px-3 py-2 text-sm rounded-md transition-colors ${
-                              `${sortBy}-${sortOrder}` === option.value
-                                ? 'bg-cyan-50 text-cyan-700'
-                                : 'text-gray-700 hover:bg-gray-50'
+                            className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
+                              isActive ? 'bg-cyan-50 text-cyan-600 font-medium' : 'text-gray-700'
                             }`}
+                            aria-pressed={isActive}
                           >
-                            <Icon className="w-4 h-4" />
+                            <IconComponent className="w-4 h-4" />
                             <span>{option.label}</span>
-                            {`${sortBy}-${sortOrder}` === option.value && (
-                              <CheckCircle className="w-4 h-4 ml-auto" />
-                            )}
+                            {isActive && <CheckCircle className="w-4 h-4 ml-auto" />}
                           </button>
                         );
                       })}
@@ -997,31 +1150,53 @@ const LentesContent = () => {
 
               {/* Botón de filtros */}
               <button
-                onClick={() => setShowFiltersPanel(!showFiltersPanel)}
-                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-colors ${
-                  hasActiveFilters()
-                    ? 'bg-cyan-50 border-cyan-200 text-cyan-700'
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                onClick={() => {
+                  setShowFiltersPanel(!showFiltersPanel);
+                  setShowSortDropdown(false);
+                }}
+                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-all duration-200 ${
+                  hasActiveFilters() 
+                    ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg' 
+                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                 }`}
+                aria-expanded={showFiltersPanel}
+                aria-label="Filtros avanzados"
               >
                 <Filter className="w-4 h-4" />
-                <span className="text-sm">Filtros</span>
+                <span className="text-sm font-medium">Filtros</span>
                 {hasActiveFilters() && (
-                  <span className="w-2 h-2 bg-cyan-500 rounded-full"></span>
+                  <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                    {[
+                      searchTerm && 1,
+                      filters.categoria !== 'todas' && 1,
+                      filters.marca !== 'todas' && 1,
+                      filters.tipoLente !== 'todos' && 1,
+                      filters.enPromocion !== 'todos' && 1,
+                      filters.stock !== 'todos' && 1,
+                      filters.material !== 'todos' && 1,
+                      filters.color !== 'todos' && 1,
+                      filters.precioMin && 1,
+                      filters.precioMax && 1,
+                      filters.fechaDesde && 1,
+                      filters.fechaHasta && 1
+                    ].filter(Boolean).length}
+                  </span>
                 )}
               </button>
             </div>
           </div>
 
-          {/* Resumen de filtros activos */}
-          <div className="mt-3 flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              Mostrando {currentLentes.length} de {filteredAndSortedLentes.length} lentes
-            </div>
+          {/* Información de resultados */}
+          <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
+            <span>
+              {filteredAndSortedLentes.length} lente{filteredAndSortedLentes.length !== 1 ? 's' : ''} 
+              {hasActiveFilters() && ` (filtrado${filteredAndSortedLentes.length !== 1 ? 's' : ''} de ${lentes.length})`}
+            </span>
             {hasActiveFilters() && (
               <button
                 onClick={clearAllFilters}
-                className="flex items-center space-x-1 text-sm text-red-600 hover:text-red-700 transition-colors"
+                className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1"
+                aria-label="Limpiar todos los filtros"
               >
                 <X className="w-4 h-4" />
                 <span>Limpiar filtros</span>
@@ -1030,232 +1205,323 @@ const LentesContent = () => {
           </div>
         </div>
 
-        {/* Panel de filtros avanzados */}
+        {/* PANEL DE FILTROS */}
         {showFiltersPanel && (
-          <div className="px-6 py-4 border-b bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {/* Categoría */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Categoría
-                </label>
-                <select
-                  value={filters.categoria}
-                  onChange={(e) => handleFilterChange('categoria', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+          <div className="border-b bg-white" role="region" aria-labelledby="filtros-titulo">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 id="filtros-titulo" className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
+                <button
+                  onClick={() => setShowFiltersPanel(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Cerrar panel de filtros"
                 >
-                  <option value="todas">Todas las categorías</option>
-                  {categorias.map((cat) => (
-                    <option key={cat._id} value={cat._id}>
-                      {cat.nombre}
-                    </option>
-                  ))}
-                </select>
+                  <X className="w-5 h-5" />
+                </button>
               </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {/* Filtro por Categoría */}
+                <div>
+                  <label htmlFor="filter-categoria" className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoría
+                  </label>
+                  <select
+                    id="filter-categoria"
+                    value={filters.categoria}
+                    onChange={(e) => handleFilterChange('categoria', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todas">Todas las categorías</option>
+                    {categorias.map(categoria => (
+                      <option key={categoria._id} value={categoria._id}>{categoria.nombre}</option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Marca */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Marca
-                </label>
-                <select
-                  value={filters.marca}
-                  onChange={(e) => handleFilterChange('marca', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="todas">Todas las marcas</option>
-                  {marcas.map((marca) => (
-                    <option key={marca._id} value={marca._id}>
-                      {marca.nombre}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Filtro por Marca */}
+                <div>
+                  <label htmlFor="filter-marca" className="block text-sm font-medium text-gray-700 mb-2">
+                    Marca
+                  </label>
+                  <select
+                    id="filter-marca"
+                    value={filters.marca}
+                    onChange={(e) => handleFilterChange('marca', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todas">Todas las marcas</option>
+                    {marcas.map(marca => (
+                      <option key={marca._id} value={marca._id}>{marca.nombre}</option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Tipo de Lente */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo de Lente
-                </label>
-                <select
-                  value={filters.tipoLente}
-                  onChange={(e) => handleFilterChange('tipoLente', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="todos">Todos los tipos</option>
-                  <option value="graduado">Graduado</option>
-                  <option value="sol">Sol</option>
-                  <option value="contacto">Contacto</option>
-                  <option value="proteccion">Protección</option>
-                </select>
-              </div>
+                {/* Filtro por Tipo de Lente */}
+                <div>
+                  <label htmlFor="filter-tipo" className="block text-sm font-medium text-gray-700 mb-2">
+                    Tipo de Lente
+                  </label>
+                  <select
+                    id="filter-tipo"
+                    value={filters.tipoLente}
+                    onChange={(e) => handleFilterChange('tipoLente', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos los tipos</option>
+                    {uniqueTiposLente.map(tipo => (
+                      <option key={tipo} value={tipo}>{tipo}</option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Promoción */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Promoción
-                </label>
-                <select
-                  value={filters.enPromocion}
-                  onChange={(e) => handleFilterChange('enPromocion', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="todos">Todos</option>
-                  <option value="con_promocion">En promoción</option>
-                  <option value="sin_promocion">Sin promoción</option>
-                </select>
-              </div>
+                {/* Filtro por Promoción */}
+                <div>
+                  <label htmlFor="filter-promocion" className="block text-sm font-medium text-gray-700 mb-2">
+                    Promoción
+                  </label>
+                  <select
+                    id="filter-promocion"
+                    value={filters.enPromocion}
+                    onChange={(e) => handleFilterChange('enPromocion', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="con_promocion">Con promoción</option>
+                    <option value="sin_promocion">Sin promoción</option>
+                  </select>
+                </div>
 
-              {/* Stock */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Stock
-                </label>
-                <select
-                  value={filters.stock}
-                  onChange={(e) => handleFilterChange('stock', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="todos">Todos</option>
-                  <option value="con_stock">Con stock</option>
-                  <option value="sin_stock">Sin stock</option>
-                </select>
-              </div>
+                {/* Filtro por Stock */}
+                <div>
+                  <label htmlFor="filter-stock" className="block text-sm font-medium text-gray-700 mb-2">
+                    Stock
+                  </label>
+                  <select
+                    id="filter-stock"
+                    value={filters.stock}
+                    onChange={(e) => handleFilterChange('stock', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos</option>
+                    <option value="con_stock">Con stock</option>
+                    <option value="sin_stock">Sin stock</option>
+                  </select>
+                </div>
 
-              {/* Material */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Material
-                </label>
-                <select
-                  value={filters.material}
-                  onChange={(e) => handleFilterChange('material', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="todos">Todos los materiales</option>
-                  {uniqueMateriales.map((material) => (
-                    <option key={material} value={material}>
-                      {material}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Filtro por Material */}
+                <div>
+                  <label htmlFor="filter-material" className="block text-sm font-medium text-gray-700 mb-2">
+                    Material
+                  </label>
+                  <select
+                    id="filter-material"
+                    value={filters.material}
+                    onChange={(e) => handleFilterChange('material', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos los materiales</option>
+                    {uniqueMateriales.map(material => (
+                      <option key={material} value={material}>{material}</option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Color */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Color
-                </label>
-                <select
-                  value={filters.color}
-                  onChange={(e) => handleFilterChange('color', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                >
-                  <option value="todos">Todos los colores</option>
-                  {uniqueColores.map((color) => (
-                    <option key={color} value={color}>
-                      {color}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                {/* Filtro por Color */}
+                <div>
+                  <label htmlFor="filter-color" className="block text-sm font-medium text-gray-700 mb-2">
+                    Color
+                  </label>
+                  <select
+                    id="filter-color"
+                    value={filters.color}
+                    onChange={(e) => handleFilterChange('color', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  >
+                    <option value="todos">Todos los colores</option>
+                    {uniqueColores.map(color => (
+                      <option key={color} value={color}>{color}</option>
+                    ))}
+                  </select>
+                </div>
 
-              {/* Rango de precios */}
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rango de Precio (USD)
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="number"
-                    placeholder="Mínimo"
-                    value={filters.precioMin}
-                    onChange={(e) => handleFilterChange('precioMin', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Máximo"
-                    value={filters.precioMax}
-                    onChange={(e) => handleFilterChange('precioMax', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
+                {/* Filtro por Rango de Precio */}
+                <div className="md:col-span-2 lg:col-span-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Precio</label>
+                  <div className="flex space-x-2">
+                    <input
+                      type="number"
+                      placeholder="Min $"
+                      value={filters.precioMin}
+                      onChange={(e) => handleFilterChange('precioMin', e.target.value)}
+                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                      aria-label="Precio mínimo"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Max $"
+                      value={filters.precioMax}
+                      onChange={(e) => handleFilterChange('precioMax', e.target.value)}
+                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                      min="0"
+                      step="0.01"
+                      aria-label="Precio máximo"
+                    />
+                  </div>
+                </div>
+
+                {/* Filtro por Fecha de Creación */}
+                <div className="md:col-span-2 lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Creación</label>
+                  <div className="flex space-x-2">
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={filters.fechaDesde}
+                        onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        aria-label="Fecha desde"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="date"
+                        value={filters.fechaHasta}
+                        onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                        aria-label="Fecha hasta"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex text-xs text-gray-500 mt-1 space-x-4">
+                    <span>Desde</span>
+                    <span>Hasta</span>
+                  </div>
                 </div>
               </div>
 
-              {/* Rango de fechas */}
-              <div className="lg:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Rango de Fecha de Creación
-                </label>
-                <div className="flex space-x-2">
-                  <input
-                    type="date"
-                    value={filters.fechaDesde}
-                    onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                  <input
-                    type="date"
-                    value={filters.fechaHasta}
-                    onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
-                  />
-                </div>
+              {/* Botones de acción del panel de filtros */}
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={clearAllFilters}
+                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Limpiar Todo
+                </button>
+                <button
+                  onClick={() => setShowFiltersPanel(false)}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                >
+                  Aplicar Filtros
+                </button>
               </div>
             </div>
           </div>
         )}
-
-        {/* Tabla de datos */}
-        <DataTable
-          columns={TABLE_COLUMNS}
-          data={currentLentes}
-          renderRow={renderRow}
-          emptyMessage="No se encontraron lentes que coincidan con los criterios de búsqueda."
-        />
-
-        {/* Paginación */}
+        
+        {/* TABLA DE DATOS */}
+        <div className="overflow-x-auto">
+          <div style={{ minWidth: '1200px' }}>
+            <DataTable
+              columns={TABLE_COLUMNS}
+              data={currentLentes}
+              renderRow={renderRow}
+              isLoading={false}
+              noDataMessage="No se encontraron lentes"
+              noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Aún no hay lentes registrados'}
+            />
+          </div>
+        </div>
+        
         <Pagination {...paginationProps} />
       </div>
 
-      {/* Modales */}
-      {showAddEditModal && (
-        <LentesFormModal
-          isOpen={showAddEditModal}
-          onClose={handleCloseModals}
-          onSubmit={handleFormSubmit}
-          formData={formData}
-          handleInputChange={handleInputChange}
-          errors={errors}
-          categorias={categorias}
-          marcas={marcas}
-          promociones={promociones}
-          sucursales={sucursales}
-          selectedLente={selectedLente}
-        />
-      )}
+      {/* MODALES */}
+      {/* Modal de formulario */}
+      <LentesFormModal
+        isOpen={showAddEditModal}
+        onClose={handleCloseModals}
+        onSubmit={handleFormSubmit}
+        title={selectedLente ? "Editar Lente" : "Agregar Nuevo Lente"}
+        formData={formData}
+        setFormData={setFormData}
+        handleInputChange={handleInputChange}
+        errors={errors}
+        isEditing={!!selectedLente}
+        categorias={categorias}
+        marcas={marcas}
+        promociones={promociones}
+        sucursales={sucursales}
+        selectedLente={selectedLente}
+      />
 
-      {showDetailModal && selectedLente && (
-        <DetailModal
-          isOpen={showDetailModal}
-          onClose={handleCloseModals}
-          title="Detalles del Lente"
-          data={selectedLente}
-          type="lente"
-        />
-      )}
+      {/* Modal de detalles */}
+      <DetailModal
+        isOpen={showDetailModal}
+        onClose={handleCloseModals}
+        title="Detalles del Lente"
+        item={selectedLente}
+        data={selectedLente ? [
+          { label: "Nombre", value: selectedLente.nombre },
+          { label: "Descripción", value: selectedLente.descripcion },
+          { label: "Categoría", value: selectedLente.categoriaId?.nombre || selectedLente.categoriaId },
+          { label: "Marca", value: selectedLente.marcaId?.nombre },
+          { label: "Línea", value: selectedLente.linea },
+          { label: "Tipo de Lente", value: selectedLente.tipoLente },
+          { label: "Material", value: selectedLente.material },
+          { label: "Color", value: selectedLente.color },
+          { label: "Medidas (AxAlxP)", value: `${selectedLente.medidas?.ancho || 0}mm x ${selectedLente.medidas?.altura || 0}mm x ${selectedLente.medidas?.anchoPuente || 0}mm` },
+          { label: "Precio Base", value: `${(selectedLente.precioBase || 0).toFixed(2)}` },
+          { 
+            label: "Precio Actual", 
+            value: `${(selectedLente.precioActual || selectedLente.precioBase || 0).toFixed(2)}`,
+            color: selectedLente.enPromocion ? 'text-green-600' : 'text-gray-900'
+          },
+          { 
+            label: "Estado", 
+            value: selectedLente.enPromocion ? 'En Promoción' : 'Precio Normal',
+            color: selectedLente.enPromocion ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
+          },
+          ...(selectedLente.enPromocion && selectedLente.promocionId ? [{
+            label: "Promoción Aplicada",
+            value: selectedLente.promocionId?.nombre || 'Promoción sin nombre',
+            color: 'text-orange-600'
+          }] : []),
+          { 
+            label: "Stock Total", 
+            value: `${getTotalStock(selectedLente)} unidades`
+          },
+          { 
+            label: "Disponibilidad por Sucursal", 
+            value: selectedLente.sucursales?.map(s => 
+              `${s.nombreSucursal || s.sucursalId?.nombre}: ${s.stock || 0} unidades`
+            ).join(' | ') || 'Sin stock'
+          },
+          { label: "Imágenes", value: `${selectedLente.imagenes?.length || 0} imagen(es)` },
+          { label: "Fecha de Creación", value: selectedLente.fechaCreacion ? new Date(selectedLente.fechaCreacion).toLocaleDateString('es-ES') : 'N/A' }
+        ] : []}
+      />
 
-      {showDeleteModal && selectedLente && (
-        <ConfirmationModal
-          isOpen={showDeleteModal}
-          onClose={handleCloseModals}
-          onConfirm={handleDelete}
-          title="Eliminar Lente"
-          message={`¿Estás seguro de que deseas eliminar el lente "${selectedLente.nombre}"? Esta acción no se puede deshacer.`}
-          confirmText="Eliminar"
-          cancelText="Cancelar"
-          variant="danger"
+      {/* Modal de confirmación de eliminación */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={handleCloseModals}
+        onConfirm={handleDelete}
+        title="Confirmar Eliminación"
+        message={`¿Estás seguro de que deseas eliminar el lente "${selectedLente?.nombre}"? Esta acción no se puede deshacer.`}
+        confirmLabel="Sí, eliminar"
+        cancelLabel="Cancelar"
+        type="danger"
+      />
+
+      {/* OVERLAY PARA DROPDOWN */}
+      {showSortDropdown && (
+        <div 
+          className="fixed inset-0 z-10" 
+          onClick={() => setShowSortDropdown(false)}
+          aria-hidden="true"
         />
       )}
     </div>
