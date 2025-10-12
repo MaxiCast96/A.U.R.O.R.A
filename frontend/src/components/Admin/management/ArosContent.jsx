@@ -434,16 +434,16 @@ const ArosContent = () => {
   const handleFormSubmit = async (e) => {
   e.preventDefault();
   
-  console.log('╔════════════════════════════════════════╗');
+  console.log('╔═══════════════════════════════════════╗');
   console.log('║   🚀 INICIANDO SUBMIT DE AROS          ║');
-  console.log('╚════════════════════════════════════════╝');
+  console.log('╚═══════════════════════════════════════╝');
   
   console.log('\n📋 PASO 1: Datos del formulario ANTES de validación');
   console.log('formData completo:', JSON.parse(JSON.stringify(formData)));
   console.log('selectedAro:', selectedAro ? selectedAro._id : 'null (modo creación)');
   console.log('Modo:', selectedAro ? '📝 EDICIÓN' : '➕ CREACIÓN');
   
-  console.log('\n✓ PASO 2: Validando formulario...');
+  console.log('\n✔ PASO 2: Validando formulario...');
   if (!validateForm()) {
     console.error('❌ Validación FALLÓ. Errores:', errors);
     showAlert('error', 'Por favor, corrige los errores del formulario.');
@@ -558,19 +558,19 @@ const ArosContent = () => {
     console.log('\n🚪 Cerrando modales...');
     handleCloseModals();
     
-    console.log('\n╔════════════════════════════════════════╗');
+    console.log('\n╔═══════════════════════════════════════╗');
     console.log('║   ✅ SUBMIT COMPLETADO EXITOSAMENTE    ║');
-    console.log('╚════════════════════════════════════════╝\n');
+    console.log('╚═══════════════════════════════════════╝\n');
     
   } catch (error) {
-    console.log('\n╔════════════════════════════════════════╗');
+    console.log('\n╔═══════════════════════════════════════╗');
     console.log('║   ❌ ERROR EN EL SUBMIT                ║');
-    console.log('╚════════════════════════════════════════╝');
+    console.log('╚═══════════════════════════════════════╝');
     
     console.error('\n🔥 Error completo:', error);
-    console.error('\n📛 Error name:', error.name);
-    console.error('📛 Error message:', error.message);
-    console.error('📛 Error code:', error.code);
+    console.error('\n🔶 Error name:', error.name);
+    console.error('🔶 Error message:', error.message);
+    console.error('🔶 Error code:', error.code);
     
     if (error.response) {
       console.error('\n📡 RESPUESTA DEL SERVIDOR (error.response):');
@@ -601,9 +601,9 @@ const ArosContent = () => {
     
     showAlert('error', `Error al guardar el aro: ${errorMessage}`);
     
-    console.log('\n╔════════════════════════════════════════╗');
+    console.log('\n╔═══════════════════════════════════════╗');
     console.log('║   ❌ FIN DEL ERROR LOGGING             ║');
-    console.log('╚════════════════════════════════════════╝\n');
+    console.log('╚═══════════════════════════════════════╝\n');
   }
 };
 
