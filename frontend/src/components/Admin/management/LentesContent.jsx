@@ -21,6 +21,30 @@ import {
   Building2, Palette, Layers, Filter, X, ChevronDown, SortAsc, SortDesc, CheckCircle
 } from 'lucide-react';
 
+// Hook para notificaciones
+const useAlert = () => {
+    const [alert, setAlert] = useState(null);
+
+    const showAlert = useCallback((type, message) => {
+        setAlert({ type, message });
+        
+        // Auto-ocultar después de 5 segundos
+        setTimeout(() => {
+            setAlert(null);
+        }, 5000);
+    }, []);
+
+    const hideAlert = useCallback(() => {
+        setAlert(null);
+    }, []);
+
+    return {
+        alert,
+        showAlert,
+        hideAlert
+    };
+};
+
 // Configuración
 const ITEMS_PER_PAGE = 12;
 
@@ -190,7 +214,9 @@ const LentesContent = () => {
   const [lentes, setLentes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLente, setSelectedLente] = useState(null);
-  const [alert, setAlert] = useState(null);
+  
+  // SISTEMA DE NOTIFICACIONES COMPLETO
+  const { alert, showAlert, hideAlert } = useAlert();
   
   // Estados de modales
   const [showAddEditModal, setShowAddEditModal] = useState(false);
@@ -283,12 +309,6 @@ const LentesContent = () => {
   );
 
   // Funciones utilitarias
-  const showAlert = useCallback((type, message) => {
-    setAlert({ type, message });
-    const timer = setTimeout(() => setAlert(null), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
   const getTotalStock = useCallback((lente) => {
     return lente.sucursales ? lente.sucursales.reduce((sum, s) => sum + (s.stock || 0), 0) : 0;
   }, []);
@@ -427,6 +447,8 @@ const LentesContent = () => {
       setPromociones(Array.isArray(promocionesRes.data) ? promocionesRes.data : promocionesRes.data?.data || []);
       setSucursales(Array.isArray(sucursalesRes.data) ? sucursalesRes.data : sucursalesRes.data?.data || []);
       
+      showAlert('success', 'Datos cargados exitosamente');
+      
     } catch (error) {
       console.error("Error fetching data:", error);
       showAlert('error', 'Error al cargar los datos: ' + (error.response?.data?.message || error.message));
@@ -478,7 +500,8 @@ const LentesContent = () => {
   const clearAllFilters = useCallback(() => {
     setFilters(INITIAL_FILTERS);
     setSearchTerm('');
-  }, []);
+    showAlert('info', 'Todos los filtros han sido limpiados');
+  }, [showAlert]);
 
   const hasActiveFilters = useCallback(() => {
     return searchTerm || 
@@ -537,60 +560,60 @@ const LentesContent = () => {
   }, [resetForm, setFormData]);
 
   const handleOpenEditModal = useCallback((lente) => {
-  setSelectedLente(lente);
-  
-  const normalizeImages = (images) => {
-    if (!images || !Array.isArray(images)) return [];
+    setSelectedLente(lente);
     
-    return images.map(img => {
-      if (typeof img === 'string') {
-        return img;
-      }
+    const normalizeImages = (images) => {
+      if (!images || !Array.isArray(images)) return [];
       
-      if (typeof img === 'object' && img !== null) {
-        return img.secure_url || img.url || '';
-      }
-      
-      return '';
-    }).filter(url => url && url.length > 0);
-  };
+      return images.map(img => {
+        if (typeof img === 'string') {
+          return img;
+        }
+        
+        if (typeof img === 'object' && img !== null) {
+          return img.secure_url || img.url || '';
+        }
+        
+        return '';
+      }).filter(url => url && url.length > 0);
+    };
 
-  const normalizeSucursales = (sucursales) => {
-    if (!sucursales || !Array.isArray(sucursales)) return [];
+    const normalizeSucursales = (sucursales) => {
+      if (!sucursales || !Array.isArray(sucursales)) return [];
+      
+      return sucursales.map(s => ({
+        sucursalId: s.sucursalId?._id || s.sucursalId || '',
+        nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || '',
+        stock: parseInt(s.stock) || 0
+      }));
+    };
+
+    const editData = {
+      nombre: lente.nombre || '',
+      descripcion: lente.descripcion || '',
+      categoriaId: lente.categoriaId?._id || lente.categoriaId || '',
+      marcaId: lente.marcaId?._id || lente.marcaId || '',
+      material: lente.material || '',
+      color: lente.color || '',
+      tipoLente: lente.tipoLente || '',
+      precioBase: parseFloat(lente.precioBase) || 0,
+      precioActual: parseFloat(lente.precioActual || lente.precioBase) || 0,
+      linea: lente.linea || '',
+      medidas: {
+        anchoPuente: lente.medidas?.anchoPuente || '',
+        altura: lente.medidas?.altura || '',
+        ancho: lente.medidas?.ancho || '',
+      },
+      imagenes: normalizeImages(lente.imagenes),
+      enPromocion: Boolean(lente.enPromocion),
+      promocionId: lente.promocionId?._id || lente.promocionId || '',
+      fechaCreacion: lente.fechaCreacion ? new Date(lente.fechaCreacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      sucursales: normalizeSucursales(lente.sucursales)
+    };
     
-    return sucursales.map(s => ({
-      sucursalId: s.sucursalId?._id || s.sucursalId || '',
-      nombreSucursal: s.nombreSucursal || s.sucursalId?.nombre || '',
-      stock: parseInt(s.stock) || 0
-    }));
-  };
-
-  const editData = {
-    nombre: lente.nombre || '',
-    descripcion: lente.descripcion || '',
-    categoriaId: lente.categoriaId?._id || lente.categoriaId || '',
-    marcaId: lente.marcaId?._id || lente.marcaId || '',
-    material: lente.material || '',
-    color: lente.color || '',
-    tipoLente: lente.tipoLente || '',
-    precioBase: parseFloat(lente.precioBase) || 0,
-    precioActual: parseFloat(lente.precioActual || lente.precioBase) || 0,
-    linea: lente.linea || '',
-    medidas: {
-      anchoPuente: lente.medidas?.anchoPuente || '',
-      altura: lente.medidas?.altura || '',
-      ancho: lente.medidas?.ancho || '',
-    },
-    imagenes: normalizeImages(lente.imagenes),
-    enPromocion: Boolean(lente.enPromocion),
-    promocionId: lente.promocionId?._id || lente.promocionId || '',
-    fechaCreacion: lente.fechaCreacion ? new Date(lente.fechaCreacion).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-    sucursales: normalizeSucursales(lente.sucursales)
-  };
-  
-  setFormData(editData);
-  setShowAddEditModal(true);
-}, [setFormData]);
+    setFormData(editData);
+    setShowAddEditModal(true);
+  }, [setFormData]);
   
   const handleOpenDetailModal = useCallback((lente) => {
     setSelectedLente(lente);
@@ -602,250 +625,171 @@ const LentesContent = () => {
     setShowDeleteModal(true);
   }, []);
 
-// Función de envío del formulario
- const handleFormSubmit = async (e) => {
-  e.preventDefault();
-  
-  console.log('╔════════════════════════════════════════╗');
-  console.log('║   🚀 INICIANDO SUBMIT DEL FORMULARIO   ║');
-  console.log('╚════════════════════════════════════════╝');
-  
-  console.log('\n📋 PASO 1: Datos del formulario ANTES de validación');
-  console.log('formData completo:', JSON.parse(JSON.stringify(formData)));
-  console.log('selectedLente:', selectedLente ? selectedLente._id : 'null (modo creación)');
-  console.log('Modo:', selectedLente ? '📝 EDICIÓN' : '➕ CREACIÓN');
-  
-  console.log('\n✓ PASO 2: Validando formulario...');
-  if (!validateForm()) {
-    console.error('❌ Validación FALLÓ. Errores:', errors);
-    showAlert('error', 'Por favor, corrige los errores del formulario.');
-    return;
-  }
-  console.log('✅ Validación exitosa');
-
-  try {
-    const baseNow = getBase();
-    console.log('\n🌐 PASO 3: URL Base:', baseNow);
-    let response;
+  // Función de envío del formulario
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
     
-    if (selectedLente) {
-      console.log('\n╔═══════════════════════════════════════════╗');
-      console.log('║   📄 MODO ACTUALIZACIÓN (PUT FormData)    ║');
-      console.log('╚═══════════════════════════════════════════╝');
-      
-      console.log('\n🔧 Construyendo FormData para UPDATE...');
-      
-      // 🔥 VALIDACIÓN CRÍTICA: Asegurarse de que sucursales existe
-      if (!formData.sucursales || !Array.isArray(formData.sucursales)) {
-        console.error('❌ ERROR: formData.sucursales no es un array válido:', formData.sucursales);
-        showAlert('error', 'Error: Debe seleccionar al menos una sucursal');
-        return;
-      }
-      
-      const dataToSend = new FormData();
-      
-      // Campos básicos
-      dataToSend.append('nombre', formData.nombre);
-      dataToSend.append('descripcion', formData.descripcion);
-      dataToSend.append('categoriaId', formData.categoriaId);
-      dataToSend.append('marcaId', formData.marcaId);
-      dataToSend.append('material', formData.material);
-      dataToSend.append('color', formData.color);
-      dataToSend.append('tipoLente', formData.tipoLente);
-      dataToSend.append('precioBase', Number(formData.precioBase));
-      dataToSend.append('precioActual', formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase));
-      dataToSend.append('linea', formData.linea);
-      dataToSend.append('fechaCreacion', formData.fechaCreacion);
-      dataToSend.append('enPromocion', formData.enPromocion);
-      
-      if (formData.enPromocion && formData.promocionId) {
-        dataToSend.append('promocionId', formData.promocionId);
-        console.log('🎯 Promoción agregada:', formData.promocionId);
-      }
-      
-      // ✅ Medidas como JSON string (el backend lo espera así)
-      const medidasJSON = JSON.stringify({
-        anchoPuente: Number(formData.medidas.anchoPuente),
-        altura: Number(formData.medidas.altura),
-        ancho: Number(formData.medidas.ancho)
-      });
-      dataToSend.append('medidas', medidasJSON);
-      console.log('📏 Medidas JSON:', medidasJSON);
-      
-      // ✅ Imágenes como JSON string (son URLs de Cloudinary)
-      const imagenesJSON = JSON.stringify(formData.imagenes || []);
-      dataToSend.append('imagenes', imagenesJSON);
-      console.log('🖼️ Imágenes JSON:', imagenesJSON);
-      console.log('🖼️ Cantidad de imágenes:', formData.imagenes?.length);
-      
-      // ✅ Sucursales como JSON string (CRÍTICO: el backend parsea esto en línea 103-107)
-      const sucursalesData = formData.sucursales.map(s => ({
-        sucursalId: s.sucursalId,
-        nombreSucursal: s.nombreSucursal || '',
-        stock: Number(s.stock) || 0
-      }));
-      const sucursalesJSON = JSON.stringify(sucursalesData);
-      dataToSend.append('sucursales', sucursalesJSON);
-      console.log('🏪 Sucursales JSON:', sucursalesJSON);
-      console.log('🏪 Sucursales count:', sucursalesData.length);
-
-      console.log('\n📦 FormData completo para UPDATE:');
-      for (let [key, value] of dataToSend.entries()) {
-        const displayValue = typeof value === 'string' && value.length > 100 
-          ? value.substring(0, 100) + '...' 
-          : value;
-        console.log(`  ${key}:`, displayValue);
-      }
-      
-      const updateUrl = withBase(`/lentes/${selectedLente._id}`, baseNow);
-      console.log('\n🌐 URL de actualización:', updateUrl);
-      console.log('🔑 ID del lente:', selectedLente._id);
-      
-      console.log('\n📡 Enviando PUT request con FormData...');
-      response = await axios.put(
-        updateUrl, 
-        dataToSend,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-      
-      console.log('✅ PUT exitoso!');
-      showAlert('success', 'Lente actualizado exitosamente');
-      
-    } else {
-      console.log('\n╔═══════════════════════════════════════════╗');
-      console.log('║   🆕 MODO CREACIÓN (POST con FormData)    ║');
-      console.log('╚═══════════════════════════════════════════╝');
-      
-      console.log('\n🔧 Construyendo FormData...');
-      const dataToSend = new FormData();
-      
-      // Campos básicos
-      dataToSend.append('nombre', formData.nombre);
-      dataToSend.append('descripcion', formData.descripcion);
-      dataToSend.append('categoriaId', formData.categoriaId);
-      dataToSend.append('marcaId', formData.marcaId);
-      dataToSend.append('material', formData.material);
-      dataToSend.append('color', formData.color);
-      dataToSend.append('tipoLente', formData.tipoLente);
-      dataToSend.append('precioBase', Number(formData.precioBase));
-      dataToSend.append('precioActual', formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase));
-      dataToSend.append('linea', formData.linea);
-      dataToSend.append('fechaCreacion', formData.fechaCreacion);
-      dataToSend.append('enPromocion', formData.enPromocion);
-      
-      if (formData.enPromocion && formData.promocionId) {
-        dataToSend.append('promocionId', formData.promocionId);
-        console.log('🎯 Promoción agregada a FormData:', formData.promocionId);
-      }
-      
-      const medidasJSON = JSON.stringify({
-        anchoPuente: Number(formData.medidas.anchoPuente),
-        altura: Number(formData.medidas.altura),
-        ancho: Number(formData.medidas.ancho)
-      });
-      dataToSend.append('medidas', medidasJSON);
-      console.log('📏 Medidas JSON:', medidasJSON);
-      
-      const imagenesJSON = JSON.stringify(formData.imagenes || []);
-      dataToSend.append('imagenes', imagenesJSON);
-      console.log('🖼️ Imágenes JSON:', imagenesJSON);
-      
-      const sucursalesData = (formData.sucursales || []).map(s => ({
-        sucursalId: s.sucursalId,
-        nombreSucursal: s.nombreSucursal,
-        stock: Number(s.stock) || 0
-      }));
-      const sucursalesJSON = JSON.stringify(sucursalesData);
-      dataToSend.append('sucursales', sucursalesJSON);
-      console.log('🏪 Sucursales JSON:', sucursalesJSON);
-
-      console.log('\n📦 FormData completo:');
-      for (let [key, value] of dataToSend.entries()) {
-        console.log(`  ${key}:`, typeof value === 'string' && value.length > 100 ? value.substring(0, 100) + '...' : value);
-      }
-      
-      const createUrl = withBase('/lentes', baseNow);
-      console.log('\n🌐 URL de creación:', createUrl);
-      
-      console.log('\n📡 Enviando POST request...');
-      response = await axios.post(
-        createUrl, 
-        dataToSend,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        }
-      );
-      
-      console.log('✅ POST exitoso!');
-      showAlert('success', 'Lente creado exitosamente');
+    console.log('🚀 INICIANDO SUBMIT DEL FORMULARIO');
+    console.log('Form data:', formData);
+    console.log('Modo:', selectedLente ? '📝 EDICIÓN' : '➕ CREACIÓN');
+    
+    if (!validateForm()) {
+      console.error('❌ Validación FALLIDA. Errores:', errors);
+      showAlert('error', 'Por favor, corrige los errores del formulario.');
+      return;
     }
-    
-    console.log('\n✅ RESPUESTA DEL SERVIDOR:');
-    console.log('Status:', response.status);
-    console.log('Status Text:', response.statusText);
-    console.log('Data:', response.data);
-    
-    console.log('\n🔄 Recargando datos...');
-    await fetchData();
-    console.log('✅ Datos recargados');
-    
-    console.log('\n🚪 Cerrando modales...');
-    handleCloseModals();
-    
-    console.log('\n╔════════════════════════════════════════╗');
-    console.log('║   ✅ SUBMIT COMPLETADO EXITOSAMENTE    ║');
-    console.log('╚════════════════════════════════════════╝\n');
-    
-  } catch (error) {
-    console.log('\n╔════════════════════════════════════════╗');
-    console.log('║   ❌ ERROR EN EL SUBMIT                ║');
-    console.log('╚════════════════════════════════════════╝');
-    
-    console.error('\n🔥 Error completo:', error);
-    console.error('\n📛 Error name:', error.name);
-    console.error('📛 Error message:', error.message);
-    console.error('📛 Error code:', error.code);
-    
-    if (error.response) {
-      console.error('\n📡 RESPUESTA DEL SERVIDOR (error.response):');
-      console.error('  Status:', error.response.status);
-      console.error('  Status Text:', error.response.statusText);
-      console.error('  Headers:', error.response.headers);
-      console.error('  Data:', error.response.data);
+    console.log('✅ Validación exitosa');
+
+    try {
+      const baseNow = getBase();
+      let response;
       
-      if (error.response.data) {
-        console.error('\n📝 Detalles del error del servidor:');
-        console.error('  Message:', error.response.data.message);
-        console.error('  Error:', error.response.data.error);
-        console.error('  Details:', error.response.data.details);
-        console.error('  Stack:', error.response.data.stack);
+      if (selectedLente) {
+        console.log('🔄 MODO ACTUALIZACIÓN (PUT FormData)');
+        
+        if (!formData.sucursales || !Array.isArray(formData.sucursales)) {
+          console.error('❌ ERROR: formData.sucursales no es un array válido:', formData.sucursales);
+          showAlert('error', 'Error: Debe seleccionar al menos una sucursal');
+          return;
+        }
+        
+        const dataToSend = new FormData();
+        
+        dataToSend.append('nombre', formData.nombre);
+        dataToSend.append('descripcion', formData.descripcion);
+        dataToSend.append('categoriaId', formData.categoriaId);
+        dataToSend.append('marcaId', formData.marcaId);
+        dataToSend.append('material', formData.material);
+        dataToSend.append('color', formData.color);
+        dataToSend.append('tipoLente', formData.tipoLente);
+        dataToSend.append('precioBase', Number(formData.precioBase));
+        dataToSend.append('precioActual', formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase));
+        dataToSend.append('linea', formData.linea);
+        dataToSend.append('fechaCreacion', formData.fechaCreacion);
+        dataToSend.append('enPromocion', formData.enPromocion);
+        
+        if (formData.enPromocion && formData.promocionId) {
+          dataToSend.append('promocionId', formData.promocionId);
+        }
+        
+        const medidasJSON = JSON.stringify({
+          anchoPuente: Number(formData.medidas.anchoPuente),
+          altura: Number(formData.medidas.altura),
+          ancho: Number(formData.medidas.ancho)
+        });
+        dataToSend.append('medidas', medidasJSON);
+        
+        const imagenesJSON = JSON.stringify(formData.imagenes || []);
+        dataToSend.append('imagenes', imagenesJSON);
+        
+        const sucursalesData = formData.sucursales.map(s => ({
+          sucursalId: s.sucursalId,
+          nombreSucursal: s.nombreSucursal || '',
+          stock: Number(s.stock) || 0
+        }));
+        const sucursalesJSON = JSON.stringify(sucursalesData);
+        dataToSend.append('sucursales', sucursalesJSON);
+
+        console.log('🌐 URL de actualización:', withBase(`/lentes/${selectedLente._id}`, baseNow));
+        console.log('📡 Enviando PUT request con FormData...');
+        
+        response = await axios.put(
+          withBase(`/lentes/${selectedLente._id}`, baseNow), 
+          dataToSend,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+        
+        console.log('✅ PUT exitoso!');
+        showAlert('success', 'Lente actualizado exitosamente');
+        
+      } else {
+        console.log('🆕 MODO CREACIÓN (POST con FormData)');
+        
+        const dataToSend = new FormData();
+        
+        dataToSend.append('nombre', formData.nombre);
+        dataToSend.append('descripcion', formData.descripcion);
+        dataToSend.append('categoriaId', formData.categoriaId);
+        dataToSend.append('marcaId', formData.marcaId);
+        dataToSend.append('material', formData.material);
+        dataToSend.append('color', formData.color);
+        dataToSend.append('tipoLente', formData.tipoLente);
+        dataToSend.append('precioBase', Number(formData.precioBase));
+        dataToSend.append('precioActual', formData.enPromocion ? Number(formData.precioActual) : Number(formData.precioBase));
+        dataToSend.append('linea', formData.linea);
+        dataToSend.append('fechaCreacion', formData.fechaCreacion);
+        dataToSend.append('enPromocion', formData.enPromocion);
+        
+        if (formData.enPromocion && formData.promocionId) {
+          dataToSend.append('promocionId', formData.promocionId);
+        }
+        
+        const medidasJSON = JSON.stringify({
+          anchoPuente: Number(formData.medidas.anchoPuente),
+          altura: Number(formData.medidas.altura),
+          ancho: Number(formData.medidas.ancho)
+        });
+        dataToSend.append('medidas', medidasJSON);
+        
+        const imagenesJSON = JSON.stringify(formData.imagenes || []);
+        dataToSend.append('imagenes', imagenesJSON);
+        
+        const sucursalesData = (formData.sucursales || []).map(s => ({
+          sucursalId: s.sucursalId,
+          nombreSucursal: s.nombreSucursal,
+          stock: Number(s.stock) || 0
+        }));
+        const sucursalesJSON = JSON.stringify(sucursalesData);
+        dataToSend.append('sucursales', sucursalesJSON);
+
+        console.log('🌐 URL de creación:', withBase('/lentes', baseNow));
+        console.log('📡 Enviando POST request...');
+        
+        response = await axios.post(
+          withBase('/lentes', baseNow), 
+          dataToSend,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+        
+        console.log('✅ POST exitoso!');
+        showAlert('success', 'Lente creado exitosamente');
       }
-    } else if (error.request) {
-      console.error('\n📡 REQUEST ENVIADO (error.request):');
-      console.error('  Request:', error.request);
-      console.error('  No se recibió respuesta del servidor');
-    } else {
-      console.error('\n⚠️ Error al configurar la request:', error.message);
+      
+      console.log('✅ RESPUESTA DEL SERVIDOR:', response.data);
+      console.log('🔄 Recargando datos...');
+      await fetchData();
+      console.log('✅ Datos recargados');
+      console.log('🚪 Cerrando modales...');
+      handleCloseModals();
+      console.log('✅ SUBMIT COMPLETADO EXITOSAMENTE\n');
+      
+    } catch (error) {
+      console.log('❌ ERROR EN EL SUBMIT');
+      console.error('🔥 Error completo:', error);
+      console.error('📛 Error name:', error.name);
+      console.error('📛 Error message:', error.message);
+      
+      if (error.response) {
+        console.error('📡 RESPUESTA DEL SERVIDOR (error.response):');
+        console.error('  Status:', error.response.status);
+        console.error('  Data:', error.response.data);
+      } else if (error.request) {
+        console.error('📡 REQUEST ENVIADO (error.request):');
+        console.error('  No se recibió respuesta del servidor');
+      }
+      
+      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
+      showAlert('error', `Error al guardar el lente: ${errorMessage}`);
     }
-    
-    console.error('\n🔧 Config de la request:', error.config);
-    
-    const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
-    console.error('\n💬 Mensaje de error final:', errorMessage);
-    
-    showAlert('error', `Error al guardar el lente: ${errorMessage}`);
-    
-    console.log('\n╔════════════════════════════════════════╗');
-    console.log('║   ❌ FIN DEL ERROR LOGGING             ║');
-    console.log('╚════════════════════════════════════════╝\n');
-  }
-};
+  };
 
   // Función de eliminación
   const handleDelete = async () => {
@@ -853,7 +797,7 @@ const LentesContent = () => {
     
     try {
       await axios.delete(withBase(`/lentes/${selectedLente._id}`, getBase()));
-      showAlert('success', 'Lente eliminado exitosamente');
+      showAlert('delete', 'Lente eliminado exitosamente');
       await fetchData();
       handleCloseModals();
     } catch (error) {
@@ -882,409 +826,406 @@ const LentesContent = () => {
     { 
       title: "En Promoción", 
       value: lentesEnPromocion, 
-      Icon: TrendingUp,
-      color: "cyan" 
+      Icon: Tag,
+      color: "green" 
     },
     { 
       title: "Stock Total", 
       value: stockTotal, 
       Icon: Package,
-      color: "cyan" 
+      color: "blue" 
     },
     { 
       title: "Valor Inventario", 
-      value: valorInventario.toLocaleString('es-SV', { style: 'currency', currency: 'USD' }), 
+      value: `$${valorInventario.toLocaleString()}`, 
       Icon: DollarSign,
-      color: "cyan" 
+      color: "purple" 
     }
   ];
 
-  // Función para renderizar filas
-  const renderRow = useCallback((lente) => {
-    const stockTotal = getTotalStock(lente);
-    const tieneStock = stockTotal > 0;
-    
-    return (
-      <>
-        <td className="px-6 py-4">
-          <div className="flex items-center space-x-3">
-            <div className="flex-shrink-0 w-12 h-12">
-              {lente.imagenes && lente.imagenes.length > 0 ? (
-                <img 
-                  src={lente.imagenes[0]} 
-                  alt={lente.nombre}
-                  className="w-12 h-12 rounded-lg object-cover border"
-                />
-              ) : (
-                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                  <Glasses className="w-6 h-6 text-gray-400" />
+  // Renderizado de filas de la tabla
+  const renderTableRows = () => {
+    return currentLentes.map((lente) => {
+      const categoria = categorias.find(c => c._id === lente.categoriaId?._id || c._id === lente.categoriaId);
+      const marca = marcas.find(m => m._id === lente.marcaId?._id || m._id === lente.marcaId);
+      const promocion = promociones.find(p => p._id === lente.promocionId?._id || p._id === lente.promocionId);
+      const totalStock = getTotalStock(lente);
+      const precioActual = lente.enPromocion ? lente.precioActual : lente.precioBase;
+
+      return (
+        <tr key={lente._id} className="hover:bg-gray-50 transition-colors">
+          {/* Columna Producto */}
+          <td className="px-6 py-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-cyan-100 to-blue-100 rounded-lg flex items-center justify-center">
+                <Glasses className="w-6 h-6 text-cyan-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-900 truncate">
+                  {lente.nombre || 'Sin nombre'}
+                </div>
+                <div className="text-sm text-gray-500 truncate">
+                  {lente.linea || 'Sin línea'}
+                </div>
+              </div>
+            </div>
+          </td>
+
+          {/* Columna Marca/Categoría */}
+          <td className="px-6 py-4">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <Building2 className="w-4 h-4 text-gray-400" />
+                <span className="text-sm font-medium text-gray-900">
+                  {marca?.nombre || 'Sin marca'}
+                </span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Layers className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  {categoria?.nombre || 'Sin categoría'}
+                </span>
+              </div>
+            </div>
+          </td>
+
+          {/* Columna Características */}
+          <td className="px-6 py-4">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <Palette className="w-4 h-4 text-gray-400" />
+                <span className="text-sm text-gray-600">
+                  {lente.material || 'N/A'} - {lente.color || 'N/A'}
+                </span>
+              </div>
+              <div className="text-xs">
+                <span className={`inline-flex items-center px-2 py-1 rounded-full font-medium ${
+                  lente.tipoLente === 'sol' 
+                    ? 'bg-orange-100 text-orange-800' 
+                    : 'bg-blue-100 text-blue-800'
+                }`}>
+                  {lente.tipoLente === 'sol' ? '🌞 Sol' : '👓 Graduación'}
+                </span>
+              </div>
+              {lente.enPromocion && (
+                <div className="text-xs">
+                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-800 rounded-full font-medium">
+                    <Tag className="w-3 h-3 mr-1" />
+                    {promocion?.nombre || 'Promoción'}
+                  </span>
                 </div>
               )}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-900 truncate">
-                {lente.nombre}
-              </p>
-              <p className="text-sm text-gray-500 truncate">
-                {lente.descripcion}
-              </p>
-            </div>
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="space-y-1">
-            <div className="flex items-center space-x-2">
-              <Tag className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-900 truncate">
-                {lente.marcaId?.nombre || 'Sin marca'}
-              </span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Layers className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-500 truncate">
-                {lente.categoriaId?.nombre || lente.categoriaId || 'Sin categoría'}
-              </span>
-            </div>
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="space-y-1 text-sm">
-            <div className="flex items-center space-x-2">
-              <Palette className="w-4 h-4 text-gray-400 flex-shrink-0" />
-              <span className="truncate">{lente.color}</span>
-            </div>
-            <div className="text-gray-500 truncate">
-              {lente.material}
-            </div>
-            {lente.tipoLente && (
-              <div className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full inline-block">
-                {lente.tipoLente}
+          </td>
+
+          {/* Columna Precio */}
+          <td className="px-6 py-4">
+            <div className="flex flex-col space-y-1">
+              <div className="text-sm font-semibold text-gray-900">
+                ${precioActual?.toLocaleString() || '0'}
               </div>
-            )}
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="space-y-1">
-            {lente.enPromocion ? (
-              <div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-lg font-bold text-green-600">
-                    ${(lente.precioActual || 0).toFixed(2)}
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                    OFERTA
-                  </span>
+              {lente.enPromocion && (
+                <div className="text-xs text-gray-500 line-through">
+                  ${lente.precioBase?.toLocaleString() || '0'}
                 </div>
-                <div className="text-sm text-gray-500 line-through">
-                  ${(lente.precioBase || 0).toFixed(2)}
-                </div>
-                {lente.promocionId?.nombre && (
-                  <div className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full inline-block">
-                    {lente.promocionId.nombre}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <span className="text-lg font-semibold text-gray-900">
-                ${(lente.precioBase || 0).toFixed(2)}
+              )}
+            </div>
+          </td>
+
+          {/* Columna Stock */}
+          <td className="px-6 py-4">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                totalStock > 10 ? 'bg-green-500' : 
+                totalStock > 0 ? 'bg-yellow-500' : 'bg-red-500'
+              }`}></div>
+              <span className={`text-sm font-medium ${
+                totalStock > 10 ? 'text-green-700' : 
+                totalStock > 0 ? 'text-yellow-700' : 'text-red-700'
+              }`}>
+                {totalStock} unidades
               </span>
-            )}
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="space-y-1">
-            <div className={`text-sm font-medium ${tieneStock ? 'text-green-600' : 'text-red-600'}`}>
-              {stockTotal} unidades
             </div>
-            <div className="text-xs text-gray-500">
-              en {lente.sucursales?.length || 0} sucursal(es)
+          </td>
+
+          {/* Columna Estado */}
+          <td className="px-6 py-4">
+            <div className="space-y-1">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                lente.activo !== false 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {lente.activo !== false ? 'Activo' : 'Inactivo'}
+              </span>
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                totalStock > 0 
+                  ? 'bg-blue-100 text-blue-800' 
+                  : 'bg-gray-100 text-gray-800'
+              }`}>
+                {totalStock > 0 ? 'Disponible' : 'Sin Stock'}
+              </span>
             </div>
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="flex flex-col space-y-1">
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              lente.enPromocion 
-                ? 'bg-yellow-100 text-yellow-800' 
-                : 'bg-gray-100 text-gray-800'
-            }`}>
-              {lente.enPromocion ? '🏷️ Promoción' : 'Precio normal'}
-            </span>
-            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              tieneStock 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-red-100 text-red-800'
-            }`}>
-              {tieneStock ? '✓ Disponible' : '⊘ Sin stock'}
-            </span>
-          </div>
-        </td>
-        
-        <td className="px-6 py-4">
-          <div className="flex space-x-1">
-            <button 
-              onClick={() => handleOpenDeleteModal(lente)} 
-              className="p-1.5 text-red-600 bg-white hover:bg-red-50 rounded-lg transition-all duration-200 hover:scale-110" 
-              title="Eliminar"
-              aria-label={`Eliminar lente ${lente.nombre}`}
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => handleOpenDetailModal(lente)} 
-              className="p-1.5 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
-              title="Ver detalles"
-              aria-label={`Ver detalles de ${lente.nombre}`}
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-            <button 
-              onClick={() => handleOpenEditModal(lente)} 
-              className="p-1.5 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
-              title="Editar"
-              aria-label={`Editar lente ${lente.nombre}`}
-            >
-              <Edit className="w-4 h-4" />
-            </button>
-          </div>
-        </td>
-      </>
-    );
-  }, [getTotalStock, handleOpenDeleteModal, handleOpenDetailModal, handleOpenEditModal]);
+          </td>
+
+          {/* Columna Acciones */}
+          <td className="px-6 py-4">
+            <div className="flex space-x-2">
+              <button
+                onClick={() => handleOpenDetailModal(lente)}
+                className="inline-flex items-center p-2 text-sm font-medium text-cyan-600 bg-cyan-50 rounded-lg border border-cyan-200 hover:bg-cyan-100 hover:text-cyan-700 transition-colors"
+                title="Ver detalles"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleOpenEditModal(lente)}
+                className="inline-flex items-center p-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 hover:text-blue-700 transition-colors"
+                title="Editar"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleOpenDeleteModal(lente)}
+                className="inline-flex items-center p-2 text-sm font-medium text-red-600 bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 hover:text-red-700 transition-colors"
+                title="Eliminar"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </td>
+        </tr>
+      );
+    });
+  };
 
   // Renderizado del componente
   if (loading) {
-    return (
-      <div className="space-y-6 animate-fade-in">
-        <Alert alert={alert} />
-        <SkeletonLoader />
-      </div>
-    );
+    return <SkeletonLoader />;
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Alerta */}
-      <Alert alert={alert} />
-      
-      {/* Estadísticas */}
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-none">
-          <StatsGrid stats={stats} />
-        </div>
-      </div>
-      
-      {/* Tabla principal */}
-      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-        <PageHeader 
-          title="Gestión de Lentes" 
-          buttonLabel="Agregar Lente" 
-          onButtonClick={handleOpenAddModal} 
+    <div className="min-h-screen bg-gray-50">
+      {/* SISTEMA DE NOTIFICACIONES */}
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message} 
+          onClose={hideAlert}
         />
-        
-        {/* BARRA DE BÚSQUEDA Y CONTROLES */}
-        <div className="px-6 py-4 border-b bg-gray-50">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-            {/* Barra de búsqueda */}
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Buscar por nombre, marca, material o color..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                aria-label="Buscar lentes"
-              />
-            </div>
+      )}
 
-            {/* Controles de filtro y ordenamiento */}
-            <div className="flex items-center space-x-3">
-              {/* Dropdown de ordenamiento */}
-              <div className="relative">
-                <button
-                  onClick={() => {
-                    setShowSortDropdown(!showSortDropdown);
-                    setShowFiltersPanel(false);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  aria-expanded={showSortDropdown}
-                  aria-haspopup="true"
-                  aria-label="Opciones de ordenamiento"
-                >
-                  {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
-                  <span className="text-sm font-medium">Ordenar</span>
-                  <ChevronDown className="w-4 h-4" />
-                </button>
-                
-                {showSortDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
-                    <div className="py-2">
-                      {SORT_OPTIONS.map((option) => {
-                        const IconComponent = option.icon;
-                        const isActive = `${sortBy}-${sortOrder}` === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            onClick={() => handleSortChange(option.value)}
-                            className={`w-full flex items-center space-x-3 px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${
-                              isActive ? 'bg-cyan-50 text-cyan-600 font-medium' : 'text-gray-700'
-                            }`}
-                            aria-pressed={isActive}
-                          >
-                            <IconComponent className="w-4 h-4" />
-                            <span>{option.label}</span>
-                            {isActive && <CheckCircle className="w-4 h-4 ml-auto" />}
-                          </button>
-                        );
-                      })}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <PageHeader
+          title="Gestión de Lentes"
+          subtitle="Administra el catálogo completo de lentes"
+          Icon={Glasses}
+          buttonText="Agregar Lente"
+          onButtonClick={handleOpenAddModal}
+          buttonIcon={Plus}
+        />
+
+        {/* Estadísticas */}
+        <StatsGrid stats={stats} />
+
+        {/* Panel de Filtros y Búsqueda */}
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-white">
+                Catálogo de Lentes
+              </h2>
+              <div className="flex items-center space-x-3">
+                {/* Botón de Ordenamiento */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowSortDropdown(!showSortDropdown)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-white/20 backdrop-blur-sm text-white rounded-lg hover:bg-white/30 transition-colors"
+                  >
+                    <SortAsc className="w-4 h-4" />
+                    <span>Ordenar</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+                  
+                  {showSortDropdown && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                      <div className="p-2">
+                        {SORT_OPTIONS.map((option) => {
+                          const Icon = option.icon;
+                          const isSelected = sortBy === option.value.split('-')[0] && sortOrder === option.value.split('-')[1];
+                          
+                          return (
+                            <button
+                              key={option.value}
+                              onClick={() => handleSortChange(option.value)}
+                              className={`flex items-center space-x-3 w-full px-3 py-2 text-sm rounded-md transition-colors ${
+                                isSelected 
+                                  ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' 
+                                  : 'text-gray-700 hover:bg-gray-50'
+                              }`}
+                            >
+                              <Icon className="w-4 h-4" />
+                              <span>{option.label}</span>
+                              {isSelected && <CheckCircle className="w-4 h-4 ml-auto text-cyan-600" />}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
+
+                {/* Botón de Filtros */}
+                <button
+                  onClick={() => setShowFiltersPanel(!showFiltersPanel)}
+                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
+                    hasActiveFilters() 
+                      ? 'bg-orange-500 text-white hover:bg-orange-600' 
+                      : 'bg-white/20 backdrop-blur-sm text-white hover:bg-white/30'
+                  }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filtros</span>
+                  {hasActiveFilters() && (
+                    <span className="w-2 h-2 bg-white rounded-full"></span>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Búsqueda y Filtros Rápidos */}
+          <div className="px-6 py-4 border-b bg-gray-50">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+              {/* Búsqueda */}
+              <div className="flex-1 max-w-md">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    placeholder="Buscar lentes por nombre, descripción, material..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors"
+                  />
+                </div>
               </div>
 
-              {/* Botón de filtros */}
-              <button
-                onClick={() => {
-                  setShowFiltersPanel(!showFiltersPanel);
-                  setShowSortDropdown(false);
-                }}
-                className={`flex items-center space-x-2 px-4 py-2 border rounded-lg transition-all duration-200 ${
-                  hasActiveFilters() 
-                    ? 'bg-cyan-500 text-white border-cyan-500 shadow-lg' 
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                }`}
-                aria-expanded={showFiltersPanel}
-                aria-label="Filtros avanzados"
-              >
-                <Filter className="w-4 h-4" />
-                <span className="text-sm font-medium">Filtros</span>
+              {/* Filtros Rápidos */}
+              <div className="flex flex-wrap gap-3">
+                <select
+                  value={filters.categoria}
+                  onChange={(e) => handleFilterChange('categoria', e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                >
+                  <option value="todas">Todas las categorías</option>
+                  {categorias.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.nombre}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filters.marca}
+                  onChange={(e) => handleFilterChange('marca', e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                >
+                  <option value="todas">Todas las marcas</option>
+                  {marcas.map((marca) => (
+                    <option key={marca._id} value={marca._id}>
+                      {marca.nombre}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filters.tipoLente}
+                  onChange={(e) => handleFilterChange('tipoLente', e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                >
+                  <option value="todos">Todos los tipos</option>
+                  <option value="sol">Sol</option>
+                  <option value="graduacion">Graduación</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Información de resultados */}
+            <div className="mt-3 flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                Mostrando {currentLentes.length} de {filteredAndSortedLentes.length} lentes
                 {hasActiveFilters() && (
-                  <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
-                    {[
-                      searchTerm && 1,
-                      filters.categoria !== 'todas' && 1,
-                      filters.marca !== 'todas' && 1,
-                      filters.tipoLente !== 'todos' && 1,
-                      filters.enPromocion !== 'todos' && 1,
-                      filters.stock !== 'todos' && 1,
-                      filters.material !== 'todos' && 1,
-                      filters.color !== 'todos' && 1,
-                      filters.precioMin && 1,
-                      filters.precioMax && 1,
-                      filters.fechaDesde && 1,
-                      filters.fechaHasta && 1
-                    ].filter(Boolean).length}
+                  <span className="text-cyan-600 ml-2">
+                    (filtros aplicados)
                   </span>
                 )}
-              </button>
+              </div>
+              
+              {hasActiveFilters() && (
+                <button
+                  onClick={clearAllFilters}
+                  className="flex items-center space-x-1 text-sm text-red-600 hover:text-red-700 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Limpiar filtros</span>
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Información de resultados */}
-          <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
-            <span>
-              {filteredAndSortedLentes.length} lente{filteredAndSortedLentes.length !== 1 ? 's' : ''} 
-              {hasActiveFilters() && ` (filtrado${filteredAndSortedLentes.length !== 1 ? 's' : ''} de ${lentes.length})`}
-            </span>
-            {hasActiveFilters() && (
-              <button
-                onClick={clearAllFilters}
-                className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1"
-                aria-label="Limpiar todos los filtros"
-              >
-                <X className="w-4 h-4" />
-                <span>Limpiar filtros</span>
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* PANEL DE FILTROS */}
-        {showFiltersPanel && (
-          <div className="border-b bg-white" role="region" aria-labelledby="filtros-titulo">
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 id="filtros-titulo" className="text-lg font-semibold text-gray-900">Filtros Avanzados</h3>
-                <button
-                  onClick={() => setShowFiltersPanel(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                  aria-label="Cerrar panel de filtros"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {/* Filtro por Categoría */}
+          {/* Panel de Filtros Avanzados */}
+          {showFiltersPanel && (
+            <div className="px-6 py-4 border-b bg-white">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Material */}
                 <div>
-                  <label htmlFor="filter-categoria" className="block text-sm font-medium text-gray-700 mb-2">
-                    Categoría
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Material
                   </label>
                   <select
-                    id="filter-categoria"
-                    value={filters.categoria}
-                    onChange={(e) => handleFilterChange('categoria', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    value={filters.material}
+                    onChange={(e) => handleFilterChange('material', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
                   >
-                    <option value="todas">Todas las categorías</option>
-                    {categorias.map(categoria => (
-                      <option key={categoria._id} value={categoria._id}>{categoria.nombre}</option>
+                    <option value="todos">Todos los materiales</option>
+                    {uniqueMateriales.map((material) => (
+                      <option key={material} value={material}>
+                        {material}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Filtro por Marca */}
+                {/* Color */}
                 <div>
-                  <label htmlFor="filter-marca" className="block text-sm font-medium text-gray-700 mb-2">
-                    Marca
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Color
                   </label>
                   <select
-                    id="filter-marca"
-                    value={filters.marca}
-                    onChange={(e) => handleFilterChange('marca', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    value={filters.color}
+                    onChange={(e) => handleFilterChange('color', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
                   >
-                    <option value="todas">Todas las marcas</option>
-                    {marcas.map(marca => (
-                      <option key={marca._id} value={marca._id}>{marca.nombre}</option>
+                    <option value="todos">Todos los colores</option>
+                    {uniqueColores.map((color) => (
+                      <option key={color} value={color}>
+                        {color}
+                      </option>
                     ))}
                   </select>
                 </div>
 
-                {/* Filtro por Tipo de Lente */}
+                {/* Promoción */}
                 <div>
-                  <label htmlFor="filter-tipo" className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Lente
-                  </label>
-                  <select
-                    id="filter-tipo"
-                    value={filters.tipoLente}
-                    onChange={(e) => handleFilterChange('tipoLente', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos los tipos</option>
-                    {uniqueTiposLente.map(tipo => (
-                      <option key={tipo} value={tipo}>{tipo}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Filtro por Promoción */}
-                <div>
-                  <label htmlFor="filter-promocion" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Promoción
                   </label>
                   <select
-                    id="filter-promocion"
                     value={filters.enPromocion}
                     onChange={(e) => handleFilterChange('enPromocion', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
                   >
                     <option value="todos">Todos</option>
                     <option value="con_promocion">Con promoción</option>
@@ -1292,16 +1233,15 @@ const LentesContent = () => {
                   </select>
                 </div>
 
-                {/* Filtro por Stock */}
+                {/* Stock */}
                 <div>
-                  <label htmlFor="filter-stock" className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
                     Stock
                   </label>
                   <select
-                    id="filter-stock"
                     value={filters.stock}
                     onChange={(e) => handleFilterChange('stock', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
                   >
                     <option value="todos">Todos</option>
                     <option value="con_stock">Con stock</option>
@@ -1309,219 +1249,120 @@ const LentesContent = () => {
                   </select>
                 </div>
 
-                {/* Filtro por Material */}
-                <div>
-                  <label htmlFor="filter-material" className="block text-sm font-medium text-gray-700 mb-2">
-                    Material
+                {/* Rango de Precios */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rango de Precio
                   </label>
-                  <select
-                    id="filter-material"
-                    value={filters.material}
-                    onChange={(e) => handleFilterChange('material', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos los materiales</option>
-                    {uniqueMateriales.map(material => (
-                      <option key={material} value={material}>{material}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Filtro por Color */}
-                <div>
-                  <label htmlFor="filter-color" className="block text-sm font-medium text-gray-700 mb-2">
-                    Color
-                  </label>
-                  <select
-                    id="filter-color"
-                    value={filters.color}
-                    onChange={(e) => handleFilterChange('color', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos los colores</option>
-                    {uniqueColores.map(color => (
-                      <option key={color} value={color}>{color}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Filtro por Rango de Precio */}
-                <div className="md:col-span-2 lg:col-span-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Precio</label>
                   <div className="flex space-x-2">
                     <input
                       type="number"
-                      placeholder="Min $"
+                      placeholder="Mínimo"
                       value={filters.precioMin}
                       onChange={(e) => handleFilterChange('precioMin', e.target.value)}
-                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      min="0"
-                      step="0.01"
-                      aria-label="Precio mínimo"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
                     />
                     <input
                       type="number"
-                      placeholder="Max $"
+                      placeholder="Máximo"
                       value={filters.precioMax}
                       onChange={(e) => handleFilterChange('precioMax', e.target.value)}
-                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      min="0"
-                      step="0.01"
-                      aria-label="Precio máximo"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
                     />
                   </div>
                 </div>
 
-                {/* Filtro por Fecha de Creación */}
-                <div className="md:col-span-2 lg:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Creación</label>
+                {/* Rango de Fechas */}
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Rango de Fecha de Creación
+                  </label>
                   <div className="flex space-x-2">
-                    <div className="flex-1">
-                      <input
-                        type="date"
-                        value={filters.fechaDesde}
-                        onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                        aria-label="Fecha desde"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <input
-                        type="date"
-                        value={filters.fechaHasta}
-                        onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                        aria-label="Fecha hasta"
-                      />
-                    </div>
-                  </div>
-                  <div className="flex text-xs text-gray-500 mt-1 space-x-4">
-                    <span>Desde</span>
-                    <span>Hasta</span>
+                    <input
+                      type="date"
+                      value={filters.fechaDesde}
+                      onChange={(e) => handleFilterChange('fechaDesde', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                    />
+                    <input
+                      type="date"
+                      value={filters.fechaHasta}
+                      onChange={(e) => handleFilterChange('fechaHasta', e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 text-sm"
+                    />
                   </div>
                 </div>
               </div>
-
-              {/* Botones de acción del panel de filtros */}
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  onClick={clearAllFilters}
-                  className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Limpiar Todo
-                </button>
-                <button
-                  onClick={() => setShowFiltersPanel(false)}
-                  className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
-                >
-                  Aplicar Filtros
-                </button>
-              </div>
             </div>
-          </div>
-        )}
-        
-        {/* TABLA DE DATOS */}
-        <div className="overflow-x-auto">
-          <div style={{ minWidth: '1200px' }}>
-            <DataTable
-              columns={TABLE_COLUMNS}
-              data={currentLentes}
-              renderRow={renderRow}
-              isLoading={false}
-              noDataMessage="No se encontraron lentes"
-              noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Aún no hay lentes registrados'}
-            />
-          </div>
+          )}
         </div>
-        
-        <Pagination {...paginationProps} />
+
+        {/* Tabla de Lentes */}
+        <DataTable
+          columns={TABLE_COLUMNS}
+          data={currentLentes}
+          renderRows={renderTableRows}
+          emptyMessage="No se encontraron lentes que coincidan con los criterios de búsqueda."
+        />
+
+        {/* Paginación */}
+        <Pagination
+          currentPage={paginationProps.currentPage}
+          totalPages={paginationProps.totalPages}
+          onPageChange={paginationProps.goToPage}
+          onPrevious={paginationProps.previousPage}
+          onNext={paginationProps.nextPage}
+          hasPrevious={paginationProps.hasPrevious}
+          hasNext={paginationProps.hasNext}
+          totalItems={filteredAndSortedLentes.length}
+          itemsPerPage={ITEMS_PER_PAGE}
+          showingStart={paginationProps.showingStart}
+          showingEnd={paginationProps.showingEnd}
+        />
       </div>
 
-      {/* MODALES */}
-      {/* Modal de formulario */}
-      <LentesFormModal
-        isOpen={showAddEditModal}
-        onClose={handleCloseModals}
-        onSubmit={handleFormSubmit}
-        title={selectedLente ? "Editar Lente" : "Agregar Nuevo Lente"}
-        formData={formData}
-        setFormData={setFormData}
-        handleInputChange={handleInputChange}
-        errors={errors}
-        isEditing={!!selectedLente}
-        categorias={categorias}
-        marcas={marcas}
-        promociones={promociones}
-        sucursales={sucursales}
-        selectedLente={selectedLente}
-      />
+      {/* Modales */}
+      {showAddEditModal && (
+        <LentesFormModal
+          isOpen={showAddEditModal}
+          onClose={handleCloseModals}
+          onSubmit={handleFormSubmit}
+          formData={formData}
+          handleInputChange={handleInputChange}
+          errors={errors}
+          categorias={categorias}
+          marcas={marcas}
+          promociones={promociones}
+          sucursales={sucursales}
+          isEditing={!!selectedLente}
+          selectedLente={selectedLente}
+        />
+      )}
 
-      {/* Modal de detalles */}
-      <DetailModal
-        isOpen={showDetailModal}
-        onClose={handleCloseModals}
-        title="Detalles del Lente"
-        item={selectedLente}
-        data={selectedLente ? [
-          { label: "Nombre", value: selectedLente.nombre },
-          { label: "Descripción", value: selectedLente.descripcion },
-          { label: "Categoría", value: selectedLente.categoriaId?.nombre || selectedLente.categoriaId },
-          { label: "Marca", value: selectedLente.marcaId?.nombre },
-          { label: "Línea", value: selectedLente.linea },
-          { label: "Tipo de Lente", value: selectedLente.tipoLente },
-          { label: "Material", value: selectedLente.material },
-          { label: "Color", value: selectedLente.color },
-          { label: "Medidas (AxAlxP)", value: `${selectedLente.medidas?.ancho || 0}mm x ${selectedLente.medidas?.altura || 0}mm x ${selectedLente.medidas?.anchoPuente || 0}mm` },
-          { label: "Precio Base", value: `${(selectedLente.precioBase || 0).toFixed(2)}` },
-          { 
-            label: "Precio Actual", 
-            value: `${(selectedLente.precioActual || selectedLente.precioBase || 0).toFixed(2)}`,
-            color: selectedLente.enPromocion ? 'text-green-600' : 'text-gray-900'
-          },
-          { 
-            label: "Estado", 
-            value: selectedLente.enPromocion ? 'En Promoción' : 'Precio Normal',
-            color: selectedLente.enPromocion ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
-          },
-          ...(selectedLente.enPromocion && selectedLente.promocionId ? [{
-            label: "Promoción Aplicada",
-            value: selectedLente.promocionId?.nombre || 'Promoción sin nombre',
-            color: 'text-orange-600'
-          }] : []),
-          { 
-            label: "Stock Total", 
-            value: `${getTotalStock(selectedLente)} unidades`
-          },
-          { 
-            label: "Disponibilidad por Sucursal", 
-            value: selectedLente.sucursales?.map(s => 
-              `${s.nombreSucursal || s.sucursalId?.nombre}: ${s.stock || 0} unidades`
-            ).join(' | ') || 'Sin stock'
-          },
-          { label: "Imágenes", value: `${selectedLente.imagenes?.length || 0} imagen(es)` },
-          { label: "Fecha de Creación", value: selectedLente.fechaCreacion ? new Date(selectedLente.fechaCreacion).toLocaleDateString('es-ES') : 'N/A' }
-        ] : []}
-      />
+      {showDetailModal && selectedLente && (
+        <DetailModal
+          isOpen={showDetailModal}
+          onClose={handleCloseModals}
+          title="Detalles del Lente"
+          data={selectedLente}
+          type="lente"
+          categorias={categorias}
+          marcas={marcas}
+          promociones={promociones}
+          sucursales={sucursales}
+        />
+      )}
 
-      {/* Modal de confirmación de eliminación */}
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={handleCloseModals}
-        onConfirm={handleDelete}
-        title="Confirmar Eliminación"
-        message={`¿Estás seguro de que deseas eliminar el lente "${selectedLente?.nombre}"? Esta acción no se puede deshacer.`}
-        confirmLabel="Sí, eliminar"
-        cancelLabel="Cancelar"
-        type="danger"
-      />
-
-      {/* OVERLAY PARA DROPDOWN */}
-      {showSortDropdown && (
-        <div 
-          className="fixed inset-0 z-10" 
-          onClick={() => setShowSortDropdown(false)}
-          aria-hidden="true"
+      {showDeleteModal && selectedLente && (
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={handleCloseModals}
+          onConfirm={handleDelete}
+          title="Eliminar Lente"
+          message={`¿Estás seguro de que deseas eliminar el lente "${selectedLente.nombre}"? Esta acción no se puede deshacer.`}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          type="delete"
         />
       )}
     </div>

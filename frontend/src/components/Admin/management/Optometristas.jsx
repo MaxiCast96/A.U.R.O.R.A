@@ -238,6 +238,13 @@ const Optometristas = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // --- FUNCIÓN PARA MOSTRAR ALERTAS ---
+    const showAlert = useCallback((type, message) => {
+        setAlert({ type, message });
+        const timer = setTimeout(() => setAlert(null), 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
     // --- EFFECT TO HANDLE RETURN REDIRECT FOR EDITING ---
     useEffect(() => {
         if (location.state?.editOptometristaId) {
@@ -302,19 +309,13 @@ const Optometristas = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showAlert]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
     // --- FUNCIONES UTILITARIAS ---
-    const showAlert = useCallback((type, message) => {
-        setAlert({ type, message });
-        const timer = setTimeout(() => setAlert(null), 5000);
-        return () => clearTimeout(timer);
-    }, []);
-
     const getEspecialidadColor = useCallback((especialidad) => {
         const colors = {
             'General': 'bg-blue-100 text-blue-800',
@@ -691,7 +692,11 @@ const Optometristas = () => {
     if (loading) {
         return (
             <div className="space-y-6 animate-fade-in">
-                <Alert alert={alert} />
+                <Alert 
+                    type={alert?.type} 
+                    message={alert?.message} 
+                    onClose={() => setAlert(null)} 
+                />
                 <SkeletonLoader />
             </div>
         );
@@ -699,7 +704,11 @@ const Optometristas = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <Alert alert={alert} />
+            <Alert 
+                type={alert?.type} 
+                message={alert?.message} 
+                onClose={() => setAlert(null)} 
+            />
             
             <div className="w-full flex justify-center">
                 <div className="w-full max-w-none">

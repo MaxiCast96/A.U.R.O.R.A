@@ -314,6 +314,10 @@ const PromocionesFormModal = ({
   productosOptions = [],
   selectedPromo = null
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
   const isEditing = !!selectedPromo;
 
   const handleImageChange = (imageUrl) => {
@@ -458,10 +462,27 @@ const PromocionesFormModal = ({
     }
   ];
 
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    setIsLoading(true);
+    setIsError(false);
+    setHasValidationErrors(false);
+
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar promoción:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const customContent = (
     <div className="space-y-8">
-
-      {/* Sección de imagen */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
           Imagen de la Promoción
@@ -476,7 +497,6 @@ const PromocionesFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -500,10 +520,6 @@ const PromocionesFormModal = ({
           </div>
         </div>
       ))}
-
-      
-
-    
     </div>
   );
 
@@ -511,7 +527,7 @@ const PromocionesFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -521,6 +537,9 @@ const PromocionesFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
     >
       {customContent}
     </FormModal>

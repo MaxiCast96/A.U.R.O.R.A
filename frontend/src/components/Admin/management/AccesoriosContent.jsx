@@ -224,7 +224,6 @@ const AccesoriosContent = () => {
   }, (data) => {
     const newErrors = {};
     
-    // Validaciones básicas
     if (!data.nombre?.trim()) newErrors.nombre = 'El nombre es requerido';
     if (!data.descripcion?.trim()) newErrors.descripcion = 'La descripción es requerida';
     if (!data.tipo) newErrors.tipo = 'La categoría es requerida';
@@ -233,7 +232,6 @@ const AccesoriosContent = () => {
     if (!data.material) newErrors.material = 'El material es requerido';
     if (!data.color) newErrors.color = 'El color es requerido';
     
-    // Validaciones de precios
     if (!data.precioBase || data.precioBase <= 0) {
       newErrors.precioBase = 'El precio base debe ser mayor a 0';
     }
@@ -250,18 +248,15 @@ const AccesoriosContent = () => {
       }
     }
     
-    // Validación de sucursales
     if (!data.sucursales || data.sucursales.length === 0) {
       newErrors.sucursales = 'Debe seleccionar al menos una sucursal';
     }
     
-    // Validación de stock
     const hasInvalidStock = data.sucursales?.some(s => s.stock < 0);
     if (hasInvalidStock) {
       newErrors.sucursales = 'El stock no puede ser negativo';
     }
     
-    // Validación de imágenes
     if (!data.imagenes || data.imagenes.length === 0) {
       newErrors.imagenes = 'Debe agregar al menos una imagen';
     }
@@ -269,7 +264,7 @@ const AccesoriosContent = () => {
     return newErrors;
   });
 
-  // Funciones utilitarias
+  // Función para mostrar alertas (mejorada)
   const showAlert = useCallback((type, message) => {
     setAlert({ type, message });
     const timer = setTimeout(() => setAlert(null), 5000);
@@ -280,7 +275,6 @@ const AccesoriosContent = () => {
     return accesorio.sucursales ? accesorio.sucursales.reduce((sum, s) => sum + (s.stock || 0), 0) : 0;
   }, []);
 
-  // Función para manejar ordenamiento
   const handleSortChange = useCallback((sortValue) => {
     const [field, order] = sortValue.split('-');
     setSortBy(field);
@@ -288,7 +282,6 @@ const AccesoriosContent = () => {
     setShowSortDropdown(false);
   }, []);
 
-  // Función para ordenar datos
   const sortData = useCallback((data) => {
     return [...data].sort((a, b) => {
       let valueA, valueB;
@@ -320,19 +313,15 @@ const AccesoriosContent = () => {
     });
   }, [sortBy, sortOrder, getTotalStock]);
 
-  // Función para aplicar filtros avanzados
   const applyAdvancedFilters = useCallback((accesorio) => {
-    // Filtro por categoría
     if (filters.categoria !== 'todas' && accesorio.tipo?._id !== filters.categoria) {
       return false;
     }
 
-    // Filtro por marca
     if (filters.marca !== 'todas' && accesorio.marcaId?._id !== filters.marca) {
       return false;
     }
 
-    // Filtro por promoción
     if (filters.enPromocion === 'con_promocion' && !accesorio.enPromocion) {
       return false;
     }
@@ -340,7 +329,6 @@ const AccesoriosContent = () => {
       return false;
     }
 
-    // Filtro por stock
     const stockTotal = getTotalStock(accesorio);
     if (filters.stock === 'con_stock' && stockTotal <= 0) {
       return false;
@@ -349,17 +337,14 @@ const AccesoriosContent = () => {
       return false;
     }
 
-    // Filtro por material
     if (filters.material !== 'todos' && accesorio.material?.toLowerCase() !== filters.material.toLowerCase()) {
       return false;
     }
 
-    // Filtro por color
     if (filters.color !== 'todos' && accesorio.color?.toLowerCase() !== filters.color.toLowerCase()) {
       return false;
     }
 
-    // Filtro por precio
     const precio = accesorio.enPromocion ? accesorio.precioActual : accesorio.precioBase;
     if (filters.precioMin && parseFloat(precio || 0) < parseFloat(filters.precioMin)) {
       return false;
@@ -368,7 +353,6 @@ const AccesoriosContent = () => {
       return false;
     }
 
-    // Filtro por fecha de creación
     if (filters.fechaDesde) {
       const fechaDesde = new Date(filters.fechaDesde);
       if (new Date(accesorio.createdAt || new Date(0)) < fechaDesde) {
@@ -386,18 +370,15 @@ const AccesoriosContent = () => {
     return true;
   }, [filters, getTotalStock]);
 
-  // Funciones de carga de datos
   const fetchAccesorios = async () => {
     setLoading(true);
     try {
       const response = await axios.get(API_URL);
-      console.log('Accesorios response:', response.data);
-      // Manejar diferentes estructuras de respuesta
       const data = response.data.data || response.data;
       setAccesorios(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Error fetching accesorios:", error);
-      showAlert('error', 'Error al cargar los accesorios: ' + (error.response?.data?.message || error.message));
+      showAlert('error', 'Error al cargar los accesorios desde el servidor.');
       setAccesorios([]);
     } finally {
       setLoading(false);
@@ -413,13 +394,6 @@ const AccesoriosContent = () => {
         axios.get(PROMOCIONES_URL)
       ]);
       
-      console.log('Dependencies loaded:', {
-        marcas: marcasRes.data,
-        categorias: categoriasRes.data,
-        sucursales: sucursalesRes.data,
-        promociones: promocionesRes.data
-      });
-      
       setMarcas(Array.isArray(marcasRes.data) ? marcasRes.data : marcasRes.data.data || []);
       setCategorias(Array.isArray(categoriasRes.data) ? categoriasRes.data : categoriasRes.data.data || []);
       setSucursales(Array.isArray(sucursalesRes.data) ? sucursalesRes.data : sucursalesRes.data.data || []);
@@ -427,9 +401,7 @@ const AccesoriosContent = () => {
       
     } catch (error) {
       console.error("Error fetching dependencies:", error);
-      showAlert('error', 'Error al cargar marcas, categorías, sucursales o promociones: ' + (error.response?.data?.message || error.message));
-      
-      // Establecer arrays vacíos en caso de error
+      showAlert('error', 'Error al cargar datos relacionados.');
       setMarcas([]);
       setCategorias([]);
       setSucursales([]);
@@ -437,12 +409,10 @@ const AccesoriosContent = () => {
     }
   };
 
-  // Cargar datos al montar el componente
   useEffect(() => {
     fetchAccesorios();
     fetchDependencies();
     
-    // Cargar script de Cloudinary
     const script = document.createElement('script');
     script.src = "https://widget.cloudinary.com/v2.0/global/all.js";
     script.async = true;
@@ -455,11 +425,9 @@ const AccesoriosContent = () => {
     };
   }, []);
 
-  // Lógica de filtrado, ordenamiento y paginación
   const filteredAndSortedAccesorios = useMemo(() => {
     let currentAccesorios = Array.isArray(accesorios) ? accesorios : [];
 
-    // Filtro por término de búsqueda
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       currentAccesorios = currentAccesorios.filter(
@@ -473,7 +441,6 @@ const AccesoriosContent = () => {
       );
     }
 
-    // Aplicar filtros avanzados
     currentAccesorios = currentAccesorios.filter(applyAdvancedFilters);
 
     return sortData(currentAccesorios);
@@ -481,7 +448,6 @@ const AccesoriosContent = () => {
 
   const { paginatedData: currentAccesorios, ...paginationProps } = usePagination(filteredAndSortedAccesorios, ITEMS_PER_PAGE);
 
-  // Funciones para manejar filtros
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({
       ...prev,
@@ -508,7 +474,6 @@ const AccesoriosContent = () => {
            filters.fechaHasta;
   }, [searchTerm, filters]);
 
-  // Obtener opciones únicas
   const uniqueMateriales = useMemo(() => {
     const materiales = accesorios
       .map(a => a.material)
@@ -525,7 +490,6 @@ const AccesoriosContent = () => {
     return colores.sort();
   }, [accesorios]);
 
-  // Funciones de manejo de modales
   const handleCloseModals = useCallback(() => {
     setShowAddEditModal(false);
     setShowDetailModal(false);
@@ -558,27 +522,22 @@ const AccesoriosContent = () => {
   const handleOpenEditModal = useCallback((accesorio) => {
     setSelectedAccesorio(accesorio);
     
-    // Función para normalizar las imágenes
     const normalizeImages = (images) => {
       if (!images || !Array.isArray(images)) return [];
       
       return images.map(img => {
-        // Si es un string (URL directa)
         if (typeof img === 'string') {
           return img.startsWith('http') ? img : `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img}`;
         }
         
-        // Si es un objeto con propiedades
         if (typeof img === 'object' && img !== null) {
-          // Priorizar secure_url, luego url, luego public_id
           return img.secure_url || img.url || (img.public_id ? `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${img.public_id}` : '');
         }
         
         return '';
-      }).filter(url => url && url.length > 0); // Filtrar URLs vacías
+      }).filter(url => url && url.length > 0);
     };
 
-    // Función para normalizar sucursales
     const normalizeSucursales = (sucursales) => {
       if (!sucursales || !Array.isArray(sucursales)) return [];
       
@@ -589,7 +548,6 @@ const AccesoriosContent = () => {
       }));
     };
 
-    // Preparar datos para edición con normalización mejorada
     const editData = {
       nombre: accesorio.nombre || '',
       descripcion: accesorio.descripcion || '',
@@ -620,29 +578,22 @@ const AccesoriosContent = () => {
     setShowDeleteModal(true);
   }, []);
 
-  // Función de envío del formulario
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    
-    console.log('Form data before validation:', formData);
     
     if (!validateForm()) {
       showAlert('error', 'Por favor, corrige los errores del formulario.');
       return;
     }
 
-    // Preparar FormData para el envío
     const dataToSend = new FormData();
     
-    // Agregar campos básicos
     Object.keys(formData).forEach(key => {
       if (key === 'sucursales') {
         dataToSend.append('sucursales', JSON.stringify(formData.sucursales));
       } else if (key === 'imagenes') {
-        // Las imágenes ya son URLs de Cloudinary, enviarlas como JSON
         dataToSend.append('imagenes', JSON.stringify(formData.imagenes));
       } else if (key === 'promocionId') {
-        // Solo enviar promocionId si está en promoción
         if (formData.enPromocion && formData.promocionId) {
           dataToSend.append(key, formData[key]);
         }
@@ -651,55 +602,44 @@ const AccesoriosContent = () => {
       }
     });
 
-    // Debug: Ver qué se está enviando
-    console.log('Sending data:', Object.fromEntries(dataToSend));
-
     try {
-      let response;
       if (selectedAccesorio) {
-        // Actualizar accesorio existente
-        response = await axios.put(`${API_URL}/${selectedAccesorio._id}`, dataToSend, {
+        await axios.put(`${API_URL}/${selectedAccesorio._id}`, dataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        showAlert('success', 'Accesorio actualizado exitosamente');
+        showAlert('success', '¡Accesorio actualizado exitosamente!');
       } else {
-        // Crear nuevo accesorio
-        response = await axios.post(API_URL, dataToSend, {
+        await axios.post(API_URL, dataToSend, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
-        showAlert('success', 'Accesorio creado exitosamente');
+        showAlert('success', '¡Accesorio agregado exitosamente!');
       }
       
-      console.log('Server response:', response.data);
-      
-      // Recargar datos y cerrar modal
       await fetchAccesorios();
       handleCloseModals();
       
     } catch (error) {
       console.error("Error submitting form:", error);
-      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
-      showAlert('error', `Error al guardar el accesorio: ${errorMessage}`);
+      const errorMessage = error.response?.data?.message || 'Ocurrió un error inesperado.';
+      showAlert('error', errorMessage);
     }
   };
 
-  // Función de eliminación
   const handleDelete = async () => {
     if (!selectedAccesorio) return;
     
     try {
       await axios.delete(`${API_URL}/${selectedAccesorio._id}`);
-      showAlert('success', 'Accesorio eliminado exitosamente');
+      showAlert('delete', '¡Accesorio eliminado exitosamente!');
       await fetchAccesorios();
       handleCloseModals();
     } catch (error) {
       console.error("Error deleting accesorio:", error);
-      const errorMessage = error.response?.data?.message || error.message || 'Error desconocido';
-      showAlert('error', `Error al eliminar el accesorio: ${errorMessage}`);
+      const errorMessage = error.response?.data?.message || 'Ocurrió un error inesperado.';
+      showAlert('error', errorMessage);
     }
   };
 
-  // Calcular estadísticas
   const accesoriosArr = Array.isArray(accesorios) ? accesorios : [];
   const totalAccesorios = accesoriosArr.length;
   const accesoriosEnPromocion = accesoriosArr.filter(a => a.enPromocion).length;
@@ -735,7 +675,6 @@ const AccesoriosContent = () => {
     }
   ];
 
-  // Función para renderizar filas
   const renderRow = useCallback((accesorio) => {
     const stockTotal = getTotalStock(accesorio);
     const tieneStock = stockTotal > 0;
@@ -849,14 +788,14 @@ const AccesoriosContent = () => {
                 ? 'bg-yellow-100 text-yellow-800' 
                 : 'bg-gray-100 text-gray-800'
             }`}>
-              {accesorio.enPromocion ? '  Promoción' : 'Precio normal'}
+              {accesorio.enPromocion ? '🏷 Promoción' : 'Precio normal'}
             </span>
             <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
               tieneStock 
                 ? 'bg-green-100 text-green-800' 
                 : 'bg-red-100 text-red-800'
             }`}>
-              {tieneStock ? '  Disponible' : '⏱ Sin stock'}
+              {tieneStock ? '✓ Disponible' : '⏱ Sin stock'}
             </span>
           </div>
         </td>
@@ -893,11 +832,10 @@ const AccesoriosContent = () => {
     );
   }, [getTotalStock, handleOpenDeleteModal, handleOpenDetailModal, handleOpenEditModal]);
 
-  // Renderizado del componente
   if (loading) {
     return (
       <div className="space-y-6 animate-fade-in">
-        <Alert alert={alert} />
+        <Alert alert={alert} onClose={() => setAlert(null)} />
         <SkeletonLoader />
       </div>
     );
@@ -905,14 +843,42 @@ const AccesoriosContent = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Alerta */}
-      <Alert alert={alert} />
+      {/* Alerta mejorada */}
+      <Alert 
+        type={alert?.type} 
+        message={alert?.message} 
+        onClose={() => setAlert(null)} 
+      />
       
       {/* Estadísticas */}
-      <div className="w-full flex justify-center">
-        <div className="w-full max-w-none">
-          <StatsGrid stats={stats} />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {stats.map((stat, index) => (
+          <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
+                <p className={`text-3xl font-bold mt-2 ${
+                  stat.color === 'cyan' ? 'text-cyan-600' : 
+                  stat.color === 'green' ? 'text-green-600' : 
+                  'text-red-600'
+                }`}>
+                  {stat.value}
+                </p>
+              </div>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                stat.color === 'cyan' ? 'bg-cyan-100' : 
+                stat.color === 'green' ? 'bg-green-100' : 
+                'bg-red-100'
+              }`}>
+                <stat.Icon className={`w-6 h-6 ${
+                  stat.color === 'cyan' ? 'text-cyan-600' : 
+                  stat.color === 'green' ? 'text-green-600' : 
+                  'text-red-600'
+                }`} />
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
       
       {/* Tabla principal */}
@@ -931,7 +897,7 @@ const AccesoriosContent = () => {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Buscar por nombre, marca, material o color..."
+                placeholder="Buscar accesorio..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
@@ -1247,7 +1213,7 @@ const AccesoriosContent = () => {
               renderRow={renderRow}
               isLoading={false}
               noDataMessage="No se encontraron accesorios"
-              noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Aún no hay accesorios registrados'}
+              noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Comienza registrando tu primer accesorio'}
             />
           </div>
         </div>
@@ -1256,7 +1222,6 @@ const AccesoriosContent = () => {
       </div>
 
       {/* MODALES */}
-      {/* Modal de formulario mejorado con soporte para promociones */}
       <AccesoriosFormModal
         isOpen={showAddEditModal}
         onClose={handleCloseModals}
@@ -1274,7 +1239,6 @@ const AccesoriosContent = () => {
         selectedAccesorio={selectedAccesorio}
       />
 
-      {/* Modal de detalles mejorado */}
       <DetailModal
         isOpen={showDetailModal}
         onClose={handleCloseModals}
@@ -1319,16 +1283,12 @@ const AccesoriosContent = () => {
         ] : []}
       />
 
-      {/* Modal de confirmación de eliminación */}
       <ConfirmationModal
         isOpen={showDeleteModal}
         onClose={handleCloseModals}
         onConfirm={handleDelete}
         title="Confirmar Eliminación"
-        message={`¿Estás seguro de que deseas eliminar el accesorio "${selectedAccesorio?.nombre}"? Esta acción no se puede deshacer.`}
-        confirmLabel="Sí, eliminar"
-        cancelLabel="Cancelar"
-        type="danger"
+        message={`¿Estás seguro de que deseas eliminar el accesorio "${selectedAccesorio?.nombre}"?`}
       />
 
       {/* OVERLAY PARA DROPDOWN */}

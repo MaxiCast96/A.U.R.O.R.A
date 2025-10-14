@@ -167,6 +167,10 @@ const RecetasFormModal = ({
   optometristas = [],
   selectedReceta = null
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
   const isEditing = !!selectedReceta;
 
   const sections = [
@@ -242,26 +246,23 @@ const RecetasFormModal = ({
     }
   ];
 
-  // Obtener información del cliente seleccionado
-  const getClienteInfo = () => {
-    if (!formData.historialMedicoId) return null;
-    const historial = historialesMedicos.find(h => h._id === formData.historialMedicoId);
-    return historial?.clienteId;
-  };
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
-  // Obtener información del optometrista seleccionado
-  const getOptometristaInfo = () => {
-    if (!formData.optometristaId) return null;
-    const optometrista = optometristas.find(o => o._id === formData.optometristaId);
-    return optometrista?.empleadoId;
-  };
+    setIsLoading(true);
+    setIsError(false);
+    setHasValidationErrors(false);
 
-  // Calcular fecha de vencimiento
-  const getFechaVencimiento = () => {
-    if (!formData.vigencia) return null;
-    const fechaActual = new Date();
-    const fechaVencimiento = new Date(fechaActual.setMonth(fechaActual.getMonth() + parseInt(formData.vigencia)));
-    return fechaVencimiento.toLocaleDateString('es-ES');
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar receta:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const customContent = (
@@ -269,7 +270,6 @@ const RecetasFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-           
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -290,7 +290,6 @@ const RecetasFormModal = ({
         </div>
       ))}
 
-      {/* Información de graduación */}
       {(formData?.ojoDerecho?.esfera || formData?.ojoIzquierdo?.esfera) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start space-x-2">
@@ -307,8 +306,6 @@ const RecetasFormModal = ({
           </div>
         </div>
       )}
-
-      
     </div>
   );
 
@@ -316,7 +313,7 @@ const RecetasFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -326,6 +323,9 @@ const RecetasFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
     >
       {customContent}
     </FormModal>

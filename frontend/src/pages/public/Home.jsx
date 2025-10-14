@@ -238,11 +238,10 @@ const Home = () => {
       >
         <Navbar />
 
-        {/* Hero Section - Enhanced with Dynamic Background */}
-<section className="relative min-h-[90vh] flex items-center overflow-hidden">
-  {/* Dynamic Background with Blurred Promo Image */}
-  <div className="absolute inset-0">
-    <div />
+       {/* Hero Section - Premium Image-Focused Design */}
+<section className="relative min-h-[95vh] flex items-center overflow-hidden bg-white">
+  {/* Subtle Background with Promo Image */}
+  <div className="absolute inset-0 overflow-hidden">
     <AnimatePresence mode="wait">
       {currentPromo && getPromoImage(currentPromo) && (
         <motion.div
@@ -250,80 +249,109 @@ const Home = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.8 }}
           className="absolute inset-0"
         >
           <div
             className="w-full h-full bg-cover bg-center bg-no-repeat"
             style={{
               backgroundImage: `url(${getPromoImage(currentPromo)})`,
-              filter: 'blur(5px) brightness(0.3)',
+              filter: 'blur(8px) brightness(0.4)',
             }}
           />
-          <div className="absolute inset-0 bg-cyan-500/30" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/90 to-white/95" />
         </motion.div>
       )}
     </AnimatePresence>
-    <div className="absolute inset-0 bg-white/80 z-20" />
+    
+    {/* Subtle gradient overlay */}
+    <motion.div 
+      animate={{ 
+        opacity: [0.3, 0.5, 0.3],
+      }}
+      transition={{ 
+        duration: 8,
+        repeat: Infinity,
+        ease: "easeInOut" 
+      }}
+      className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br from-[#0097c2]/5 to-transparent rounded-full blur-3xl"
+    />
   </div>
-
-  {/* Floating Elements */}
-  <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#0097c2]/10 to-transparent rounded-full blur-3xl z-30" />
-  <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#00b4e4]/10 to-transparent rounded-full blur-3xl z-30" />
   
-  <div className="relative w-full max-w-7xl mx-auto px-6 lg:px-8 z-40">
+  <div className="relative w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 z-40">
     {loadingPromos ? (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-gray-200 border-t-[#0097c2] rounded-full animate-spin mx-auto" />
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center space-y-6">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            className="w-20 h-20 border-4 border-gray-200 border-t-[#0097c2] rounded-full mx-auto"
+          />
           <p className="text-xl font-medium text-gray-600">Cargando promociones...</p>
         </div>
       </div>
     ) : errorPromos ? (
-      <div className="flex items-center justify-center min-h-[60vh] text-center">
-        <div className="space-y-4">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-            <svg className="w-8 h-8 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+      <div className="flex items-center justify-center min-h-[70vh] text-center">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-4"
+        >
+          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+            <svg className="w-10 h-10 text-red-500" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
             </svg>
           </div>
           <p className="text-xl font-medium text-red-600">Error al cargar promociones</p>
-        </div>
+        </motion.div>
       </div>
     ) : (
-      <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
-        {/* Content Section */}
-        <div className="space-y-8 order-2 lg:order-1">
+      <div className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center min-h-[75vh]">
+        {/* Content Section - Más compacto */}
+        <motion.div 
+          initial={{ opacity: 0, x: -50 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="lg:col-span-5 space-y-6 order-2 lg:order-1 z-20"
+        >
           <AnimatePresence mode="wait">
             {heroPromos.length > 0 ? (
               <motion.div
                 key={`content-${promoIndex}`}
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.6 }}
                 className="space-y-6"
               >
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 leading-tight tracking-tight">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.1] tracking-tight">
                   {getPromoTitle(currentPromo)}
                 </h1>
 
-                <p className="text-lg lg:text-xl text-gray-600 leading-relaxed max-w-lg">
+                <p className="text-base lg:text-lg text-gray-600 leading-relaxed max-w-md">
                   {getPromoDesc(currentPromo)}
                 </p>
 
-                <div className="flex flex-wrap gap-4 pt-4">
+                <div className="flex flex-wrap gap-3 pt-2">
                   <Link
                     to="/productos?enPromocion=true"
-                    className="group inline-flex items-center px-8 py-4 bg-cyan-600 hover:from-[#0083a8] hover:to-[#0097c2] text-white rounded-2xl font-semibold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                    className="group inline-flex items-center px-6 py-3.5 bg-gradient-to-r from-[#0097c2] to-[#00b4e4] hover:from-[#0083a8] hover:to-[#0097c2] text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-0.5"
                   >
-                    Más información
-                    <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    Ver Promoción
+                    <motion.svg 
+                      className="w-5 h-5 ml-2" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      animate={{ x: [0, 5, 0] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                    </svg>
+                    </motion.svg>
                   </Link>
                   <Link
                     to="/servicios"
-                    className="group inline-flex items-center px-8 py-4 border-2 border-gray-300 hover:border-[#0097c2] text-gray-700 hover:text-[#0097c2] rounded-2xl font-semibold text-lg transition-all duration-300 hover:shadow-lg backdrop-blur-sm bg-white/80"
+                    className="group inline-flex items-center px-6 py-3.5 border-2 border-gray-300 hover:border-[#0097c2] text-gray-700 hover:text-[#0097c2] rounded-xl font-semibold transition-all duration-300 hover:shadow-md bg-white/80 backdrop-blur-sm"
                   >
                     Nuestros Servicios
                     <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,43 +363,107 @@ const Home = () => {
             ) : (
               <motion.div
                 key="content-empty"
-                initial={{ opacity: 1 }}
-                animate={{ opacity: 1 }}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold text-gray-900 leading-tight">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 leading-[1.1]">
                   Cuidamos tu Visión
                 </h1>
-                <p className="text-lg lg:text-xl text-gray-600 leading-relaxed">
+                <p className="text-base lg:text-lg text-gray-600 leading-relaxed">
                   Profesionales en salud visual con más de 10 años de experiencia
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+        </motion.div>
 
-        {/* Image Section */}
-        <div className="relative flex items-center justify-center order-1 lg:order-2">
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0097c2]/10 to-[#00b4e4]/10 rounded-full blur-3xl" />
+        {/* Image Section - Mucho más grande y prominente */}
+        <div className="lg:col-span-7 relative flex items-center justify-center order-1 lg:order-2">
+          {/* Efectos de fondo animados */}
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.1, 1],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{ 
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut" 
+            }}
+            className="absolute inset-0 bg-gradient-to-br from-[#0097c2]/20 via-[#00b4e4]/20 to-transparent rounded-[3rem] blur-3xl"
+          />
           
           <AnimatePresence mode="wait">
             <motion.div
               key={`image-${promoIndex}`}
-              initial={{ opacity: 1 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 1 }}
+              initial={{ opacity: 0, scale: 0.8, rotateY: -15 }}
+              animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+              exit={{ opacity: 0, scale: 0.8, rotateY: 15 }}
+              transition={{ 
+                duration: 0.8,
+                ease: [0.43, 0.13, 0.23, 0.96]
+              }}
               className="relative z-10 w-full"
             >
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#0097c2]/20 to-transparent rounded-3xl blur-xl" />
-                <img
+              <div className="relative group">
+                {/* Glow effect */}
+                <motion.div 
+                  animate={{ 
+                    boxShadow: [
+                      "0 0 60px rgba(0, 151, 194, 0.3)",
+                      "0 0 80px rgba(0, 180, 228, 0.4)",
+                      "0 0 60px rgba(0, 151, 194, 0.3)"
+                    ]
+                  }}
+                  transition={{ 
+                    duration: 3,
+                    repeat: Infinity,
+                    ease: "easeInOut" 
+                  }}
+                  className="absolute -inset-4 bg-gradient-to-br from-[#0097c2]/30 via-[#00b4e4]/30 to-transparent rounded-[3rem] blur-2xl opacity-60"
+                />
+                
+                {/* Frame decorativo */}
+                <div className="absolute -inset-2 bg-gradient-to-br from-[#0097c2]/10 to-[#00b4e4]/10 rounded-[2.5rem] border border-white/50" />
+                
+                <motion.img
                   src={getPromoImage(currentPromo) || Lente1}
                   alt={getPromoTitle(currentPromo) || "Lentes profesionales"}
-                  className="relative w-full max-w-2xl mx-auto object-contain drop-shadow-2xl"
+                  className="relative w-full h-auto object-contain drop-shadow-2xl rounded-[2rem] transform group-hover:scale-[1.02] transition-transform duration-500"
+                  whileHover={{ scale: 1.05 }}
+                  transition={{ type: "spring", stiffness: 300 }}
                   onError={(e) => {
                     e.target.onerror = null;
                     e.target.src = Lente1;
                   }}
+                />
+
+                {/* Floating elements around image */}
+                <motion.div
+                  animate={{ 
+                    y: [0, -15, 0],
+                    rotate: [0, 5, 0]
+                  }}
+                  transition={{ 
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut" 
+                  }}
+                  className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-[#0097c2] to-[#00b4e4] rounded-full opacity-20 blur-xl"
+                />
+                <motion.div
+                  animate={{ 
+                    y: [0, 15, 0],
+                    rotate: [0, -5, 0]
+                  }}
+                  transition={{ 
+                    duration: 5,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                    delay: 1
+                  }}
+                  className="absolute -bottom-8 -left-8 w-32 h-32 bg-gradient-to-tr from-[#00b4e4] to-[#0097c2] rounded-full opacity-20 blur-xl"
                 />
               </div>
             </motion.div>
@@ -381,44 +473,53 @@ const Home = () => {
     )}
   </div>
 
-  {/* Navigation Controls - FUERA del contenedor max-w-7xl */}
+  {/* Navigation Controls - Rediseñados y más sutiles */}
   {heroPromos.length > 1 && (
     <>
       <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+        whileHover={{ scale: 1.1, x: 5 }}
+        whileTap={{ scale: 0.95 }}
         onClick={handlePrevPromo}
-        className="absolute left-0 top-[55%] -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 lg:w-14 lg:h-24 bg-white/90 backdrop-blur-sm hover:bg-white text-[#0097c2] rounded-r-full shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center z-50 border border-white/20 pl-1"
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md hover:bg-white text-gray-700 hover:text-[#0097c2] rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 border border-gray-200/50 group"
       >
-        <svg className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/>
         </svg>
       </motion.button>
 
       <motion.button
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.9 }}
+        whileHover={{ scale: 1.1, x: -5 }}
+        whileTap={{ scale: 0.95 }}
         onClick={handleNextPromo}
-        className="absolute right-0 top-[55%] -translate-y-1/2 w-10 h-16 sm:w-12 sm:h-20 lg:w-14 lg:h-24 bg-white/90 backdrop-blur-sm hover:bg-white text-[#0097c2] rounded-l-full shadow-xl hover:shadow-2xl transition-all duration-300 flex items-center justify-center z-50 border border-white/20 pr-1"
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 sm:w-14 sm:h-14 bg-white/95 backdrop-blur-md hover:bg-white text-gray-700 hover:text-[#0097c2] rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 border border-gray-200/50 group"
       >
-        <svg className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+        <svg className="w-5 h-5 sm:w-6 sm:h-6 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
         </svg>
       </motion.button>
 
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex space-x-3 z-50">
+      {/* Indicadores mejorados */}
+      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex items-center gap-2 z-50 px-4 py-2 bg-white/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50">
         {heroPromos.map((_, index) => (
           <motion.button
             key={index}
-            whileHover={{ scale: 1.2 }}
-            whileTap={{ scale: 0.8 }}
+            whileHover={{ scale: 1.3 }}
+            whileTap={{ scale: 0.9 }}
             onClick={() => setPromoIndex(index)}
-            className={`transition-all duration-300 ${
+            className="relative"
+          >
+            <div className={`transition-all duration-300 ${
               index === promoIndex
-                ? "w-10 h-3 bg-[#0097c2] rounded-full shadow-lg"
-                : "w-3 h-3 bg-gray-300 hover:bg-gray-400 rounded-full"
-            }`}
-          />
+                ? "w-8 h-2 bg-gradient-to-r from-[#0097c2] to-[#00b4e4] rounded-full"
+                : "w-2 h-2 bg-gray-300 hover:bg-gray-400 rounded-full"
+            }`} />
+            {index === promoIndex && (
+              <motion.div
+                layoutId="activeIndicator"
+                className="absolute inset-0 bg-[#0097c2]/20 rounded-full blur-sm"
+              />
+            )}
+          </motion.button>
         ))}
       </div>
     </>

@@ -227,6 +227,10 @@ const SucursalesFormModal = ({
   selectedSucursal = null
 }) => {
   const isEditing = !!selectedSucursal;
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
   const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
   
   const municipalities = useMemo(() => {
@@ -259,7 +263,6 @@ const SucursalesFormModal = ({
       title: "Información General",
       fields: [
         { name: 'nombre', label: 'Nombre de la Sucursal', type: 'text', placeholder: 'Ej: Sucursal Centro', required: true },
-       
         { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'sucursal@email.com', required: true },
         { name: 'telefono', label: 'Teléfono', type: 'text', required: true },
       ]
@@ -296,8 +299,6 @@ const SucursalesFormModal = ({
     {
       title: "Información Operacional",
       fields: [
-      
-        
         { 
           name: 'estado', 
           label: 'Estado de la Sucursal', 
@@ -314,7 +315,6 @@ const SucursalesFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-           
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -335,16 +335,33 @@ const SucursalesFormModal = ({
           </div>
         </div>
       ))}
-
-      
     </div>
   );
+
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    setIsLoading(true);
+    setIsError(false);
+    setHasValidationErrors(false);
+
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar sucursal:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -354,6 +371,9 @@ const SucursalesFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
     >
       {customContent}
     </FormModal>

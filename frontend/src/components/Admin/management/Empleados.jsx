@@ -247,6 +247,13 @@ const Empleados = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
+    // --- FUNCIÓN PARA MOSTRAR ALERTAS ---
+    const showAlert = useCallback((type, message) => {
+        setAlert({ type, message });
+        const timer = setTimeout(() => setAlert(null), 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
     // --- FETCH DE DATOS ---
     const fetchData = useCallback(async () => {
         try {
@@ -269,7 +276,7 @@ const Empleados = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showAlert]);
 
     useEffect(() => {
         fetchData();
@@ -365,12 +372,6 @@ const Empleados = () => {
     });
 
     // --- FUNCIONES UTILITARIAS ---
-    const showAlert = useCallback((type, message) => {
-        setAlert({ type, message });
-        const timer = setTimeout(() => setAlert(null), 5000);
-        return () => clearTimeout(timer);
-    }, []);
-
     const getEstadoColor = useCallback((estado) => (
         estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
     ), []);
@@ -618,18 +619,19 @@ const Empleados = () => {
     };
 
     const deleteOptometrista = async (empleadoId) => {
-        try {
+        
             const optometrista = await checkIfOptometrista(empleadoId);
             if (optometrista) {
                 await axiosWithFallback('delete', `${OPTOMETRISTAS_EP}/${optometrista._id}`);
             }
-        } catch (error) {
-            throw error;
-        }
+        
     };
 
     const handleProceedToOptometristaForm = () => {
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            showAlert('error', 'Por favor complete todos los campos requeridos correctamente.');
+            return;
+        }
         
         const completeEmployeeData = {
             ...formData,
@@ -847,7 +849,10 @@ const Empleados = () => {
     };
 
     const handleSubmit = async () => {
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            showAlert('error', 'Por favor complete todos los campos requeridos correctamente.');
+            return;
+        }
 
         if (selectedEmpleado && selectedEmpleado.cargo === 'Optometrista' && formData.cargo !== 'Optometrista') {
             setModals(prev => ({ ...prev, cargoChangeWarning: true }));
@@ -891,7 +896,7 @@ const Empleados = () => {
             }
             
             await axiosWithFallback('delete', `${EMPLEADOS_EP}/${selectedEmpleado._id}`);
-            showAlert('success', '¡Empleado eliminado exitosamente!');
+            showAlert('delete', '¡Empleado eliminado exitosamente!');
             fetchData();
             handleCloseModals();
         } catch (error) {
@@ -1008,7 +1013,11 @@ const Empleados = () => {
     if (loading) {
         return (
             <div className="space-y-6 animate-fade-in">
-                <Alert alert={alert} />
+                <Alert 
+                    type={alert?.type} 
+                    message={alert?.message} 
+                    onClose={() => setAlert(null)} 
+                />
                 <SkeletonLoader />
             </div>
         );
@@ -1016,7 +1025,11 @@ const Empleados = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <Alert alert={alert} />
+            <Alert 
+                type={alert?.type} 
+                message={alert?.message} 
+                onClose={() => setAlert(null)} 
+            />
             
             <div className="w-full flex justify-center">
                 <div className="w-full max-w-none">

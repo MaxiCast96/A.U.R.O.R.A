@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { API_CONFIG } from '../../../config/api';
 import MarcasFormModal from './employees/MarcasFormModal';
+import Alert from '../ui/Alert';
 
 // ============================================================================
 // CUSTOM HOOKS
@@ -49,7 +50,6 @@ const usePagination = (data, pageSize) => {
     const totalPages = Math.ceil(data.length / pageSize);
     const paginatedData = data.slice(currentPage * pageSize, (currentPage + 1) * pageSize);
     
-    // Reset page when data changes
     useEffect(() => {
         if (currentPage >= totalPages && totalPages > 0) {
             setCurrentPage(0);
@@ -69,10 +69,8 @@ const usePagination = (data, pageSize) => {
 // UI COMPONENTS
 // ============================================================================
 
-// Skeleton Loader Component
 const SkeletonLoader = React.memo(() => (
     <div className="animate-pulse">
-        {/* Skeleton para las estadísticas */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             {Array.from({ length: 4 }, (_, i) => (
                 <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
@@ -87,7 +85,6 @@ const SkeletonLoader = React.memo(() => (
             ))}
         </div>
 
-        {/* Skeleton para la tabla */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
             <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
                 <div className="flex justify-between items-center">
@@ -103,10 +100,6 @@ const SkeletonLoader = React.memo(() => (
                         <div className="h-10 bg-gray-200 rounded w-24"></div>
                         <div className="h-10 bg-gray-200 rounded w-24"></div>
                     </div>
-                </div>
-                <div className="mt-3 flex justify-between">
-                    <div className="h-4 bg-gray-200 rounded w-32"></div>
-                    <div className="h-4 bg-gray-200 rounded w-24"></div>
                 </div>
             </div>
 
@@ -161,17 +154,6 @@ const SkeletonLoader = React.memo(() => (
                         ))}
                     </tbody>
                 </table>
-            </div>
-
-            <div className="px-6 py-4 border-t bg-gray-50">
-                <div className="flex items-center justify-between">
-                    <div className="h-4 bg-gray-200 rounded w-40"></div>
-                    <div className="flex space-x-2">
-                        {Array.from({ length: 4 }, (_, i) => (
-                            <div key={i} className="w-10 h-10 bg-gray-200 rounded"></div>
-                        ))}
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -291,28 +273,6 @@ const Pagination = ({ currentPage, totalPages, setCurrentPage }) => {
     );
 };
 
-const Alert = ({ alert }) => {
-    if (!alert) return null;
-    
-    const getAlertColors = (type) => {
-        switch(type) {
-            case 'success': return 'bg-green-100 border-green-400 text-green-700';
-            case 'error': return 'bg-red-100 border-red-400 text-red-700';
-            case 'warning': return 'bg-yellow-100 border-yellow-400 text-yellow-700';
-            default: return 'bg-blue-100 border-blue-400 text-blue-700';
-        }
-    };
-
-    return (
-        <div className={`border px-4 py-3 rounded ${getAlertColors(alert.type)} animate-slideInDown`}>
-            <div className="flex items-center">
-                <AlertCircle className="w-4 h-4 mr-2" />
-                <span>{alert.message}</span>
-            </div>
-        </div>
-    );
-};
-
 const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, confirmLabel = "Confirmar", cancelLabel = "Cancelar" }) => {
     if (!isOpen) return null;
 
@@ -403,158 +363,13 @@ const DetailModal = ({ isOpen, onClose, title, item, data = [], children }) => {
     );
 };
 
-const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChange, errors, submitLabel, submitIcon, fields = [], children, gridCols = 2 }) => {
-    if (!isOpen) return null;
-
-    const handleSubmitForm = (e) => {
-        e.preventDefault();
-        onSubmit();
-    };
-
-    const renderField = (field, index) => {
-        const { name, label, type, options, required, colSpan = 1, placeholder, ...fieldProps } = field;
-        const displayLabel = required ? `${label} *` : label;
-        const error = errors[name];
-
-        const commonProps = {
-            name,
-            value: Array.isArray(formData[name]) ? formData[name] : (formData[name] || ''),
-            onChange: handleInputChange,
-            className: `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 text-sm ${
-                error ? 'border-red-500' : 'border-gray-300 hover:border-cyan-300'
-            }`,
-            placeholder,
-            ...fieldProps
-        };
-
-        let fieldElement;
-
-        switch (type) {
-            case 'select':
-                fieldElement = (
-                    <select {...commonProps}>
-                        <option value="">Seleccione una opción</option>
-                        {options.map(option => (
-                            <option key={typeof option === 'object' ? option.value : option} 
-                                    value={typeof option === 'object' ? option.value : option}>
-                                {typeof option === 'object' ? option.label : option}
-                            </option>
-                        ))}
-                    </select>
-                );
-                break;
-            case 'multi-select':
-                fieldElement = (
-                    <div>
-                        <select 
-                            {...commonProps}
-                            multiple
-                            size="4"
-                            onChange={(e) => {
-                                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                                handleInputChange({
-                                    target: {
-                                        name,
-                                        value: selectedOptions
-                                    }
-                                });
-                            }}
-                        >
-                            {options.map(option => (
-                                <option key={typeof option === 'object' ? option.value : option} 
-                                        value={typeof option === 'object' ? option.value : option}>
-                                    {typeof option === 'object' ? option.label : option}
-                                </option>
-                            ))}
-                        </select>
-                        <p className="text-xs text-gray-500 mt-1">
-                            Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples opciones
-                        </p>
-                    </div>
-                );
-                break;
-            case 'textarea':
-                fieldElement = (
-                    <textarea
-                        {...commonProps}
-                        rows="3"
-                        className={`${commonProps.className} resize-none`}
-                    />
-                );
-                break;
-            default:
-                fieldElement = <input {...commonProps} type={type || 'text'} />;
-        }
-
-        return (
-            <div key={name || index} className={`col-span-${colSpan}`}>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{displayLabel}</label>
-                {fieldElement}
-                {error && (
-                    <div className="mt-1 text-red-500 text-sm flex items-center space-x-1">
-                        <AlertCircle className="w-4 h-4" />
-                        <span>{error}</span>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2 sm:p-4 animate-fadeIn">
-            <form 
-                onSubmit={handleSubmitForm}
-                className="bg-white rounded-xl shadow-2xl w-full max-w-2xl md:max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
-            >
-                <div className="bg-cyan-500 text-white p-4 sm:p-6 rounded-t-xl sticky top-0 z-10">
-                    <div className="flex justify-between items-center">
-                        <h3 className="text-lg sm:text-xl font-bold">{title}</h3>
-                        <button 
-                            type="button" 
-                            onClick={onClose} 
-                            className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-1.5 sm:p-2 transition-all duration-200 hover:scale-110"
-                        >
-                            <X className="w-4 h-4 sm:w-5 sm:h-5" />
-                        </button>
-                    </div>
-                </div>
-                
-                <div className="p-4 sm:p-6">
-                    <div className={`grid grid-cols-1 md:grid-cols-${gridCols} gap-3 sm:gap-4`}>
-                        {children}
-                        {fields.map((field, index) => renderField(field, index))}
-                    </div>
-                </div>
-
-                <div className="p-4 sm:p-6 bg-gray-50 rounded-b-xl flex flex-col sm:flex-row justify-end gap-2 sm:space-x-3 sticky bottom-0 z-10">
-                    <button 
-                        type="button" 
-                        onClick={onClose} 
-                        className="w-full sm:w-auto px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105 text-sm sm:text-base"
-                    >
-                        Cancelar
-                    </button>
-                    <button 
-                        type="submit" 
-                        className="w-full sm:w-auto px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center justify-center space-x-2 text-sm sm:text-base"
-                    >
-                        {submitIcon || <Save className="w-4 h-4" />}
-                        <span>{submitLabel}</span>
-                    </button>
-                </div>
-            </form>
-        </div>
-    );
-};
-
 // ============================================================================
 // ICONS
 // ============================================================================
 
 import { 
     Search, Plus, Trash2, Eye, Edit, Bookmark, Package, Tags,
-    Upload, Camera, X, Save, AlertCircle, Building2, MapPin,
-    Filter, ChevronDown, SortAsc, SortDesc, Calendar, User,
+    X, MapPin, Filter, ChevronDown, SortAsc, SortDesc, Calendar,
     CheckCircle
 } from 'lucide-react';
 
@@ -562,10 +377,9 @@ import {
 // API ENDPOINTS + CONFIGURATION
 // ============================================================================
 
-const MARCAS_EP = API_CONFIG.ENDPOINTS.MARCAS; // '/marcas'
+const MARCAS_EP = API_CONFIG.ENDPOINTS.MARCAS;
 const ITEMS_PER_PAGE = 5;
 
-// Configuración para filtros y ordenamiento
 const INITIAL_FILTERS = {
     linea: 'todas',
     paisOrigen: 'todos',
@@ -582,7 +396,6 @@ const SORT_OPTIONS = [
     { value: 'paisOrigen-desc', label: 'País Z-A', icon: MapPin },
 ];
 
-// Axios helper con fallback (localhost <-> producción)
 const axiosWithFallback = async (method, path, data, config = {}) => {
   const buildUrl = (base) => `${base}${path}`;
 
@@ -596,7 +409,7 @@ const axiosWithFallback = async (method, path, data, config = {}) => {
       headers: { 'Content-Type': 'application/json', ...(config.headers || {}) },
       ...config,
     });
-    API_CONFIG.BASE_URL = base; // recordar último base exitoso
+    API_CONFIG.BASE_URL = base;
     return res;
   };
 
@@ -621,20 +434,17 @@ const axiosWithFallback = async (method, path, data, config = {}) => {
 // ============================================================================
 
 const MarcasContent = () => {
-    // Estados principales
     const [marcas, setMarcas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedMarca, setSelectedMarca] = useState(null);
     const [alert, setAlert] = useState(null);
     
-    // Estados de modales
     const [modals, setModals] = useState({
         addEdit: false,
         detail: false,
         delete: false
     });
     
-    // Estados de filtros y búsqueda
     const [searchTerm, setSearchTerm] = useState('');
     const [showFiltersPanel, setShowFiltersPanel] = useState(false);
     const [showSortDropdown, setShowSortDropdown] = useState(false);
@@ -642,10 +452,8 @@ const MarcasContent = () => {
     const [sortOrder, setSortOrder] = useState('desc');
     const [filters, setFilters] = useState(INITIAL_FILTERS);
     
-    // Estado para carga de imágenes
     const [uploadingImage, setUploadingImage] = useState(false);
 
-    // Inicialización del formulario
     const initialFormData = {
         nombre: '',
         descripcion: '',
@@ -654,7 +462,6 @@ const MarcasContent = () => {
         lineas: []
     };
 
-    // Validador del formulario
     const formValidator = (data) => {
         const errors = {};
         if (!data.nombre?.trim()) errors.nombre = 'El nombre es requerido';
@@ -664,11 +471,20 @@ const MarcasContent = () => {
         return errors;
     };
 
-    // Hook del formulario
     const { formData, setFormData, handleInputChange, resetForm, validateForm, errors, setErrors } = useForm(
         initialFormData,
         formValidator
     );
+
+    // ============================================================================
+    // UTILITY FUNCTIONS
+    // ============================================================================
+
+    const showAlert = useCallback((type, message) => {
+        setAlert({ type, message });
+        const timer = setTimeout(() => setAlert(null), 5000);
+        return () => clearTimeout(timer);
+    }, []);
 
     // ============================================================================
     // API FUNCTIONS
@@ -690,7 +506,7 @@ const MarcasContent = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showAlert]);
 
     const createMarca = async (marcaData) => {
         try {
@@ -704,7 +520,7 @@ const MarcasContent = () => {
             handleCloseModals();
         } catch (error) {
             console.error('Error al crear marca:', error);
-            showAlert('error', 'Error al crear la marca: ' + (error.response?.data?.message || error.message));
+            showAlert('error', error.response?.data?.message || 'Error al crear la marca');
         }
     };
 
@@ -720,7 +536,7 @@ const MarcasContent = () => {
             handleCloseModals();
         } catch (error) {
             console.error('Error al actualizar marca:', error);
-            showAlert('error', 'Error al actualizar la marca: ' + (error.response?.data?.message || error.message));
+            showAlert('error', error.response?.data?.message || 'Error al actualizar la marca');
         }
     };
 
@@ -728,11 +544,11 @@ const MarcasContent = () => {
         try {
             await axiosWithFallback('delete', `${MARCAS_EP}/${id}`);
             await fetchMarcas();
-            showAlert('success', '¡Marca eliminada exitosamente!');
+            showAlert('delete', '¡Marca eliminada exitosamente!');
             handleCloseModals();
         } catch (error) {
             console.error('Error al eliminar marca:', error);
-            showAlert('error', 'Error al eliminar la marca: ' + (error.response?.data?.message || error.message));
+            showAlert('error', error.response?.data?.message || 'Error al eliminar la marca');
         }
     };
 
@@ -743,7 +559,6 @@ const MarcasContent = () => {
     useEffect(() => {
         fetchMarcas();
         
-        // Cargar script de Cloudinary
         const script = document.createElement('script');
         script.src = "https://widget.cloudinary.com/v2.0/global/all.js";
         script.async = true;
@@ -757,14 +572,8 @@ const MarcasContent = () => {
     }, [fetchMarcas]);
 
     // ========================================================================
-    // UTILITY FUNCTIONS
+    // UTILITY FUNCTIONS CONTINUED
     // ========================================================================
-
-    const showAlert = useCallback((type, message) => {
-        setAlert({ type, message });
-        const timer = setTimeout(() => setAlert(null), 5000);
-        return () => clearTimeout(timer);
-    }, []);
 
     const getLineaColor = useCallback((linea) => {
         switch(linea) {
@@ -783,7 +592,6 @@ const MarcasContent = () => {
         });
     }, []);
 
-    // FUNCIÓN PARA MANEJAR ORDENAMIENTO
     const handleSortChange = useCallback((sortValue) => {
         const [field, order] = sortValue.split('-');
         setSortBy(field);
@@ -791,7 +599,6 @@ const MarcasContent = () => {
         setShowSortDropdown(false);
     }, []);
 
-    // FUNCIÓN PARA ORDENAR DATOS
     const sortData = useCallback((data) => {
         return [...data].sort((a, b) => {
             let valueA, valueB;
@@ -819,14 +626,11 @@ const MarcasContent = () => {
         });
     }, [sortBy, sortOrder]);
 
-    // FUNCIÓN PARA APLICAR FILTROS AVANZADOS
     const applyAdvancedFilters = useCallback((marca) => {
-        // Filtro por línea
         if (filters.linea !== 'todas' && !marca.lineas?.includes(filters.linea)) {
             return false;
         }
 
-        // Filtro por país de origen
         if (filters.paisOrigen !== 'todos') {
             const marcaPais = marca.paisOrigen?.toLowerCase() || '';
             if (marcaPais !== filters.paisOrigen.toLowerCase()) {
@@ -834,7 +638,6 @@ const MarcasContent = () => {
             }
         }
 
-        // Filtro por fecha de creación
         if (filters.fechaDesde) {
             const fechaDesde = new Date(filters.fechaDesde);
             if (marca.fechaCreacionRaw < fechaDesde) {
@@ -852,7 +655,6 @@ const MarcasContent = () => {
         return true;
     }, [filters]);
 
-    // FUNCIONES PARA MANEJAR FILTROS
     const handleFilterChange = useCallback((key, value) => {
         setFilters(prev => ({
             ...prev,
@@ -873,7 +675,6 @@ const MarcasContent = () => {
                filters.fechaHasta;
     }, [searchTerm, filters]);
 
-    // OBTENER PAÍSES ÚNICOS
     const uniqueCountries = useMemo(() => {
         const countries = marcas
             .map(m => m.paisOrigen)
@@ -886,10 +687,8 @@ const MarcasContent = () => {
     // COMPUTED VALUES
     // ========================================================================
 
-    // LÓGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÓN
     const filteredAndSortedMarcas = useMemo(() => {
         const filtered = marcas.filter(marca => {
-            // Búsqueda por texto
             const search = searchTerm.toLowerCase();
             const matchesSearch = !searchTerm || 
                 marca.nombre?.toLowerCase().includes(search) ||
@@ -897,7 +696,6 @@ const MarcasContent = () => {
                 marca.paisOrigen?.toLowerCase().includes(search) ||
                 marca.lineas?.some(linea => linea.toLowerCase().includes(search));
             
-            // Filtros avanzados
             const matchesAdvancedFilters = applyAdvancedFilters(marca);
             
             return matchesSearch && matchesAdvancedFilters;
@@ -908,7 +706,6 @@ const MarcasContent = () => {
 
     const { paginatedData: currentMarcas, ...paginationProps } = usePagination(filteredAndSortedMarcas, ITEMS_PER_PAGE);
 
-    // Estadísticas
     const stats = useMemo(() => {
         const totalMarcas = marcas.length;
         const marcasPremium = marcas.filter(m => m.lineas?.includes('Premium')).length;
@@ -964,7 +761,10 @@ const MarcasContent = () => {
     }, []);
 
     const handleSubmit = useCallback(async () => {
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            showAlert('error', 'Por favor complete todos los campos requeridos correctamente.');
+            return;
+        }
 
         const dataToSend = {
             nombre: formData.nombre.trim(),
@@ -979,66 +779,12 @@ const MarcasContent = () => {
         } else {
             await createMarca(dataToSend);
         }
-    }, [formData, selectedMarca, validateForm]);
+    }, [formData, selectedMarca, validateForm, showAlert]);
 
     const handleDelete = useCallback(async () => {
         if (!selectedMarca) return;
         await deleteMarca(selectedMarca._id);
     }, [selectedMarca]);
-
-    // ========================================================================
-    // CLOUDINARY HANDLERS
-    // ========================================================================
-
-    const openCloudinaryWidget = () => {
-        if (!window.cloudinary) {
-            showAlert('error', 'Error: Cloudinary no está disponible. Verifica la configuración.');
-            return;
-        }
-
-        setUploadingImage(true);
-        
-        const widget = window.cloudinary.createUploadWidget({
-            cloudName: import.meta.env.VITE_CLOUDINARY_CLOUD_NAME,
-            uploadPreset: import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET,
-            folder: 'marcas',
-            sources: ['local', 'url', 'camera'],
-            multiple: false,
-            maxFileSize: 5000000,
-            clientAllowedFormats: ['png', 'jpg', 'jpeg', 'webp'],
-            cropping: true,
-            croppingAspectRatio: 1.5,
-            showSkipCropButton: false,
-            croppingDefaultSelectionRatio: 1,
-            gravity: 'center',
-            theme: 'minimal',
-        }, (error, result) => {
-            setUploadingImage(false);
-            
-            if (error) {
-                showAlert('error', 'Error al subir imagen: ' + error.message);
-                return;
-            }
-
-            if (result.event === 'success') {
-                const imageUrl = result.info.secure_url;
-                setFormData(prev => ({
-                    ...prev,
-                    logo: imageUrl
-                }));
-                showAlert('success', 'Imagen subida exitosamente');
-            }
-        });
-
-        widget.open();
-    };
-
-    const removeImage = () => {
-        setFormData(prev => ({
-            ...prev,
-            logo: ''
-        }));
-    };
 
     // ========================================================================
     // TABLE CONFIGURATION
@@ -1138,55 +884,19 @@ const MarcasContent = () => {
     ), [getLineaColor, handleOpenDeleteModal, handleOpenDetailModal, handleOpenEditModal]);
 
     // ========================================================================
-    // FORM CONFIGURATION
-    // ========================================================================
-
-    const formFields = [
-        {
-            name: 'nombre',
-            label: 'Nombre de la Marca',
-            type: 'text',
-            required: true,
-            placeholder: 'Ej: Ray-Ban, Nike, Adidas...',
-            colSpan: 1
-        },
-        {
-            name: 'paisOrigen',
-            label: 'País de Origen',
-            type: 'text',
-            required: true,
-            placeholder: 'Ej: Estados Unidos, Alemania...',
-            colSpan: 1
-        },
-        {
-            name: 'lineas',
-            label: 'Líneas de Productos',
-            type: 'multi-select',
-            required: true,
-            options: [
-                { value: 'Premium', label: 'Premium' },
-                { value: 'Económica', label: 'Económica' }
-            ],
-            colSpan: 2
-        },
-        {
-            name: 'descripcion',
-            label: 'Descripción',
-            type: 'textarea',
-            required: true,
-            placeholder: 'Describe la marca, su enfoque, características principales...',
-            colSpan: 2
-        }
-    ];
-
-    // ========================================================================
     // RENDER
     // ========================================================================
 
     if (loading) {
         return (
             <div className="space-y-6 animate-fade-in">
-                <Alert alert={alert} />
+                {alert && (
+                    <Alert 
+                        type={alert.type} 
+                        message={alert.message} 
+                        onClose={() => setAlert(null)} 
+                    />
+                )}
                 <SkeletonLoader />
             </div>
         );
@@ -1194,7 +904,13 @@ const MarcasContent = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <Alert alert={alert} />
+            {alert && (
+                <Alert 
+                    type={alert.type} 
+                    message={alert.message} 
+                    onClose={() => setAlert(null)} 
+                />
+            )}
             
             <div className="w-full flex justify-center">
                 <div className="w-full max-w-none">
@@ -1212,7 +928,6 @@ const MarcasContent = () => {
                 {/* BARRA DE BÚSQUEDA Y CONTROLES */}
                 <div className="px-6 py-4 border-b bg-gray-50">
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-                        {/* Barra de búsqueda */}
                         <div className="relative flex-1 max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                             <input
@@ -1225,9 +940,7 @@ const MarcasContent = () => {
                             />
                         </div>
 
-                        {/* Controles de filtro y ordenamiento */}
                         <div className="flex items-center space-x-3">
-                            {/* Dropdown de ordenamiento */}
                             <div className="relative">
                                 <button
                                     onClick={() => {
@@ -1270,7 +983,6 @@ const MarcasContent = () => {
                                 )}
                             </div>
 
-                            {/* Botón de filtros */}
                             <button
                                 onClick={() => {
                                     setShowFiltersPanel(!showFiltersPanel);
@@ -1301,7 +1013,6 @@ const MarcasContent = () => {
                         </div>
                     </div>
 
-                    {/* Información de resultados */}
                     <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
                         <span>
                             {filteredAndSortedMarcas.length} marca{filteredAndSortedMarcas.length !== 1 ? 's' : ''} 
@@ -1336,7 +1047,6 @@ const MarcasContent = () => {
                             </div>
                             
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {/* Filtro por Línea */}
                                 <div>
                                     <label htmlFor="filter-linea" className="block text-sm font-medium text-gray-700 mb-2">
                                         Línea de Productos
@@ -1353,7 +1063,6 @@ const MarcasContent = () => {
                                     </select>
                                 </div>
 
-                                {/* Filtro por País */}
                                 <div>
                                     <label htmlFor="filter-pais" className="block text-sm font-medium text-gray-700 mb-2">
                                         País de Origen
@@ -1371,7 +1080,6 @@ const MarcasContent = () => {
                                     </select>
                                 </div>
 
-                                {/* Filtro por Fecha de Creación */}
                                 <div className="md:col-span-2 lg:col-span-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Creación</label>
                                     <div className="flex space-x-2">
@@ -1401,7 +1109,6 @@ const MarcasContent = () => {
                                 </div>
                             </div>
 
-                            {/* Botones de acción del panel de filtros */}
                             <div className="mt-6 flex justify-end space-x-3">
                                 <button
                                     onClick={clearAllFilters}
@@ -1420,7 +1127,6 @@ const MarcasContent = () => {
                     </div>
                 )}
                 
-                {/* TABLA DE DATOS */}
                 <DataTable
                     columns={tableColumns}
                     data={currentMarcas}
@@ -1435,20 +1141,19 @@ const MarcasContent = () => {
 
             {/* MODALES */}
             {modals.addEdit && (
-    <MarcasFormModal
-        isOpen={modals.addEdit}
-        onClose={handleCloseModals}
-        onSubmit={handleSubmit}
-        title={selectedMarca ? 'Editar Marca' : 'Agregar Nueva Marca'}
-        formData={formData}
-        handleInputChange={handleInputChange}
-        errors={errors}
-        submitLabel={selectedMarca ? 'Actualizar Marca' : 'Guardar Marca'}
-        selectedMarca={selectedMarca}
-    />
-)}
+                <MarcasFormModal
+                    isOpen={modals.addEdit}
+                    onClose={handleCloseModals}
+                    onSubmit={handleSubmit}
+                    title={selectedMarca ? 'Editar Marca' : 'Agregar Nueva Marca'}
+                    formData={formData}
+                    handleInputChange={handleInputChange}
+                    errors={errors}
+                    submitLabel={selectedMarca ? 'Actualizar Marca' : 'Guardar Marca'}
+                    selectedMarca={selectedMarca}
+                />
+            )}
 
-            {/* Modal de detalles */}
             {selectedMarca && modals.detail && (
                 <DetailModal
                     isOpen={modals.detail}
@@ -1482,7 +1187,6 @@ const MarcasContent = () => {
                 </DetailModal>
             )}
 
-            {/* Modal de confirmación para eliminar */}
             <ConfirmationModal
                 isOpen={modals.delete}
                 onClose={handleCloseModals}
@@ -1493,7 +1197,6 @@ const MarcasContent = () => {
                 cancelLabel="Cancelar"
             />
 
-            {/* OVERLAY PARA DROPDOWN */}
             {showSortDropdown && (
                 <div 
                     className="fixed inset-0 z-10" 

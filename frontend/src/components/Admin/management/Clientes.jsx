@@ -208,6 +208,13 @@ const Clientes = () => {
         return newErrors;
     });
 
+    // --- FUNCIÓN PARA MOSTRAR ALERTAS ---
+    const showAlert = useCallback((type, message) => {
+        setAlert({ type, message });
+        const timer = setTimeout(() => setAlert(null), 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
     // --- FUNCIÓN PARA OBTENER DATOS ---
     const fetchClientes = useCallback(async () => {
         try {
@@ -225,7 +232,7 @@ const Clientes = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showAlert]);
 
     // --- EFECTO PARA CARGA INICIAL ---
     useEffect(() => {
@@ -233,12 +240,6 @@ const Clientes = () => {
     }, [fetchClientes]);
 
     // --- FUNCIONES UTILITARIAS ---
-    const showAlert = useCallback((type, message) => {
-        setAlert({ type, message });
-        const timer = setTimeout(() => setAlert(null), 5000);
-        return () => clearTimeout(timer);
-    }, []);
-
     const getEstadoColor = useCallback((estado) => (
         estado === 'Activo' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
     ), []);
@@ -431,7 +432,10 @@ const Clientes = () => {
     
     // --- FUNCIÓN PARA ENVÍO DEL FORMULARIO ---
     const handleSubmit = useCallback(async () => {
-        if (!validateForm(!!selectedCliente)) return;
+        if (!validateForm(!!selectedCliente)) {
+            showAlert('error', 'Por favor complete todos los campos requeridos correctamente.');
+            return;
+        }
         
         try {
             const dataToSend = {
@@ -468,7 +472,7 @@ const Clientes = () => {
         
         try {
             await axios.delete(`${API_URL}/${selectedCliente._id}`);
-            showAlert('success', '¡Cliente eliminado exitosamente!');
+            showAlert('delete', '¡Cliente eliminado exitosamente!');
             await fetchClientes();
             handleCloseModals();
         } catch (error) {
@@ -574,7 +578,7 @@ const Clientes = () => {
     if (loading) {
         return (
             <div className="space-y-6 animate-fade-in">
-                <Alert alert={alert} />
+                <Alert alert={alert} onClose={() => setAlert(null)} />
                 <SkeletonLoader />
             </div>
         );
@@ -582,7 +586,11 @@ const Clientes = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <Alert alert={alert} />
+            <Alert 
+                type={alert?.type} 
+                message={alert?.message} 
+                onClose={() => setAlert(null)} 
+            />
             
             {/* ESTADÍSTICAS CENTRADAS - Eliminamos el contenedor restrictivo */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -2,25 +2,17 @@ import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
 import { Camera, Upload, X, Package, Edit3, Eye, EyeOff, Plus, Trash2, AlertCircle, Check, Loader, DollarSign, Tag } from 'lucide-react';
 
-// Componente de subida de imágenes CORREGIDO
+// Componente de subida de imágenes
 const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 5 }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadingCount, setUploadingCount] = useState(0);
 
-  // Verificar si Cloudinary está disponible
   useEffect(() => {
     if (!window.cloudinary) {
       const script = document.createElement('script');
       script.src = "https://widget.cloudinary.com/v2.0/global/all.js";
       script.async = true;
-      script.onload = () => {
-        console.log('Cloudinary script loaded successfully');
-      };
-      script.onerror = () => {
-        console.error('Failed to load Cloudinary script');
-      };
       document.head.appendChild(script);
-
       return () => {
         if (document.head.contains(script)) {
           document.head.removeChild(script);
@@ -45,9 +37,6 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
       cropping: false,
       maxImageFileSize: 10000000,
       clientAllowedFormats: ['jpg', 'jpeg', 'png', 'webp'],
-      transformation: [
-        { quality: 'auto', fetch_format: 'auto' }
-      ],
       styles: {
         palette: {
           window: "#FFFFFF",
@@ -81,7 +70,6 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
         const newImageUrl = result.info.secure_url;
         const newImages = [...currentImages, newImageUrl];
         onImagesChange(newImages);
-        console.log('Image uploaded successfully:', newImageUrl);
       }
       
       if (result && result.event === "queues-end") {
@@ -105,33 +93,22 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
     onImagesChange(newImages);
   };
 
-  // Función para normalizar URLs de imágenes - CORREGIDA
   const normalizeImageUrl = (image) => {
     if (!image) return null;
-    
-    // Si es string, verificar que sea una URL válida
     if (typeof image === 'string') {
       if (image.startsWith('http://') || image.startsWith('https://')) {
-        return image.replace('http://', 'https://'); // Asegurar HTTPS
-      }
-      // Si es un public_id de Cloudinary
-      if (image.includes('cloudinary') || !image.startsWith('http')) {
-        return `https://res.cloudinary.com/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload/${image}`;
+        return image.replace('http://', 'https://');
       }
       return image;
     }
-    
-    // Si es objeto, extraer la URL
     if (typeof image === 'object' && image !== null) {
       return image.secure_url || image.url || null;
     }
-    
     return null;
   };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-medium text-gray-900">Imágenes del Producto</h3>
         <div className="flex items-center space-x-3">
@@ -147,7 +124,7 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
             {isUploading ? (
               <>
                 <Loader className="w-4 h-4 mr-2 animate-spin" />
-                Subiendo {uploadingCount > 1 ? `${uploadingCount} imágenes` : 'imagen'}...
+                Subiendo...
               </>
             ) : (
               <>
@@ -159,7 +136,6 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
         </div>
       </div>
 
-      {/* Área de drop o mensaje inicial */}
       {currentImages.length === 0 && !isUploading && (
         <div 
           onClick={handleOpenWidget}
@@ -168,52 +144,27 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
           <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
             <Upload className="w-8 h-8 text-gray-400" />
           </div>
-          <h4 className="text-lg font-medium text-gray-700 mb-2">
-            Sube las imágenes del producto
-          </h4>
-          <p className="text-gray-500 mb-4">
-            Arrastra imágenes aquí o haz clic para seleccionar archivos
-          </p>
-          <p className="text-xs text-gray-400">
-            Formatos: JPG, PNG, WEBP • Máximo {maxImages} imágenes • Hasta 10MB cada una
-          </p>
+          <h4 className="text-lg font-medium text-gray-700 mb-2">Sube las imágenes del producto</h4>
+          <p className="text-gray-500 mb-4">Arrastra imágenes aquí o haz clic para seleccionar archivos</p>
+          <p className="text-xs text-gray-400">Formatos: JPG, PNG, WEBP • Máximo {maxImages} imágenes • Hasta 10MB cada una</p>
         </div>
       )}
 
-      {/* Grid de imágenes - SIN OVERLAYS QUE BLOQUEEN */}
       {currentImages.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {currentImages.map((image, index) => {
             const imageUrl = normalizeImageUrl(image);
-            
             return (
               <div key={`image-${index}-${imageUrl}`} className="relative group">
-                {/* Contenedor de imagen - SIN OVERLAY BLOQUEANTE */}
                 <div className={`aspect-square rounded-lg overflow-hidden border-2 ${
                   index === 0 ? 'border-cyan-500 shadow-lg' : 'border-gray-200'
-                } bg-gray-100 relative`}>
-                  
-                  {/* Imagen principal */}
+                } bg-gray-100`}>
                   {imageUrl ? (
                     <img
                       src={imageUrl}
                       alt={`Imagen ${index + 1}`}
                       className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                      onError={(e) => {
-                        console.error('Error loading image:', imageUrl);
-                        e.target.style.display = 'none';
-                        e.target.nextElementSibling.style.display = 'flex';
-                      }}
-                      onLoad={(e) => {
-                        console.log('Image loaded successfully:', imageUrl);
-                        // Asegurar que la imagen sea visible
-                        e.target.style.display = 'block';
-                        if (e.target.nextElementSibling) {
-                          e.target.nextElementSibling.style.display = 'none';
-                        }
-                      }}
                       loading="lazy"
-                      style={{ display: 'block', zIndex: 1 }}
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200">
@@ -221,31 +172,17 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
                     </div>
                   )}
                   
-                  {/* Fallback para imágenes que fallan - OCULTO POR DEFECTO */}
-                  <div 
-                    className="w-full h-full absolute inset-0 items-center justify-center bg-gray-200"
-                    style={{ display: 'none', zIndex: 2 }}
-                  >
-                    <div className="text-center">
-                      <AlertCircle className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                      <span className="text-xs text-gray-500">Error al cargar</span>
-                    </div>
-                  </div>
-                  
-                  {/* Badge principal - POSICIONADO FUERA DE LA IMAGEN */}
                   {index === 0 && (
                     <div className="absolute -top-2 -left-2 bg-cyan-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg z-20">
                       Principal
                     </div>
                   )}
                   
-                  {/* Número de imagen - POSICIONADO EN ESQUINA */}
                   <div className="absolute bottom-2 left-2 bg-white bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-gray-700 z-10">
                     {index + 1}
                   </div>
                 </div>
                 
-                {/* Controles - POSICIONADOS FUERA DEL CONTENEDOR DE IMAGEN */}
                 <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex space-x-1 z-30">
                   {index > 0 && (
                     <button
@@ -270,7 +207,6 @@ const ImageUploadComponent = ({ currentImages = [], onImagesChange, maxImages = 
             );
           })}
           
-          {/* Botón para agregar más imágenes */}
           {currentImages.length < maxImages && (
             <div 
               onClick={handleOpenWidget}
@@ -335,9 +271,7 @@ const SucursalesSelector = ({ sucursales, selectedSucursales, onChange, errors }
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="block text-sm font-medium text-gray-700">
-          Sucursales Disponibles *
-        </label>
+        <label className="block text-sm font-medium text-gray-700">Sucursales Disponibles *</label>
         <button
           type="button"
           onClick={handleToggleAll}
@@ -354,7 +288,6 @@ const SucursalesSelector = ({ sucursales, selectedSucursales, onChange, errors }
           <div className="space-y-3">
             {sucursales.map((sucursal) => {
               const isSelected = selectedSucursales.find(s => s.sucursalId === sucursal._id);
-              
               return (
                 <div key={sucursal._id} className="flex items-center space-x-3 p-3 bg-white rounded-lg border">
                   <input
@@ -402,7 +335,7 @@ const SucursalesSelector = ({ sucursales, selectedSucursales, onChange, errors }
   );
 };
 
-// Componente para campo de precio con validación
+// Componente para campo de precio
 const PriceField = ({ label, value, onChange, error, required = false, placeholder = "0.00" }) => {
   const [localValue, setLocalValue] = useState(value || '');
 
@@ -413,8 +346,6 @@ const PriceField = ({ label, value, onChange, error, required = false, placehold
   const handleChange = (e) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    
-    // Validar que sea un número válido
     const numValue = parseFloat(newValue);
     if (!isNaN(numValue) && numValue >= 0) {
       onChange(numValue);
@@ -449,11 +380,10 @@ const PriceField = ({ label, value, onChange, error, required = false, placehold
   );
 };
 
-// Componente para selector de promociones mejorado
+// Componente para selector de promociones
 const PromocionSelector = ({ promociones, selectedPromocion, onPromocionChange, precioBase, error }) => {
   const [calculatedPrice, setCalculatedPrice] = useState(null);
   
-  // Filtrar promociones activas
   const promocionesActivas = promociones.filter(promo => {
     if (!promo.fechaFin) return true;
     const fechaFin = new Date(promo.fechaFin);
@@ -461,7 +391,6 @@ const PromocionSelector = ({ promociones, selectedPromocion, onPromocionChange, 
     return fechaFin >= hoy;
   });
 
-  // Calcular precio con descuento cuando cambie la selección
   useEffect(() => {
     if (selectedPromocion && precioBase) {
       const promo = promocionesActivas.find(p => p._id === selectedPromocion);
@@ -481,17 +410,13 @@ const PromocionSelector = ({ promociones, selectedPromocion, onPromocionChange, 
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-medium text-gray-700">
-        Promoción Disponible *
-      </label>
+      <label className="block text-sm font-medium text-gray-700">Promoción Disponible *</label>
       
       {promocionesActivas.length === 0 ? (
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
           <div className="flex items-center">
             <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
-            <span className="text-sm text-yellow-800">
-              No hay promociones activas disponibles
-            </span>
+            <span className="text-sm text-yellow-800">No hay promociones activas disponibles</span>
           </div>
         </div>
       ) : (
@@ -508,29 +433,21 @@ const PromocionSelector = ({ promociones, selectedPromocion, onPromocionChange, 
               const descuento = promo.tipoDescuento === 'porcentaje' 
                 ? `${promo.valorDescuento}% OFF`
                 : `$${promo.valorDescuento} OFF`;
-              const fechaFin = promo.fechaFin 
-                ? new Date(promo.fechaFin).toLocaleDateString('es-ES')
-                : null;
-              
               return (
                 <option key={promo._id} value={promo._id}>
                   {promo.nombre} - {descuento}
-                  {fechaFin && ` (Hasta ${fechaFin})`}
                 </option>
               );
             })}
           </select>
           
-          {/* Vista previa del precio con descuento */}
           {calculatedPrice && precioBase && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-green-800">
                   <span className="font-medium">Precio original:</span> ${precioBase.toFixed(2)}
                 </span>
-                <span className="text-lg font-bold text-green-600">
-                  ${calculatedPrice}
-                </span>
+                <span className="text-lg font-bold text-green-600">${calculatedPrice}</span>
               </div>
               <div className="text-xs text-green-600 mt-1">
                 Ahorro: ${(precioBase - parseFloat(calculatedPrice)).toFixed(2)}
@@ -545,448 +462,7 @@ const PromocionSelector = ({ promociones, selectedPromocion, onPromocionChange, 
   );
 };
 
-const AccesoriosFormModal = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  title,
-  formData,
-  setFormData, // Agregar esta prop
-  handleInputChange,
-  errors,
-  isEditing = false,
-  marcas = [],
-  categorias = [],
-  sucursales = [],
-  promociones = [],
-  selectedAccesorio = null
-}) => {
-  // Estados locales para manejo de líneas
-  const [lineasDisponibles, setLineasDisponibles] = useState([]);
-  const [loadingLineas, setLoadingLineas] = useState(false);
-
-  // Cargar líneas cuando cambia la marca
-  useEffect(() => {
-    if (formData.marcaId) {
-      setLoadingLineas(true);
-      setTimeout(() => {
-        const lineasPorMarca = {
-          default: ['Económica', 'Estándar', 'Premium', 'Luxury']
-        };
-        setLineasDisponibles(lineasPorMarca.default || []);
-        setLoadingLineas(false);
-      }, 500);
-    } else {
-      setLineasDisponibles([]);
-    }
-  }, [formData.marcaId]);
-
-  // Manejar cambio de imágenes
-  const handleImagesChange = (newImages) => {
-    if (setFormData) {
-      setFormData(prev => ({
-        ...prev,
-        imagenes: newImages
-      }));
-    } else {
-      handleInputChange({
-        target: {
-          name: 'imagenes',
-          value: newImages
-        }
-      });
-    }
-  };
-
-  // Manejar cambio de sucursales
-  const handleSucursalesChange = (newSucursales) => {
-    if (setFormData) {
-      setFormData(prev => ({
-        ...prev,
-        sucursales: newSucursales
-      }));
-    } else {
-      handleInputChange({
-        target: {
-          name: 'sucursales',
-          value: newSucursales
-        }
-      });
-    }
-  };
-
-  // Manejar cambio de precio base
-  const handlePrecioBaseChange = (newPrice) => {
-    if (setFormData) {
-      setFormData(prev => ({
-        ...prev,
-        precioBase: newPrice,
-        precioActual: prev.enPromocion ? prev.precioActual : newPrice
-      }));
-    } else {
-      handleInputChange({
-        target: {
-          name: 'precioBase',
-          value: newPrice
-        }
-      });
-      
-      if (!formData.enPromocion) {
-        handleInputChange({
-          target: {
-            name: 'precioActual',
-            value: newPrice
-          }
-        });
-      }
-    }
-  };
-
-  // Manejar cambio de estado de promoción
-  const handlePromocionChange = (e) => {
-    const enPromocion = e.target.checked;
-    
-    if (setFormData) {
-      setFormData(prev => ({
-        ...prev,
-        enPromocion,
-        precioActual: enPromocion ? prev.precioActual : prev.precioBase,
-        promocionId: enPromocion ? prev.promocionId : ''
-      }));
-    } else {
-      handleInputChange(e);
-      
-      if (!enPromocion) {
-        handleInputChange({
-          target: {
-            name: 'precioActual',
-            value: formData.precioBase || 0
-          }
-        });
-        handleInputChange({
-          target: {
-            name: 'promocionId',
-            value: ''
-          }
-        });
-      }
-    }
-  };
-
-  // Manejar selección de promoción específica
-  const handlePromocionSelectChange = (e) => {
-    const promocionId = e.target.value;
-    
-    if (setFormData) {
-      setFormData(prev => {
-        let newPrecioActual = prev.precioBase;
-        
-        if (promocionId && prev.precioBase) {
-          const promo = promociones.find(p => p._id === promocionId);
-          if (promo) {
-            if (promo.tipoDescuento === 'porcentaje') {
-              newPrecioActual = prev.precioBase * (1 - (promo.valorDescuento / 100));
-            } else if (promo.tipoDescuento === 'monto_fijo') {
-              newPrecioActual = Math.max(0, prev.precioBase - promo.valorDescuento);
-            }
-            newPrecioActual = parseFloat(newPrecioActual.toFixed(2));
-          }
-        }
-        
-        return {
-          ...prev,
-          promocionId,
-          precioActual: newPrecioActual
-        };
-      });
-    } else {
-      handleInputChange({
-        target: {
-          name: 'promocionId',
-          value: promocionId
-        }
-      });
-
-      // Calcular precio automáticamente
-      if (promocionId && formData.precioBase) {
-        const promo = promociones.find(p => p._id === promocionId);
-        if (promo) {
-          let newPrice = formData.precioBase;
-          if (promo.tipoDescuento === 'porcentaje') {
-            newPrice = formData.precioBase * (1 - (promo.valorDescuento / 100));
-          } else if (promo.tipoDescuento === 'monto_fijo') {
-            newPrice = Math.max(0, formData.precioBase - promo.valorDescuento);
-          }
-          
-          handleInputChange({
-            target: {
-              name: 'precioActual',
-              value: parseFloat(newPrice.toFixed(2))
-            }
-          });
-        }
-      }
-    }
-  };
-
-  const sections = [
-    {
-      title: "  Información Básica",
-      fields: [
-        {
-          name: 'nombre',
-          label: 'Nombre del Accesorio',
-          type: 'text',
-          placeholder: 'Ej: Estuche de cuero premium',
-          required: true,
-          className: 'md:col-span-2'
-        },
-        {
-          name: 'descripcion',
-          label: 'Descripción',
-          type: 'textarea',
-          placeholder: 'Describe las características y beneficios del accesorio...',
-          required: true,
-          className: 'md:col-span-2'
-        }
-      ]
-    },
-    {
-      title: "  Categorización",
-      fields: [
-        {
-          name: 'tipo',
-          label: 'Categoría',
-          type: 'select',
-          options: categorias?.map(cat => ({ value: cat._id, label: cat.nombre })) || [],
-          placeholder: 'Seleccione una categoría',
-          required: true
-        },
-        {
-          name: 'marcaId',
-          label: 'Marca',
-          type: 'select',
-          options: marcas?.map(marca => ({ value: marca._id, label: marca.nombre })) || [],
-          placeholder: 'Seleccione una marca',
-          required: true
-        },
-        {
-          name: 'linea',
-          label: 'Línea de Producto',
-          type: 'select',
-          options: lineasDisponibles.map(linea => ({ value: linea, label: linea })),
-          placeholder: loadingLineas ? 'Cargando líneas...' : 'Seleccione una línea',
-          required: true,
-          disabled: !formData.marcaId || loadingLineas
-        }
-      ]
-    },
-    {
-      title: "   Características Físicas",
-      fields: [
-        {
-          name: 'material',
-          label: 'Material',
-          type: 'select',
-          options: [
-            'Cuero', 'Cuero sintético', 'Tela', 'Plástico', 'Metal', 
-            'Silicona', 'Goma', 'Madera', 'Fibra de carbono', 'Otro'
-          ],
-          placeholder: 'Seleccione el material',
-          required: true
-        },
-        {
-          name: 'color',
-          label: 'Color',
-          type: 'select',
-          options: [
-            'Negro', 'Marrón', 'Blanco', 'Gris', 'Azul', 'Rojo', 
-            'Verde', 'Amarillo', 'Naranja', 'Rosa', 'Morado', 'Multicolor'
-          ],
-          placeholder: 'Seleccione el color',
-          required: true
-        }
-      ]
-    }
-  ];
-
-  const customContent = (
-    <div className="space-y-8">
-      {/* Secciones de campos básicos */}
-      {sections.map((section, idx) => (
-        <div key={idx} className="bg-white border rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-            {section.title}
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {section.fields.map((field, fIdx) => (
-              <div key={fIdx} className={field.className || ''}>
-                <EnhancedField
-                  field={field}
-                  value={formData?.[field.name]}
-                  onChange={handleInputChange}
-                  error={errors?.[field.name]}
-                  formData={formData}
-                  loadingLineas={loadingLineas}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {/* Sección de imágenes */}
-      <div className="bg-white border rounded-xl p-6">
-        <ImageUploadComponent
-          currentImages={formData?.imagenes || []}
-          onImagesChange={handleImagesChange}
-          maxImages={5}
-        />
-      </div>
-
-      {/* Sección de precios mejorada */}
-      <div className="bg-white border rounded-xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
-            Información de Precios
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <PriceField
-            label="Precio Base"
-            value={formData?.precioBase}
-            onChange={handlePrecioBaseChange}
-            error={errors?.precioBase}
-            required={true}
-            placeholder="0.00"
-          />
-          
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id="enPromocion"
-                name="enPromocion"
-                checked={formData?.enPromocion || false}
-                onChange={handlePromocionChange}
-                className="w-4 h-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500"
-              />
-              <label htmlFor="enPromocion" className="text-sm font-medium text-gray-700">
-                Producto en promoción
-              </label>
-            </div>
-            
-            {formData?.enPromocion && (
-              <div className="space-y-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                {/* Selector de promoción */}
-                <PromocionSelector
-                  promociones={promociones}
-                  selectedPromocion={formData?.promocionId}
-                  onPromocionChange={handlePromocionSelectChange}
-                  precioBase={formData?.precioBase}
-                  error={errors?.promocionId}
-                />
-                
-                {/* Campo manual de precio promocional */}
-                <PriceField
-                  label="Precio con Promoción (ajustar manualmente si es necesario)"
-                  value={formData?.precioActual}
-                  onChange={(value) => {
-                    if (setFormData) {
-                      setFormData(prev => ({
-                        ...prev,
-                        precioActual: value
-                      }));
-                    } else {
-                      handleInputChange({
-                        target: { name: 'precioActual', value }
-                      });
-                    }
-                  }}
-                  error={errors?.precioActual}
-                  required={true}
-                  placeholder="0.00"
-                />
-                
-                {formData?.precioBase && formData?.precioActual && formData.precioBase > formData.precioActual && (
-                  <div className="bg-green-100 border border-green-300 rounded p-3">
-                    <p className="text-green-800 text-sm font-medium">
-                        Descuento: ${(formData.precioBase - formData.precioActual).toFixed(2)} 
-                      ({(((formData.precioBase - formData.precioActual) / formData.precioBase) * 100).toFixed(1)}% OFF)
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {!formData?.enPromocion && formData?.precioBase && (
-              <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
-                <p><span className="font-medium">Precio actual:</span> ${formData.precioBase.toFixed(2)}</p>
-                <p className="text-xs text-gray-500 mt-1">El precio actual es igual al precio base cuando no hay promoción</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Sección de sucursales */}
-      <div className="bg-white border rounded-xl p-6">
-        <SucursalesSelector
-          sucursales={sucursales}
-          selectedSucursales={formData?.sucursales || []}
-          onChange={handleSucursalesChange}
-          errors={errors?.sucursales}
-        />
-      </div>
-
-      {/* Resumen final */}
-      {formData?.nombre && formData?.precioBase && (formData?.sucursales?.length > 0) && (
-        <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-6">
-          <h4 className="font-semibold text-cyan-800 mb-3">  Resumen del Producto</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Producto:</span> {formData.nombre}</p>
-              <p><span className="font-medium">Precio:</span> ${(formData.precioActual || formData.precioBase || 0).toFixed(2)}</p>
-              {formData.enPromocion && formData.promocionId && (
-                <p className="text-green-600">
-                  <span className="font-medium">  En promoción:</span> {
-                    promociones.find(p => p._id === formData.promocionId)?.nombre || 'Promoción seleccionada'
-                  }
-                </p>
-              )}
-            </div>
-            <div>
-              <p><span className="font-medium">Sucursales:</span> {formData.sucursales?.length || 0}</p>
-              <p><span className="font-medium">Imágenes:</span> {formData.imagenes?.length || 0}</p>
-              <p><span className="font-medium">Stock total:</span> {
-                formData.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0
-              } unidades</p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <FormModal
-      isOpen={isOpen}
-      onClose={onClose}
-      onSubmit={onSubmit}
-      title={title}
-      formData={formData}
-      handleInputChange={handleInputChange}
-      errors={errors}
-      submitLabel={isEditing ? "Actualizar Accesorio" : "Crear Accesorio"}
-      submitIcon={<Package className="w-4 h-4" />}
-      fields={[]}
-      gridCols={1}
-      size="xl"
-    >
-      {customContent}
-    </FormModal>
-  );
-};
-
-// Componente auxiliar para campos mejorados
+// Componente para campo mejorado
 const EnhancedField = ({ field, value, onChange, error, formData, loadingLineas }) => {
   const getFieldValue = () => value || '';
 
@@ -1065,6 +541,355 @@ const EnhancedField = ({ field, value, onChange, error, formData, loadingLineas 
       />
       {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
+  );
+};
+
+const AccesoriosFormModal = ({
+  isOpen,
+  onClose,
+  onSubmit,
+  title,
+  formData,
+  setFormData,
+  handleInputChange,
+  errors,
+  isEditing = false,
+  marcas = [],
+  categorias = [],
+  sucursales = [],
+  promociones = [],
+  selectedAccesorio = null
+}) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+  const [lineasDisponibles, setLineasDisponibles] = useState([]);
+  const [loadingLineas, setLoadingLineas] = useState(false);
+
+  useEffect(() => {
+    if (formData.marcaId) {
+      setLoadingLineas(true);
+      setTimeout(() => {
+        const lineasPorMarca = {
+          default: ['Económica', 'Estándar', 'Premium', 'Luxury']
+        };
+        setLineasDisponibles(lineasPorMarca.default || []);
+        setLoadingLineas(false);
+      }, 500);
+    } else {
+      setLineasDisponibles([]);
+    }
+  }, [formData.marcaId]);
+
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    setIsLoading(true);
+    setIsError(false);
+    setHasValidationErrors(false);
+
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar accesorio:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImagesChange = (newImages) => {
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        imagenes: newImages
+      }));
+    } else {
+      handleInputChange({
+        target: { name: 'imagenes', value: newImages }
+      });
+    }
+  };
+
+  const handleSucursalesChange = (newSucursales) => {
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        sucursales: newSucursales
+      }));
+    } else {
+      handleInputChange({
+        target: { name: 'sucursales', value: newSucursales }
+      });
+    }
+  };
+
+  const handlePrecioBaseChange = (newPrice) => {
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        precioBase: newPrice,
+        precioActual: prev.enPromocion ? prev.precioActual : newPrice
+      }));
+    } else {
+      handleInputChange({
+        target: { name: 'precioBase', value: newPrice }
+      });
+      if (!formData.enPromocion) {
+        handleInputChange({
+          target: { name: 'precioActual', value: newPrice }
+        });
+      }
+    }
+  };
+
+  const handlePromocionChange = (e) => {
+    const enPromocion = e.target.checked;
+    if (setFormData) {
+      setFormData(prev => ({
+        ...prev,
+        enPromocion,
+        precioActual: enPromocion ? prev.precioActual : prev.precioBase,
+        promocionId: enPromocion ? prev.promocionId : ''
+      }));
+    } else {
+      handleInputChange(e);
+      if (!enPromocion) {
+        handleInputChange({
+          target: { name: 'precioActual', value: formData.precioBase || 0 }
+        });
+        handleInputChange({
+          target: { name: 'promocionId', value: '' }
+        });
+      }
+    }
+  };
+
+  const handlePromocionSelectChange = (e) => {
+    const promocionId = e.target.value;
+    if (setFormData) {
+      setFormData(prev => {
+        let newPrecioActual = prev.precioBase;
+        if (promocionId && prev.precioBase) {
+          const promo = promociones.find(p => p._id === promocionId);
+          if (promo) {
+            if (promo.tipoDescuento === 'porcentaje') {
+              newPrecioActual = prev.precioBase * (1 - (promo.valorDescuento / 100));
+            } else if (promo.tipoDescuento === 'monto_fijo') {
+              newPrecioActual = Math.max(0, prev.precioBase - promo.valorDescuento);
+            }
+            newPrecioActual = parseFloat(newPrecioActual.toFixed(2));
+          }
+        }
+        return {
+          ...prev,
+          promocionId,
+          precioActual: newPrecioActual
+        };
+      });
+    }
+  };
+
+  const sections = [
+    {
+      title: "Información Básica",
+      fields: [
+        { name: 'nombre', label: 'Nombre del Accesorio', type: 'text', placeholder: 'Ej: Estuche de cuero premium', required: true, className: 'md:col-span-2' },
+        { name: 'descripcion', label: 'Descripción', type: 'textarea', placeholder: 'Describe las características y beneficios del accesorio...', required: true, className: 'md:col-span-2' }
+      ]
+    },
+    {
+      title: "Categorización",
+      fields: [
+        { name: 'tipo', label: 'Categoría', type: 'select', options: categorias?.map(cat => ({ value: cat._id, label: cat.nombre })) || [], placeholder: 'Seleccione una categoría', required: true },
+        { name: 'marcaId', label: 'Marca', type: 'select', options: marcas?.map(marca => ({ value: marca._id, label: marca.nombre })) || [], placeholder: 'Seleccione una marca', required: true },
+        { name: 'linea', label: 'Línea de Producto', type: 'select', options: lineasDisponibles.map(linea => ({ value: linea, label: linea })), placeholder: loadingLineas ? 'Cargando líneas...' : 'Seleccione una línea', required: true, disabled: !formData.marcaId || loadingLineas }
+      ]
+    },
+    {
+      title: "Características Físicas",
+      fields: [
+        { name: 'material', label: 'Material', type: 'select', options: ['Cuero', 'Cuero sintético', 'Tela', 'Plástico', 'Metal', 'Silicona', 'Goma', 'Madera', 'Fibra de carbono', 'Otro'], placeholder: 'Seleccione el material', required: true },
+        { name: 'color', label: 'Color', type: 'select', options: ['Negro', 'Marrón', 'Blanco', 'Gris', 'Azul', 'Rojo', 'Verde', 'Amarillo', 'Naranja', 'Rosa', 'Morado', 'Multicolor'], placeholder: 'Seleccione el color', required: true }
+      ]
+    }
+  ];
+
+  const customContent = (
+    <div className="space-y-8">
+      {sections.map((section, idx) => (
+        <div key={idx} className="bg-white border rounded-xl p-6 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+            {section.title}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {section.fields.map((field, fIdx) => (
+              <div key={fIdx} className={field.className || ''}>
+                <EnhancedField
+                  field={field}
+                  value={formData?.[field.name]}
+                  onChange={handleInputChange}
+                  error={errors?.[field.name]}
+                  formData={formData}
+                  loadingLineas={loadingLineas}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* Sección de imágenes */}
+      <div className="bg-white border rounded-xl p-6">
+        <ImageUploadComponent
+          currentImages={formData?.imagenes || []}
+          onImagesChange={handleImagesChange}
+          maxImages={5}
+        />
+      </div>
+
+      {/* Sección de precios */}
+      <div className="bg-white border rounded-xl p-6">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b">
+          Información de Precios
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <PriceField
+            label="Precio Base"
+            value={formData?.precioBase}
+            onChange={handlePrecioBaseChange}
+            error={errors?.precioBase}
+            required={true}
+            placeholder="0.00"
+          />
+          
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <input
+                type="checkbox"
+                id="enPromocion"
+                name="enPromocion"
+                checked={formData?.enPromocion || false}
+                onChange={handlePromocionChange}
+                className="w-4 h-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500"
+              />
+              <label htmlFor="enPromocion" className="text-sm font-medium text-gray-700">
+                Producto en promoción
+              </label>
+            </div>
+            
+            {formData?.enPromocion && (
+              <div className="space-y-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <PromocionSelector
+                  promociones={promociones}
+                  selectedPromocion={formData?.promocionId}
+                  onPromocionChange={handlePromocionSelectChange}
+                  precioBase={formData?.precioBase}
+                  error={errors?.promocionId}
+                />
+                
+                <PriceField
+                  label="Precio con Promoción (ajustar manualmente si es necesario)"
+                  value={formData?.precioActual}
+                  onChange={(value) => {
+                    if (setFormData) {
+                      setFormData(prev => ({
+                        ...prev,
+                        precioActual: value
+                      }));
+                    } else {
+                      handleInputChange({
+                        target: { name: 'precioActual', value }
+                      });
+                    }
+                  }}
+                  error={errors?.precioActual}
+                  required={true}
+                  placeholder="0.00"
+                />
+                
+                {formData?.precioBase && formData?.precioActual && formData.precioBase > formData.precioActual && (
+                  <div className="bg-green-100 border border-green-300 rounded p-3">
+                    <p className="text-green-800 text-sm font-medium">
+                      Descuento: ${(formData.precioBase - formData.precioActual).toFixed(2)} 
+                      ({(((formData.precioBase - formData.precioActual) / formData.precioBase) * 100).toFixed(1)}% OFF)
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {!formData?.enPromocion && formData?.precioBase && (
+              <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded">
+                <p><span className="font-medium">Precio actual:</span> ${formData.precioBase.toFixed(2)}</p>
+                <p className="text-xs text-gray-500 mt-1">El precio actual es igual al precio base cuando no hay promoción</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Sección de sucursales */}
+      <div className="bg-white border rounded-xl p-6">
+        <SucursalesSelector
+          sucursales={sucursales}
+          selectedSucursales={formData?.sucursales || []}
+          onChange={handleSucursalesChange}
+          errors={errors?.sucursales}
+        />
+      </div>
+
+      {/* Resumen final */}
+      {formData?.nombre && formData?.precioBase && (formData?.sucursales?.length > 0) && (
+        <div className="bg-cyan-50 border-2 border-cyan-200 rounded-xl p-6">
+          <h4 className="font-semibold text-cyan-800 mb-3">Resumen del Producto</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+              <p><span className="font-medium">Producto:</span> {formData.nombre}</p>
+              <p><span className="font-medium">Precio:</span> ${(formData.precioActual || formData.precioBase || 0).toFixed(2)}</p>
+              {formData.enPromocion && formData.promocionId && (
+                <p className="text-green-600">
+                  <span className="font-medium">En promoción:</span> {
+                    promociones.find(p => p._id === formData.promocionId)?.nombre || 'Promoción seleccionada'
+                  }
+                </p>
+              )}
+            </div>
+            <div>
+              <p><span className="font-medium">Sucursales:</span> {formData.sucursales?.length || 0}</p>
+              <p><span className="font-medium">Imágenes:</span> {formData.imagenes?.length || 0}</p>
+              <p><span className="font-medium">Stock total:</span> {
+                formData.sucursales?.reduce((total, s) => total + (s.stock || 0), 0) || 0
+              } unidades</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <FormModal
+      isOpen={isOpen}
+      onClose={onClose}
+      onSubmit={handleFormSubmit}
+      title={title}
+      formData={formData}
+      handleInputChange={handleInputChange}
+      errors={errors}
+      submitLabel={isEditing ? "Actualizar Accesorio" : "Crear Accesorio"}
+      submitIcon={<Package className="w-4 h-4" />}
+      fields={[]}
+      gridCols={1}
+      size="xl"
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
+    >
+      {customContent}
+    </FormModal>
   );
 };
 
