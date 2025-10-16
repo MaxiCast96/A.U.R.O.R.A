@@ -3,12 +3,74 @@ import { useAuth } from '../../components/auth/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, User, Mail, Phone, Briefcase, CheckCircle, AlertCircle, LogOut, FileText, LayoutDashboard } from 'lucide-react';
 
+// ========== UTILIDAD PARA OBTENER FOTO DE PERFIL (INTEGRADA) ==========
+const getProfileImage = (userData) => {
+  if (!userData) {
+    return generateFallbackAvatar('Usuario');
+  }
+
+  // Primera prioridad: fotoPerfil (usado en empleados)
+  if (userData.fotoPerfil && userData.fotoPerfil.trim()) {
+    return userData.fotoPerfil;
+  }
+  
+  // Segunda prioridad: avatar (genérico)
+  if (userData.avatar && userData.avatar.trim()) {
+    return userData.avatar;
+  }
+  
+  // Tercera prioridad: foto (alternativo)
+  if (userData.foto && userData.foto.trim()) {
+    return userData.foto;
+  }
+  
+  // Fallback: Generar avatar con iniciales
+  const nombre = userData.nombre || userData.name || '';
+  const apellido = userData.apellido || '';
+  const fullName = `${nombre} ${apellido}`.trim();
+  
+  if (fullName) {
+    return generateFallbackAvatar(fullName);
+  }
+  
+  // Fallback final basado en rol
+  const userType = userData.userType || userData.rol || 'Usuario';
+  return generateFallbackAvatar(userType);
+};
+
+const generateFallbackAvatar = (name, options = {}) => {
+  const {
+    size = 150,
+    background = '06b6d4',
+    color = 'ffffff',
+    bold = true,
+    fontSize = 0.6
+  } = options;
+
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=${size}&background=${background}&color=${color}&bold=${bold}&font-size=${fontSize}`;
+};
+
+const getInitials = (name) => {
+  if (!name || name.trim() === '') return '?';
+  
+  const cleanName = name.trim();
+  const parts = cleanName.split(' ').filter(part => part.length > 0);
+  
+  if (parts.length === 0) return '?';
+  
+  return parts.length > 1 
+    ? `${parts[0][0]}${parts[1][0]}` 
+    : parts[0][0];
+};
+// ========== FIN DE UTILIDADES ==========
+
 const PerfilPage = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
   const [errorMessage, setErrorMessage] = useState(location.state?.message || null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -44,12 +106,10 @@ const PerfilPage = () => {
     }
   };
 
-  const getInitials = (name) => {
-    if (!name || name.trim() === '') return '?';
-    const cleanName = name.trim();
-    const parts = cleanName.split(' ').filter(part => part.length > 0);
-    if (parts.length === 0) return '?';
-    return parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : parts[0][0];
+  const handleImageError = (e) => {
+    setImageError(true);
+    const fullName = `${user.nombre || ''} ${user.apellido || ''}`.trim() || 'Usuario';
+    e.target.src = generateFallbackAvatar(fullName);
   };
 
   if (!user) {
@@ -62,7 +122,9 @@ const PerfilPage = () => {
     );
   }
 
-  const initials = getInitials(`${user.nombre} ${user.apellido}`);
+  // Obtener la imagen de perfil usando la utilidad integrada
+  const profileImageUrl = getProfileImage(user);
+  const initials = getInitials(`${user.nombre || ''} ${user.apellido || ''}`);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 md:p-8">
@@ -91,11 +153,13 @@ const PerfilPage = () => {
               <div className="flex flex-col items-center text-center">
                 <div className="mb-4">
                   <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-cyan-100 to-cyan-200 border-4 border-white shadow-xl">
-                    {user.fotoPerfil ? (
+                    {!imageError ? (
                       <img 
-                        src={user.fotoPerfil} 
-                        alt={`${user.nombre} ${user.apellido}`} 
+                        src={profileImageUrl} 
+                        alt={`${user.nombre || ''} ${user.apellido || ''}`} 
                         className="w-full h-full object-cover" 
+                        onError={handleImageError}
+                        loading="lazy"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
