@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { Search, Plus, Trash2, Eye, Edit, Calendar, User, Clock, CheckCircle, XCircle, AlertTriangle, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
-import FormModal from '../ui/FormModal';
+import { Search, Plus, Trash2, Eye, Edit, Calendar, User, Clock, CheckCircle, XCircle, AlertTriangle, MapPin, ChevronLeft, ChevronRight, Save, X as XIcon, AlertCircle as AlertCircleIcon } from 'lucide-react';
 import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
 import ConfirmationModal from '../ui/ConfirmationModal';
@@ -83,6 +82,285 @@ const SkeletonLoader = React.memo(() => (
   </div>
 ));
 
+// --- COMPONENTE CUSTOM FORM MODAL ---
+const CitasFormModal = ({ 
+  isOpen, 
+  onClose, 
+  onSubmit, 
+  title, 
+  formData, 
+  handleInputChange, 
+  errors, 
+  submitLabel,
+  isLoading = false,
+  isError = false,
+  clienteOptions = [],
+  optometristaOptions = [],
+  sucursalOptions = [],
+  estadoOptions = []
+}) => {
+  const [isFocused, setIsFocused] = useState({});
+  const [localError, setLocalError] = useState(false);
+
+  useEffect(() => {
+    if (isError) {
+      setLocalError(true);
+      const timer = setTimeout(() => setLocalError(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isError]);
+
+  const getButtonConfig = () => {
+    if (isLoading) {
+      return {
+        bgColor: 'bg-cyan-500',
+        text: 'Procesando...',
+        icon: <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />,
+        disabled: true
+      };
+    }
+    if (localError) {
+      return {
+        bgColor: 'bg-red-500',
+        text: 'Error',
+        icon: <XIcon className="w-4 h-4" />,
+        disabled: false
+      };
+    }
+    return {
+      bgColor: 'bg-cyan-500 hover:bg-cyan-600',
+      text: submitLabel,
+      icon: <Save className="w-4 h-4" />,
+      disabled: false
+    };
+  };
+
+  const buttonConfig = getButtonConfig();
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isLoading) {
+      onSubmit(e);
+    }
+  };
+
+  const renderField = (field) => {
+    const { name, label, type, options, required, placeholder } = field;
+    const error = errors[name];
+    const displayLabel = required ? `${label} *` : label;
+    const value = formData[name] || '';
+
+    const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all text-base ${
+      error ? 'border-red-500 bg-red-50' : 
+      isFocused[name] ? 'border-cyan-500' : 'border-gray-300 bg-white'
+    }`;
+
+    if (type === 'select') {
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {displayLabel}
+          </label>
+          <select
+            name={name}
+            value={value}
+            onChange={handleInputChange}
+            onFocus={() => setIsFocused(prev => ({ ...prev, [name]: true }))}
+            onBlur={() => setIsFocused(prev => ({ ...prev, [name]: false }))}
+            className={inputClasses}
+          >
+            <option value="">{placeholder || `Seleccione ${label.toLowerCase()}`}</option>
+            {options.map((option, index) => (
+              <option key={`${name}-${index}`} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          {error && (
+            <p className="text-red-500 text-sm flex items-center space-x-1">
+              <AlertCircleIcon className="w-4 h-4" />
+              <span>{error}</span>
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    if (type === 'textarea') {
+      return (
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {displayLabel}
+          </label>
+          <textarea
+            name={name}
+            value={value}
+            onChange={handleInputChange}
+            placeholder={placeholder}
+            onFocus={() => setIsFocused(prev => ({ ...prev, [name]: true }))}
+            onBlur={() => setIsFocused(prev => ({ ...prev, [name]: false }))}
+            className={`${inputClasses} resize-none`}
+            rows={3}
+          />
+          {error && (
+            <p className="text-red-500 text-sm flex items-center space-x-1">
+              <AlertCircleIcon className="w-4 h-4" />
+              <span>{error}</span>
+            </p>
+          )}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          {displayLabel}
+        </label>
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={handleInputChange}
+          placeholder={placeholder}
+          onFocus={() => setIsFocused(prev => ({ ...prev, [name]: true }))}
+          onBlur={() => setIsFocused(prev => ({ ...prev, [name]: false }))}
+          className={inputClasses}
+        />
+        {error && (
+          <p className="text-red-500 text-sm flex items-center space-x-1">
+            <AlertCircleIcon className="w-4 h-4" />
+            <span>{error}</span>
+          </p>
+        )}
+        {name === 'hora' && (
+          <p className="text-xs text-gray-500 flex items-center space-x-1">
+            <AlertCircleIcon className="w-3 h-3" />
+            <span>Formato 24h. Ejemplo: 14:30</span>
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  if (!isOpen) return null;
+
+  const sections = [
+    {
+      title: " Información de la Cita",
+      fields: [
+        { name: 'clienteId', label: 'Cliente', type: 'select', options: clienteOptions, placeholder: 'Seleccione un cliente', required: true },
+        { name: 'optometristaId', label: 'Optometrista', type: 'select', options: optometristaOptions, placeholder: 'Seleccione un optometrista', required: true },
+        { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursalOptions, placeholder: 'Seleccione una sucursal', required: true },
+        { name: 'fecha', label: 'Fecha', type: 'date', required: true },
+        { name: 'hora', label: 'Hora', type: 'text', placeholder: '14:30', required: true },
+        { name: 'estado', label: 'Estado', type: 'select', options: estadoOptions, required: true },
+      ]
+    },
+    {
+      title: " Detalles Médicos",
+      fields: [
+        { name: 'motivoCita', label: 'Motivo de la cita', type: 'text', placeholder: 'Ej: Examen Visual', required: true },
+        { name: 'tipoLente', label: 'Tipo de lente', type: 'text', placeholder: 'Ej: Monofocal', required: true },
+        { name: 'graduacion', label: 'Graduación', type: 'text', placeholder: 'Ej: -1.25', required: true },
+        { name: 'notasAdicionales', label: 'Notas adicionales', type: 'textarea', placeholder: 'Observaciones adicionales...' }
+      ]
+    }
+  ];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <form 
+        onSubmit={handleSubmit}
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden transform transition-all duration-300 animate-slideInScale"
+      >
+        {/* Header */}
+        <div className="bg-gradient-to-r from-cyan-500 to-cyan-600 text-white px-6 py-5 flex justify-between items-center sticky top-0 z-10">
+          <h3 className="text-xl font-bold flex items-center space-x-2">
+            <Calendar className="w-6 h-6" />
+            <span>{title}</span>
+          </h3>
+          <button 
+            type="button" 
+            onClick={onClose} 
+            disabled={isLoading}
+            className="text-white hover:bg-white/20 rounded-lg p-2 transition-all duration-200 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <XIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-6">
+          <div className="space-y-6">
+            {sections.map((section, sectionIndex) => (
+              <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                <h4 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+                  {section.title}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {section.fields.map((field, fieldIndex) => (
+                    <div key={`field-${sectionIndex}-${fieldIndex}`} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
+                      {renderField(field)}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-4 bg-gray-50 border-t flex justify-end space-x-3 sticky bottom-0 z-10">
+          <button 
+            type="button" 
+            onClick={onClose}
+            disabled={isLoading}
+            className="px-6 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Cancelar
+          </button>
+          <button 
+            type="submit" 
+            disabled={buttonConfig.disabled || isLoading}
+            className={`px-6 py-2.5 ${buttonConfig.bgColor} text-white rounded-lg transition-all duration-200 font-medium flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {buttonConfig.icon}
+            <span>{buttonConfig.text}</span>
+          </button>
+        </div>
+      </form>
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slideInScale {
+          from {
+            opacity: 0;
+            transform: scale(0.95) translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.2s ease-out;
+        }
+        
+        .animate-slideInScale {
+          animation: slideInScale 0.3s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const CitasContent = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
@@ -104,7 +382,7 @@ const CitasContent = () => {
   const [notification, setNotification] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState({ open: false, cita: null });
   
-  // NUEVOS ESTADOS PARA LOADING DEL BOTÓN
+  // ESTADOS PARA LOADING DEL BOTÓN
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(false);
 
@@ -123,7 +401,7 @@ const CitasContent = () => {
     return 'Optometrista';
   };
 
-  // Resolver robusto: si en la cita viene solo el ID o no viene poblado, busca en la lista cargada
+  // Resolver robusto
   const resolveOptometristaNombre = useCallback((optFromCita) => {
     if (!optFromCita) return 'N/A';
     if (typeof optFromCita === 'object') {
@@ -179,7 +457,6 @@ const CitasContent = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-    // Limpiar error del campo cuando el usuario empieza a escribir
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -257,91 +534,6 @@ const CitasContent = () => {
     { value: 'Completada', label: 'Completada' }
   ];
 
-  // Definición de campos para el FormModal
-  const fields = [
-    {
-      name: 'clienteId',
-      label: 'Cliente',
-      type: 'select',
-      options: clienteOptions,
-      placeholder: 'Seleccione un cliente',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'optometristaId',
-      label: 'Optometrista',
-      type: 'select',
-      options: optometristaOptions,
-      placeholder: 'Seleccione un optometrista',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'sucursalId',
-      label: 'Sucursal',
-      type: 'select',
-      options: sucursalOptions,
-      placeholder: 'Seleccione una sucursal',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'fecha',
-      label: 'Fecha',
-      type: 'date',
-      required: true,
-      colSpan: 1
-    },
-    {
-      name: 'hora',
-      label: 'Hora',
-      type: 'text',
-      placeholder: 'Ej. 10:30',
-      required: true,
-      colSpan: 1
-    },
-    {
-      name: 'estado',
-      label: 'Estado',
-      type: 'select',
-      options: estadoOptions,
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'motivoCita',
-      label: 'Motivo de la cita',
-      type: 'text',
-      placeholder: 'Ej. Examen Visual',
-      required: true,
-      colSpan: 4
-    },
-    {
-      name: 'tipoLente',
-      label: 'Tipo de lente',
-      type: 'text',
-      placeholder: 'Ej. Monofocal',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'graduacion',
-      label: 'Graduación',
-      type: 'text',
-      placeholder: 'Ej. -1.25',
-      required: true,
-      colSpan: 2
-    },
-    {
-      name: 'notasAdicionales',
-      label: 'Notas adicionales',
-      type: 'textarea',
-      placeholder: 'Observaciones...',
-      colSpan: 4
-    }
-  ];
-
   // Validación
   const validate = () => {
     const newErrors = {};
@@ -359,7 +551,7 @@ const CitasContent = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Submit con loading y error states
+  // Submit
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -488,7 +680,7 @@ const CitasContent = () => {
     ];
   }, [citas]);
 
-  // Función para avanzar o retroceder días en el calendario
+  // Función para avanzar o retroceder días
   const changeDay = (direction) => {
     let baseDate;
     if (!selectedDate) {
@@ -752,22 +944,22 @@ const CitasContent = () => {
         </div>
       </div>
 
-      {/* MODAL DE ALTA/EDICIÓN */}
-      <FormModal
+      {/* MODAL CUSTOM DE ALTA/EDICIÓN */}
+      <CitasFormModal
         isOpen={showAddModal || showEditModal}
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
-        title={selectedCita ? 'Editar Cita' : 'Agendar Cita'}
+        title={selectedCita ? 'Editar Cita' : 'Agendar Nueva Cita'}
         formData={formData}
         handleInputChange={handleInputChange}
         errors={errors}
         submitLabel={selectedCita ? 'Guardar Cambios' : 'Agendar Cita'}
-        fields={fields}
-        gridCols={4}
         isLoading={isSubmitting}
         isError={submitError}
-        hasValidationErrors={Object.keys(errors).length > 0}
-        errorDuration={1000}
+        clienteOptions={clienteOptions}
+        optometristaOptions={optometristaOptions}
+        sucursalOptions={sucursalOptions}
+        estadoOptions={estadoOptions}
       />
 
       {/* MODAL DE DETALLE DE CITA */}

@@ -788,14 +788,14 @@ const EmpleadosFormModal = ({
     }, [selectedEmpleado, setFormData]);
 
     const sections = [
-        { title: "📋 Información Personal", fields: [
+        { title: " Información Personal", fields: [
             { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Juan Carlos', required: true },
             { name: 'apellido', label: 'Apellido', type: 'text', placeholder: 'García López', required: true },
             { name: 'dui', label: 'DUI', type: 'text', placeholder: '12345678-9', required: true },
             { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: '78901234', required: true },
             { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'juan.garcia@email.com', required: true },
         ]},
-        { title: "📍 Información de Residencia", fields: [
+        { title: " Información de Residencia", fields: [
             { 
                 name: 'direccion.departamento', 
                 label: 'Departamento', 
@@ -825,7 +825,7 @@ const EmpleadosFormModal = ({
                 required: true 
             },
         ]},
-        { title: "💼 Información Laboral", fields: [
+        { title: "Información Laboral", fields: [
             { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursales?.map(s => ({ value: s._id, label: s.nombre })) || [], required: true },
             { name: 'cargo', label: 'Puesto', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
             { name: 'salario', label: 'Salario (USD)', type: 'number', placeholder: '500.00', required: true },
