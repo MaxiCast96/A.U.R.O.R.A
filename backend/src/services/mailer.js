@@ -1,8 +1,11 @@
-// Lightweight mailer service using Resend HTTP API (no SMTP)
-// Env required: RESEND_API_KEY. Optional: RESEND_FROM (verified sender or domain)
+// Lightweight mailer service supporting Brevo SMTP, Brevo API, and Resend API
+// Resend envs: RESEND_API_KEY, RESEND_FROM (optional)
+// Brevo API uses: BREVO_API_KEY, BREVO_FROM (optional)
+// Brevo SMTP uses inline constants below (no .env required)
+import nodemailer from 'nodemailer';
 
-// Provider switch: 'brevo' | 'resend'
-const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'brevo';
+// Provider switch: 'smtp' | 'brevo' | 'resend'
+const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'smtp';
 
 // Brevo (Sendinblue) inline config (edit these if you cannot use .env)
 // IMPORTANT: Replace with your real API key and a verified sender in Brevo
@@ -12,6 +15,12 @@ const BREVO_FROM = process.env.BREVO_FROM || '"Óptica La Inteligente" <OpticaLa
 // Resend fallback config (works if you still want to use Resend)
 const RESEND_API_KEY = process.env.RESEND_API_KEY || '';
 const RESEND_FROM = process.env.RESEND_FROM || 'onboarding@resend.dev';
+
+// Brevo SMTP inline config (no .env needed)
+const SMTP_HOST = 'smtp-relay.brevo.com';
+const SMTP_PORT = 587; // STARTTLS
+const SMTP_USER = 'OpticaLaInteligente@gmail.com';
+const SMTP_PASS = 'xsmtpsib-c91d6fc106b8ffdcff622e6f4020fd5ece6bf384ce472f9b70ec8cd8367ed1ad-3OT1KhMDExt0qbzC';
 
 function parseSender(sender) {
   // Accepts formats: 'Name <email@domain>' or plain 'email@domain'
@@ -28,6 +37,30 @@ export async function sendEmail({ to, subject, html, text, from }) {
   const recipients = Array.isArray(to) ? to : [to];
   if (!recipients.length) {
     throw new Error('Missing recipient email (to)');
+  }
+
+  // SMTP (Brevo) branch
+  if (EMAIL_PROVIDER === 'smtp') {
+    const transporter = nodemailer.createTransport({
+      host: SMTP_HOST,
+      port: SMTP_PORT,
+      secure: false, // STARTTLS
+      auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS,
+      },
+    });
+
+    const sender = from || BREVO_FROM;
+    const info = await transporter.sendMail({
+      from: sender,
+      to: recipients.join(', '),
+      subject: subject || '',
+      ...(html ? { html } : {}),
+      ...(text ? { text } : {}),
+    });
+
+    return { messageId: info.messageId };
   }
 
   if (EMAIL_PROVIDER === 'brevo') {
