@@ -80,7 +80,7 @@ registerClientesController.register = async (req, res) => {
                 subject,
                 html,
                 text,
-                from: process.env.RESEND_FROM || `"Óptica Inteligente" <${config.email.user || 'onboarding@resend.dev'}>`
+                from: '"Óptica La Inteligente" <onboarding@resend.dev>'
             });
 
             // En desarrollo, devolvemos también el código para facilitar pruebas

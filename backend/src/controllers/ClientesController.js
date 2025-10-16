@@ -505,7 +505,7 @@ clientesController.forgotPassword = async (req, res) => {
                 subject,
                 html,
                 text,
-                from: process.env.RESEND_FROM || `"Óptica Inteligente" <${config.email.user || 'onboarding@resend.dev'}>`
+                from: '"Óptica La Inteligente" <onboarding@resend.dev>'
             });
 
             res.json({ message: "Email de recuperación enviado exitosamente" });

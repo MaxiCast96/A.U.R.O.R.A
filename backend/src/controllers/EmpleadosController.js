@@ -552,7 +552,7 @@ soporte@opticalainteligente.com
             subject,
             html: htmlTemplate,
             text,
-            from: process.env.RESEND_FROM || `"Óptica La Inteligente" <${config.email.user || 'onboarding@resend.dev'}>`
+            from: '"Óptica La Inteligente" <onboarding@resend.dev>'
         });
         res.json({ message: "Código de recuperación enviado al correo" });
     } catch (error) {

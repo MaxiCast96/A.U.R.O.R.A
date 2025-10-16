@@ -105,7 +105,7 @@ registerEmpleadosController.register = async (req, res) => {
                 subject,
                 html,
                 text,
-                from: process.env.RESEND_FROM || `"Óptica La Inteligente" <${process.env.USER_EMAIL || 'onboarding@resend.dev'}>`
+                from: '"Óptica La Inteligente" <onboarding@resend.dev>'
             });
 
             res.json({ message: "Empleado registrado, por favor revisa tu correo para verificar tu cuenta." });
