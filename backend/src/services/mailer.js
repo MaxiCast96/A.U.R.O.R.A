@@ -6,7 +6,7 @@ const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'brevo';
 
 // Brevo (Sendinblue) inline config (edit these if you cannot use .env)
 // IMPORTANT: Replace with your real API key and a verified sender in Brevo
-const BREVO_API_KEY = process.env.BREVO_API_KEY || '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';
+const BREVO_API_KEY = process.env.BREVO_API_KEY || 'xsmtpsib-c91d6fc106b8ffdcff622e6f4020fd5ece6bf384ce472f9b70ec8cd8367ed1ad-3OT1KhMDExt0qbzC';
 const BREVO_FROM = process.env.BREVO_FROM || '"Óptica La Inteligente" <OpticaLaInteligente@gmail.com>';
 
 // Resend fallback config (works if you still want to use Resend)
