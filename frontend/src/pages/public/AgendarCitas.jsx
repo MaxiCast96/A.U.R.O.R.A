@@ -334,7 +334,7 @@ const AgendarCitas = () => {
                 required
               >
                 <option value="">Seleccionar optometrista</option>
-                <option value="any">Cualquiera</option>
+                <option value="any">Selecciòn Aleatoria</option>
                 {optometristas
                   .filter(o => !formData.sucursalId || (o.sucursalesAsignadas || []).some(s => (s?._id || s) === formData.sucursalId))
                   .map(o => (

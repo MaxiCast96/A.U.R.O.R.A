@@ -1,32 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../components/auth/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { ArrowLeft, User, Mail, Phone, Briefcase, CheckCircle, AlertCircle, LogOut, FileText, LayoutDashboard } from 'lucide-react';
 
 const PerfilPage = () => {
-  const { user, setUser, logout } = useAuth();
-
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [editMode, setEditMode] = useState(false);
-  const [formData, setFormData] = useState({
-    nombre: user?.nombre || '',
-    apellido: user?.apellido || '',
-    telefono: user?.telefono || ''
-  });
-  const [showLoginMsg, setShowLoginMsg] = useState(false);
+  
   const [errorMessage, setErrorMessage] = useState(location.state?.message || null);
-  const [savedMsg, setSavedMsg] = useState(null);
 
   useEffect(() => {
     if (!user) {
-      setShowLoginMsg(true);
       setTimeout(() => {
         navigate('/');
       }, 1800);
     }
   }, [user, navigate]);
 
-  // Limpiar mensaje de error después de 5 segundos
   useEffect(() => {
     if (errorMessage) {
       const timer = setTimeout(() => {
@@ -53,6 +44,14 @@ const PerfilPage = () => {
     }
   };
 
+  const getInitials = (name) => {
+    if (!name || name.trim() === '') return '?';
+    const cleanName = name.trim();
+    const parts = cleanName.split(' ').filter(part => part.length > 0);
+    if (parts.length === 0) return '?';
+    return parts.length > 1 ? `${parts[0][0]}${parts[1][0]}` : parts[0][0];
+  };
+
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -63,188 +62,196 @@ const PerfilPage = () => {
     );
   }
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSave = (e) => {
-    e.preventDefault();
-    const updated = {
-      ...user,
-      nombre: formData.nombre,
-      apellido: formData.apellido,
-      telefono: formData.telefono,
-    };
-    setUser(updated);
-    try {
-      localStorage.setItem('aurora_user', JSON.stringify(updated));
-    } catch (_) {}
-    setEditMode(false);
-    setSavedMsg('Cambios guardados correctamente.');
-    setTimeout(() => setSavedMsg(null), 3000);
-  };
+  const initials = getInitials(`${user.nombre} ${user.apellido}`);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      {/* Hero */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleBack}
-              className="inline-flex items-center gap-2 text-white/90 hover:text-white bg-white/10 hover:bg-white/15 px-3 py-2 rounded-md transition"
-            >
-              <span className="text-lg">←</span>
-              <span className="text-sm font-medium">Volver</span>
-            </button>
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white/20 flex items-center justify-center text-white text-2xl font-bold">
-              {user.nombre?.charAt(0) || 'U'}
-            </div>
-            <div className="flex-1">
-              <h1 className="text-white text-2xl sm:text-3xl font-bold leading-tight">
-                {user.nombre} {user.apellido}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2 mt-1">
-                <span className="text-white/90 text-sm sm:text-base">{user.correo}</span>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ml-2 ${
-                  user.rol === 'Cliente' ? 'bg-white/15 text-white' : 'bg-emerald-400/20 text-emerald-100'
-                }`}>
-                  {user.rol}
-                </span>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="hidden sm:inline-flex bg-white text-blue-600 font-medium px-4 py-2 rounded-md hover:bg-blue-50 transition"
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
+        <button
+          onClick={handleBack}
+          className="mb-6 inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 bg-white hover:bg-gray-50 px-4 py-2 rounded-lg transition-all shadow-sm hover:shadow"
+        >
+          <ArrowLeft className="w-5 h-5" />
+          <span className="font-medium">Volver</span>
+        </button>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 -mt-6 sm:-mt-8 pb-10">
-        {/* Global alerts */}
         {errorMessage && (
-          <div className="mb-4 bg-red-50 border border-red-200 text-red-700 p-3 rounded">
-            {errorMessage}
-          </div>
-        )}
-        {savedMsg && (
-          <div className="mb-4 bg-green-50 border border-green-200 text-green-700 p-3 rounded">
-            {savedMsg}
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg shadow-sm animate-fade-in">
+            <div className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-3" />
+              <p className="text-red-700 font-medium">{errorMessage}</p>
+            </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-6">
-          <div className="space-y-6">
-            {/* Personal info */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">Información Personal</h3>
-                {!editMode && (
-                  <button
-                    onClick={() => setEditMode(true)}
-                    className="text-blue-600 text-sm font-medium hover:underline"
-                  >
-                    Editar
-                  </button>
-                )}
-              </div>
-
-              {editMode ? (
-                <form onSubmit={handleSave} className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500">Nombre</label>
-                    <input
-                      type="text"
-                      name="nombre"
-                      value={formData.nombre}
-                      onChange={handleChange}
-                      className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500">Apellido</label>
-                    <input
-                      type="text"
-                      name="apellido"
-                      value={formData.apellido}
-                      onChange={handleChange}
-                      className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500">Teléfono</label>
-                    <input
-                      type="tel"
-                      name="telefono"
-                      value={formData.telefono}
-                      onChange={handleChange}
-                      className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                    />
-                  </div>
-                  <div className="sm:col-span-3 flex flex-col sm:flex-row gap-2">
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
-                    >
-                      Guardar cambios
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditMode(false)}
-                      className="bg-slate-100 text-slate-700 px-4 py-2 rounded-md hover:bg-slate-200 transition"
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                </form>
-              ) : (
-                <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-3 rounded-md border border-slate-100 bg-slate-50">
-                    <p className="text-xs text-slate-500">Nombre</p>
-                    <p className="text-slate-800 font-medium">{user.nombre || '-'}</p>
-                  </div>
-                  <div className="p-3 rounded-md border border-slate-100 bg-slate-50">
-                    <p className="text-xs text-slate-500">Apellido</p>
-                    <p className="text-slate-800 font-medium">{user.apellido || '-'}</p>
-                  </div>
-                  <div className="p-3 rounded-md border border-slate-100 bg-slate-50">
-                    <p className="text-xs text-slate-500">Teléfono</p>
-                    <p className="text-slate-800 font-medium">{user.telefono || '-'}</p>
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-gradient-to-r from-cyan-600 via-cyan-500 to-cyan-600 px-8 py-12 relative overflow-hidden">
+            <div className="absolute inset-0 bg-black/5"></div>
+            <div className="relative">
+              <div className="flex flex-col items-center text-center">
+                <div className="mb-4">
+                  <div className="w-32 h-32 rounded-full overflow-hidden bg-gradient-to-br from-cyan-100 to-cyan-200 border-4 border-white shadow-xl">
+                    {user.fotoPerfil ? (
+                      <img 
+                        src={user.fotoPerfil} 
+                        alt={`${user.nombre} ${user.apellido}`} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <span className="text-cyan-700 font-bold text-3xl">{initials}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
-              )}
+                <h1 className="text-3xl font-bold text-white mb-2">
+                  {user.nombre} {user.apellido}
+                </h1>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <span className="text-white text-lg">{user.correo}</span>
+                  <span className={`px-4 py-1.5 backdrop-blur-sm text-white rounded-full text-sm font-medium border ${
+                    user.rol === 'Cliente' 
+                      ? 'bg-white/15 border-white/30' 
+                      : 'bg-emerald-400/20 border-emerald-200/30'
+                  }`}>
+                    {user.rol}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8">
+            <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+              <div className="flex items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-800 flex items-center">
+                  <User className="w-5 h-5 mr-2 text-blue-600" />
+                  Información Personal
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Nombre</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold text-lg">{user.nombre || '-'}</p>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <User className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Apellido</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold text-lg">{user.apellido || '-'}</p>
+                </div>
+
+                <div className="md:col-span-2 bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Phone className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Teléfono</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold text-lg">{user.telefono || '-'}</p>
+                </div>
+              </div>
             </div>
 
-            {/* Quick actions */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-5">
-              <h3 className="text-lg font-semibold text-slate-800 mb-3">Acciones rápidas</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-6 mb-6 shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-800 flex items-center mb-6">
+                <Briefcase className="w-5 h-5 mr-2 text-blue-600" />
+                Información de Cuenta
+              </h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Mail className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Correo Electrónico</p>
+                  </div>
+                  <p className="text-gray-900 font-semibold text-lg break-all">{user.correo}</p>
+                </div>
+
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Briefcase className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Rol</p>
+                  </div>
+                  <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700 border border-blue-200">
+                    {user.rol}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border border-gray-200 p-6 shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-800 flex items-center mb-6">
+                <FileText className="w-5 h-5 mr-2 text-blue-600" />
+                Acciones Rápidas
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <button
                   onClick={() => navigate('/cotizaciones')}
-                  className="p-4 rounded-lg border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-left transition"
+                  className="p-5 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-left transition-all shadow-sm hover:shadow-md group"
                 >
-                  <p className="text-slate-800 font-medium">Ver cotizaciones</p>
-                  <p className="text-slate-500 text-sm">Gestionar tus cotizaciones</p>
+                  <FileText className="w-6 h-6 text-blue-600 mb-3 group-hover:scale-110 transition-transform" />
+                  <p className="text-gray-900 font-semibold mb-1">Ver cotizaciones</p>
+                  <p className="text-gray-600 text-sm">Gestionar tus cotizaciones</p>
                 </button>
+
                 {user.rol !== 'Cliente' && (
                   <button
                     onClick={() => navigate('/dashboard')}
-                    className="p-4 rounded-lg border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50 text-left transition"
+                    className="p-5 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50 text-left transition-all shadow-sm hover:shadow-md group"
                   >
-                    <p className="text-slate-800 font-medium">Dashboard Admin</p>
-                    <p className="text-slate-500 text-sm">Ir al panel de administración</p>
+                    <LayoutDashboard className="w-6 h-6 text-emerald-600 mb-3 group-hover:scale-110 transition-transform" />
+                    <p className="text-gray-900 font-semibold mb-1">Dashboard Admin</p>
+                    <p className="text-gray-600 text-sm">Ir al panel de administración</p>
                   </button>
                 )}
+
+                <button
+                  onClick={handleLogout}
+                  className="p-5 rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 text-left transition-all shadow-sm hover:shadow-md group sm:col-span-2"
+                >
+                  <LogOut className="w-6 h-6 text-red-600 mb-3 group-hover:scale-110 transition-transform" />
+                  <p className="text-gray-900 font-semibold mb-1">Cerrar Sesión</p>
+                  <p className="text-gray-600 text-sm">Salir de tu cuenta de forma segura</p>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
 
-export default PerfilPage; 
+export default PerfilPage;

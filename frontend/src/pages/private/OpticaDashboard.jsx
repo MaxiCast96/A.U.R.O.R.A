@@ -17,7 +17,7 @@ import Personalizados from '../../components/Admin/management/PersonalizadosCont
 import Categorias from '../../components/Admin/management/CategoriasContent';
 import Marcas from '../../components/Admin/management/MarcasContent';
 import Promociones from '../../components/Admin/management/PromocionesContent';
-import Citas from '../../components/Admin/management/CitasContent';
+import Citas from '../../components/Admin/management/CitasContent.jsx';
 import HistorialMedico from '../../components/Admin/management/HistorialMedicoContent';
 import Sucursales from '../../components/Admin/management/SucursalesContent';
 import Ventas from '../../components/Admin/management/VentasContent';
@@ -274,10 +274,11 @@ const OpticaDashboard = () => {
       case 'ventas':
         return <Ventas />;
       case 'citas': 
-        return <Citas />;
+        return <Citas/>;
       case 'historial': 
         return <HistorialMedico />;
       case 'recetas': 
+        return <Recetas/>
       case 'sucursales':
         return <Sucursales />;
       case 'promociones':

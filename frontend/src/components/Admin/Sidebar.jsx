@@ -144,8 +144,9 @@ const Sidebar = ({
   };
 
   const handleViewProfile = () => {
-    console.log('Ver perfil...');
     setProfileMenuOpen(false);
+    closeMobileMenu();
+    navigate('/perfil');
   };
 
   return (
