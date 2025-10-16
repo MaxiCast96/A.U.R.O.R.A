@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const EmptyProducts = ({ type, searchTerm, filters }) => {
+const EmptyProducts = ({ type, searchTerm, filters, onClearFilters, onViewAll }) => {
   const getTypeLabel = () => {
     switch (type) {
       case 'lentes': return 'lentes';
@@ -73,18 +73,27 @@ const EmptyProducts = ({ type, searchTerm, filters }) => {
         {/* Botones de acción */}
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => (typeof onClearFilters === 'function' ? onClearFilters() : window.location.reload())}
             className="bg-[#0097c2] text-white px-6 py-2 rounded-full hover:bg-[#0077a2] transition-colors duration-200"
           >
             🔄 Limpiar filtros
           </button>
-          
-          <Link
-            to="/productos"
-            className="bg-gray-200 text-gray-700 px-6 py-2 rounded-full hover:bg-gray-300 transition-colors duration-200"
-          >
-            👀 Ver todos los productos
-          </Link>
+
+          {typeof onViewAll === 'function' ? (
+            <button
+              onClick={() => onViewAll()}
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-full hover:bg-gray-300 transition-colors duration-200"
+            >
+              👀 Ver todos los productos
+            </button>
+          ) : (
+            <Link
+              to="/productos"
+              className="bg-gray-200 text-gray-700 px-6 py-2 rounded-full hover:bg-gray-300 transition-colors duration-200"
+            >
+              👀 Ver todos los productos
+            </Link>
+          )}
         </div>
         
         {/* Información adicional */}

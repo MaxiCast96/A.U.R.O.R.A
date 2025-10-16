@@ -2,10 +2,10 @@ import clientesModel from "../models/Clientes.js";
 import empleadosModel from "../models/Empleados.js";
 import optometristaModel from "../models/Optometrista.js";
 import bcryptjs from "bcryptjs";
-import nodemailer from "nodemailer";
 import crypto from "crypto";
 import jsonwebtoken from "jsonwebtoken";
 import { config } from "../config.js";
+import { sendEmail } from "../services/mailer.js";
 
 const clientesController = {};
 
@@ -464,12 +464,6 @@ clientesController.forgotPassword = async (req, res) => {
         return res.status(400).json({ message: "El correo es obligatorio" });
     }
 
-    // Verificar configuración de email
-    if (!config.email.user || !config.email.pass) {
-        console.error("Configuración de email no encontrada. Verifica las variables de entorno USER_EMAIL y USER_PASS");
-        return res.status(500).json({ message: "Error de configuración del servidor. Contacta al administrador." });
-    }
-
     try {
         // Buscar el cliente por correo
         const cliente = await clientesModel.findOne({ correo: correo.trim().toLowerCase() });
@@ -492,21 +486,10 @@ clientesController.forgotPassword = async (req, res) => {
         console.log('Código guardado en BD:', cliente.resetPasswordToken);
         console.log('Expiración guardada en BD:', cliente.resetPasswordExpires);
 
-        // Configurar el transporter de nodemailer
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: config.email.user,
-                pass: config.email.pass
-            }
-        });
-
-        // Configurar el email de recuperación
-        const mailOptions = {
-            from: config.email.user,
-            to: correo,
-            subject: "Recuperación de Contraseña - Óptica Inteligente",
-            html: `
+        // Enviar el email vía Resend API
+        try {
+            const subject = "Recuperación de Contraseña - Óptica Inteligente";
+            const html = `
                 <h2>Recuperación de Contraseña</h2>
                 <p>Hola ${cliente.nombre} ${cliente.apellido},</p>
                 <p>Has solicitado restablecer tu contraseña. Utiliza el siguiente código:</p>
@@ -514,18 +497,22 @@ clientesController.forgotPassword = async (req, res) => {
                 <p>Este código expira en 30 minutos.</p>
                 <p>Si no solicitaste este cambio, puedes ignorar este email.</p>
                 <p>Saludos,<br>Equipo de Óptica Inteligente</p>
-            `
-        };
+            `;
+            const text = `Hola ${cliente.nombre} ${cliente.apellido}, tu código para recuperar contraseña es ${resetCode}. Expira en 30 minutos.`;
 
-        // Enviar el email
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log("Error enviando email: " + error);
-                return res.status(500).json({ message: "Error enviando email de recuperación" });
-            }
-            console.log("Email enviado: " + info.response);
+            await sendEmail({
+                to: correo,
+                subject,
+                html,
+                text,
+                from: process.env.RESEND_FROM || `"Óptica Inteligente" <${config.email.user || 'onboarding@resend.dev'}>`
+            });
+
             res.json({ message: "Email de recuperación enviado exitosamente" });
-        });
+        } catch (err) {
+            console.log("Error enviando email de recuperación (Resend):", err?.message || err);
+            return res.status(500).json({ message: "Error enviando email de recuperación" });
+        }
 
     } catch (error) {
         console.log("Error: " + error);

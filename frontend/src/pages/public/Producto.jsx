@@ -3408,6 +3408,13 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   selectedMarca,
                   priceRange
                 }}
+                onClearFilters={() => {
+                  clearFilters();
+                }}
+                onViewAll={() => {
+                  clearFilters();
+                  navigate('/productos');
+                }}
               />
             ) : (
               <>

@@ -1,8 +1,8 @@
 import empleadosModel from "../models/Empleados.js";
 import bcryptjs from "bcryptjs";
-import nodemailer from "nodemailer";
 import { v2 as cloudinary } from "cloudinary";
 import { config } from "../config.js";
+import { sendEmail } from "../services/mailer.js";
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -211,12 +211,6 @@ empleadosController.forgotPassword = async (req, res) => {
     const { correo } = req.body;
     if (!correo) return res.status(400).json({ message: "Correo es requerido" });
     
-    // Verificar configuración de email
-    if (!config.email.user || !config.email.pass) {
-        console.error("Configuración de email no encontrada. Verifica las variables de entorno USER_EMAIL y USER_PASS");
-        return res.status(500).json({ message: "Error de configuración del servidor. Contacta al administrador." });
-    }
-    
     try {
         // Busca empleado por correo
         const empleado = await empleadosModel.findOne({ correo });
@@ -236,15 +230,6 @@ empleadosController.forgotPassword = async (req, res) => {
         console.log('Código guardado en BD (empleado):', empleado.resetPasswordToken);
         console.log('Expiración guardada en BD (empleado):', empleado.resetPasswordExpires);
         
-        // Enviar email con código de recuperación
-        const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: config.email.user,
-                pass: config.email.pass
-            }
-        });
-
         // Template HTML personalizado para el email
         const htmlTemplate = `
         <!DOCTYPE html>
@@ -546,16 +531,8 @@ empleadosController.forgotPassword = async (req, res) => {
         </html>
         `;
 
-        const mailOptions = {
-            from: {
-                name: 'Óptica La Inteligente',
-                address: config.email.user
-            },
-            to: correo,
-            subject: '🔐 Código de Recuperación de Contraseña - Óptica La Inteligente',
-            html: htmlTemplate,
-            // Versión de texto plano como fallback
-            text: `
+        const subject = '🔐 Código de Recuperación de Contraseña - Óptica La Inteligente';
+        const text = `
 Hola ${empleado.nombre},
 
 Recibimos una solicitud para restablecer tu contraseña en Óptica La Inteligente.
@@ -568,10 +545,15 @@ Si no solicitaste este cambio, puedes ignorar este correo.
 
 Óptica La Inteligente
 soporte@opticalainteligente.com
-            `
-        };
+            `;
 
-        await transporter.sendMail(mailOptions);
+        await sendEmail({
+            to: correo,
+            subject,
+            html: htmlTemplate,
+            text,
+            from: process.env.RESEND_FROM || `"Óptica La Inteligente" <${config.email.user || 'onboarding@resend.dev'}>`
+        });
         res.json({ message: "Código de recuperación enviado al correo" });
     } catch (error) {
         console.error("Error: " + error);

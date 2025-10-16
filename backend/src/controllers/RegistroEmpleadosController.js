@@ -1,10 +1,10 @@
-import nodemailer from "nodemailer";
 import crypto from "crypto";
 import jsonwebtoken from "jsonwebtoken";
 import bcryptjs from "bcryptjs";
 import empleadosModel from "../models/Empleados.js";
 import { config } from "../config.js";
 import { v2 as cloudinary } from "cloudinary";
+import { sendEmail } from "../services/mailer.js";
 
 // Configuración de Cloudinary
 cloudinary.config({
@@ -84,39 +84,35 @@ registerEmpleadosController.register = async (req, res) => {
         // Crear token JWT con el correo y código de verificación
         const tokenCode = jsonwebtoken.sign(
             { correo, verificationCode },
-            config.JWT.secret,
+            config.jwt.secret,
             { expiresIn: "2h" } // Expira en 2 horas
         );
 
         // Establecer cookie con el token de verificación que expira en 2 horas
         res.cookie("verificationTokenEmpleado", tokenCode, { maxAge: 2 * 60 * 60 * 1000 });
 
-        // Configurar el transporter de nodemailer para envío de emails
-        const transporter = nodemailer.createTransporter({
-            service: "gmail",
-            auth: {
-                user: config.emailUser.user_email,
-                pass: config.emailUser.user_pass
-            }
-        });
+        // Enviar email de verificación mediante Resend API
+        try {
+            const subject = "Verificación de cuenta - Empleado";
+            const text = `Hola ${nombre} ${apellido}, para verificar tu cuenta de empleado utiliza este código: ${verificationCode}. El código expira en dos horas.`;
+            const html = `<p>Hola <strong>${nombre} ${apellido}</strong>,</p>
+                   <p>Para verificar tu cuenta de empleado utiliza este código:</p>
+                   <p style="font-size:20px;font-weight:bold;letter-spacing:2px;">${verificationCode}</p>
+                   <p>El código expira en <strong>2 horas</strong>.</p>`;
 
-        // Configurar las opciones del email de verificación
-        const mailOptions = {
-            from: config.emailUser.user_email,
-            to: correo,
-            subject: "Verificación de cuenta - Empleado",
-            text: `Hola ${nombre} ${apellido}, para verificar tu cuenta de empleado utiliza este código: ${verificationCode}. El código expira en dos horas.`
-        };
+            await sendEmail({
+                to: correo,
+                subject,
+                html,
+                text,
+                from: process.env.RESEND_FROM || `"Óptica La Inteligente" <${process.env.USER_EMAIL || 'onboarding@resend.dev'}>`
+            });
 
-        // Enviar email de verificación
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log("Error enviando email: " + error);
-                return res.json({ message: "Error enviando email de verificación" });
-            }
-            console.log("Email enviado: " + info.response);
             res.json({ message: "Empleado registrado, por favor revisa tu correo para verificar tu cuenta." });
-        });
+        } catch (err) {
+            console.log("Error enviando email de verificación (Resend):", err?.message || err);
+            return res.json({ message: "Error enviando email de verificación" });
+        }
 
     } catch (error) {
         console.log("Error: " + error);
@@ -138,7 +134,7 @@ registerEmpleadosController.verifyCodeEmail = async (req, res) => {
         }
 
         // Decodificar el token JWT para obtener el correo y código almacenado
-        const decoded = jsonwebtoken.verify(token, config.JWT.secret);
+        const decoded = jsonwebtoken.verify(token, config.jwt.secret);
         const { correo, verificationCode: storedCode } = decoded;
 
         // Comparar el código enviado con el código almacenado en el token

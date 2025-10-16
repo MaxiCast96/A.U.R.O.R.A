@@ -469,7 +469,7 @@ const Home = () => {
             
             {/* Wrapper con estilos personalizados para PopularCarousel */}
             <div className="popular-carousel-wrapper">
-              <style jsx>{`
+              <style>{`
                 .popular-carousel-wrapper .popular-item {
                   max-width: 280px !important;
                 }

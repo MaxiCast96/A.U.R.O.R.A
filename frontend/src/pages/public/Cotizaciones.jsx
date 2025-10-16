@@ -5,16 +5,19 @@ import Navbar from "../../components/layout/Navbar";
 import useData from '../../hooks/useData';
 import { useAuth } from '../../components/auth/AuthContext';
 import API_CONFIG, { buildApiUrl } from '../../config/api';
+import AuthModal from "../../components/auth/AuthModal";
 
 const Cotizaciones = () => {
   const { user } = useAuth();
   const [showLoginMsg, setShowLoginMsg] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   // Mover TODOS los hooks al tope del componente para respetar las reglas de hooks
   const { data: cotizaciones, loading, error } = useData('cotizaciones');
   const [cotizacionesState, setCotizacionesState] = useState(null);
   const [mensaje, setMensaje] = useState(null);
   const [modalEliminar, setModalEliminar] = useState({ abierto: false, id: null });
   const [convertingId, setConvertingId] = useState(null);
+  const [searchNumber, setSearchNumber] = useState('');
   
   useEffect(() => {
     if (!user) {
@@ -27,10 +30,17 @@ const Cotizaciones = () => {
       <PageTransition>
         <Navbar />
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
-          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded shadow-md text-lg font-semibold">
+          <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-6 rounded shadow-md text-lg font-semibold mb-4">
             Debes iniciar sesión para ver cotizaciones.
           </div>
+          <button
+            onClick={() => setIsAuthModalOpen(true)}
+            className="bg-[#0097c2] text-white px-6 py-2 rounded-full hover:bg-[#0077a2] transition-colors"
+          >
+            Iniciar Sesión
+          </button>
         </div>
+        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
         <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-8 px-4 py-12">
@@ -157,10 +167,15 @@ const Cotizaciones = () => {
         {/* Buscar Cotización */}
         <div className="bg-white rounded-xl shadow-md p-6 mb-8">
           <h2 className="text-xl font-semibold mb-6 text-gray-800">Buscar Cotización</h2>
-          <form className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4">
+          <form
+            className="flex flex-col sm:flex-row items-center space-y-2 sm:space-y-0 sm:space-x-4"
+            onSubmit={(e) => { e.preventDefault(); /* filtering happens below */ }}
+          >
             <input
               type="text"
               placeholder="Ingrese el número de cotización"
+              value={searchNumber}
+              onChange={(e) => setSearchNumber(e.target.value)}
               className="w-full px-4 py-2 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#0097c2] transition-all text-sm sm:text-base"
             />
             <button
@@ -206,7 +221,22 @@ const Cotizaciones = () => {
                 ) : cotizaciones && cotizaciones.length === 0 ? (
                   <tr><td colSpan={4} className="text-center py-4">No hay cotizaciones disponibles actualmente.</td></tr>
                 ) : (cotizacionesState || cotizaciones) && (cotizacionesState || cotizaciones).length > 0 ? (
-                  (cotizacionesState || cotizaciones).map((cot) => (
+                  ((cotizacionesState || cotizaciones)
+                    .filter((cot) => {
+                      // Solo las del usuario actual
+                      const uid = user?.id || user?._id;
+                      const ownerId = cot?.clienteId?._id || cot?.clienteId || cot?.cliente?._id || cot?.cliente;
+                      return uid && ownerId && String(ownerId) === String(uid);
+                    })
+                    .filter((cot) => {
+                      if (!searchNumber.trim()) return true;
+                      const n = String(cot?.numero || '').toLowerCase();
+                      if (n.includes(searchNumber.trim().toLowerCase())) return true;
+                      // También permitir buscar por sufijo de ID estilo COT-XXXXXX
+                      const fallback = cot?._id ? `COT-${String(cot._id).slice(-6).toUpperCase()}` : '';
+                      return fallback.toLowerCase().includes(searchNumber.trim().toLowerCase());
+                    }))
+                  .map((cot) => (
                     <tr key={cot._id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-6 py-4 text-sm text-gray-700">{cot.numero || (cot._id ? `COT-${String(cot._id).slice(-6).toUpperCase()}` : '-')}</td>
                       <td className="px-6 py-4 text-sm text-gray-700">{cot.fecha ? new Date(cot.fecha).toLocaleString() : '-'}</td>

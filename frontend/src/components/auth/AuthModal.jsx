@@ -240,7 +240,22 @@ const AuthModal = ({ isOpen, onClose }) => {
 
         {/* Form */}
         {!showVerify ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form 
+            onSubmit={handleSubmit} 
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                if (typeof e.currentTarget.requestSubmit === 'function') {
+                  e.currentTarget.requestSubmit();
+                } else {
+                  // Fallback para navegadores sin requestSubmit
+                  const submit = e.currentTarget.querySelector('button[type="submit"], input[type="submit"]');
+                  submit && submit.click();
+                }
+              }
+            }}
+            className="space-y-4"
+          >
             {registerMsg && !isLogin && (
               <div className={`mb-2 p-2 rounded text-center text-sm ${registerMsg.toLowerCase().includes('exitoso') ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>{registerMsg}</div>
             )}
@@ -354,6 +369,7 @@ const AuthModal = ({ isOpen, onClose }) => {
             {isLogin && (
               <div className="text-right">
                 <button 
+                  type="button"
                   onClick={handleForgotPassword}
                   className="text-sm text-[#0097c2] hover:underline transition-colors"
                 >
