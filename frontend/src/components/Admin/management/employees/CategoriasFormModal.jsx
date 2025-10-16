@@ -121,6 +121,34 @@ const CategoriasFormModal = ({
   isEditing = false,
   selectedCategoria = null
 }) => {
+  // NUEVOS ESTADOS PARA LOADING Y ERROR
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
+  const handleFormSubmit = async () => {
+    // Validar campos requeridos
+    const requiredFields = ['nombre', 'codigo', 'tipoProducto', 'estado'];
+    const hasErrors = requiredFields.some(field => !formData[field]);
+    
+    if (hasErrors) {
+      setHasValidationErrors(true);
+      return;
+    }
+
+    setHasValidationErrors(false);
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      await onSubmit();
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar categoría:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sections = [
     {
@@ -192,8 +220,7 @@ const CategoriasFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <Folder className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Tag className="w-5 h-5 mr-2 text-green-600" />}
+            
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -212,42 +239,7 @@ const CategoriasFormModal = ({
         </div>
       ))}
 
-      {/* Información adicional */}
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-        <div className="flex items-start space-x-2">
-          <Package className="w-5 h-5 text-yellow-600 mt-0.5" />
-          <div className="text-sm text-yellow-800">
-            <p className="font-medium mb-1">Información sobre categorías:</p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>Las categorías organizan y clasifican los productos</li>
-              <li>El código debe ser único para cada categoría</li>
-              <li>El orden determina cómo aparecen en los menús</li>
-              <li>Solo categorías activas aparecen en el catálogo</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Resumen de la categoría */}
-      {formData?.nombre && formData?.tipoProducto && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-            <Folder className="w-5 h-5 mr-2" />
-            Resumen de la Categoría
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Nombre:</span> {formData.nombre}</p>
-              <p><span className="font-medium">Código:</span> {formData.codigo}</p>
-              <p><span className="font-medium">Tipo:</span> {formData.tipoProducto}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Estado:</span> {formData.estado}</p>
-              <p><span className="font-medium">Orden:</span> {formData.orden || 'No especificado'}</p>
-            </div>
-          </div>
-        </div>
-      )}
+     
     </div>
   );
 
@@ -255,7 +247,7 @@ const CategoriasFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -265,6 +257,11 @@ const CategoriasFormModal = ({
       fields={[]}
       gridCols={1}
       size="lg"
+      // NUEVAS PROPS
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
+      errorDuration={1000}
     >
       {customContent}
     </FormModal>

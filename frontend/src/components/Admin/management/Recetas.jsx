@@ -15,7 +15,6 @@ import {
     ChevronDown, SortAsc, SortDesc, Calendar, User, UserCheck
 } from 'lucide-react';
 
-
 // --- CONFIGURACIÓN ---
 const API_URL = 'https://aurora-production-7e57.up.railway.app/api';
 const ITEMS_PER_PAGE = 10;
@@ -137,7 +136,6 @@ const SkeletonLoader = React.memo(() => (
     </div>
 ));
 
-
 const Recetas = () => {
     // --- ESTADOS PRINCIPALES ---
     const [recetas, setRecetas] = useState([]);
@@ -173,6 +171,13 @@ const Recetas = () => {
     const [formData, setFormData] = useState(initialFormState);
     const [errors, setErrors] = useState({});
 
+    // --- MANEJO DE ALERTA ---
+    const showAlert = useCallback((type, message) => {
+        setAlert({ type, message });
+        const timer = setTimeout(() => setAlert(null), 5000);
+        return () => clearTimeout(timer);
+    }, []);
+
     // --- FETCH DE DATOS ---
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -198,18 +203,11 @@ const Recetas = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [showAlert]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
-
-    // --- MANEJO DE ALERTA ---
-    const showAlert = useCallback((type, message) => {
-        setAlert({ type, message });
-        const timer = setTimeout(() => setAlert(null), 5000);
-        return () => clearTimeout(timer);
-    }, []);
 
     // --- LÓGICA DE FILTRADO, ORDENAMIENTO ---
     const handleSortChange = useCallback((sortValue) => {
@@ -305,7 +303,6 @@ const Recetas = () => {
                filters.fechaHasta;
     }, [searchTerm, filters]);
 
-
     // --- MANEJO DE FORMULARIO ---
     const handleInputChange = useCallback((e) => {
         const { name, value, type } = e.target;
@@ -382,7 +379,7 @@ const Recetas = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!validateForm()) {
-            showAlert('error', 'Por favor, completa todos los campos requeridos.');
+            showAlert('error', 'Por favor complete todos los campos requeridos correctamente.');
             return;
         }
 
@@ -403,7 +400,7 @@ const Recetas = () => {
         if (!selectedReceta) return;
         try {
             await axios.delete(`${API_URL}/recetas/${selectedReceta._id}`);
-            showAlert('success', '¡Receta eliminada exitosamente!');
+            showAlert('delete', '¡Receta eliminada exitosamente!');
             fetchData();
             handleCloseModals();
         } catch (error) {
@@ -448,7 +445,13 @@ const Recetas = () => {
     if (loading) {
         return (
             <div className="space-y-6 animate-fade-in">
-                <Alert alert={alert} />
+                {alert && (
+                    <Alert 
+                        type={alert.type} 
+                        message={alert.message} 
+                        onClose={() => setAlert(null)} 
+                    />
+                )}
                 <SkeletonLoader />
             </div>
         );
@@ -456,7 +459,14 @@ const Recetas = () => {
 
     return (
         <div className="space-y-6 animate-fade-in">
-            <Alert alert={alert} />
+            {alert && (
+                <Alert 
+                    type={alert.type} 
+                    message={alert.message} 
+                    onClose={() => setAlert(null)} 
+                />
+            )}
+            
             <StatsGrid stats={stats} />
 
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -513,11 +523,25 @@ const Recetas = () => {
                             >
                                 <Filter className="w-4 h-4" />
                                 <span className="text-sm font-medium">Filtros</span>
+                                {hasActiveFilters() && (
+                                    <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
+                                        {[
+                                            searchTerm && 1,
+                                            filters.estadoReceta !== 'todos' && 1,
+                                            filters.optometristaId !== 'todos' && 1,
+                                            filters.fechaDesde && 1,
+                                            filters.fechaHasta && 1
+                                        ].filter(Boolean).length}
+                                    </span>
+                                )}
                             </button>
                         </div>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
-                        <span>{filteredAndSortedRecetas.length} resultado{filteredAndSortedRecetas.length !== 1 ? 's' : ''}</span>
+                        <span>
+                            {filteredAndSortedRecetas.length} resultado{filteredAndSortedRecetas.length !== 1 ? 's' : ''} 
+                            {hasActiveFilters() && ` (filtrado${filteredAndSortedRecetas.length !== 1 ? 's' : ''} de ${recetas.length})`}
+                        </span>
                         {hasActiveFilters() && (
                             <button onClick={clearAllFilters} className="text-cyan-600 hover:text-cyan-800 font-medium flex items-center space-x-1">
                                 <X className="w-4 h-4" /><span>Limpiar filtros</span>
@@ -537,7 +561,7 @@ const Recetas = () => {
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Estado Receta</label>
-                                    <select value={filters.estadoReceta} onChange={(e) => handleFilterChange('estadoReceta', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    <select value={filters.estadoReceta} onChange={(e) => handleFilterChange('estadoReceta', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                                         <option value="todos">Todas</option>
                                         <option value="vigente">Vigente</option>
                                         <option value="vencida">Vencida</option>
@@ -545,7 +569,7 @@ const Recetas = () => {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Optometrista</label>
-                                    <select value={filters.optometristaId} onChange={(e) => handleFilterChange('optometristaId', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                                    <select value={filters.optometristaId} onChange={(e) => handleFilterChange('optometristaId', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent">
                                         <option value="todos">Todos</option>
                                         {optometristas.map(op => (
                                             <option key={op._id} value={op._id}>{op.empleadoId?.nombre} {op.empleadoId?.apellido}</option>
@@ -555,10 +579,41 @@ const Recetas = () => {
                                 <div className="md:col-span-2 lg:col-span-1">
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Receta</label>
                                     <div className="flex space-x-2">
-                                        <input type="date" value={filters.fechaDesde} onChange={(e) => handleFilterChange('fechaDesde', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
-                                        <input type="date" value={filters.fechaHasta} onChange={(e) => handleFilterChange('fechaHasta', e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg" />
+                                        <input 
+                                            type="date" 
+                                            value={filters.fechaDesde} 
+                                            onChange={(e) => handleFilterChange('fechaDesde', e.target.value)} 
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            aria-label="Fecha desde"
+                                        />
+                                        <input 
+                                            type="date" 
+                                            value={filters.fechaHasta} 
+                                            onChange={(e) => handleFilterChange('fechaHasta', e.target.value)} 
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                                            aria-label="Fecha hasta"
+                                        />
+                                    </div>
+                                    <div className="flex text-xs text-gray-500 mt-1 space-x-4">
+                                        <span>Desde</span>
+                                        <span>Hasta</span>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div className="mt-6 flex justify-end space-x-3">
+                                <button
+                                    onClick={clearAllFilters}
+                                    className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                >
+                                    Limpiar Todo
+                                </button>
+                                <button
+                                    onClick={() => setShowFiltersPanel(false)}
+                                    className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+                                >
+                                    Aplicar Filtros
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -570,6 +625,7 @@ const Recetas = () => {
                     renderRow={renderRow}
                     isLoading={loading}
                     noDataMessage={hasActiveFilters() ? "No se encontraron recetas con los filtros aplicados" : "No hay recetas registradas"}
+                    noDataSubMessage={hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Comienza registrando tu primera receta'}
                 />
                 <Pagination {...paginationProps} />
             </div>
@@ -615,7 +671,7 @@ const Recetas = () => {
                     onClose={handleCloseModals}
                     onConfirm={handleDelete}
                     title="Confirmar Eliminación"
-                    message={`¿Estás seguro de que deseas eliminar la receta con diagnóstico "${selectedReceta?.diagnostico}"?`}
+                    message={`¿Estás seguro de que deseas eliminar la receta con diagnóstico "${selectedReceta?.diagnostico}"?\n\nEsta acción no se puede deshacer.`}
                 />
             )}
 

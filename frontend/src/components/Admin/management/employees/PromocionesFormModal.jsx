@@ -314,6 +314,10 @@ const PromocionesFormModal = ({
   productosOptions = [],
   selectedPromo = null
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
   const isEditing = !!selectedPromo;
 
   const handleImageChange = (imageUrl) => {
@@ -458,16 +462,41 @@ const PromocionesFormModal = ({
     }
   ];
 
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    setIsLoading(true);
+    setIsError(false);
+    setHasValidationErrors(false);
+
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar promoción:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const customContent = (
     <div className="space-y-8">
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
+          Imagen de la Promoción
+        </h3>
+        <PromocionImageUpload 
+          currentImage={formData?.imagenPromocion}
+          onImageChange={handleImageChange}
+          promocionName={formData?.nombre}
+        />
+      </div>
+
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <Tag className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Percent className="w-5 h-5 mr-2 text-green-600" />}
-            {sectionIndex === 2 && <Settings className="w-5 h-5 mr-2 text-purple-600" />}
-            {sectionIndex === 3 && <Calendar className="w-5 h-5 mr-2 text-orange-600" />}
-            {sectionIndex === 4 && <Settings className="w-5 h-5 mr-2 text-gray-600" />}
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -491,72 +520,6 @@ const PromocionesFormModal = ({
           </div>
         </div>
       ))}
-
-      {/* Sección de imagen */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-          <Gift className="w-5 h-5 mr-2 text-pink-600" />
-          Imagen de la Promoción
-        </h3>
-        <PromocionImageUpload 
-          currentImage={formData?.imagenPromocion}
-          onImageChange={handleImageChange}
-          promocionName={formData?.nombre}
-        />
-      </div>
-
-      {/* Vista previa del descuento */}
-      {formData?.tipoDescuento && formData?.valorDescuento && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start space-x-2">
-            <Percent className="w-5 h-5 text-yellow-600 mt-0.5" />
-            <div className="text-sm text-yellow-800">
-              <p className="font-medium mb-1">Vista previa del descuento:</p>
-              <div className="space-y-1">
-                {formData.tipoDescuento === 'porcentaje' && (
-                  <p>Los clientes recibirán un <span className="font-bold">{formData.valorDescuento}% de descuento</span></p>
-                )}
-                {formData.tipoDescuento === 'monto' && (
-                  <p>Los clientes recibirán <span className="font-bold">${formData.valorDescuento} de descuento</span></p>
-                )}
-                {formData.tipoDescuento === '2x1' && (
-                  <p>Los clientes pagarán solo 1 producto y se llevarán 2</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Resumen de la promoción */}
-      {formData?.nombre && formData?.codigoPromo && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-            <Tag className="w-5 h-5 mr-2" />
-            Resumen de la Promoción
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-                <p><span className="font-medium">Nombre:</span> {formData.nombre}</p>
-                <p><span className="font-medium">Código:</span> {formData.codigoPromo}</p>
-                <p><span className="font-medium">Tipo:</span> {formData.tipoDescuento}</p>
-                <p>
-                    <span className="font-medium">Valor:</span>{" "}
-                    {formData.valorDescuento}
-                    {formData.tipoDescuento === "porcentaje" ? "%" : ""}
-                </p>
-            </div>
-
-            <div>
-              <p><span className="font-medium">Aplica a:</span> {formData.aplicaA === 'todos' ? 'Todos los productos' : formData.aplicaA === 'categoria' ? 'Categorías específicas' : 'Productos específicos'}</p>
-              <p><span className="font-medium">Estado:</span> {formData.activo ? 'Activa' : 'Inactiva'}</p>
-              {formData.fechaInicio && formData.fechaFin && (
-                <p><span className="font-medium">Vigencia:</span> {new Date(formData.fechaInicio).toLocaleDateString('es-ES')} - {new Date(formData.fechaFin).toLocaleDateString('es-ES')}</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -564,7 +527,7 @@ const PromocionesFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -574,6 +537,9 @@ const PromocionesFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
     >
       {customContent}
     </FormModal>

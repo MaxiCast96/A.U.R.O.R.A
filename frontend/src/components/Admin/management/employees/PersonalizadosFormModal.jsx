@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import FormModal from '../../ui/FormModal';
 import { User, Package, Settings, Calendar, DollarSign, AlertCircle, Save, Glasses, Star } from 'lucide-react';
 
+// Función auxiliar para obtener valores anidados
+const getNestedValue = (obj, path) => {
+  const keys = path.split('.');
+  let current = obj;
+  for (const key of keys) {
+    current = current?.[key];
+    if (current === undefined) return '';
+  }
+  return current || '';
+};
+
 // Componente para campos de entrada mejorados
 const EnhancedField = ({ 
   field, 
@@ -223,6 +234,48 @@ const PersonalizadosFormModal = ({
   selectedPersonalizado = null
 }) => {
   const isEditing = !!selectedPersonalizado;
+  // NUEVOS ESTADOS PARA LOADING Y ERROR
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
+  // CORRECCIÓN: Manejar el evento correctamente
+  const handleFormSubmit = async (e) => {
+    // Prevenir el comportamiento por defecto del formulario
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    // Validar campos requeridos
+    const requiredFields = ['clienteId', 'productoBaseId', 'nombre', 'categoria', 'descripcion', 'marcaId', 'material', 'color', 'tipoLente', 'precioCalculado', 'fechaEntregaEstimada'];
+    const hasErrors = requiredFields.some(field => !formData[field]);
+    
+    // Validar campos anidados
+    const nestedRequired = ['cotizacion.total', 'cotizacion.validaHasta'];
+    const hasNestedErrors = nestedRequired.some(field => {
+      const value = getNestedValue(formData, field);
+      return !value;
+    });
+    
+    if (hasErrors || hasNestedErrors) {
+      setHasValidationErrors(true);
+      return;
+    }
+
+    setHasValidationErrors(false);
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      // CORRECCIÓN: Pasar el evento a onSubmit
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar producto personalizado:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sections = [
     {
@@ -348,11 +401,7 @@ const PersonalizadosFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <User className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Star className="w-5 h-5 mr-2 text-purple-600" />}
-            {sectionIndex === 2 && <Glasses className="w-5 h-5 mr-2 text-green-600" />}
-            {sectionIndex === 3 && <Calendar className="w-5 h-5 mr-2 text-orange-600" />}
-            {sectionIndex === 4 && <DollarSign className="w-5 h-5 mr-2 text-red-600" />}
+            
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -376,44 +425,7 @@ const PersonalizadosFormModal = ({
         </div>
       ))}
 
-      {/* Información sobre productos personalizados */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start space-x-2">
-          <Package className="w-5 h-5 text-blue-600 mt-0.5" />
-          <div className="text-sm text-blue-800">
-            <p className="font-medium mb-1">Información sobre productos personalizados:</p>
-            <ul className="list-disc list-inside space-y-1 text-xs">
-              <li>Los productos personalizados se fabrican según especificaciones del cliente</li>
-              <li>El tiempo de entrega es mayor que productos en stock</li>
-              <li>La cotización tiene validez limitada</li>
-              <li>Se requiere confirmación del cliente antes de proceder</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Resumen del producto personalizado */}
-      {formData?.clienteId && formData?.nombre && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-            <Star className="w-5 h-5 mr-2" />
-            Resumen del Producto Personalizado
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Producto:</span> {formData.nombre}</p>
-              <p><span className="font-medium">Cliente:</span> {clienteOptions.find(c => c.value === formData.clienteId)?.label || 'Seleccionado'}</p>
-              <p><span className="font-medium">Material:</span> {formData.material}</p>
-              <p><span className="font-medium">Tipo:</span> {formData.tipoLente}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Precio base:</span> ${formData.precioCalculado || '0.00'}</p>
-              <p><span className="font-medium">Total cotización:</span> ${formData.cotizacion?.total || '0.00'}</p>
-              <p><span className="font-medium">Entrega estimada:</span> {formData.fechaEntregaEstimada ? new Date(formData.fechaEntregaEstimada).toLocaleDateString('es-ES') : 'No especificada'}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 
@@ -421,7 +433,7 @@ const PersonalizadosFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -431,21 +443,15 @@ const PersonalizadosFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      // NUEVAS PROPS
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
+      errorDuration={1000}
     >
       {customContent}
     </FormModal>
   );
-};
-
-// Función auxiliar para obtener valores anidados
-const getNestedValue = (obj, path) => {
-  const keys = path.split('.');
-  let current = obj;
-  for (const key of keys) {
-    current = current?.[key];
-    if (current === undefined) return '';
-  }
-  return current || '';
 };
 
 export default PersonalizadosFormModal;

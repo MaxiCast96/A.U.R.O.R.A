@@ -1206,7 +1206,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
 
   // FunciÃ³n para obtener filtros disponibles desde el backend
   const getBackendAvailableFilters = () => {
-    // Usar directamente los datos del backend para categorÃ­as y marcas
+    // Usar directamente los datos del backend para categorías y marcas
     const availableCategories = categorias?.map(cat => cat.nombre) || [];
     const availableBrands = marcas?.map(marca => marca.nombre) || [];
     
@@ -1436,7 +1436,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       }
     };
     
-    // Usar datos del backend para categorÃ­as y marcas
+    // Usar datos del backend para categorías y marcas
     categorias?.forEach(cat => {
       stats.categories[cat.nombre] = 0;
     });
@@ -1573,7 +1573,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       'ðŸ” La bÃºsqueda funciona con nombre, descripciÃ³n y caracterÃ­sticas',
       '  Los filtros de precio te ayudan a encontrar opciones en tu presupuesto',
       '   Combina colores y materiales para un look personalizado',
-      'â­ Los filtros rÃ¡pidos te dan acceso a categorÃ­as populares',
+      'â­ Los filtros rÃ¡pidos te dan acceso a categorías populares',
       'ðŸ“± Los filtros se guardan automÃ¡ticamente para tu prÃ³xima visita'
     ];
     

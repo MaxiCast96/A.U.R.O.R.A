@@ -167,6 +167,10 @@ const RecetasFormModal = ({
   optometristas = [],
   selectedReceta = null
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
   const isEditing = !!selectedReceta;
 
   const sections = [
@@ -242,26 +246,23 @@ const RecetasFormModal = ({
     }
   ];
 
-  // Obtener información del cliente seleccionado
-  const getClienteInfo = () => {
-    if (!formData.historialMedicoId) return null;
-    const historial = historialesMedicos.find(h => h._id === formData.historialMedicoId);
-    return historial?.clienteId;
-  };
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
-  // Obtener información del optometrista seleccionado
-  const getOptometristaInfo = () => {
-    if (!formData.optometristaId) return null;
-    const optometrista = optometristas.find(o => o._id === formData.optometristaId);
-    return optometrista?.empleadoId;
-  };
+    setIsLoading(true);
+    setIsError(false);
+    setHasValidationErrors(false);
 
-  // Calcular fecha de vencimiento
-  const getFechaVencimiento = () => {
-    if (!formData.vigencia) return null;
-    const fechaActual = new Date();
-    const fechaVencimiento = new Date(fechaActual.setMonth(fechaActual.getMonth() + parseInt(formData.vigencia)));
-    return fechaVencimiento.toLocaleDateString('es-ES');
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar receta:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const customContent = (
@@ -269,10 +270,6 @@ const RecetasFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <User className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Eye className="w-5 h-5 mr-2 text-green-600" />}
-            {sectionIndex === 2 && <Eye className="w-5 h-5 mr-2 text-purple-600" />}
-            {sectionIndex === 3 && <Stethoscope className="w-5 h-5 mr-2 text-orange-600" />}
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -293,7 +290,6 @@ const RecetasFormModal = ({
         </div>
       ))}
 
-      {/* Información de graduación */}
       {(formData?.ojoDerecho?.esfera || formData?.ojoIzquierdo?.esfera) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-start space-x-2">
@@ -310,52 +306,6 @@ const RecetasFormModal = ({
           </div>
         </div>
       )}
-
-      {/* Resumen de la receta */}
-      {formData?.diagnostico && formData?.historialMedicoId && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-            <FileText className="w-5 h-5 mr-2" />
-            Resumen de la Receta
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Paciente:</span> {getClienteInfo() ? `${getClienteInfo().nombre} ${getClienteInfo().apellido}` : 'Cliente seleccionado'}</p>
-              <p><span className="font-medium">Optometrista:</span> {getOptometristaInfo() ? `Dr(a). ${getOptometristaInfo().nombre} ${getOptometristaInfo().apellido}` : 'Optometrista seleccionado'}</p>
-              <p><span className="font-medium">Diagnóstico:</span> {formData.diagnostico}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Vigencia:</span> {formData.vigencia} meses</p>
-              {getFechaVencimiento() && (
-                <p><span className="font-medium">Vence:</span> {getFechaVencimiento()}</p>
-              )}
-              <p><span className="font-medium">Fecha:</span> {new Date().toLocaleDateString('es-ES')}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Vista previa de graduación */}
-      {(formData?.ojoDerecho?.esfera && formData?.ojoIzquierdo?.esfera) && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="flex items-start space-x-2">
-            <Eye className="w-5 h-5 text-yellow-600 mt-0.5" />
-            <div className="text-sm text-yellow-800">
-              <p className="font-medium mb-2">Vista previa de la graduación:</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div>
-                  <p className="font-medium">Ojo Derecho (OD):</p>
-                  <p>Esf: {formData.ojoDerecho.esfera || '0.00'} | Cil: {formData.ojoDerecho.cilindro || '0.00'} | Eje: {formData.ojoDerecho.eje || '0'}° | Add: {formData.ojoDerecho.adicion || '0.00'}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Ojo Izquierdo (OI):</p>
-                  <p>Esf: {formData.ojoIzquierdo.esfera || '0.00'} | Cil: {formData.ojoIzquierdo.cilindro || '0.00'} | Eje: {formData.ojoIzquierdo.eje || '0'}° | Add: {formData.ojoIzquierdo.adicion || '0.00'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -363,7 +313,7 @@ const RecetasFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -373,6 +323,9 @@ const RecetasFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
     >
       {customContent}
     </FormModal>

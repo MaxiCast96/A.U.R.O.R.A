@@ -23,17 +23,14 @@ const OptometristasFormModal = ({
     isCreating = false,
     creationStep = '',
     creationProgress = 0,
-    // PROPS CORREGIDOS para navegación con el sistema de dashboard
     setActiveSection = null,
     onCreationComplete = null
 }) => {
-    // Estado para la alerta de límite de horas
     const [showLimitAlert, setShowLimitAlert] = useState(false);
-    // Estado para el dropdown de empleados
     const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
-    // Estado para validaciones locales
     const [localErrors, setLocalErrors] = useState({});
     const [showValidationAlert, setShowValidationAlert] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
 
     const especialidadOptions = [
         'General', 
@@ -43,7 +40,6 @@ const OptometristasFormModal = ({
         'Ortóptica'
     ];
 
-    // Efecto para establecer el empleadoId cuando estamos en flujo de creación
     useEffect(() => {
         if (isCreationFlow && preloadedEmployeeData && !formData.empleadoId) {
             console.log('🔄 Estableciendo empleadoId para flujo de creación:', preloadedEmployeeData);
@@ -54,23 +50,19 @@ const OptometristasFormModal = ({
         }
     }, [isCreationFlow, preloadedEmployeeData, formData.empleadoId, setFormData]);
 
-    // Validar campos del formulario
     const validateForm = () => {
         const newErrors = {};
         
-        // Validar especialidad
         if (!formData.especialidad || formData.especialidad.trim() === '') {
             newErrors.especialidad = 'La especialidad es obligatoria';
         }
         
-        // Validar licencia
         if (!formData.licencia || formData.licencia.trim() === '') {
             newErrors.licencia = 'El número de licencia es obligatorio';
         } else if (formData.licencia.trim().length < 3) {
             newErrors.licencia = 'El número de licencia debe tener al menos 3 caracteres';
         }
         
-        // Validar experiencia
         if (!formData.experiencia && formData.experiencia !== 0) {
             newErrors.experiencia = 'Los años de experiencia son obligatorios';
         } else if (parseInt(formData.experiencia) < 0) {
@@ -79,17 +71,14 @@ const OptometristasFormModal = ({
             newErrors.experiencia = 'Los años de experiencia no pueden exceder 50 años';
         }
         
-        // Validar empleado (solo si no es flujo de creación)
         if (!isCreationFlow && (!formData.empleadoId || formData.empleadoId.trim() === '')) {
             newErrors.empleadoId = 'Debe seleccionar un empleado';
         }
         
-        // Validar sucursales
         if (!formData.sucursalesAsignadas || formData.sucursalesAsignadas.length === 0) {
             newErrors.sucursalesAsignadas = 'Debe asignar al menos una sucursal';
         }
         
-        // Validar disponibilidad
         if (!formData.disponibilidad || formData.disponibilidad.length === 0) {
             newErrors.disponibilidad = 'Debe configurar al menos una hora de disponibilidad';
         } else {
@@ -99,7 +88,6 @@ const OptometristasFormModal = ({
             }
         }
         
-        // Validar estado de disponibilidad
         if (formData.disponible === undefined || formData.disponible === null || formData.disponible === '') {
             newErrors.disponible = 'Debe seleccionar el estado de disponibilidad';
         }
@@ -107,20 +95,17 @@ const OptometristasFormModal = ({
         return newErrors;
     };
 
-    // Convertir empleados a opciones para el select
     const empleadosOptions = empleados?.map(emp => ({
         value: emp._id,
         label: `${emp.nombre} ${emp.apellido} - ${emp.correo}`,
         empleado: emp
     })) || [];
 
-    // Convertir sucursales a opciones para el multi-select
     const sucursalesOptions = sucursales?.map(suc => ({
         value: suc._id,
         label: suc.nombre
     })) || [];
 
-    // Días de la semana
     const diasSemana = [
         { key: 'lunes', label: 'Lunes' },
         { key: 'martes', label: 'Martes' },
@@ -131,25 +116,21 @@ const OptometristasFormModal = ({
         { key: 'domingo', label: 'Domingo' }
     ];
 
-    // Horas disponibles (8:00 AM a 4:00 PM)
     const horasDisponibles = [
         '8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'
     ];
 
-    // Normalizar la disponibilidad para trabajar con formato uniforme
     const normalizeDisponibilidad = (disponibilidad) => {
         if (!Array.isArray(disponibilidad)) return [];
         
         const normalized = [];
         disponibilidad.forEach(item => {
             if (item.hora) {
-                // Formato nuevo: cada hora individual
                 normalized.push({
                     dia: item.dia,
                     hora: item.hora
                 });
             } else if (item.horaInicio && item.horaFin) {
-                // Formato antiguo: rangos de horas
                 const startIndex = horasDisponibles.indexOf(item.horaInicio);
                 const endHour = item.horaFin.includes(':00') ? 
                     item.horaFin.split(':')[0] + ':00' : 
@@ -164,7 +145,6 @@ const OptometristasFormModal = ({
                         });
                     }
                 } else if (startIndex >= 0 && endIndex === -1) {
-                    // Solo una hora
                     normalized.push({
                         dia: item.dia,
                         hora: item.horaInicio
@@ -176,36 +156,29 @@ const OptometristasFormModal = ({
         return normalized;
     };
 
-    // Función para verificar si una hora está seleccionada para un día
     const isHoraSelected = (dia, hora) => {
         const normalized = normalizeDisponibilidad(formData.disponibilidad);
         return normalized.some(d => d.dia === dia && d.hora === hora);
     };
 
-    // Función mejorada para manejar selección de horas individuales
     const handleHoraToggle = (dia, hora) => {
         const normalized = normalizeDisponibilidad(formData.disponibilidad);
         
-        // Buscar si ya existe esta combinación día-hora
         const existingIndex = normalized.findIndex(item => 
             item.dia === dia && item.hora === hora
         );
         
         let newDisponibilidad;
         if (existingIndex >= 0) {
-            // Si ya existe, la removemos (toggle off)
             newDisponibilidad = normalized.filter((_, index) => index !== existingIndex);
         } else {
-            // Verificar límite de 44 horas semanales antes de agregar
             if (normalized.length >= 44) {
                 showHourLimitAlert();
                 return;
             }
-            // Si no existe, la agregamos (toggle on)
             newDisponibilidad = [...normalized, { dia, hora }];
         }
         
-        // Convertir de vuelta al formato esperado por el backend
         const backendFormat = newDisponibilidad.map(item => ({
             dia: item.dia,
             hora: item.hora,
@@ -218,7 +191,6 @@ const OptometristasFormModal = ({
             disponibilidad: backendFormat
         }));
 
-        // Limpiar error de disponibilidad si existe
         if (localErrors.disponibilidad && backendFormat.length > 0) {
             setLocalErrors(prev => {
                 const newErrors = { ...prev };
@@ -228,21 +200,18 @@ const OptometristasFormModal = ({
         }
     };
 
-    // Función helper para obtener la siguiente hora
     const getNextHour = (hora) => {
         const currentIndex = horasDisponibles.indexOf(hora);
         if (currentIndex >= 0 && currentIndex < horasDisponibles.length - 1) {
             return horasDisponibles[currentIndex + 1];
         }
         if (hora === '16:00') {
-        return '17:00';
-    }
-        // Para la última hora, agregar :59 para indicar el final de la hora
+            return '17:00';
+        }
         const [hourPart] = hora.split(':');
         return `${hourPart}:00`;
     };
 
-    // Manejar cambios en multi-select de sucursales
     const handleSucursalesChange = (e) => {
         const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
         setFormData(prev => ({
@@ -250,7 +219,6 @@ const OptometristasFormModal = ({
             sucursalesAsignadas: selectedOptions
         }));
 
-        // Limpiar error de sucursales si existe
         if (localErrors.sucursalesAsignadas && selectedOptions.length > 0) {
             setLocalErrors(prev => {
                 const newErrors = { ...prev };
@@ -260,12 +228,10 @@ const OptometristasFormModal = ({
         }
     };
 
-    // Función para limpiar todos los horarios de un día
     const clearDaySchedule = (dia) => {
         const normalized = normalizeDisponibilidad(formData.disponibilidad);
         const filteredNormalized = normalized.filter(item => item.dia !== dia);
         
-        // Convertir de vuelta al formato del backend
         const backendFormat = filteredNormalized.map(item => ({
             dia: item.dia,
             hora: item.hora,
@@ -279,32 +245,22 @@ const OptometristasFormModal = ({
         }));
     };
 
-    // Función para seleccionar todas las horas de un día
     const selectAllDaySchedule = (dia) => {
         const normalized = normalizeDisponibilidad(formData.disponibilidad);
-        // Remover cualquier horario existente para este día
         const filteredNormalized = normalized.filter(item => item.dia !== dia);
         
-        // Calcular cuántas horas ya están ocupadas sin este día
         const horasOcupadas = filteredNormalized.length;
-        
-        // Calcular cuántas horas podemos agregar sin superar 44
         const horasDisponiblesParaAgregar = 44 - horasOcupadas;
         
-        // Si no hay espacio para ninguna hora, mostrar alerta y salir
         if (horasDisponiblesParaAgregar <= 0) {
             showHourLimitAlert();
             return;
         }
         
-        // Determinar cuántas horas agregar (máximo las disponibles en el día o las que quepan)
         const horasAgregar = Math.min(horasDisponibles.length, horasDisponiblesParaAgregar);
-        
-        // Agregar las horas que quepan para este día
         const newHorarios = horasDisponibles.slice(0, horasAgregar).map(hora => ({ dia, hora }));
         const allHorarios = [...filteredNormalized, ...newHorarios];
         
-        // Convertir al formato del backend
         const backendFormat = allHorarios.map(item => ({
             dia: item.dia,
             hora: item.hora,
@@ -317,19 +273,16 @@ const OptometristasFormModal = ({
             disponibilidad: backendFormat
         }));
         
-        // Si no se pudieron agregar todas las horas del día, mostrar alerta
         if (horasAgregar < horasDisponibles.length) {
             showHourLimitAlert();
         }
     };
 
-    // Función para contar horas seleccionadas por día
     const getSelectedHoursCount = (dia) => {
         const normalized = normalizeDisponibilidad(formData.disponibilidad);
         return normalized.filter(d => d.dia === dia).length;
     };
 
-    // Función para mostrar alerta de límite de horas
     const showHourLimitAlert = () => {
         setShowLimitAlert(true);
         setTimeout(() => {
@@ -337,7 +290,6 @@ const OptometristasFormModal = ({
         }, 4000);
     };
 
-    // Mostrar alerta de validación
     const showValidationErrors = () => {
         setShowValidationAlert(true);
         setTimeout(() => {
@@ -345,13 +297,11 @@ const OptometristasFormModal = ({
         }, 5000);
     };
 
-    // Obtener empleado seleccionado
     const getSelectedEmpleado = () => {
         if (!formData.empleadoId) return null;
         return empleados?.find(emp => emp._id === formData.empleadoId) || null;
     };
 
-    // Manejar selección de empleado
     const handleEmpleadoSelection = (empleadoId) => {
         handleInputChange({
             target: {
@@ -361,7 +311,6 @@ const OptometristasFormModal = ({
         });
         setIsEmployeeDropdownOpen(false);
 
-        // Limpiar error de empleado si existe
         if (localErrors.empleadoId) {
             setLocalErrors(prev => {
                 const newErrors = { ...prev };
@@ -371,14 +320,11 @@ const OptometristasFormModal = ({
         }
     };
 
-    // Función mejorada para manejar cambios en inputs y limpiar errores
     const handleInputChangeWithValidation = (e) => {
         const { name, value } = e.target;
         
-        // Llamar al handleInputChange original
         handleInputChange(e);
         
-        // Limpiar error específico si el campo ahora tiene valor
         if (localErrors[name] && value && value.trim() !== '') {
             setLocalErrors(prev => {
                 const newErrors = { ...prev };
@@ -388,8 +334,7 @@ const OptometristasFormModal = ({
         }
     };
 
-    // FUNCIÓN CORREGIDA para manejar el envío del formulario
-    const handleFormSubmit = (e) => {
+    const handleFormSubmit = async (e) => {
         e.preventDefault();
         e.stopPropagation();
         
@@ -397,20 +342,17 @@ const OptometristasFormModal = ({
         console.log('isCreationFlow:', isCreationFlow);
         console.log('formData actual:', formData);
         
-        // Validar formulario antes de enviar
         const validationErrors = validateForm();
         
         if (Object.keys(validationErrors).length > 0) {
             console.error('❌ Errores de validación:', validationErrors);
             setLocalErrors(validationErrors);
             showValidationErrors();
-            return; // No enviar si hay errores de validación
+            return;
         }
         
-        // Limpiar errores locales si la validación es exitosa
         setLocalErrors({});
         
-        // Preparar datos finales - NO incluir empleadoId en creationFlow
         const finalFormData = {
             especialidad: formData.especialidad?.trim(),
             licencia: formData.licencia?.trim(),
@@ -429,61 +371,46 @@ const OptometristasFormModal = ({
             disponible: formData.disponible !== false && formData.disponible !== 'false'
         };
         
-        // Solo agregar empleadoId si NO estamos en flujo de creación
         if (!isCreationFlow && formData.empleadoId) {
             finalFormData.empleadoId = formData.empleadoId;
         }
         
-        console.log('  Datos finales para envío:', finalFormData);
+        console.log('📝 Datos finales para envío:', finalFormData);
         
-        // NAVEGACIÓN CORREGIDA: Usar el sistema de dashboard
         const handlePostSubmission = () => {
-            console.log('  Optometrista guardado exitosamente');
+            console.log('✅ Optometrista guardado exitosamente');
             
             if (isCreationFlow && setActiveSection) {
-                // Si estamos en flujo de creación, navegar a la sección de optometristas
                 console.log('🧭 Navegando a sección optometristas');
                 setActiveSection('optometristas');
-                
-                // También cerrar el modal
                 onClose();
-                
             } else if (onCreationComplete && typeof onCreationComplete === 'function') {
-                // Fallback si onCreationComplete está disponible
-                console.log('  Llamando onCreationComplete');
+                console.log('✅ Llamando onCreationComplete');
                 onCreationComplete();
-                
             } else {
-                // Si no hay método de navegación específico, solo cerrar el modal
                 console.log('🔄 Cerrando modal (navegación estándar)');
                 onClose();
             }
         };
         
+        setIsLoading(true);
+        
         try {
-            // Llamar a onSubmit y manejar la respuesta
             const result = onSubmit(finalFormData);
             
-            // Si onSubmit devuelve una promesa, esperarla
             if (result && typeof result.then === 'function') {
-                result
-                    .then(() => {
-                        handlePostSubmission();
-                    })
-                    .catch((error) => {
-                        console.error('❌ Error al enviar formulario:', error);
-                    });
+                await result;
+                handlePostSubmission();
             } else {
-                // Si no es una promesa, ejecutar inmediatamente
                 handlePostSubmission();
             }
-            
         } catch (error) {
             console.error('❌ Error al enviar formulario:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // Función para manejar el botón de regresar
     const handleBackButton = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -496,7 +423,6 @@ const OptometristasFormModal = ({
         }
     };
 
-    // Componente de alerta para validaciones (usando Portal)
     const ValidationAlert = () => {
         if (!showValidationAlert || Object.keys(localErrors).length === 0) return null;
         
@@ -544,7 +470,6 @@ const OptometristasFormModal = ({
         return createPortal(alertContent, document.body);
     };
 
-    // Componente de alerta minimalista para límite de horas (usando Portal)
     const HourLimitAlert = () => {
         if (!showLimitAlert) return null;
         
@@ -580,13 +505,10 @@ const OptometristasFormModal = ({
         return createPortal(alertContent, document.body);
     };
 
-    // Campo personalizado para selección de empleado con tarjetas
     const EmpleadoSelectorField = () => {
         const currentError = localErrors.empleadoId || errors.empleadoId;
         
         if (isCreationFlow) {
-            // VISTA PARA EL FLUJO DE CREACIÓN
-            // Muestra una tarjeta estática con los datos del empleado que se está creando
             if (!preloadedEmployeeData) return <p>Cargando datos del empleado...</p>;
             
             return (
@@ -658,7 +580,6 @@ const OptometristasFormModal = ({
                         )}
                     </button>
 
-                    {/* Dropdown con tarjetas de empleados */}
                     {isEmployeeDropdownOpen && !selectedOptometrista && (
                         <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
                             {empleadosOptions.length === 0 ? (
@@ -726,7 +647,6 @@ const OptometristasFormModal = ({
         );
     };
 
-    // Campo personalizado para horarios de disponibilidad
     const HorariosDisponibilidadField = () => {
         const totalHoras = normalizeDisponibilidad(formData.disponibilidad).length;
         const isOverLimit = totalHoras > 44;
@@ -738,7 +658,6 @@ const OptometristasFormModal = ({
                     <h3 className="text-lg font-semibold text-gray-800 mb-2">Horarios de Disponibilidad:</h3>
                     <p className="text-sm text-gray-600">Selecciona las horas disponibles para cada día. Puedes elegir horas no consecutivas.</p>
                     
-                    {/* Indicador de horas */}
                     <div className={`mt-3 inline-flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium ${
                         isOverLimit ? 'bg-red-500 text-white border-2 border-red-600' :
                         'bg-green-100 text-green-800 border-2 border-green-200'
@@ -752,7 +671,6 @@ const OptometristasFormModal = ({
                 <div className={`bg-white rounded-lg border overflow-hidden ${
                     currentError ? 'border-red-500' : 'border-gray-200'
                 }`}>
-                    {/* Header con días y controles */}
                     <div className="bg-cyan-50 border-b border-gray-200">
                         <div className="grid grid-cols-7 text-center">
                             {diasSemana.map((dia) => {
@@ -804,7 +722,6 @@ const OptometristasFormModal = ({
                         </div>
                     </div>
                     
-                    {/* Grid de horas */}
                     <div className="p-4">
                         {horasDisponibles.map((hora) => (
                             <div key={hora} className="grid grid-cols-7 mb-2 last:mb-0">
@@ -837,7 +754,6 @@ const OptometristasFormModal = ({
                         ))}
                     </div>
                     
-                    {/* Leyenda y resumen */}
                     <div className="bg-gray-50 px-4 py-3 border-t border-gray-200">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-6 text-sm">
@@ -857,7 +773,6 @@ const OptometristasFormModal = ({
                     </div>
                 </div>
 
-                {/* Mostrar error si no hay disponibilidad */}
                 {currentError && (
                     <p className="text-red-500 text-sm mt-2 flex items-center space-x-1">
                         <AlertCircle className="w-4 h-4" />
@@ -868,7 +783,6 @@ const OptometristasFormModal = ({
         );
     };
 
-    // Campo personalizado para sucursales (multi-select)
     const SucursalesField = () => {
         const currentError = localErrors.sucursalesAsignadas || errors.sucursalesAsignadas;
         
@@ -905,7 +819,6 @@ const OptometristasFormModal = ({
         );
     };
 
-    // Campos básicos de información
     const fields = [
         {
             name: 'especialidad',
@@ -943,7 +856,6 @@ const OptometristasFormModal = ({
         }
     ];
 
-    // Cerrar dropdown al hacer clic fuera
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (isEmployeeDropdownOpen && !event.target.closest('.relative')) {
@@ -974,9 +886,9 @@ const OptometristasFormModal = ({
                 handleInputChange={handleInputChangeWithValidation}
                 errors={{...errors, ...localErrors}}
                 submitLabel={submitLabel}
-                fields={[]} // Array vacío porque ahora renderizamos los campos directamente
+                fields={[]}
                 gridCols={2}
-                // Botón personalizado de regresar para el flujo de creación
+                isLoading={isLoading}
                 customButtons={isCreationFlow && onBackToEmployeeForm ? (
                     <button
                         type="button"
@@ -989,7 +901,6 @@ const OptometristasFormModal = ({
                 ) : null}
             >
                 <div className="md:col-span-2 space-y-6">
-                    {/* 1. INFORMACIÓN DEL OPTOMETRISTA */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
                             <User className="w-5 h-5 mr-2" />
@@ -998,7 +909,6 @@ const OptometristasFormModal = ({
                         <div className="space-y-4">
                             <EmpleadoSelectorField />
                             
-                            {/* Campos de información básica en grid */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                                 {fields.map((field) => {
                                     const { name, label, type, options, required, ...fieldProps } = field;
@@ -1066,7 +976,6 @@ const OptometristasFormModal = ({
                         </div>
                     </div>
 
-                    {/* 2. HORARIOS DE DISPONIBILIDAD */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
                             <Clock className="w-5 h-5 mr-2" />
@@ -1075,7 +984,6 @@ const OptometristasFormModal = ({
                         <HorariosDisponibilidadField />
                     </div>
 
-                    {/* 3. SUCURSALES ASIGNADAS */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                         <h4 className="text-lg font-semibold text-cyan-600 mb-4 flex items-center">
                             <MapPin className="w-5 h-5 mr-2" />
@@ -1086,7 +994,6 @@ const OptometristasFormModal = ({
                 </div>
             </FormModal>
 
-            {/* Estilos CSS para animaciones */}
             <style>{`
                 @keyframes slideInDown {
                     from {

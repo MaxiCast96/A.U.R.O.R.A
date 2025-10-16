@@ -166,6 +166,13 @@ const VentasContent = () => {
   const [editingVenta, setEditingVenta] = useState(null);
   const [editData, setEditData] = useState({ estado: '', observaciones: '' });
 
+  // --- FUNCIÓN PARA MOSTRAR ALERTAS ---
+  const showAlert = useCallback((type, message) => {
+    setAlert({ type, message });
+    const timer = setTimeout(() => setAlert(null), 5000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // --- FUNCIÓN PARA OBTENER DATOS ---
   const fetchVentas = useCallback(async () => {
     try {
@@ -182,7 +189,7 @@ const VentasContent = () => {
     } finally {
         setLoading(false);
     }
-  }, []);
+  }, [showAlert]);
 
   // --- EFECTO PARA CARGA INICIAL ---
   useEffect(() => {
@@ -190,12 +197,6 @@ const VentasContent = () => {
   }, [fetchVentas]);
 
   // --- FUNCIONES UTILITARIAS ---
-  const showAlert = useCallback((type, message) => {
-    setAlert({ type, message });
-    const timer = setTimeout(() => setAlert(null), 5000);
-    return () => clearTimeout(timer);
-  }, []);
-
   const normalizeEstado = useCallback((estado) => estado?.toLowerCase() || '', []);
 
   // --- FUNCIÓN PARA MANEJAR ORDENAMIENTO ---
@@ -303,7 +304,6 @@ const VentasContent = () => {
              filters.fechaHasta;
   }, [searchTerm, filters]);
 
-
   // --- FUNCIONES PARA MANEJAR MODALES ---
   const handleCloseModals = useCallback(() => {
     setShowDetailModal(false);
@@ -323,10 +323,18 @@ const VentasContent = () => {
   const handleCancelEdit = () => {
     setEditingVenta(null);
     setEditData({ estado: '', observaciones: '' });
+    setShowDetailModal(false);
   };
 
   const handleSaveEdit = async () => {
     if (!editingVenta) return;
+    
+    // Validaciones relevantes
+    if (!editData.estado) {
+      showAlert('error', 'Por favor selecciona un estado para la venta');
+      return;
+    }
+
     try {
       const url = buildApiUrl(`${API_CONFIG.ENDPOINTS.VENTAS}/${editingVenta._id}`);
       const res = await fetch(url, {
@@ -335,13 +343,17 @@ const VentasContent = () => {
         credentials: API_CONFIG.FETCH_CONFIG.credentials,
         body: JSON.stringify({ estado: editData.estado, observaciones: editData.observaciones }),
       });
+      
       if (!res.ok) throw new Error('No se pudo actualizar la venta');
-      showAlert('success', 'Venta actualizada');
+      
+      const numeroFactura = editingVenta?.facturaDatos?.numeroFactura || 'N/A';
+      showAlert('success', `¡Venta ${numeroFactura} actualizada exitosamente!`);
       handleCancelEdit();
       fetchVentas();
     } catch (e) {
       console.error(e);
-      showAlert('error', 'Error al actualizar la venta');
+      const numeroFactura = editingVenta?.facturaDatos?.numeroFactura || 'N/A';
+      showAlert('error', `Error al actualizar la venta ${numeroFactura}`);
     }
   };
   
@@ -350,22 +362,32 @@ const VentasContent = () => {
       const total = v?.facturaDatos?.total ?? 0;
       return (
           <>
-              <td className="px-6 py-4 font-mono text-gray-700">{v?.facturaDatos?.numeroFactura || '—'}</td>
-              <td className="px-6 py-4 text-gray-700">{v?.facturaDatos?.nombreCliente || '—'}</td>
-              <td className="px-6 py-4 text-gray-700">{v?.sucursalId?.nombre || '—'}</td>
+              <td className="px-6 py-4 font-mono text-gray-700">{v?.facturaDatos?.numeroFactura || '–'}</td>
+              <td className="px-6 py-4 text-gray-700">{v?.facturaDatos?.nombreCliente || '–'}</td>
+              <td className="px-6 py-4 text-gray-700">{v?.sucursalId?.nombre || '–'}</td>
               <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${mapEstadoBadge(v?.estado)}`}>
-                      {v?.estado || '—'}
+                      {v?.estado || '–'}
                   </span>
               </td>
               <td className="px-6 py-4 text-gray-700">${total.toFixed(2)}</td>
               <td className="px-6 py-4 text-gray-600">{new Date(v?.fecha).toLocaleDateString()}</td>
               <td className="px-6 py-4">
                   <div className="flex space-x-2">
-                      <button onClick={() => handleOpenDetail(v)} className="p-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" title="Ver detalles">
+                      <button 
+                          onClick={() => handleOpenDetail(v)} 
+                          className="p-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 hover:scale-110" 
+                          title="Ver detalles"
+                          aria-label={`Ver detalles de la factura ${v?.facturaDatos?.numeroFactura}`}
+                      >
                           <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleStartEdit(v)} className="p-2 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" title="Editar estado/observaciones">
+                      <button 
+                          onClick={() => handleStartEdit(v)} 
+                          className="p-2 bg-white text-green-600 hover:bg-green-50 rounded-lg transition-all duration-200 hover:scale-110" 
+                          title="Editar estado/observaciones"
+                          aria-label={`Editar la factura ${v?.facturaDatos?.numeroFactura}`}
+                      >
                           <Edit className="w-4 h-4" />
                       </button>
                   </div>
@@ -373,13 +395,12 @@ const VentasContent = () => {
           </>
       );
   }, [handleOpenDetail]);
-  
 
   // --- RENDERIZADO DEL COMPONENTE ---
   if (loading) {
       return (
           <div className="space-y-6 animate-fade-in">
-              <Alert alert={alert} />
+              <Alert alert={alert} onClose={() => setAlert(null)} />
               <SkeletonLoader />
           </div>
       );
@@ -387,7 +408,11 @@ const VentasContent = () => {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      <Alert alert={alert} />
+      <Alert 
+        type={alert?.type} 
+        message={alert?.message} 
+        onClose={() => setAlert(null)} 
+      />
 
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <PageHeader title="Gestión de Ventas" buttonLabel={null} onButtonClick={null} />
@@ -584,6 +609,7 @@ const VentasContent = () => {
             </div>
         )}
 
+        {/* TABLA DE DATOS */}
         <div className="mt-2">
           <DataTable
             columns={TABLE_COLUMNS}
@@ -598,35 +624,42 @@ const VentasContent = () => {
         <Pagination {...paginationProps} />
       </div>
 
+      {/* MODAL DE DETALLES */}
       {selectedVenta && (
         <DetailModal
           isOpen={showDetailModal}
-          onClose={() => setShowDetailModal(false)}
+          onClose={handleCloseModals}
           title="Detalles de la Venta"
           item={selectedVenta}
           data={[
-            { label: 'Factura', value: selectedVenta?.facturaDatos?.numeroFactura || '—' },
-            { label: 'Cliente', value: selectedVenta?.facturaDatos?.nombreCliente || '—' },
-            { label: 'DUI Cliente', value: selectedVenta?.facturaDatos?.duiCliente || '—' },
-            { label: 'Sucursal', value: selectedVenta?.sucursalId?.nombre || '—' },
-            { label: 'Estado', value: selectedVenta?.estado || '—', color: mapEstadoBadge(selectedVenta?.estado) },
-            { label: 'Subtotal', value: `$${(selectedVenta?.facturaDatos?.subtotal ?? 0).toFixed(2)}` },
-            { label: 'Total', value: `$${(selectedVenta?.facturaDatos?.total ?? 0).toFixed(2)}` },
+            { label: 'Factura', value: selectedVenta?.facturaDatos?.numeroFactura || '–' },
+            { label: 'Cliente', value: selectedVenta?.facturaDatos?.nombreCliente || '–' },
+            { label: 'DUI Cliente', value: selectedVenta?.facturaDatos?.duiCliente || '–' },
+            { label: 'Sucursal', value: selectedVenta?.sucursalId?.nombre || '–' },
+            { label: 'Estado', value: selectedVenta?.estado || '–', color: mapEstadoBadge(selectedVenta?.estado) },
+            { label: 'Subtotal', value: `${(selectedVenta?.facturaDatos?.subtotal ?? 0).toFixed(2)}` },
+            { label: 'Total', value: `${(selectedVenta?.facturaDatos?.total ?? 0).toFixed(2)}` },
             { label: 'Fecha', value: new Date(selectedVenta?.fecha).toLocaleString() },
-            { label: 'Observaciones', value: selectedVenta?.observaciones || '—' },
+            { label: 'Observaciones', value: selectedVenta?.observaciones || '–' },
           ]}
         />
       )}
 
+      {/* MODAL DE EDICIÓN */}
       {editingVenta && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Editar Venta</h3>
-            <div className="space-y-3">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Editar Venta</h3>
+            
+            <div className="space-y-4">
+              {/* Campo Estado */}
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Estado</label>
+                <label htmlFor="edit-estado" className="block text-sm font-medium text-gray-700 mb-2">
+                  Estado
+                </label>
                 <select
-                  className="w-full border rounded-lg px-3 py-2"
+                  id="edit-estado"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   value={editData.estado}
                   onChange={e => setEditData(d => ({ ...d, estado: e.target.value }))}
                 >
@@ -635,18 +668,38 @@ const VentasContent = () => {
                   ))}
                 </select>
               </div>
+
+              {/* Campo Observaciones */}
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Observaciones</label>
+                <label htmlFor="edit-observaciones" className="block text-sm font-medium text-gray-700 mb-2">
+                  Observaciones
+                </label>
                 <textarea
-                  className="w-full border rounded-lg px-3 py-2"
-                  rows={3}
+                  id="edit-observaciones"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                  rows={4}
                   value={editData.observaciones}
                   onChange={e => setEditData(d => ({ ...d, observaciones: e.target.value }))}
+                  placeholder="Añade notas sobre esta venta..."
                 />
               </div>
-              <div className="flex justify-end space-x-2 pt-2">
-                <button onClick={handleCancelEdit} className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200">Cancelar</button>
-                <button onClick={handleSaveEdit} className="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700">Guardar</button>
+
+              {/* Botones de acción */}
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <button 
+                  onClick={handleCancelEdit} 
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors font-medium"
+                  aria-label="Cancelar edición"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleSaveEdit} 
+                  className="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 transition-colors font-medium"
+                  aria-label="Guardar cambios"
+                >
+                  Guardar Cambios
+                </button>
               </div>
             </div>
           </div>

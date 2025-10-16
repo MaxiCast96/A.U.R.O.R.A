@@ -87,7 +87,6 @@ const PasswordField = ({
     onChange({ target: { name: 'password', value: newPassword } });
   };
 
-  // CAMBIO: Verificar si hay contraseña actual para mostrar la interfaz correcta
   if (isEditing && currentPassword && !isEditingPassword) {
     return (
       <div className="space-y-2">
@@ -178,7 +177,6 @@ const PasswordField = ({
     );
   }
 
-  // Campo normal para crear nuevo cliente
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -247,7 +245,6 @@ const EnhancedField = ({
       const parentKey = keys[0];
       const childKey = keys[1];
       
-      // Crear el objeto padre si no existe
       const parentObject = formData[parentKey] || {};
       
       onChange({
@@ -260,7 +257,6 @@ const EnhancedField = ({
         }
       });
       
-      // Si se cambia el departamento, resetear el municipio
       if (childKey === 'departamento' && inputValue !== parentObject.departamento) {
         onChange({
           target: {
@@ -276,7 +272,6 @@ const EnhancedField = ({
     } else {
       onChange(e);
       
-      // NUEVO: Si es campo departamento, resetear ciudad
       if (name === 'departamento' && inputValue !== formData.departamento) {
         onChange({
           target: {
@@ -295,15 +290,6 @@ const EnhancedField = ({
   }`;
 
   if (field.type === 'select') {
-    // Debug específico para el campo ciudad
-    if (field.name === 'ciudad') {
-      console.log('Renderizando campo ciudad:');
-      console.log('- Valor actual:', getFieldValue());
-      console.log('- Opciones disponibles:', field.options);
-      console.log('- Campo deshabilitado:', isDisabled);
-      console.log('- FormData departamento:', formData.departamento);
-    }
-
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -334,7 +320,6 @@ const EnhancedField = ({
             <span>{error}</span>
           </p>
         )}
-        {/* NUEVO: Mensaje informativo para municipio deshabilitado */}
         {field.name === 'ciudad' && isDisabled && (
           <p className="text-blue-500 text-sm flex items-center space-x-1">
             <AlertCircle className="w-4 h-4" />
@@ -470,57 +455,56 @@ const ClientesFormModal = ({
   selectedCliente = null
 }) => {
   const [currentPassword, setCurrentPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const isEditing = !!selectedCliente;
 
-  // DEBUG: Verificar que los datos de El Salvador estén disponibles
-  useEffect(() => {
-    console.log('EL_SALVADOR_DATA disponible:', EL_SALVADOR_DATA);
-    console.log('Departamentos disponibles:', Object.keys(EL_SALVADOR_DATA));
-    console.log('Ejemplo - Municipios de Morazán:', EL_SALVADOR_DATA['Morazán']);
-  }, []);
-
-  // CAMBIO: Mejorar el useEffect para establecer la contraseña
   useEffect(() => {
     if (isEditing && selectedCliente) {
-      // Establecer la contraseña desde selectedCliente O desde formData
       const passwordToSet = selectedCliente.password || formData.password || '';
       setCurrentPassword(passwordToSet);
       
-      // Si formData.password está vacío pero selectedCliente tiene password, actualizarlo
       if (!formData.password && selectedCliente.password) {
         setFormData(prev => ({ ...prev, password: selectedCliente.password }));
       }
     }
   }, [isEditing, selectedCliente, formData.password, setFormData]);
 
-  const handleFormSubmit = () => {
-    // Si estamos editando y no se cambió la contraseña, mantener la actual
-    if (isEditing && !formData.password) {
-      setFormData(prev => ({ ...prev, password: currentPassword }));
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
     }
-    onSubmit();
+
+    setIsLoading(true);
+
+    try {
+      if (isEditing && !formData.password) {
+        setFormData(prev => ({ ...prev, password: currentPassword }));
+      }
+      
+      const result = onSubmit(e);
+      
+      if (result && typeof result.then === 'function') {
+        await result;
+      }
+    } catch (error) {
+      console.error('Error al guardar cliente:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Obtener los departamentos y municipios dinámicamente
   const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
   
-  // CORREGIDO: Mejorar la lógica de municipios con debugging y normalización
   const municipalities = useMemo(() => {
     const selectedDepartment = formData.departamento;
-    console.log('Calculando municipios para departamento:', selectedDepartment);
-    console.log('FormData actual:', formData);
-    console.log('Departamentos disponibles en EL_SALVADOR_DATA:', Object.keys(EL_SALVADOR_DATA));
     
     if (!selectedDepartment) {
-      console.log('No hay departamento seleccionado, retornando array vacío');
       return [];
     }
     
-    // Buscar el departamento exacto o con normalización de caracteres
     let municipios = EL_SALVADOR_DATA[selectedDepartment];
     
     if (!municipios) {
-      // Intentar encontrar coincidencia normalizando caracteres
       const departmentKey = Object.keys(EL_SALVADOR_DATA).find(key => 
         key.normalize('NFD').replace(/[\u0300-\u036f]/g, '') === 
         selectedDepartment.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -528,19 +512,12 @@ const ClientesFormModal = ({
       
       if (departmentKey) {
         municipios = EL_SALVADOR_DATA[departmentKey];
-        console.log('Departamento encontrado con normalización:', departmentKey);
       }
     }
     
-    municipios = municipios || [];
-    console.log('Municipios encontrados:', municipios);
-    console.log('Ciudad actual en formData:', formData.ciudad);
-    console.log('¿Ciudad válida para el departamento?', municipios.includes(formData.ciudad));
-    
-    return municipios;
+    return municipios || [];
   }, [formData.departamento, formData.ciudad]);
 
-  // NUEVO: Verificar si el municipio debe estar deshabilitado
   const isMunicipalityDisabled = !formData.departamento;
 
   const sections = [
@@ -599,7 +576,6 @@ const ClientesFormModal = ({
 
   const customContent = (
     <div className="space-y-8">
-      {/* Secciones de información */}
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
@@ -624,10 +600,9 @@ const ClientesFormModal = ({
         </div>
       ))}
 
-      {/* Sección de contraseña */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-            Acceso y Seguridad
+          🔐 Acceso y Seguridad
         </h3>
         <div className="max-w-md">
           <PasswordField
@@ -656,6 +631,7 @@ const ClientesFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      isLoading={isLoading}
     >
       {customContent}
     </FormModal>

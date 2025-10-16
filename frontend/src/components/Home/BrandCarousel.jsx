@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Star, Award, TrendingUp } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, Award, TrendingUp, Link } from 'lucide-react';
 import { motion as Motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 

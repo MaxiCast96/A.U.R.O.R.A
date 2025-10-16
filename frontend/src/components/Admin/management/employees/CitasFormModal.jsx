@@ -166,6 +166,48 @@ const CitasFormModal = ({
   selectedCita = null
 }) => {
   const isEditing = !!selectedCita;
+  // NUEVOS ESTADOS PARA LOADING Y ERROR
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
+  // CORRECCIÓN: Manejar el evento correctamente
+  const handleFormSubmit = async (e) => {
+    // Prevenir el comportamiento por defecto del formulario
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    // Validar campos requeridos
+    const requiredFields = ['clienteId', 'sucursalId', 'optometristaId', 'fechaHora', 'tipoConsulta', 'duracionEstimada', 'estado'];
+    const hasErrors = requiredFields.some(field => !formData[field]);
+    
+    if (hasErrors) {
+      setHasValidationErrors(true);
+      return;
+    }
+
+    // Validar fecha y hora
+    const dateTimeError = validateDateTime();
+    if (dateTimeError) {
+      setHasValidationErrors(true);
+      return;
+    }
+
+    setHasValidationErrors(false);
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      // CORRECCIÓN: Llamar onSubmit sin parámetros si no espera el evento
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar cita:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sections = [
     {
@@ -284,28 +326,12 @@ const CitasFormModal = ({
 
   const dateTimeError = validateDateTime();
 
-  // Obtener nombre del cliente seleccionado
-  const getClienteNombre = () => {
-    if (!formData.clienteId) return '';
-    const cliente = clientes.find(c => c._id === formData.clienteId);
-    return cliente ? `${cliente.nombre || ''} ${cliente.apellido || ''}`.trim() : 'Cliente seleccionado';
-  };
-
-  // Obtener nombre de la sucursal seleccionada
-  const getSucursalNombre = () => {
-    if (!formData.sucursalId) return '';
-    const sucursal = sucursales.find(s => s._id === formData.sucursalId);
-    return sucursal ? sucursal.nombre : 'Sucursal seleccionada';
-  };
-
   const customContent = (
     <div className="space-y-8">
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <User className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Calendar className="w-5 h-5 mr-2 text-green-600" />}
-            {sectionIndex === 2 && <Stethoscope className="w-5 h-5 mr-2 text-purple-600" />}
+            
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -345,29 +371,6 @@ const CitasFormModal = ({
         </div>
       )}
 
-      {/* Resumen de la cita */}
-      {formData?.clienteId && formData?.fechaHora && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <h4 className="font-semibold text-green-800 mb-3 flex items-center">
-            <Calendar className="w-5 h-5 mr-2" />
-            Resumen de la Cita
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Cliente:</span> {getClienteNombre()}</p>
-              <p><span className="font-medium">Fecha:</span> {formData.fechaHora ? new Date(formData.fechaHora).toLocaleDateString('es-ES') : 'No especificada'}</p>
-              <p><span className="font-medium">Hora:</span> {formData.fechaHora ? new Date(formData.fechaHora).toLocaleTimeString('es-ES', {hour: '2-digit', minute: '2-digit'}) : 'No especificada'}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Sucursal:</span> {getSucursalNombre()}</p>
-              <p><span className="font-medium">Tipo:</span> {formData.tipoConsulta}</p>
-              <p><span className="font-medium">Duración:</span> {formData.duracionEstimada} minutos</p>
-              <p><span className="font-medium">Estado:</span> {formData.estado}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Alertas de validación */}
       {dateTimeError && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -387,7 +390,7 @@ const CitasFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -397,6 +400,11 @@ const CitasFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      // NUEVAS PROPS
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
+      errorDuration={1000}
     >
       {customContent}
     </FormModal>

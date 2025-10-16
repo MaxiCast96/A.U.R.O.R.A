@@ -1,58 +1,154 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import axios from 'axios';
-import { 
-  Search, Plus, Trash2, Eye, Edit, Calendar, User, Clock, CheckCircle, XCircle, 
-  AlertTriangle, MapPin, ChevronLeft, ChevronRight, Filter, X, ChevronDown, 
-  SortAsc, SortDesc
-} from 'lucide-react';
-import CitasFormModal from '../management/employees/CitasFormModal';
-import DetailModal from '../ui/DetailModal';
 import Alert from '../ui/Alert';
 import ConfirmationModal from '../ui/ConfirmationModal';
+import { 
+  Search, Plus, Trash2, Eye, Edit, Tags, Package, UserCheck, Glasses, ShoppingBag, Save, AlertTriangle, CheckCircle,
+  Heart, Star, Home, User, Settings, Bell, Calendar, Clock, Mail, Phone, Camera, Image, Music,
+  Video, Download, Upload, Folder, File, Archive, Bookmark, Flag, Shield, Lock, Key, Zap,
+  Wifi, Battery, Bluetooth, Headphones, Mic, Speaker, Monitor, Smartphone, Tablet, Laptop,
+  Car, Plane, Train, Bus, Bike, MapPin, Navigation, Compass, Globe, Sun, Moon, Cloud,
+  Umbrella, Snowflake, Thermometer, Wind, Coffee, Pizza, Gift, Gamepad2, Trophy, Award,
+  Target, Briefcase, Building, Store, Factory, Hospital, School, Book, GraduationCap, Lightbulb,
+  Palette, Brush, Scissors, Wrench, Hammer, PaintBucket, Ruler, Calculator,
+  CreditCard, DollarSign, TrendingUp, TrendingDown, BarChart, PieChart, Activity,
+  Droplet, Leaf, Flower, Bug, Fish, Dog, Cat, Bird, Rabbit,
+  Filter, X, ChevronDown, SortAsc, SortDesc
+} from 'lucide-react';
+import { API_CONFIG, buildApiUrl } from '../../../config/api';
 
-const API_URL = 'https://aurora-production-7e57.up.railway.app/api';
-
-const initialFormState = {
-  clienteId: '',
-  optometristaId: '',
-  sucursalId: '',
-  fechaHora: '',
-  tipoConsulta: '',
-  duracionEstimada: 30,
-  estado: 'Programada',
-  motivoConsulta: '',
-  observaciones: ''
-};
-
-// Estados iniciales para filtros
-const INITIAL_FILTERS = {
-  estado: 'todos',
-  sucursal: 'todos',
-  optometrista: 'todos',
-  fechaDesde: '',
-  fechaHasta: '',
-  horaDesde: '',
-  horaHasta: ''
-};
-
-const SORT_OPTIONS = [
-  { value: 'fecha-desc', label: 'MÃƒÂ¡s Recientes Primero', icon: Calendar },
-  { value: 'fecha-asc', label: 'MÃƒÂ¡s Antiguos Primero', icon: Calendar },
-  { value: 'cliente-asc', label: 'Cliente A-Z', icon: User },
-  { value: 'cliente-desc', label: 'Cliente Z-A', icon: User },
-  { value: 'hora-asc', label: 'Hora: Temprano a Tarde', icon: Clock },
-  { value: 'hora-desc', label: 'Hora: Tarde a Temprano', icon: Clock },
-  { value: 'estado-asc', label: 'Estado A-Z', icon: CheckCircle },
-  { value: 'estado-desc', label: 'Estado Z-A', icon: CheckCircle },
+// Lista de iconos disponibles con sus nombres
+const availableIcons = [
+  { name: 'Tags', component: Tags, category: 'General' },
+  { name: 'Glasses', component: Glasses, category: 'Óptica' },
+  { name: 'Eye', component: Eye, category: 'Óptica' },
+  { name: 'Package', component: Package, category: 'General' },
+  { name: 'ShoppingBag', component: ShoppingBag, category: 'Comercio' },
+  { name: 'Heart', component: Heart, category: 'General' },
+  { name: 'Star', component: Star, category: 'General' },
+  { name: 'Home', component: Home, category: 'General' },
+  { name: 'User', component: User, category: 'Personas' },
+  { name: 'Settings', component: Settings, category: 'Sistema' },
+  { name: 'Bell', component: Bell, category: 'Sistema' },
+  { name: 'Calendar', component: Calendar, category: 'Tiempo' },
+  { name: 'Clock', component: Clock, category: 'Tiempo' },
+  { name: 'Mail', component: Mail, category: 'Comunicación' },
+  { name: 'Phone', component: Phone, category: 'Comunicación' },
+  { name: 'Camera', component: Camera, category: 'Multimedia' },
+  { name: 'Image', component: Image, category: 'Multimedia' },
+  { name: 'Music', component: Music, category: 'Multimedia' },
+  { name: 'Video', component: Video, category: 'Multimedia' },
+  { name: 'Download', component: Download, category: 'Acciones' },
+  { name: 'Upload', component: Upload, category: 'Acciones' },
+  { name: 'Folder', component: Folder, category: 'Archivos' },
+  { name: 'File', component: File, category: 'Archivos' },
+  { name: 'Archive', component: Archive, category: 'Archivos' },
+  { name: 'Bookmark', component: Bookmark, category: 'General' },
+  { name: 'Flag', component: Flag, category: 'General' },
+  { name: 'Shield', component: Shield, category: 'Seguridad' },
+  { name: 'Lock', component: Lock, category: 'Seguridad' },
+  { name: 'Key', component: Key, category: 'Seguridad' },
+  { name: 'Zap', component: Zap, category: 'General' },
+  { name: 'Wifi', component: Wifi, category: 'Tecnología' },
+  { name: 'Battery', component: Battery, category: 'Tecnología' },
+  { name: 'Bluetooth', component: Bluetooth, category: 'Tecnología' },
+  { name: 'Headphones', component: Headphones, category: 'Multimedia' },
+  { name: 'Mic', component: Mic, category: 'Multimedia' },
+  { name: 'Speaker', component: Speaker, category: 'Multimedia' },
+  { name: 'Monitor', component: Monitor, category: 'Tecnología' },
+  { name: 'Smartphone', component: Smartphone, category: 'Tecnología' },
+  { name: 'Tablet', component: Tablet, category: 'Tecnología' },
+  { name: 'Laptop', component: Laptop, category: 'Tecnología' },
+  { name: 'Car', component: Car, category: 'Transporte' },
+  { name: 'Plane', component: Plane, category: 'Transporte' },
+  { name: 'Train', component: Train, category: 'Transporte' },
+  { name: 'Bus', component: Bus, category: 'Transporte' },
+  { name: 'Bike', component: Bike, category: 'Transporte' },
+  { name: 'MapPin', component: MapPin, category: 'Ubicación' },
+  { name: 'Navigation', component: Navigation, category: 'Ubicación' },
+  { name: 'Compass', component: Compass, category: 'Ubicación' },
+  { name: 'Globe', component: Globe, category: 'Ubicación' },
+  { name: 'Sun', component: Sun, category: 'Clima' },
+  { name: 'Moon', component: Moon, category: 'Clima' },
+  { name: 'Cloud', component: Cloud, category: 'Clima' },
+  { name: 'Umbrella', component: Umbrella, category: 'Clima' },
+  { name: 'Snowflake', component: Snowflake, category: 'Clima' },
+  { name: 'Thermometer', component: Thermometer, category: 'Clima' },
+  { name: 'Wind', component: Wind, category: 'Clima' },
+  { name: 'Coffee', component: Coffee, category: 'Comida' },
+  { name: 'Pizza', component: Pizza, category: 'Comida' },
+  { name: 'Gift', component: Gift, category: 'General' },
+  { name: 'Gamepad2', component: Gamepad2, category: 'Entretenimiento' },
+  { name: 'Trophy', component: Trophy, category: 'Entretenimiento' },
+  { name: 'Award', component: Award, category: 'Entretenimiento' },
+  { name: 'Target', component: Target, category: 'General' },
+  { name: 'Briefcase', component: Briefcase, category: 'Trabajo' },
+  { name: 'Building', component: Building, category: 'Lugares' },
+  { name: 'Store', component: Store, category: 'Comercio' },
+  { name: 'Factory', component: Factory, category: 'Lugares' },
+  { name: 'Hospital', component: Hospital, category: 'Lugares' },
+  { name: 'School', component: School, category: 'Educación' },
+  { name: 'Book', component: Book, category: 'Educación' },
+  { name: 'GraduationCap', component: GraduationCap, category: 'Educación' },
+  { name: 'Lightbulb', component: Lightbulb, category: 'General' },
+  { name: 'Palette', component: Palette, category: 'Arte' },
+  { name: 'Brush', component: Brush, category: 'Arte' },
+  { name: 'Scissors', component: Scissors, category: 'Herramientas' },
+  { name: 'Wrench', component: Wrench, category: 'Herramientas' },
+  { name: 'Hammer', component: Hammer, category: 'Herramientas' },
+  { name: 'PaintBucket', component: PaintBucket, category: 'Arte' },
+  { name: 'Ruler', component: Ruler, category: 'Herramientas' },
+  { name: 'Calculator', component: Calculator, category: 'Trabajo' },
+  { name: 'CreditCard', component: CreditCard, category: 'Finanzas' },
+  { name: 'DollarSign', component: DollarSign, category: 'Finanzas' },
+  { name: 'TrendingUp', component: TrendingUp, category: 'Finanzas' },
+  { name: 'TrendingDown', component: TrendingDown, category: 'Finanzas' },
+  { name: 'BarChart', component: BarChart, category: 'Finanzas' },
+  { name: 'PieChart', component: PieChart, category: 'Finanzas' },
+  { name: 'Activity', component: Activity, category: 'Salud' },
+  { name: 'Droplet', component: Droplet, category: 'Naturaleza' },
+  { name: 'Leaf', component: Leaf, category: 'Naturaleza' },
+  { name: 'Flower', component: Flower, category: 'Naturaleza' },
+  { name: 'Bug', component: Bug, category: 'Naturaleza' },
+  { name: 'Fish', component: Fish, category: 'Animales' },
+  { name: 'Dog', component: Dog, category: 'Animales' },
+  { name: 'Cat', component: Cat, category: 'Animales' },
+  { name: 'Bird', component: Bird, category: 'Animales' },
+  { name: 'Rabbit', component: Rabbit, category: 'Animales' }
 ];
 
-// --- COMPONENTE SKELETON LOADER MEMOIZADO ---
+// Estados iniciales de filtros
+const INITIAL_FILTERS = {
+  iconCategory: 'todos',
+  fechaDesde: '',
+  fechaHasta: ''
+};
+
+// Opciones de ordenamiento
+const SORT_OPTIONS = [
+  { value: 'fechaRegistro-desc', label: 'Más Recientes Primero', icon: Calendar },
+  { value: 'fechaRegistro-asc', label: 'Más Antiguos Primero', icon: Calendar },
+  { value: 'nombre-asc', label: 'Nombre A-Z', icon: User },
+  { value: 'nombre-desc', label: 'Nombre Z-A', icon: User },
+];
+
+// Helper global para obtener el componente de icono por nombre
+const getIconComponent = (iconName) => {
+  if (!iconName) return <Tags className="w-6 h-6" />;
+  const iconData = availableIcons.find(icon => icon.name === iconName);
+  if (iconData) {
+    const IconComponent = iconData.component;
+    return <IconComponent className="w-6 h-6" />;
+  }
+  return <Tags className="w-6 h-6" />;
+};
+
+// Componente Skeleton Loader
 const SkeletonLoader = React.memo(() => (
   <div className="animate-pulse">
-    {/* Skeleton para las estadÃƒÂ­sticas */}
+    {/* Skeleton para las estadísticas */}
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       {Array.from({ length: 3 }, (_, i) => (
-        <div key={i} className="bg-white rounded-xl shadow-lg p-6">
+        <div key={i} className="bg-white p-6 rounded-xl shadow-sm border">
           <div className="flex items-center justify-between">
             <div>
               <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
@@ -66,31 +162,30 @@ const SkeletonLoader = React.memo(() => (
 
     {/* Skeleton para la tabla */}
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div className="bg-cyan-500 p-6">
+      <div className="px-6 py-4 border-b bg-gradient-to-r from-cyan-500 to-cyan-600">
         <div className="flex justify-between items-center">
-          <div className="h-8 bg-cyan-400 rounded w-48"></div>
+          <div className="h-6 bg-cyan-400 rounded w-48"></div>
           <div className="h-10 bg-cyan-400 rounded w-32"></div>
         </div>
       </div>
 
-      <div className="p-6 bg-gray-50 border-b">
-        <div className="flex flex-col md:flex-row gap-4 items-center">
-          <div className="h-10 bg-gray-200 rounded-lg flex-1"></div>
-          <div className="flex items-center gap-2">
-            <div className="h-10 bg-gray-200 rounded-full w-10"></div>
-            <div className="h-10 bg-gray-200 rounded-lg w-32"></div>
-            <div className="h-10 bg-gray-200 rounded-full w-10"></div>
+      <div className="px-6 py-4 border-b bg-gray-50">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
+          <div className="h-10 bg-gray-200 rounded-lg w-full max-w-md"></div>
+          <div className="flex space-x-3">
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
+            <div className="h-10 bg-gray-200 rounded w-24"></div>
           </div>
         </div>
       </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-cyan-500">
+          <thead className="bg-gray-50">
             <tr>
-              {Array.from({ length: 7 }, (_, index) => (
+              {Array.from({ length: 5 }, (_, index) => (
                 <th key={index} className="px-6 py-4">
-                  <div className="h-4 bg-cyan-400 rounded w-20"></div>
+                  <div className="h-4 bg-gray-300 rounded w-20"></div>
                 </th>
               ))}
             </tr>
@@ -99,37 +194,19 @@ const SkeletonLoader = React.memo(() => (
             {Array.from({ length: 5 }, (_, rowIndex) => (
               <tr key={rowIndex}>
                 <td className="px-6 py-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-32"></div>
-                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-32"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="h-4 bg-gray-200 rounded w-48"></div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="h-4 bg-gray-200 rounded w-24"></div>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="h-4 bg-gray-200 rounded w-28"></div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5 bg-gray-200 rounded"></div>
-                    <div>
-                      <div className="h-4 bg-gray-200 rounded w-20 mb-1"></div>
-                      <div className="h-3 bg-gray-200 rounded w-16"></div>
-                    </div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-5 h-5 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-24"></div>
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-                </td>
-                <td className="px-6 py-4">
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-1">
                     {Array.from({ length: 3 }, (_, btnIndex) => (
                       <div key={btnIndex} className="w-8 h-8 bg-gray-200 rounded-lg"></div>
                     ))}
@@ -140,132 +217,450 @@ const SkeletonLoader = React.memo(() => (
           </tbody>
         </table>
       </div>
-
-      <div className="mt-4 flex flex-col items-center gap-4 pb-6">
-        <div className="flex items-center gap-2">
-          <div className="h-4 bg-gray-200 rounded w-16"></div>
-          <div className="h-8 bg-gray-200 rounded w-16"></div>
-          <div className="h-4 bg-gray-200 rounded w-20"></div>
-        </div>
-        <div className="flex items-center gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <div key={i} className="w-10 h-10 bg-gray-200 rounded"></div>
-          ))}
-        </div>
-      </div>
     </div>
   </div>
 ));
 
-const CitasContent = () => {
-  // --- ESTADOS PRINCIPALES ---
+// Componente para el selector de iconos
+const IconSelector = ({ selectedIcon, onIconSelect, onClose }) => {
+  const [searchIcon, setSearchIcon] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+
+  const categories = ['Todos', ...new Set(availableIcons.map(icon => icon.category))];
+
+  const filteredIcons = availableIcons.filter(icon => {
+    const matchesSearch = icon.name.toLowerCase().includes(searchIcon.toLowerCase());
+    const matchesCategory = selectedCategory === 'Todos' || icon.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+        <div className="bg-cyan-500 text-white p-4 rounded-t-xl flex justify-between items-center">
+          <h3 className="text-lg font-bold">Seleccionar Icono</h3>
+          <button onClick={onClose} className="text-white hover:bg-cyan-600 rounded-lg p-2 transition-colors">
+            ×
+          </button>
+        </div>
+
+        <div className="p-4 border-b bg-gray-50">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar icono..."
+                value={searchIcon}
+                onChange={(e) => setSearchIcon(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+              />
+            </div>
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+            >
+              {categories.map(category => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
+            {filteredIcons.map((iconData) => {
+              const IconComponent = iconData.component;
+              const isSelected = selectedIcon === iconData.name;
+              
+              return (
+                <button
+                  key={iconData.name}
+                  onClick={() => onIconSelect(iconData.name)}
+                  className={`p-3 rounded-lg border-2 transition-all duration-200 hover:scale-105 flex flex-col items-center justify-center min-h-[60px] ${
+                    isSelected 
+                      ? 'border-cyan-500 bg-cyan-50 text-cyan-600' 
+                      : 'border-gray-200 hover:border-cyan-300 hover:bg-gray-50'
+                  }`}
+                  title={iconData.name}
+                >
+                  <IconComponent className="w-6 h-6 mb-1" />
+                  <span className="text-xs text-center leading-tight">{iconData.name}</span>
+                </button>
+              );
+            })}
+          </div>
+          
+          {filteredIcons.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <Tags className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+              <p>No se encontraron iconos</p>
+            </div>
+          )}
+        </div>
+
+        <div className="p-4 bg-gray-50 rounded-b-xl flex justify-end space-x-3">
+          <button 
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button 
+            onClick={() => {
+              onClose();
+            }}
+            className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors"
+          >
+            Seleccionar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Componente FormModal
+const FormModal = ({ isOpen, onClose, onSubmit, title, formData, handleInputChange, errors, submitLabel = 'Guardar', isEditing = false }) => {
+  const [showIconSelector, setShowIconSelector] = useState(false);
+
+  if (!isOpen) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSubmit(e);
+  };
+
+  const handleIconSelect = (iconName) => {
+    handleInputChange({
+      target: {
+        name: 'icono',
+        value: iconName
+      }
+    });
+    setShowIconSelector(false);
+  };
+
+  const getSelectedIconComponent = () => {
+    if (!formData.icono) return <Tags className="w-6 h-6" />;
+    
+    const iconData = availableIcons.find(icon => icon.name === formData.icono);
+    if (iconData) {
+      const IconComponent = iconData.component;
+      return <IconComponent className="w-6 h-6" />;
+    }
+    return <Tags className="w-6 h-6" />;
+  };
+
+  return (
+    <>
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-fadeIn">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale">
+          <div className="bg-cyan-500 text-white p-6 rounded-t-xl sticky top-0 z-10">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold">{title}</h3>
+              <button 
+                type="button" 
+                onClick={onClose} 
+                className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-2 transition-all duration-200 hover:scale-110"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          
+          <div className="p-6 space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+              <input
+                name="nombre"
+                value={formData.nombre || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 ${
+                  errors.nombre ? 'border-red-500' : 'border-gray-300 hover:border-cyan-300'
+                }`}
+                placeholder="Ingrese el nombre de la categoría"
+              />
+              {errors.nombre && (
+                <div className="mt-1 text-red-500 text-sm flex items-center space-x-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{errors.nombre}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descripción *</label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion || ''}
+                onChange={handleInputChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 resize-none ${
+                  errors.descripcion ? 'border-red-500' : 'border-gray-300 hover:border-cyan-300'
+                }`}
+                rows="3"
+                placeholder="Ingrese la descripción de la categoría"
+              />
+              {errors.descripcion && (
+                <div className="mt-1 text-red-500 text-sm flex items-center space-x-1">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>{errors.descripcion}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Icono</label>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowIconSelector(true)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg hover:border-cyan-300 focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200 flex items-center justify-between text-left"
+                  >
+                    <div className="flex items-center space-x-2">
+                      {getSelectedIconComponent()}
+                      <span className="text-gray-700">
+                        {formData.icono ? `${formData.icono}` : 'Seleccionar icono'}
+                      </span>
+                    </div>
+                    <Search className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+                {formData.icono && (
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange({ target: { name: 'icono', value: '' } })}
+                    className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                    title="Limpiar icono"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Haz clic para seleccionar un icono de la librería
+              </p>
+            </div>
+          </div>
+
+          <div className="p-6 bg-gray-50 rounded-b-xl flex justify-end space-x-3 sticky bottom-0 z-10">
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-all duration-200 hover:scale-105"
+            >
+              Cancelar
+            </button>
+            <button 
+              type="submit" 
+              onClick={handleSubmit}
+              className="px-4 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105 flex items-center space-x-2"
+            >
+              <Save className="w-4 h-4" />
+              <span>{submitLabel}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showIconSelector && (
+        <IconSelector
+          selectedIcon={formData.icono}
+          onIconSelect={handleIconSelect}
+          onClose={() => setShowIconSelector(false)}
+        />
+      )}
+    </>
+  );
+};
+
+// Componente DetailModal
+const DetailModal = ({ isOpen, onClose, categoria }) => {
+  if (!isOpen || !categoria) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 animate-fadeIn">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col transform transition-all duration-300 animate-slideInScale">
+        
+        <div className="bg-cyan-500 text-white p-5 rounded-t-xl flex justify-between items-center flex-shrink-0">
+          <h3 className="text-xl font-bold">Detalles de Categoría</h3>
+          <button onClick={onClose} className="text-white bg-cyan-500 hover:bg-cyan-600 rounded-lg p-2 transition-all duration-200 hover:scale-110">
+            ×
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-4 overflow-y-auto">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
+              {getIconComponent(categoria.icono)}
+            </div>
+            <div>
+              <h4 className="text-2xl font-bold text-gray-800">{categoria.nombre}</h4>
+              <p className="text-gray-500">Categoría</p>
+            </div>
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
+            <div className="flex justify-between py-2 border-b">
+              <p className="font-semibold text-gray-600">ID</p>
+              <p className="text-gray-800 text-right break-all">{categoria._id}</p>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <p className="font-semibold text-gray-600">Nombre</p>
+              <p className="text-gray-800 text-right">{categoria.nombre}</p>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <p className="font-semibold text-gray-600">Descripción</p>
+              <p className="text-gray-800 text-right">{categoria.descripcion}</p>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <p className="font-semibold text-gray-600">Fecha de Creación</p>
+              <p className="text-gray-800 text-right">
+                {categoria.createdAt ? new Date(categoria.createdAt).toLocaleDateString('es-ES') : 'N/A'}
+              </p>
+            </div>
+            <div className="flex justify-between py-2">
+              <p className="font-semibold text-gray-600">Última Actualización</p>
+              <p className="text-gray-800 text-right">
+                {categoria.updatedAt ? new Date(categoria.updatedAt).toLocaleDateString('es-ES') : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4 bg-gray-50 rounded-b-xl flex justify-end flex-shrink-0">
+          <button onClick={onClose} className="px-5 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-all duration-200 hover:scale-105">
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const CategoriasContent = () => {
+  // Estados principales
+  const [categorias, setCategorias] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [alert, setAlert] = useState(null);
+  
+  // Estados de filtros y ordenamiento
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [sortBy, setSortBy] = useState('fechaRegistro');
+  const [sortOrder, setSortOrder] = useState('desc');
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  
+  // Estados para UI
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
+  
+  // Estados para modales
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedCita, setSelectedCita] = useState(null);
-  const [citas, setCitas] = useState([]);
-  const [clientes, setClientes] = useState([]);
-  const [optometristas, setOptometristas] = useState([]);
-  const [sucursales, setSucursales] = useState([]);
-  const [formData, setFormData] = useState(initialFormState);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [pageSize, setPageSize] = useState(10);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [detailCita, setDetailCita] = useState(null);
-  const [notification, setNotification] = useState(null);
-  const [confirmDelete, setConfirmDelete] = useState({ open: false, cita: null });
+  const [selectedCategoria, setSelectedCategoria] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [categoriaToDelete, setCategoriaToDelete] = useState(null);
+  
+  // Estados para formulario
+  const [formData, setFormData] = useState({
+    nombre: '',
+    descripcion: '',
+    icono: ''
+  });
+  const [formErrors, setFormErrors] = useState({});
 
-  // --- ESTADOS DE FILTROS Y ORDENAMIENTO ---
-  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
-  const [showSortDropdown, setShowSortDropdown] = useState(false);
-  const [sortBy, setSortBy] = useState('fecha');
-  const [sortOrder, setSortOrder] = useState('desc');
-  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  // Endpoint
+  const ENDPOINT = API_CONFIG.ENDPOINTS.CATEGORIAS;
 
-  // Nombre de optometrista con fallback amigable
-  const getOptometristaNombre = useCallback((opt) => {
-    if (!opt) return 'N/A';
-    const emp = opt.empleadoId;
-    if (emp && (emp.nombre || emp.apellido)) {
-      return `${emp.nombre || ''} ${emp.apellido || ''}`.trim() || 'N/A';
-    }
-    // Si no hay empleado poblado, mostrar identificador corto legible
-    const id = opt._id || opt.id || '';
-    if (id) {
-      const shortId = String(id).slice(-6).toUpperCase();
-      return `Optometrista ${shortId}`;
-    }
-    return 'Optometrista';
+  // Función para mostrar alertas
+  const showAlert = useCallback((type, message) => {
+    setAlert({ type, message });
+    const timer = setTimeout(() => setAlert(null), 5000);
+    return () => clearTimeout(timer);
   }, []);
 
-  // Resolver robusto: si en la cita viene solo el ID o no viene poblado, busca en la lista cargada
-  const resolveOptometristaNombre = useCallback((optFromCita) => {
-    if (!optFromCita) return 'N/A';
-    // Caso 1: objeto con posible empleadoId
-    if (typeof optFromCita === 'object') {
-      const name = getOptometristaNombre(optFromCita);
-      if (!/^Optometrista\s/i.test(name)) return name; // ya es nombre real
-      // intentar mejorar con lista cargada
-      const oid = optFromCita._id || optFromCita.id;
-      if (oid) {
-        const found = optometristas.find(o => o._id === oid);
-        if (found) return getOptometristaNombre(found);
-      }
-      return name;
-    }
-    // Caso 2: string ID -> buscar en lista
-    const idStr = String(optFromCita);
-    const found = optometristas.find(o => o._id === idStr);
-    if (found) return getOptometristaNombre(found);
-    const shortId = idStr.slice(-6).toUpperCase();
-    return `Optometrista ${shortId}`;
-  }, [optometristas, getOptometristaNombre]);
+  // Helper: realizar fetch con fallback localhost <-> producción
+  const requestWithFallback = async (path = '', options = {}) => {
+    const makeUrl = (base) => `${base}${ENDPOINT}${path}`;
 
-  // --- FUNCIÃƒâ€œN PARA OBTENER DATOS ---
-  const fetchData = useCallback(async () => {
+    const tryOnce = async (base) => {
+      const url = makeUrl(base);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), API_CONFIG.TIMEOUTS.REQUEST);
+      try {
+        const res = await fetch(url, { ...API_CONFIG.FETCH_CONFIG, ...options, signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(`HTTP ${res.status} ${res.statusText} - ${text}`);
+        }
+        API_CONFIG.BASE_URL = base;
+        return await res.json();
+      } catch (err) {
+        clearTimeout(timeout);
+        throw err;
+      }
+    };
+
+    const primaryBase = API_CONFIG.BASE_URL;
+    const secondaryBase = primaryBase.includes('localhost')
+      ? 'https://aurora-production-7e57.up.railway.app/api'
+      : 'https://aurora-production-7e57.up.railway.app/api/api';
+
+    try {
+      return await tryOnce(primaryBase);
+    } catch (e1) {
+      if (
+        e1.name === 'AbortError' ||
+        (e1 instanceof TypeError) ||
+        (e1.message && (e1.message.includes('Failed to fetch') || e1.message.includes('NetworkError')))
+      ) {
+        try {
+          return await tryOnce(secondaryBase);
+        } catch (e2) {
+          throw e2;
+        }
+      }
+      throw e1;
+    }
+  };
+
+  // Función para obtener todas las categorías
+  const fetchCategorias = useCallback(async () => {
     try {
       setLoading(true);
-      const [citasRes, clientesRes, optosRes, sucursalesRes] = await Promise.all([
-        axios.get(`${API_URL}/citas`),
-        axios.get(`${API_URL}/clientes`),
-        axios.get(`${API_URL}/optometrista`),
-        axios.get(`${API_URL}/sucursales`)
-      ]);
+      const data = await requestWithFallback('', { method: 'GET' });
       
-      const formattedCitas = (citasRes.data || []).map(c => ({
-        ...c,
-        fechaFormatted: c.fecha ? new Date(c.fecha).toLocaleDateString() : '',
-        fechaRaw: c.fecha ? new Date(c.fecha) : null,
-      }));
-      
-      setCitas(formattedCitas);
-      setClientes(clientesRes.data || []);
-      setOptometristas(optosRes.data || []);
-      setSucursales(sucursalesRes.data || []);
+      if (Array.isArray(data)) {
+        const formattedData = data.map(c => ({
+          ...c,
+          fechaRegistro: new Date(c.createdAt).toLocaleDateString(),
+          fechaRegistroRaw: new Date(c.createdAt),
+        }));
+        setCategorias(formattedData);
+      } else if (data.message) {
+        showAlert('error', data.message);
+        setCategorias([]);
+      }
     } catch (err) {
-      setError('Error al cargar datos.');
-      showNotification('Error al cargar los datos desde el servidor.', 'error');
+      showAlert('error', 'Error al cargar las categorías desde el servidor.');
+      setCategorias([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showAlert]);
 
-  // --- EFECTO PARA CARGA INICIAL ---
+  // Cargar categorías al montar el componente
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchCategorias();
+  }, [fetchCategorias]);
 
-  // --- FUNCIONES UTILITARIAS ---
-  const showNotification = useCallback((message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => setNotification(null), 3500);
-  }, []);
-
-  // --- FUNCIÃƒâ€œN PARA MANEJAR ORDENAMIENTO ---
+  // Función para manejar ordenamiento
   const handleSortChange = useCallback((sortValue) => {
     const [field, order] = sortValue.split('-');
     setSortBy(field);
@@ -273,29 +668,19 @@ const CitasContent = () => {
     setShowSortDropdown(false);
   }, []);
 
-  // --- FUNCIÃƒâ€œN PARA ORDENAR DATOS ---
+  // Función para ordenar datos
   const sortData = useCallback((data) => {
     return [...data].sort((a, b) => {
       let valueA, valueB;
       
       switch (sortBy) {
-        case 'cliente':
-          const clienteA = a.clienteId ? `${a.clienteId.nombre || ''} ${a.clienteId.apellido || ''}`.trim() : '';
-          const clienteB = b.clienteId ? `${b.clienteId.nombre || ''} ${b.clienteId.apellido || ''}`.trim() : '';
-          valueA = clienteA.toLowerCase();
-          valueB = clienteB.toLowerCase();
+        case 'nombre':
+          valueA = a.nombre?.toLowerCase() || '';
+          valueB = b.nombre?.toLowerCase() || '';
           break;
-        case 'fecha':
-          valueA = a.fechaRaw || new Date(0);
-          valueB = b.fechaRaw || new Date(0);
-          break;
-        case 'hora':
-          valueA = a.hora || '';
-          valueB = b.hora || '';
-          break;
-        case 'estado':
-          valueA = (a.estado || '').toLowerCase();
-          valueB = (b.estado || '').toLowerCase();
+        case 'fechaRegistro':
+          valueA = a.fechaRegistroRaw || new Date(0);
+          valueB = b.fechaRegistroRaw || new Date(0);
           break;
         default:
           return 0;
@@ -307,52 +692,26 @@ const CitasContent = () => {
     });
   }, [sortBy, sortOrder]);
 
-  // --- FUNCIÃƒâ€œN PARA APLICAR FILTROS AVANZADOS ---
-  const applyAdvancedFilters = useCallback((cita) => {
-    // Filtro por estado
-    if (filters.estado !== 'todos' && cita.estado?.toLowerCase() !== filters.estado) {
-      return false;
-    }
-
-    // Filtro por sucursal
-    if (filters.sucursal !== 'todos') {
-      const sucursalId = cita.sucursalId?._id || cita.sucursalId;
-      if (sucursalId !== filters.sucursal) {
+  // Función para aplicar filtros avanzados
+  const applyAdvancedFilters = useCallback((categoria) => {
+    if (filters.iconCategory !== 'todos') {
+      const iconData = availableIcons.find(icon => icon.name === categoria.icono);
+      const iconCategory = iconData?.category || '';
+      if (iconCategory.toLowerCase() !== filters.iconCategory.toLowerCase()) {
         return false;
       }
     }
 
-    // Filtro por optometrista
-    if (filters.optometrista !== 'todos') {
-      const optometristaId = cita.optometristaId?._id || cita.optometristaId;
-      if (optometristaId !== filters.optometrista) {
-        return false;
-      }
-    }
-
-    // Filtro por rango de fechas
     if (filters.fechaDesde) {
       const fechaDesde = new Date(filters.fechaDesde);
-      if (cita.fechaRaw < fechaDesde) {
+      if (categoria.fechaRegistroRaw < fechaDesde) {
         return false;
       }
     }
     if (filters.fechaHasta) {
       const fechaHasta = new Date(filters.fechaHasta);
       fechaHasta.setHours(23, 59, 59);
-      if (cita.fechaRaw > fechaHasta) {
-        return false;
-      }
-    }
-
-    // Filtro por rango de horas
-    if (filters.horaDesde) {
-      if (cita.hora && cita.hora < filters.horaDesde) {
-        return false;
-      }
-    }
-    if (filters.horaHasta) {
-      if (cita.hora && cita.hora > filters.horaHasta) {
+      if (categoria.fechaRegistroRaw > fechaHasta) {
         return false;
       }
     }
@@ -360,44 +719,30 @@ const CitasContent = () => {
     return true;
   }, [filters]);
 
-  // --- LÃƒâ€œGICA DE FILTRADO, ORDENAMIENTO Y PAGINACIÃƒâ€œN ---
-  const filteredAndSortedCitas = useMemo(() => {
-    const filtered = citas.filter(cita => {
-      // BÃƒÂºsqueda por texto
+  // Lógica de filtrado y ordenamiento
+  const filteredAndSortedCategorias = useMemo(() => {
+    const filtered = categorias.filter(categoria => {
       const search = searchTerm.toLowerCase();
-      const clienteStr = cita.clienteId ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.toLowerCase() : '';
-      const servicioStr = (cita.motivoCita || '').toLowerCase();
       const matchesSearch = !searchTerm || 
-        clienteStr.includes(search) ||
-        servicioStr.includes(search);
+        categoria.nombre?.toLowerCase().includes(search) ||
+        categoria.descripcion?.toLowerCase().includes(search);
       
-      // Filtro por fecha especÃƒÂ­fica (del selector de fecha)
-      let matchesDate = true;
-      if (selectedDate && cita.fecha) {
-        const citaDate = new Date(cita.fecha);
-        const year = citaDate.getFullYear();
-        const month = String(citaDate.getMonth() + 1).padStart(2, '0');
-        const day = String(citaDate.getDate()).padStart(2, '0');
-        const citaDateString = `${year}-${month}-${day}`;
-        matchesDate = citaDateString === selectedDate;
-      } else if (selectedDate) {
-        matchesDate = false;
-      }
+      const matchesAdvancedFilters = applyAdvancedFilters(categoria);
       
-      // Filtros avanzados
-      const matchesAdvancedFilters = applyAdvancedFilters(cita);
-      
-      return matchesSearch && matchesDate && matchesAdvancedFilters;
+      return matchesSearch && matchesAdvancedFilters;
     });
     
     return sortData(filtered);
-  }, [citas, searchTerm, selectedDate, applyAdvancedFilters, sortData]);
+  }, [categorias, searchTerm, applyAdvancedFilters, sortData]);
 
-  // PaginaciÃƒÂ³n
-  const totalPages = Math.ceil(filteredAndSortedCitas.length / pageSize);
-  const currentCitas = filteredAndSortedCitas.slice(currentPage * pageSize, currentPage * pageSize + pageSize);
+  // Paginación
+  const totalPages = Math.ceil(filteredAndSortedCategorias.length / pageSize);
+  const currentCategorias = filteredAndSortedCategorias.slice(
+    currentPage * pageSize,
+    currentPage * pageSize + pageSize
+  );
 
-  // --- FUNCIONES PARA MANEJAR FILTROS ---
+  // Funciones para manejar filtros
   const handleFilterChange = useCallback((key, value) => {
     setFilters(prev => ({
       ...prev,
@@ -408,255 +753,197 @@ const CitasContent = () => {
   const clearAllFilters = useCallback(() => {
     setFilters(INITIAL_FILTERS);
     setSearchTerm('');
-    setSelectedDate('');
   }, []);
 
   const hasActiveFilters = useCallback(() => {
     return searchTerm || 
-           selectedDate ||
-           filters.estado !== 'todos' || 
-           filters.sucursal !== 'todos' || 
-           filters.optometrista !== 'todos' || 
+           filters.iconCategory !== 'todos' || 
            filters.fechaDesde || 
-           filters.fechaHasta ||
-           filters.horaDesde ||
-           filters.horaHasta;
-  }, [searchTerm, selectedDate, filters]);
+           filters.fechaHasta;
+  }, [searchTerm, filters]);
 
-  // --- OBTENER LISTAS ÃƒÅ¡NICAS PARA FILTROS ---
-  const uniqueSucursales = useMemo(() => {
-    return sucursales.filter((sucursal, index, arr) => 
-      arr.findIndex(s => s._id === sucursal._id) === index
-    );
-  }, [sucursales]);
+  // Obtener categorías de iconos únicas
+  const uniqueIconCategories = useMemo(() => {
+    const categories = [...new Set(availableIcons.map(icon => icon.category))];
+    return categories.sort();
+  }, []);
 
-  const uniqueOptometristas = useMemo(() => {
-    return optometristas.filter((opt, index, arr) => 
-      arr.findIndex(o => o._id === opt._id) === index
-    );
-  }, [optometristas]);
+  // Función para validar el formulario
+  const validateForm = () => {
+    const errors = {};
+    
+    if (!formData.nombre?.trim()) {
+      errors.nombre = 'El nombre es obligatorio';
+    }
+    
+    if (!formData.descripcion?.trim()) {
+      errors.descripcion = 'La descripción es obligatoria';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
-  // --- MANEJADORES DE FORMULARIO ACTUALIZADOS ---
+  // Función para manejar cambios en el formulario
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
     
-    if (name === 'fechaHora') {
-      // Convertir datetime-local a los campos internos separados
-      if (value) {
-        const dateTime = new Date(value);
-        const fecha = dateTime.toISOString().split('T')[0];
-        const hora = dateTime.toTimeString().slice(0, 5);
-        
-        setFormData(prev => ({
-          ...prev,
-          fechaHora: value,
-          fecha,
-          hora
-        }));
-      } else {
-        setFormData(prev => ({
-          ...prev,
-          fechaHora: '',
-          fecha: '',
-          hora: ''
-        }));
-      }
-    } else {
-      setFormData(prev => ({ 
-        ...prev, 
-        [name]: value,
-        // Mapear campos del modal a campos internos
-        ...(name === 'tipoConsulta' && { motivoCita: value }),
-        ...(name === 'motivoConsulta' && { motivoCita: value }),
-        ...(name === 'observaciones' && { notasAdicionales: value })
+    if (formErrors[name]) {
+      setFormErrors(prev => ({
+        ...prev,
+        [name]: ''
       }));
     }
   };
 
-  const handleOpenAddModal = () => {
-    setFormData(initialFormState);
-    setShowAddModal(true);
-    setSelectedCita(null);
-    setErrors({});
-  };
-
-  const handleOpenEditModal = (cita) => {
-    // Convertir fecha y hora separadas a datetime-local
-    const fechaHora = cita.fecha && cita.hora 
-      ? `${cita.fecha.slice(0, 10)}T${cita.hora}` 
-      : '';
-
-    setFormData({
-      clienteId: cita.clienteId?._id || cita.clienteId || '',
-      optometristaId: cita.optometristaId?._id || cita.optometristaId || '',
-      sucursalId: cita.sucursalId?._id || cita.sucursalId || '',
-      fechaHora: fechaHora,
-      tipoConsulta: cita.motivoCita || 'Examen Rutinario',
-      duracionEstimada: 30,
-      estado: cita.estado || 'Programada',
-      motivoConsulta: cita.motivoCita || '',
-      observaciones: cita.notasAdicionales || '',
-      // Campos internos para compatibilidad
-      fecha: cita.fecha ? cita.fecha.slice(0, 10) : '',
-      hora: cita.hora || '',
-      motivoCita: cita.motivoCita || '',
-      notasAdicionales: cita.notasAdicionales || ''
-    });
+  // Función para crear nueva categoría
+  const handleCreate = async (e) => {
+    e.preventDefault();
     
-    setSelectedCita(cita);
+    if (!validateForm()) {
+      showAlert('error', 'Por favor complete todos los campos requeridos correctamente.');
+      return;
+    }
+    
+    try {
+      const result = await requestWithFallback('', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      });
+      
+      if (result.message === 'categoria guardada') {
+        await fetchCategorias();
+        setShowAddModal(false);
+        resetForm();
+        showAlert('success', '¡Categoría creada exitosamente!');
+      } else {
+        showAlert('error', result.message || 'Error al crear la categoría');
+      }
+    } catch (err) {
+      showAlert('error', 'Error al conectar con el servidor');
+    }
+  };
+
+  // Función para actualizar categoría
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      showAlert('error', 'Por favor complete todos los campos requeridos correctamente.');
+      return;
+    }
+    
+    try {
+      const result = await requestWithFallback(`/${selectedCategoria._id}`, {
+        method: 'PUT',
+        body: JSON.stringify(formData),
+      });
+      
+      if (result.message === 'Categoria actualizada') {
+        await fetchCategorias();
+        setShowEditModal(false);
+        resetForm();
+        setSelectedCategoria(null);
+        showAlert('success', '¡Categoría actualizada exitosamente!');
+      } else {
+        showAlert('error', result.message || 'Error al actualizar la categoría');
+      }
+    } catch (err) {
+      showAlert('error', 'Error al conectar con el servidor');
+    }
+  };
+
+  // Abrir modal de confirmación para eliminar
+  const requestDeleteCategoria = (id) => {
+    setCategoriaToDelete(id);
+    setShowDeleteModal(true);
+  };
+
+  // Confirmar eliminación
+  const confirmDeleteCategoria = async () => {
+    if (!categoriaToDelete) return;
+    try {
+      const result = await requestWithFallback(`/${categoriaToDelete}`, {
+        method: 'DELETE',
+      });
+      if (result.message === 'Categoria eliminada') {
+        await fetchCategorias();
+        showAlert('delete', '¡Categoría eliminada exitosamente!');
+      } else {
+        showAlert('error', result.message || 'Error al eliminar la categoría');
+      }
+    } catch (err) {
+      showAlert('error', 'Error al conectar con el servidor');
+    } finally {
+      setShowDeleteModal(false);
+      setCategoriaToDelete(null);
+    }
+  };
+
+  // Función para resetear el formulario
+  const resetForm = () => {
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      icono: ''
+    });
+    setFormErrors({});
+  };
+
+  // Función para abrir modal de edición
+  const openEditModal = (categoria) => {
+    setSelectedCategoria(categoria);
+    setFormData({
+      nombre: categoria.nombre,
+      descripcion: categoria.descripcion,
+      icono: categoria.icono || ''
+    });
+    setFormErrors({});
     setShowEditModal(true);
-    setShowDetailModal(false);
-    setErrors({});
   };
 
-  const handleCloseModal = () => {
-    setShowAddModal(false);
-    setShowEditModal(false);
-    setShowDetailModal(false);
-    setSelectedCita(null);
-    setFormData(initialFormState);
-    setErrors({});
-  };
-
-  const handleShowDetail = (cita) => {
-    setDetailCita(cita);
+  // Función para abrir modal de detalles
+  const openDetailModal = (categoria) => {
+    setSelectedCategoria(categoria);
     setShowDetailModal(true);
   };
 
-  // ValidaciÃƒÂ³n simple
-  const validate = () => {
-    const newErrors = {};
-    
-    if (!formData.clienteId) newErrors.clienteId = 'El cliente es obligatorio';
-    if (!formData.optometristaId) newErrors.optometristaId = 'El optometrista es obligatorio';
-    if (!formData.sucursalId) newErrors.sucursalId = 'La sucursal es obligatoria';
-    if (!formData.fechaHora) newErrors.fechaHora = 'La fecha y hora son obligatorias';
-    if (!formData.tipoConsulta) newErrors.tipoConsulta = 'El tipo de consulta es obligatorio';
-    if (!formData.duracionEstimada || formData.duracionEstimada < 15) newErrors.duracionEstimada = 'La duraciÃƒÂ³n debe ser mÃƒÂ­nimo 15 minutos';
-    if (!formData.estado) newErrors.estado = 'El estado es obligatorio';
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // Función para cerrar modales
+  const closeModals = () => {
+    setShowAddModal(false);
+    setShowEditModal(false);
+    setShowDetailModal(false);
+    setShowDeleteModal(false);
+    setSelectedCategoria(null);
+    resetForm();
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!validate()) return;
-    
-    setLoading(true);
-    try {
-      // Preparar datos para enviar al backend
-      const dataToSend = {
-        clienteId: formData.clienteId,
-        optometristaId: formData.optometristaId,
-        sucursalId: formData.sucursalId,
-        fecha: formData.fecha ? new Date(formData.fecha) : undefined,
-        hora: formData.hora,
-        estado: formData.estado,
-        motivoCita: formData.motivoConsulta || formData.tipoConsulta,
-        tipoLente: '', // Campo requerido por el backend
-        graduacion: '', // Campo requerido por el backend
-        notasAdicionales: formData.observaciones || ''
-      };
-      
-      if (selectedCita) {
-        await axios.put(`${API_URL}/citas/${selectedCita._id}`, dataToSend);
-        showNotification('Cita editada correctamente', 'success');
-      } else {
-        await axios.post(`${API_URL}/citas`, dataToSend);
-        showNotification('Cita creada correctamente', 'success');
-      }
-      
-      await fetchData();
-      handleCloseModal();
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setError('Error: ' + err.response.data.message);
-        showNotification('Error: ' + err.response.data.message, 'error');
-      } else {
-        setError('Error al guardar la cita.');
-        showNotification('Error al guardar la cita.', 'error');
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDelete = (cita) => {
-    setConfirmDelete({ open: true, cita });
-  };
-
-  const confirmDeleteCita = async () => {
-    const cita = confirmDelete.cita;
-    setLoading(true);
-    try {
-      await axios.delete(`${API_URL}/citas/${cita._id}`);
-      const clienteNombre = cita.clienteId ? `${cita.clienteId.nombre || '} ${cita.clienteId.apellido || '}`.trim() : `${cita.clienteNombre || '} ${cita.clienteApellidos || '}`.trim();
-showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete');
-      await fetchData();
-      setShowDetailModal(false);
-      setConfirmDelete({ open: false, cita: null });
-    } catch (err) {
-      setError('Error al eliminar la cita.');
-      showNotification('Error al eliminar la cita.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Funciones de navegaciÃƒÂ³n
+  // Funciones de paginación
   const goToFirstPage = () => setCurrentPage(0);
   const goToPreviousPage = () => setCurrentPage(prev => Math.max(0, prev - 1));
   const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   const goToLastPage = () => setCurrentPage(totalPages - 1);
 
-  const getEstadoInfo = (estado) => {
-    switch(estado) {
-      case 'Confirmada': return { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-4 h-4" /> };
-      case 'Pendiente': return { color: 'bg-yellow-100 text-yellow-800', icon: <Clock className="w-4 h-4" /> };
-      case 'Programada': return { color: 'bg-blue-100 text-blue-800', icon: <Calendar className="w-4 h-4" /> };
-      case 'Realizada': return { color: 'bg-blue-100 text-blue-800', icon: <User className="w-4 h-4" /> };
-      case 'Completada': return { color: 'bg-green-100 text-green-800', icon: <CheckCircle className="w-4 h-4" /> };
-      case 'Cancelada': return { color: 'bg-red-100 text-red-800', icon: <XCircle className="w-4 h-4" /> };
-      default: return { color: 'bg-gray-100 text-gray-800', icon: <AlertTriangle className="w-4 h-4" /> };
-    }
-  };
+  // Estadísticas
+  const stats = useMemo(() => [
+    { title: 'Total Categorías', value: categorias.length, Icon: Tags, color: 'cyan' },
+    { title: 'Categorías Activas', value: categorias.length, Icon: UserCheck, color: 'cyan' },
+    { title: 'En Esta Página', value: currentCategorias.length, Icon: Package, color: 'cyan' },
+  ], [categorias.length, currentCategorias.length]);
 
-  const changeDay = (direction) => {
-    let baseDate;
-    if (!selectedDate) {
-      baseDate = new Date();
-    } else {
-      baseDate = new Date(selectedDate);
-    }
-    baseDate.setDate(baseDate.getDate() + direction);
-    setSelectedDate(baseDate.toISOString().split('T')[0]);
-  };
-
-  // Personaliza notificaciones para visualizar y eliminar cita
-  useEffect(() => {
-    if (showDetailModal && detailCita) {
-      showNotification('Visualizando cita de ' + (detailCita.clienteId ? `${detailCita.clienteId.nombre || ''} ${detailCita.clienteId.apellido || ''}`.trim() : 'N/A'), 'info');
-    }
-  }, [showDetailModal, detailCita, showNotification]);
-
-  // EstadÃƒÂ­sticas
-  const totalCitasHoy = citas.filter(c => {
-    const today = new Date().toISOString().split('T')[0];
-    const citaDate = c.fecha ? c.fecha.slice(0, 10) : '';
-    return citaDate === today;
-  }).length;
-  const citasPendientes = citas.filter(c => c.estado === 'Pendiente' || c.estado === 'Programada').length;
-  const citasConfirmadas = citas.filter(c => c.estado === 'Confirmada' || c.estado === 'Completada').length;
-
-  // --- RENDERIZADO DEL COMPONENTE ---
   if (loading) {
     return (
       <div className="space-y-6 animate-fade-in">
-        {notification && (
-          <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
-            <Alert type={notification.type} message={notification.message} />
-          </div>
+        {alert && (
+          <Alert 
+            type={alert.type} 
+            message={alert.message} 
+            onClose={() => setAlert(null)} 
+          />
         )}
         <SkeletonLoader />
       </div>
@@ -665,109 +952,69 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {notification && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-md">
-          <Alert type={notification.type} message={notification.message} />
-        </div>
+      {alert && (
+        <Alert 
+          type={alert.type} 
+          message={alert.message} 
+          onClose={() => setAlert(null)} 
+        />
       )}
       
+      {/* Estadísticas */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Citas para Hoy</p>
-              <p className="text-3xl font-bold text-gray-800 mt-2">{totalCitasHoy}</p>
-            </div>
-            <div className="w-12 h-12 bg-cyan-100 rounded-full flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-cyan-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Pendientes</p>
-              <p className="text-3xl font-bold text-yellow-600 mt-2">{citasPendientes}</p>
-            </div>
-            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
-              <Clock className="w-6 h-6 text-yellow-600" />
+        {stats.map((stat, index) => (
+          <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
+                <p className={`text-3xl font-bold mt-2 ${stat.color === 'cyan' ? 'text-cyan-600' : stat.color === 'green' ? 'text-green-600' : 'text-gray-800'}`}>
+                  {stat.value}
+                </p>
+              </div>
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center ${stat.color === 'cyan' ? 'bg-cyan-100' : stat.color === 'green' ? 'bg-green-100' : 'bg-gray-100'}`}>
+                <stat.Icon className={`w-6 h-6 ${stat.color === 'cyan' ? 'text-cyan-600' : stat.color === 'green' ? 'text-green-600' : 'text-gray-600'}`} />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-500 text-sm font-medium">Confirmadas</p>
-              <p className="text-3xl font-bold text-green-600 mt-2">{citasConfirmadas}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
+      {/* Tabla principal */}
       <div className="bg-white rounded-xl shadow-lg overflow-hidden">
         <div className="bg-cyan-500 text-white p-6">
           <div className="flex justify-between items-center">
-            <h2 className="text-2xl font-bold">GestiÃƒÂ³n de Citas</h2>
+            <h2 className="text-2xl font-bold">Gestión de Categorías</h2>
             <button
-              onClick={handleOpenAddModal}
+              onClick={() => {
+                resetForm();
+                setShowAddModal(true);
+              }}
               className="bg-white text-cyan-500 px-4 py-2 rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2"
             >
               <Plus className="w-4 h-4" />
-              <span>Agendar Cita</span>
+              <span>Añadir Categoría</span>
             </button>
           </div>
         </div>
         
-        {/* BARRA DE BÃƒÅ¡SQUEDA Y CONTROLES */}
-        <div className="p-6 bg-gray-50 border-b">
+        {/* BARRA DE BÚSQUEDA Y CONTROLES */}
+        <div className="px-6 py-4 border-b bg-gray-50">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 lg:space-x-4">
-            {/* Barra de bÃƒÂºsqueda */}
+            {/* Barra de búsqueda */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Buscar por cliente o servicio..."
+                placeholder="Buscar categoría..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                aria-label="Buscar citas"
+                aria-label="Buscar categorías"
               />
             </div>
 
-            {/* Controles de fecha, filtro y ordenamiento */}
+            {/* Controles de filtro y ordenamiento */}
             <div className="flex items-center space-x-3">
-              {/* Selector de fecha con navegaciÃƒÂ³n */}
-              <div className="relative flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => changeDay(-1)}
-                  className="p-2 rounded-full hover:bg-cyan-100 transition-colors"
-                  title="DÃƒÂ­a anterior"
-                >
-                  <ChevronLeft className="w-5 h-5 text-cyan-500" />
-                </button>
-                <div className="relative">
-                  <Calendar className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent min-w-[140px]"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => changeDay(1)}
-                  className="p-2 rounded-full hover:bg-cyan-100 transition-colors"
-                  title="DÃƒÂ­a siguiente"
-                >
-                  <ChevronRight className="w-5 h-5 text-cyan-500" />
-                </button>
-              </div>
-
               {/* Dropdown de ordenamiento */}
               <div className="relative">
                 <button
@@ -811,7 +1058,7 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
                 )}
               </div>
 
-              {/* BotÃƒÂ³n de filtros */}
+              {/* Botón de filtros */}
               <button
                 onClick={() => {
                   setShowFiltersPanel(!showFiltersPanel);
@@ -831,14 +1078,9 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
                   <span className="bg-white text-cyan-600 text-xs px-2 py-0.5 rounded-full font-bold">
                     {[
                       searchTerm && 1,
-                      selectedDate && 1,
-                      filters.estado !== 'todos' && 1,
-                      filters.sucursal !== 'todos' && 1,
-                      filters.optometrista !== 'todos' && 1,
+                      filters.iconCategory !== 'todos' && 1,
                       filters.fechaDesde && 1,
-                      filters.fechaHasta && 1,
-                      filters.horaDesde && 1,
-                      filters.horaHasta && 1
+                      filters.fechaHasta && 1
                     ].filter(Boolean).length}
                   </span>
                 )}
@@ -846,11 +1088,11 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
             </div>
           </div>
 
-          {/* InformaciÃƒÂ³n de resultados */}
+          {/* Información de resultados */}
           <div className="mt-3 flex items-center justify-between text-sm text-gray-600">
             <span>
-              {filteredAndSortedCitas.length} cita{filteredAndSortedCitas.length !== 1 ? 's' : ''} 
-              {hasActiveFilters() && ` (filtrada${filteredAndSortedCitas.length !== 1 ? 's' : ''} de ${citas.length})`}
+              {filteredAndSortedCategorias.length} categoría{filteredAndSortedCategorias.length !== 1 ? 's' : ''} 
+              {hasActiveFilters() && ` (filtrado${filteredAndSortedCategorias.length !== 1 ? 's' : ''} de ${categorias.length})`}
             </span>
             {hasActiveFilters() && (
               <button
@@ -881,65 +1123,27 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {/* Filtro por Estado */}
+                {/* Filtro por Categoría de Icono */}
                 <div>
-                  <label htmlFor="filter-estado" className="block text-sm font-medium text-gray-700 mb-2">
-                    Estado
+                  <label htmlFor="filter-icon-category" className="block text-sm font-medium text-gray-700 mb-2">
+                    Categoría de Icono
                   </label>
                   <select
-                    id="filter-estado"
-                    value={filters.estado}
-                    onChange={(e) => handleFilterChange('estado', e.target.value)}
+                    id="filter-icon-category"
+                    value={filters.iconCategory}
+                    onChange={(e) => handleFilterChange('iconCategory', e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                   >
-                    <option value="todos">Todos los estados</option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="programada">Programada</option>
-                    <option value="confirmada">Confirmada</option>
-                    <option value="completada">Completada</option>
-                    <option value="cancelada">Cancelada</option>
-                  </select>
-                </div>
-
-                {/* Filtro por Sucursal */}
-                <div>
-                  <label htmlFor="filter-sucursal" className="block text-sm font-medium text-gray-700 mb-2">
-                    Sucursal
-                  </label>
-                  <select
-                    id="filter-sucursal"
-                    value={filters.sucursal}
-                    onChange={(e) => handleFilterChange('sucursal', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todas las sucursales</option>
-                    {uniqueSucursales.map(sucursal => (
-                      <option key={sucursal._id} value={sucursal._id}>{sucursal.nombre}</option>
+                    <option value="todos">Todas las categorías</option>
+                    {uniqueIconCategories.map(category => (
+                      <option key={category} value={category}>{category}</option>
                     ))}
                   </select>
                 </div>
 
-                {/* Filtro por Optometrista */}
-                <div>
-                  <label htmlFor="filter-optometrista" className="block text-sm font-medium text-gray-700 mb-2">
-                    Optometrista
-                  </label>
-                  <select
-                    id="filter-optometrista"
-                    value={filters.optometrista}
-                    onChange={(e) => handleFilterChange('optometrista', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                  >
-                    <option value="todos">Todos los optometristas</option>
-                    {uniqueOptometristas.map(opt => (
-                      <option key={opt._id} value={opt._id}>{getOptometristaNombre(opt)}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Filtro por Rango de Fechas */}
+                {/* Filtro por Fecha de Registro */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Fechas</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Registro</label>
                   <div className="flex space-x-2">
                     <div className="flex-1">
                       <input
@@ -965,30 +1169,9 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
                     <span>Hasta</span>
                   </div>
                 </div>
-
-                {/* Filtro por Rango de Horas */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Rango de Horas</label>
-                  <div className="flex space-x-2">
-                    <input
-                      type="time"
-                      value={filters.horaDesde}
-                      onChange={(e) => handleFilterChange('horaDesde', e.target.value)}
-                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      aria-label="Hora desde"
-                    />
-                    <input
-                      type="time"
-                      value={filters.horaHasta}
-                      onChange={(e) => handleFilterChange('horaHasta', e.target.value)}
-                      className="w-1/2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
-                      aria-label="Hora hasta"
-                    />
-                  </div>
-                </div>
               </div>
 
-              {/* Botones de acciÃƒÂ³n del panel de filtros */}
+              {/* Botones de acción del panel de filtros */}
               <div className="mt-6 flex justify-end space-x-3">
                 <button
                   onClick={clearAllFilters}
@@ -1007,196 +1190,198 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
           </div>
         )}
 
+        {/* Tabla */}
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-cyan-500 text-white">
               <tr>
-                <th className="px-6 py-4 text-left font-semibold">Cliente</th>
-                <th className="px-6 py-4 text-left font-semibold">Servicio</th>
-                <th className="px-6 py-4 text-left font-semibold">Optometrista</th>
-                <th className="px-6 py-4 text-left font-semibold">Fecha y Hora</th>
-                <th className="px-6 py-4 text-left font-semibold">Sucursal</th>
-                <th className="px-6 py-4 text-left font-semibold">Estado</th>
+                <th className="px-6 py-4 text-left font-semibold">Nombre</th>
+                <th className="px-6 py-4 text-left font-semibold">Descripción</th>
+                <th className="px-6 py-4 text-left font-semibold">Icono</th>
+                <th className="px-6 py-4 text-left font-semibold">Fecha Creación</th>
                 <th className="px-6 py-4 text-left font-semibold">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {currentCitas.map((cita) => {
-                const estadoInfo = getEstadoInfo(cita.estado);
-                const clienteNombre = (cita.clienteId && (cita.clienteId.nombre || cita.clienteId.apellido))
-                  ? `${cita.clienteId.nombre || ''} ${cita.clienteId.apellido || ''}`.trim()
-                  : `${cita.clienteNombre || ''} ${cita.clienteApellidos || ''}`.trim();
-                const sucursalNombre = cita.sucursalId ? (cita.sucursalId.nombre || '') : '';
-                const optometristaNombre = resolveOptometristaNombre(cita.optometristaId);
-                const servicio = cita.motivoCita || '';
-                
-                return (
-                  <tr key={cita._id || cita.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <User className="w-5 h-5 text-gray-400" />
-                        <span className="font-medium text-gray-900">{clienteNombre || 'Anónimo'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-gray-600">{servicio || 'N/A'}</td>
-                    <td className="px-6 py-4 text-gray-600">{optometristaNombre}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <Clock className="w-5 h-5 text-gray-400" />
-                        <div>
-                          <div className="font-medium text-gray-900">{cita.fechaFormatted}</div>
-                          <div className="text-sm text-gray-500">{cita.hora}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="w-5 h-5 text-gray-400" />
-                        <span className="text-gray-800">{sucursalNombre || 'N/A'}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-1.5 ${estadoInfo.color}`}>
-                        {estadoInfo.icon}
-                        <span>{cita.estado}</span>
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button 
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
-                          title="Eliminar" 
-                          onClick={() => handleDelete(cita)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                        <button 
-                          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
-                          title="Ver detalles" 
-                          onClick={() => handleShowDetail(cita)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button 
-                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
-                          title="Editar" 
-                          onClick={() => handleOpenEditModal(cita)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+              {currentCategorias.map((categoria) => (
+                <tr key={categoria._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-gray-900">{categoria.nombre}</td>
+                  <td className="px-6 py-4 text-gray-600">{categoria.descripcion}</td>
+                  <td className="px-6 py-4">
+                    <div className="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center text-cyan-600">
+                      {getIconComponent(categoria.icono)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-gray-600">
+                    {categoria.fechaRegistro}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex space-x-2">
+                      <button 
+                        onClick={() => requestDeleteCategoria(categoria._id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors" 
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => openDetailModal(categoria)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
+                        title="Ver detalles"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button 
+                        onClick={() => openEditModal(categoria)}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors" 
+                        title="Editar"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
 
-        {filteredAndSortedCitas.length === 0 && (
+        {/* Mensaje cuando no hay resultados */}
+        {filteredAndSortedCategorias.length === 0 && !loading && (
           <div className="p-8 text-center">
-            <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <Tags className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No se encontraron citas
+              No se encontraron categorías
             </h3>
             <p className="text-gray-500">
-              {hasActiveFilters() ? 'Intenta con otros filtros o busca un nuevo cliente.' : 'Comienza agendando una nueva cita'}
+              {hasActiveFilters() ? 'Intenta ajustar los filtros de búsqueda' : 'Comienza creando tu primera categoría'}
             </p>
           </div>
         )}
 
-        <div className="mt-4 flex flex-col items-center gap-4 pb-6">
-          <div className="flex items-center gap-2">
-            <span className="text-gray-700">Mostrar</span>
-            <select
-              value={pageSize}
-              onChange={e => {
-                setPageSize(Number(e.target.value));
-                setCurrentPage(0);
-              }}
-              className="border border-cyan-500 rounded py-1 px-2"
-            >
-              {[5, 10, 15, 20].map(size => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </select>
-            <span className="text-gray-700">por pÃƒÂ¡gina</span>
+        {/* Controles de paginación */}
+        {filteredAndSortedCategorias.length > 0 && (
+          <div className="px-6 py-4 border-t bg-gray-50">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-700">Mostrar</span>
+                <select
+                  value={pageSize}
+                  onChange={e => {
+                    setPageSize(Number(e.target.value));
+                    setCurrentPage(0);
+                  }}
+                  className="border border-gray-300 rounded py-1 px-2 focus:ring-2 focus:ring-cyan-500"
+                >
+                  {[5, 10, 15, 20].map(size => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-gray-700">por página</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={goToFirstPage}
+                  disabled={currentPage === 0}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {"<<"}
+                </button>
+                <button
+                  onClick={goToPreviousPage}
+                  disabled={currentPage === 0}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {"<"}
+                </button>
+                <span className="text-gray-700 font-medium">
+                  Página {currentPage + 1} de {totalPages}
+                </span>
+                <button
+                  onClick={goToNextPage}
+                  disabled={currentPage === totalPages - 1}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {">"}
+                </button>
+                <button
+                  onClick={goToLastPage}
+                  disabled={currentPage === totalPages - 1}
+                  className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50 transition-colors"
+                >
+                  {">>"}
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button onClick={goToFirstPage} disabled={currentPage === 0} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{"<<"}</button>
-            <button onClick={goToPreviousPage} disabled={currentPage === 0} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{"<"}</button>
-            <span className="text-gray-700 font-medium">PÃƒÂ¡gina {currentPage + 1} de {totalPages}</span>
-            <button onClick={goToNextPage} disabled={currentPage === totalPages - 1} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{">"}</button>
-            <button onClick={goToLastPage} disabled={currentPage === totalPages - 1} className="px-4 py-2 bg-cyan-500 text-white rounded hover:bg-cyan-600 disabled:opacity-50">{">>"}</button>
+        )}
+      </div>
+
+      {/* Vista de cards alternativa */}
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="bg-cyan-500 text-white p-6">
+          <h3 className="text-xl font-bold">Vista Rápida de Categorías</h3>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredAndSortedCategorias.slice(0, 6).map((categoria) => (
+              <div key={`card-${categoria._id}`} className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors cursor-pointer" onClick={() => openDetailModal(categoria)}>
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 bg-cyan-100 rounded-lg flex items-center justify-center text-cyan-600">
+                    {getIconComponent(categoria.icono)}
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900">{categoria.nombre}</h4>
+                    <p className="text-sm text-gray-500 truncate">{categoria.descripcion}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* MODAL DE ALTA/EDICIÃƒâ€œN */}
-      <CitasFormModal
-        isOpen={showAddModal || showEditModal}
-        onClose={handleCloseModal}
-        onSubmit={handleSubmit}
-        title={selectedCita ? 'Editar Cita' : 'Agendar Cita'}
+      {/* Modales */}
+      <FormModal
+        isOpen={showAddModal}
+        onClose={closeModals}
+        onSubmit={handleCreate}
+        title="Agregar Nueva Categoría"
         formData={formData}
         handleInputChange={handleInputChange}
-        errors={errors}
-        submitLabel={selectedCita ? 'Guardar cambios' : 'Agendar'}
-        clientes={clientes}
-        optometristas={optometristas}
-        sucursales={sucursales}
-        selectedCita={selectedCita}
+        errors={formErrors}
+        submitLabel="Crear Categoría"
       />
-      
-      {/* MODAL DE DETALLE DE CITA */}
+
+      <FormModal
+        isOpen={showEditModal}
+        onClose={closeModals}
+        onSubmit={handleUpdate}
+        title="Editar Categoría"
+        formData={formData}
+        handleInputChange={handleInputChange}
+        errors={formErrors}
+        submitLabel="Actualizar Categoría"
+        isEditing={true}
+      />
+
       <DetailModal
         isOpen={showDetailModal}
-        onClose={() => setShowDetailModal(false)}
-        title="Detalle de Cita"
-        item={detailCita}
-        data={[
-          { label: 'Cliente', value: detailCita && detailCita.clienteId ? `${detailCita.clienteId.nombre || ''} ${detailCita.clienteId.apellido || ''}`.trim() : 'N/A' },
-          { label: 'Forma de Contacto', value: (() => {
-            const fc = detailCita?.formaContacto || (detailCita?.telefono ? 'telefono' : (detailCita?.email ? 'email' : null));
-            return fc === 'telefono' ? 'Número Telefónico' : fc === 'email' ? 'Correo Electrónico' : 'N/A';
-          })() },
-          { label: 'Teléfono', value: detailCita && detailCita.telefono ? detailCita.telefono : 'N/A' },
-          { label: 'Correo', value: detailCita && detailCita.email ? detailCita.email : 'N/A' },
-          { label: 'Optometrista', value: detailCita ? resolveOptometristaNombre(detailCita.optometristaId) : 'N/A' },
-          { label: 'Sucursal', value: detailCita && detailCita.sucursalId ? detailCita.sucursalId.nombre : 'N/A' },
-          { label: 'Fecha', value: detailCita && detailCita.fecha ? (new Date(detailCita.fecha)).toLocaleDateString() : 'N/A' },
-          { label: 'Hora', value: detailCita && detailCita.hora ? detailCita.hora : 'N/A' },
-          { label: 'Estado', value: detailCita && detailCita.estado ? detailCita.estado : 'N/A' },
-          { label: 'Motivo de la cita', value: detailCita && detailCita.motivoCita ? detailCita.motivoCita : 'N/A' },
-          { label: 'Tipo de lente', value: detailCita && detailCita.tipoLente ? detailCita.tipoLente : 'N/A' },
-          { label: 'Graduación', value: detailCita && detailCita.graduacion ? detailCita.graduacion : 'N/A' },
-          { label: 'Notas adicionales', value: detailCita && detailCita.notasAdicionales ? detailCita.notasAdicionales : 'N/A' },
-        ]}
-        actions={[
-          {
-            label: 'Editar',
-            onClick: () => detailCita && handleOpenEditModal(detailCita),
-            color: 'green',
-            icon: <Edit className="w-4 h-4 inline-block align-middle" />
-          },
-          {
-            label: 'Eliminar',
-            onClick: () => detailCita && handleDelete(detailCita),
-            color: 'red',
-            icon: <Trash2 className="w-4 h-4 inline-block align-middle" />
-          }
-        ]}
+        onClose={closeModals}
+        categoria={selectedCategoria}
       />
-      
-      {/* MODAL DE CONFIRMACIÃƒâ€œN DE ELIMINAR CITA */}
+
       <ConfirmationModal
-        isOpen={confirmDelete.open}
-        onClose={() => setConfirmDelete({ open: false, cita: null })}
-        onConfirm={confirmDeleteCita}
-        title="Ã‚Â¿EstÃƒÂ¡s seguro de eliminar la cita?"
-        message="Esta acciÃƒÂ³n eliminarÃƒÂ¡ la cita de forma permanente."
+        isOpen={showDeleteModal}
+        onClose={() => { 
+          setShowDeleteModal(false); 
+          setCategoriaToDelete(null); 
+        }}
+        onConfirm={confirmDeleteCategoria}
+        title="Confirmar Eliminación"
+        message="¿Está seguro de que desea eliminar esta categoría? Esta acción no se puede deshacer."
       />
 
       {/* OVERLAY PARA DROPDOWN */}
@@ -1211,7 +1396,4 @@ showNotification(`Cita de ${clienteNombre} eliminada permanentemente.`, 'delete'
   );
 };
 
-export default CitasContent;
-
-
-
+export default CategoriasContent;

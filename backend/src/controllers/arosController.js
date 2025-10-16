@@ -46,47 +46,133 @@ async function getAros(req, res) {
 
 // INSERT - Crea nuevos aros con imágenes y datos básicos
 async function createAros(req, res) {
+    console.log('╔════════════════════════════════════════╗');
+    console.log('║   ➕ CREATE AROS - BACKEND            ║');
+    console.log('╚════════════════════════════════════════╝');
+    
+    console.log('\n📥 req.body recibido:', JSON.stringify(req.body, null, 2));
+    console.log('📥 Content-Type:', req.headers['content-type']);
+
+    // Parsear sucursales
     let sucursales = req.body.sucursales;
+    console.log('🏪 sucursales raw (tipo):', typeof sucursales);
+    
     if (typeof sucursales === "string") {
-        try { sucursales = JSON.parse(sucursales); } 
-        catch (e) { return res.json({ message: "Error en el formato de sucursales" }); }
+        try { 
+            sucursales = JSON.parse(sucursales);
+            console.log('✅ Sucursales parseadas:', sucursales);
+        } 
+        catch (e) { 
+            console.error('❌ Error parseando sucursales:', e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: "Error en el formato de sucursales: " + e.message 
+            });
+        }
+    }
+
+    // 🔥 Parsear medidas
+    let medidas = req.body.medidas;
+    console.log('📏 medidas raw (tipo):', typeof medidas);
+    
+    if (typeof medidas === "string") {
+        try {
+            medidas = JSON.parse(medidas);
+            console.log('✅ Medidas parseadas:', medidas);
+        } catch (e) {
+            console.error('❌ Error parseando medidas:', e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: "Error en el formato de medidas: " + e.message 
+            });
+        }
+    }
+
+    // 🔥 Parsear imágenes
+    let imagenes = req.body.imagenes;
+    console.log('🖼️ imagenes raw (tipo):', typeof imagenes);
+    
+    if (typeof imagenes === "string") {
+        try {
+            imagenes = JSON.parse(imagenes);
+            console.log('✅ Imágenes parseadas, cantidad:', imagenes?.length);
+        } catch (e) {
+            console.error('❌ Error parseando imágenes:', e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: "Error en el formato de imágenes: " + e.message 
+            });
+        }
     }
 
     const {
         nombre, descripcion, categoriaId, marcaId, material, color, tipoLente,
-        precioBase, precioActual, linea, medidas, enPromocion, promocionId, fechaCreacion,
+        precioBase, precioActual, linea, enPromocion, promocionId, fechaCreacion,
     } = req.body;
 
     let imagenesURLs = [];
 
     try {
+        // Subir archivos si los hay (aunque Cloudinary se maneja desde frontend)
         if (req.files && req.files.length > 0) {
             for (const file of req.files) {
                 const result = await cloudinary.uploader.upload(file.path, {
-                    folder: "lentes", // mantener carpeta por compatibilidad
+                    folder: "lentes",
                     allowed_formats: ["png", "jpg", "jpeg", "webp"]
                 });
                 imagenesURLs.push(result.secure_url);
             }
-        } else if (req.body.imagenes) {
-            imagenesURLs = Array.isArray(req.body.imagenes) ? req.body.imagenes : [req.body.imagenes];
+        } else if (imagenes && Array.isArray(imagenes)) {
+            imagenesURLs = imagenes;
         }
 
+        // 🔥 Normalizar medidas a números
+        const medidasNormalizadas = medidas ? {
+            anchoPuente: Number(medidas.anchoPuente) || 0,
+            altura: Number(medidas.altura) || 0,
+            ancho: Number(medidas.ancho) || 0
+        } : { anchoPuente: 0, altura: 0, ancho: 0 };
+
+        console.log('📏 Medidas normalizadas:', medidasNormalizadas);
+
+        // Normalizar sucursales
+        const sucursalesNormalizadas = Array.isArray(sucursales) 
+            ? sucursales.map(s => ({
+                sucursalId: s.sucursalId,
+                nombreSucursal: s.nombreSucursal || '',
+                stock: Number(s.stock) || 0
+            }))
+            : [];
+
         const newAros = new Aros({
-            nombre, descripcion, categoriaId, marcaId, material, color, tipoLente,
-            precioBase, precioActual, linea, medidas,
+            nombre, 
+            descripcion, 
+            categoriaId, 
+            marcaId, 
+            material, 
+            color, 
+            tipoLente,
+            precioBase: Number(precioBase),
+            precioActual: Number(precioActual || precioBase),
+            linea, 
+            medidas: medidasNormalizadas,
             imagenes: imagenesURLs,
-            enPromocion: enPromocion || false,
-            promocionId: enPromocion ? promocionId : undefined,
-            fechaCreacion,
-            sucursales: sucursales || []
+            enPromocion: enPromocion === 'true' || enPromocion === true || false,
+            promocionId: (enPromocion === 'true' || enPromocion === true) ? promocionId : undefined,
+            fechaCreacion: fechaCreacion || new Date().toISOString().split('T')[0],
+            sucursales: sucursalesNormalizadas
         });
 
         await newAros.save();
-        res.json({ message: "Aros guardado" });
+        console.log('✅ Aro creado exitosamente');
+        res.json({ success: true, message: "Aro guardado", data: newAros });
     } catch (error) {
-        console.log("Error: " + error);
-        res.json({ message: "Error creando aros: " + error.message });
+        console.error("❌ Error creando aros:", error);
+        const status = error.name === 'ValidationError' ? 400 : 500;
+        res.status(status).json({ 
+            success: false, 
+            message: "Error creando aros: " + error.message 
+        });
     }
 }
 
@@ -106,31 +192,100 @@ async function deleteAros(req, res) {
 
 // UPDATE - Actualiza aros existentes
 async function updateAros(req, res) {
+    console.log('╔════════════════════════════════════════╗');
+    console.log('║   🔧 UPDATE AROS - BACKEND            ║');
+    console.log('╚════════════════════════════════════════╝');
+    
+    console.log('\n📥 req.body recibido:', JSON.stringify(req.body, null, 2));
+    console.log('📥 req.params.id:', req.params.id);
+    console.log('📥 Content-Type:', req.headers['content-type']);
+    
+    // CRÍTICO: Validar que req.body existe
+    if (!req.body || Object.keys(req.body).length === 0) {
+        console.error('❌ req.body está vacío o undefined');
+        return res.status(400).json({ 
+            success: false, 
+            message: 'No se recibieron datos en el body' 
+        });
+    }
+    
+    // Parsear sucursales
     let sucursales = req.body.sucursales;
-    try { console.log('[updateAros] params.id:', req.params.id); } catch {}
-    try { console.log('[updateAros] raw sucursales:', typeof req.body.sucursales, req.body.sucursales); } catch {}
-
+    console.log('🏪 sucursales raw (tipo):', typeof sucursales);
+    console.log('🏪 sucursales raw (valor):', sucursales);
+    
     if (typeof sucursales === "string") {
-        try { sucursales = JSON.parse(sucursales); } 
-        catch (e) { return res.json({ message: "Error en el formato de sucursales" }); }
+        try {
+            sucursales = JSON.parse(sucursales);
+            console.log('✅ Sucursales parseadas:', sucursales);
+        } catch (e) {
+            console.error('❌ Error parseando sucursales:', e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: "Error en el formato de sucursales: " + e.message 
+            });
+        }
+    }
+    
+    // Validar que sucursales existe después del parsing
+    if (!sucursales) {
+        console.error('❌ Sucursales es undefined después del parsing');
+        return res.status(400).json({ 
+            success: false, 
+            message: 'El campo sucursales es requerido' 
+        });
+    }
+
+    // 🔥 Parsear medidas
+    let medidas = req.body.medidas;
+    console.log('📏 medidas raw (tipo):', typeof medidas);
+    console.log('📏 medidas raw (valor):', medidas);
+    
+    if (typeof medidas === "string") {
+        try {
+            medidas = JSON.parse(medidas);
+            console.log('✅ Medidas parseadas:', medidas);
+        } catch (e) {
+            console.error('❌ Error parseando medidas:', e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: "Error en el formato de medidas: " + e.message 
+            });
+        }
+    }
+
+    // 🔥 Parsear imágenes
+    let imagenes = req.body.imagenes;
+    console.log('🖼️ imagenes raw (tipo):', typeof imagenes);
+    
+    if (typeof imagenes === "string") {
+        try {
+            imagenes = JSON.parse(imagenes);
+            console.log('✅ Imágenes parseadas, cantidad:', imagenes?.length);
+        } catch (e) {
+            console.error('❌ Error parseando imágenes:', e.message);
+            return res.status(400).json({ 
+                success: false,
+                message: "Error en el formato de imágenes: " + e.message 
+            });
+        }
     }
 
     const {
         nombre, descripcion, categoriaId, marcaId, material, color, tipoLente,
-        precioBase, precioActual, linea, medidas, enPromocion, promocionId, fechaCreacion,
+        precioBase, precioActual, linea, enPromocion, promocionId, fechaCreacion,
     } = req.body;
 
-    let imagenesURLs = req.body.imagenes || [];
-
     try {
+        // Si se enviaron archivos nuevos
         if (req.files && req.files.length > 0) {
-            imagenesURLs = [];
+            imagenes = [];
             for (const file of req.files) {
                 const result = await cloudinary.uploader.upload(file.path, {
                     folder: "lentes",
                     allowed_formats: ["png", "jpg", "jpeg", "webp"]
                 });
-                imagenesURLs.push(result.secure_url);
+                imagenes.push(result.secure_url);
             }
         }
 
@@ -153,13 +308,17 @@ async function updateAros(req, res) {
 
         let sucursalesLimpias = [];
         if (Array.isArray(sucursales)) {
+            console.log('🔄 Procesando', sucursales.length, 'sucursales...');
             sucursalesLimpias = sucursales
                 .map((s) => {
                     const id = (s && s.sucursalId && typeof s.sucursalId === 'object' && s.sucursalId._id)
                         ? s.sucursalId._id : s?.sucursalId;
                     const idStr = typeof id === 'string' ? id : '';
                     const valido = /^[a-fA-F0-9]{24}$/.test(idStr);
-                    if (!valido) return null;
+                    if (!valido) {
+                        console.warn('⚠️ Sucursal con ID inválido:', s);
+                        return null;
+                    }
                     return {
                         sucursalId: idStr,
                         nombreSucursal: s?.nombreSucursal || '',
@@ -167,30 +326,52 @@ async function updateAros(req, res) {
                     };
                 })
                 .filter(Boolean);
+            console.log('✅ Sucursales procesadas:', sucursalesLimpias.length);
+        } else {
+            console.error('❌ sucursales no es un array:', typeof sucursales);
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Sucursales debe ser un array' 
+            });
         }
 
+        // 🔥 CRÍTICO: Parsear medidas a números
+        const medidasNormalizadas = medidas ? {
+            anchoPuente: Number(medidas.anchoPuente) || 0,
+            altura: Number(medidas.altura) || 0,
+            ancho: Number(medidas.ancho) || 0
+        } : undefined;
+
+        console.log('📏 Medidas normalizadas:', medidasNormalizadas);
+
         const setData = {
-            nombre, descripcion,
+            nombre, 
+            descripcion,
             categoriaId: categoriaIdNorm,
             marcaId: marcaIdNorm,
-            material, color, tipoLente,
-            precioBase, precioActual,
-            linea, medidas,
-            imagenes: imagenesURLs,
-            enPromocion: !!enPromocion,
+            material, 
+            color, 
+            tipoLente,
+            precioBase: Number(precioBase),
+            precioActual: Number(precioActual),
+            linea,
+            medidas: medidasNormalizadas,
+            imagenes: imagenes || [],
+            enPromocion: enPromocion === 'true' || enPromocion === true,
             promocionId: promocionIdNorm,
             fechaCreacion,
             sucursales: sucursalesLimpias
         };
+        
         Object.keys(setData).forEach((k) => {
             if (typeof setData[k] === 'undefined') delete setData[k];
         });
 
         let shouldUnsetPromo = false;
-        if (enPromocion === false) {
+        if (enPromocion === false || enPromocion === 'false') {
             setData.enPromocion = false;
             shouldUnsetPromo = true;
-        } else if (enPromocion === true) {
+        } else if (enPromocion === true || enPromocion === 'true') {
             setData.enPromocion = true;
             if (promocionIdNorm) setData.promocionId = promocionIdNorm;
         }
@@ -201,6 +382,8 @@ async function updateAros(req, res) {
             delete setData.promocionId;
         }
 
+        console.log('📤 Actualizando documento con', Object.keys(setData).length, 'campos');
+        
         const updated = await Aros.findByIdAndUpdate(
             req.params.id,
             updateDoc,
@@ -211,9 +394,10 @@ async function updateAros(req, res) {
             return res.status(404).json({ success: false, message: "Aro no encontrado" });
         }
 
+        console.log('✅ Aro actualizado exitosamente');
         res.json({ success: true, message: "Aro actualizado", data: updated });
     } catch (error) {
-        console.log("Error actualizando aros: ", error);
+        console.error("❌ Error actualizando aros:", error);
         const status = error.name === 'ValidationError' ? 400 : 500;
         res.status(status).json({ success: false, message: "Error actualizando aros: " + error.message });
     }

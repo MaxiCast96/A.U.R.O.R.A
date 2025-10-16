@@ -73,36 +73,106 @@ const PhotoUploadComponent = ({ currentPhoto, onPhotoChange, employeeName = '' }
   );
 };
 
+// 🔥 COMPONENTE MEJORADO - Password Field con control de edición
 const PasswordField = ({ value, onChange, error, isEditing = false }) => {
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // 🔥 Función para cancelar edición de password
+  const handleCancelEdit = () => {
+    setIsEditingPassword(false);
+    // Limpiar el valor de password
+    onChange({
+      target: {
+        name: 'password',
+        value: ''
+      }
+    });
+  };
+
+  // 🔥 Si estamos editando y NO estamos cambiando la contraseña
   if (isEditing && !isEditingPassword) {
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700">Contraseña</label>
         <div className="w-full px-4 py-3 bg-gray-50 border rounded-lg flex items-center justify-between">
-            <div className="flex items-center space-x-3"><Lock className="w-5 h-5 text-gray-400" /><span>••••••••</span></div>
-            <button type="button" onClick={() => setIsEditingPassword(true)} className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded-lg flex items-center space-x-2"><Edit3 className="w-4 h-4" /><span>Cambiar</span></button>
+            <div className="flex items-center space-x-3">
+              <Lock className="w-5 h-5 text-gray-400" />
+              <span className="text-gray-600">••••••••</span>
+            </div>
+            <button 
+              type="button" 
+              onClick={() => setIsEditingPassword(true)} 
+              className="px-3 py-1 bg-cyan-500 hover:bg-cyan-600 text-white text-sm rounded-lg flex items-center space-x-2 transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Cambiar</span>
+            </button>
         </div>
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>La contraseña actual se mantendrá si no la cambias</span>
+        </p>
       </div>
     );
   }
 
+  // 🔥 Modo de edición de contraseña (crear o editar activo)
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{isEditing ? 'Nueva Contraseña' : 'Contraseña *'}</label>
+      <label className="block text-sm font-medium text-gray-700">
+        {isEditing ? 'Nueva Contraseña' : 'Contraseña *'}
+      </label>
       <div className="relative">
-        <input type={showPassword ? 'text' : 'password'} name="password" value={value} onChange={onChange}
-            className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 ${error ? 'border-red-500' : 'border-gray-300'}`}
-            placeholder="Ingrese la contraseña" autoComplete="new-password" minLength="6" maxLength="50" />
-        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">{showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}</button>
+        <input 
+          type={showPassword ? 'text' : 'password'} 
+          name="password" 
+          value={value || ''} 
+          onChange={onChange}
+          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-cyan-500 ${
+            error ? 'border-red-500' : 'border-gray-300'
+          }`}
+          placeholder={isEditing ? "Ingrese nueva contraseña (mín. 6 caracteres)" : "Ingrese la contraseña"} 
+          autoComplete="new-password" 
+          minLength={isEditing ? undefined : "6"}
+          maxLength="50" 
+        />
+        <button 
+          type="button" 
+          onClick={() => setShowPassword(!showPassword)} 
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+        >
+          {showPassword ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+        </button>
       </div>
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      
+      {/* 🔥 Botón para cancelar el cambio de contraseña */}
+      {isEditing && isEditingPassword && (
+        <button
+          type="button"
+          onClick={handleCancelEdit}
+          className="text-xs text-cyan-600 hover:text-cyan-700 underline flex items-center space-x-1"
+        >
+          <X className="w-3 h-3" />
+          <span>Cancelar cambio de contraseña</span>
+        </button>
+      )}
+      
+      {error && <p className="text-red-500 text-sm flex items-center space-x-1">
+        <AlertCircle className="w-4 h-4" />
+        <span>{error}</span>
+      </p>}
+      
       {!isEditing && (
         <p className="text-xs text-gray-500 flex items-center space-x-1">
           <AlertCircle className="w-3 h-3" />
           <span>Debe tener entre 6 y 50 caracteres</span>
+        </p>
+      )}
+      {isEditing && isEditingPassword && (
+        <p className="text-xs text-gray-500 flex items-center space-x-1">
+          <AlertCircle className="w-3 h-3" />
+          <span>Mínimo 6 caracteres. Déjalo vacío para mantener la contraseña actual</span>
         </p>
       )}
     </div>
@@ -111,13 +181,8 @@ const PasswordField = ({ value, onChange, error, isEditing = false }) => {
 
 // Función para formatear DUI automáticamente
 const formatDUI = (value) => {
-  // Remover todo lo que no sean números
   const numbers = value.replace(/\D/g, '');
-  
-  // Limitar a 9 dígitos máximo
   const limitedNumbers = numbers.slice(0, 9);
-  
-  // Aplicar formato: 12345678-9
   if (limitedNumbers.length <= 8) {
     return limitedNumbers;
   } else {
@@ -145,20 +210,19 @@ const isValidPhone = (phone) => {
 
 // Función para validar nombre/apellido
 const isValidName = (name) => {
-  return name && name.trim().length >= 2 && name.trim().length <= 50 && /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/.test(name.trim());
+  return name && name.trim().length >= 2 && name.trim().length <= 50 && /^[a-zA-ZáéíóúÁÉÍÓÚñÑ'\s]+$/.test(name.trim());
 };
 
 // Función para validar salario
 const isValidSalary = (salary) => {
   const numSalary = parseFloat(salary);
-  return !isNaN(numSalary) && numSalary >= 365 && numSalary <= 50000; // Salario mínimo SV aprox $365
+  return !isNaN(numSalary) && numSalary >= 365 && numSalary <= 50000;
 };
 
 const EnhancedField = ({ field, value, onChange, error, formData, handleNestedChange, selectedEmpleado }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [validationError, setValidationError] = useState('');
 
-  // Validación en tiempo real mejorada
   const validateField = (fieldValue, fieldType) => {
     switch (fieldType) {
       case 'nombre':
@@ -218,30 +282,25 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
   const handleFieldChange = (e) => {
     let { name, value: inputValue } = e.target;
     
-    // Aplicar formato automático para DUI
     if (name === 'dui') {
       inputValue = formatDUI(inputValue);
       validateField(inputValue, 'dui');
     }
 
-    // Normalizar email a minúsculas
     if (name === 'correo') {
       inputValue = inputValue.toLowerCase().trim();
       validateField(inputValue, 'correo');
     }
 
-    // Limitar nombres y apellidos
     if (name === 'nombre' || name === 'apellido') {
       inputValue = inputValue.slice(0, 50);
       validateField(inputValue, name);
     }
 
-    // Validar teléfono
     if (name === 'telefono') {
       validateField(inputValue, 'telefono');
     }
 
-    // Validar salario
     if (name === 'salario') {
       validateField(inputValue, 'salario');
     }
@@ -249,7 +308,6 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
     if (field.nested) {
       handleNestedChange(field.name, inputValue);
       
-      // Si cambió el departamento, resetear municipio
       if (field.name === 'direccion.departamento' && inputValue !== selectedEmpleado?.direccion?.departamento) {
         handleNestedChange('direccion.municipio', '');
       }
@@ -430,7 +488,6 @@ const EnhancedField = ({ field, value, onChange, error, formData, handleNestedCh
         </p>
       )}
 
-      {/* Mensajes informativos específicos por campo */}
       {field.type === 'email' && (
         <p className="text-xs text-gray-500 flex items-center space-x-1">
           <AlertCircle className="w-3 h-3" />
@@ -475,6 +532,9 @@ const EmpleadosFormModal = ({
     onReturnToOptometristaEdit 
 }) => {
     const [validationErrors, setValidationErrors] = useState({});
+    const [isLoading, setIsLoading] = useState(false);
+    const [isError, setIsError] = useState(false);
+    const [hasValidationErrors, setHasValidationErrors] = useState(false);
     
     const departments = useMemo(() => Object.keys(EL_SALVADOR_DATA), []);
     
@@ -503,7 +563,6 @@ const EmpleadosFormModal = ({
 
     const isMunicipalityDisabled = !formData?.direccion?.departamento;
 
-    // Validación en tiempo real
     const validateField = (name, value) => {
       const newErrors = { ...validationErrors };
 
@@ -615,12 +674,29 @@ const EmpleadosFormModal = ({
           break;
         
         case 'password':
-          if (!selectedEmpleado) { // Solo validar password en creación
+          // 🔥 SOLO validar password si estamos CREANDO o si tiene valor al EDITAR
+          if (!selectedEmpleado) { 
+            // Modo creación: password es obligatorio
             if (!value) {
               newErrors[name] = 'La contraseña es obligatoria';
             } else if (value.length < 6 || value.length > 50) {
               newErrors[name] = 'La contraseña debe tener entre 6 y 50 caracteres';
             } else {
+              delete newErrors[name];
+            }
+          } else {
+            // Modo edición: solo validar SI se está cambiando
+            if (value && value.length > 0) {
+              // Si tiene un hash de bcrypt, es inválido (no debería pasar, pero por seguridad)
+              if (value.startsWith('$2b$') || value.startsWith('$2a$')) {
+                newErrors[name] = 'No se puede usar el hash de contraseña directamente';
+              } else if (value.length < 6 || value.length > 50) {
+                newErrors[name] = 'La contraseña debe tener entre 6 y 50 caracteres';
+              } else {
+                delete newErrors[name];
+              }
+            } else {
+              // Si está vacío en modo edición, es válido (no se cambiará)
               delete newErrors[name];
             }
           }
@@ -636,13 +712,12 @@ const EmpleadosFormModal = ({
       }
 
       setValidationErrors(newErrors);
+      setHasValidationErrors(Object.keys(newErrors).length > 0);
     };
 
-    // Manejar cambios con validación
     const handleValidatedInputChange = (e) => {
       const { name, value } = e.target;
       
-      // Manejar direccion como objeto anidado
       if (name.includes('direccion.')) {
         const fieldName = name.split('.')[1];
         const newDireccion = {
@@ -650,7 +725,6 @@ const EmpleadosFormModal = ({
           [fieldName]: value
         };
         
-        // Si cambia departamento, resetear municipio
         if (fieldName === 'departamento') {
           newDireccion.municipio = '';
         }
@@ -667,7 +741,7 @@ const EmpleadosFormModal = ({
       }
     };
 
-    // Initialize form with employee data when editing
+    // 🔥 useEffect MEJORADO - Inicializar password como vacío al editar
     useEffect(() => {
         if (selectedEmpleado) {
             console.log('Initializing form with employee data:', selectedEmpleado);
@@ -692,6 +766,7 @@ const EmpleadosFormModal = ({
                 ...prev,
                 ...selectedEmpleado,
                 direccion: direccionData,
+                password: '', // 🔥 CRÍTICO: Siempre vacío al editar
                 fechaContratacion: selectedEmpleado.fechaContratacion 
                     ? new Date(selectedEmpleado.fechaContratacion).toISOString().split('T')[0]
                     : '',
@@ -706,20 +781,21 @@ const EmpleadosFormModal = ({
                     departamento: '',
                     municipio: '',
                     direccionDetallada: ''
-                }
+                },
+                password: '' // 🔥 También vacío al crear
             }));
         }
     }, [selectedEmpleado, setFormData]);
 
     const sections = [
-        { title: "  Información Personal", fields: [
+        { title: "📋 Información Personal", fields: [
             { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Juan Carlos', required: true },
             { name: 'apellido', label: 'Apellido', type: 'text', placeholder: 'García López', required: true },
             { name: 'dui', label: 'DUI', type: 'text', placeholder: '12345678-9', required: true },
             { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: '78901234', required: true },
             { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'juan.garcia@email.com', required: true },
         ]},
-        { title: "  Información de Residencia", fields: [
+        { title: "📍 Información de Residencia", fields: [
             { 
                 name: 'direccion.departamento', 
                 label: 'Departamento', 
@@ -749,7 +825,7 @@ const EmpleadosFormModal = ({
                 required: true 
             },
         ]},
-        { title: " Información Laboral", fields: [
+        { title: "💼 Información Laboral", fields: [
             { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursales?.map(s => ({ value: s._id, label: s.nombre })) || [], required: true },
             { name: 'cargo', label: 'Puesto', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
             { name: 'salario', label: 'Salario (USD)', type: 'number', placeholder: '500.00', required: true },
@@ -758,14 +834,19 @@ const EmpleadosFormModal = ({
         ]}
     ];
 
-    const handleFormSubmit = () => {
+    // 🔥 handleFormSubmit MEJORADO - Eliminar password si está vacío
+    const handleFormSubmit = async () => {
         // Validar todos los campos antes de enviar
         const fieldsToValidate = [
             'nombre', 'apellido', 'dui', 'telefono', 'correo', 'cargo', 
             'sucursalId', 'salario', 'fechaContratacion', 'estado',
             'departamento', 'municipio', 'direccionDetallada'
         ];
-        if (!selectedEmpleado) fieldsToValidate.push('password');
+        
+        // 🔥 Solo validar password si estamos creando
+        if (!selectedEmpleado) {
+            fieldsToValidate.push('password');
+        }
 
         fieldsToValidate.forEach(field => {
             let value;
@@ -778,8 +859,40 @@ const EmpleadosFormModal = ({
         });
 
         // Si hay errores de validación, no enviar
-        if (Object.keys(validationErrors).length === 0) {
-            onSubmit();
+        if (Object.keys(validationErrors).length > 0) {
+            setHasValidationErrors(true);
+            return;
+        }
+
+        setHasValidationErrors(false);
+        setIsLoading(true);
+        setIsError(false);
+
+        try {
+            // 🔥 PREPARAR DATOS - Eliminar password si está vacío o es un hash
+            let dataToSubmit = { ...formData };
+            
+            if (selectedEmpleado) {
+                // Al editar: solo incluir password si tiene un valor válido y NO es un hash
+                if (!dataToSubmit.password || 
+                    dataToSubmit.password.trim() === '' || 
+                    dataToSubmit.password.startsWith('$2b') ||
+                    dataToSubmit.password.startsWith('$2a')) {
+                    delete dataToSubmit.password;
+                    console.log('🔒 Password eliminado del payload (edición sin cambio)');
+                } else {
+                    console.log('🔑 Password incluido en payload (cambio detectado)');
+                }
+            } else {
+                console.log('✨ Password incluido en payload (creación nueva)');
+            }
+
+            await onSubmit(dataToSubmit);
+        } catch (error) {
+            setIsError(true);
+            console.error('Error al guardar empleado:', error);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -837,7 +950,6 @@ const EmpleadosFormModal = ({
                                         }
                                         handleNestedChange(field.name, value);
                                         
-                                        // Validar el campo
                                         const fieldName = field.name.split('.')[1] || field.name;
                                         validateField(fieldName, value);
                                     } : handleValidatedInputChange}
@@ -853,7 +965,7 @@ const EmpleadosFormModal = ({
             ))}
             
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">  Acceso y Seguridad</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">🔐 Acceso y Seguridad</h3>
                 <div className="max-w-md">
                     <PasswordField 
                         value={formData?.password || ''} 
@@ -864,7 +976,6 @@ const EmpleadosFormModal = ({
                 </div>
             </div>
             
-            {/* Errores de validación global */}
             {Object.keys(validationErrors).length > 0 && (
                 <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                     <div className="flex items-center space-x-2 mb-2">
@@ -933,7 +1044,10 @@ const EmpleadosFormModal = ({
             fields={[]} 
             gridCols={1} 
             size="xl"
-            submitDisabled={Object.keys(validationErrors).length > 0}
+            isLoading={isLoading}
+            isError={isError}
+            hasValidationErrors={hasValidationErrors}
+            errorDuration={1000}
         >
             {customContent}
         </FormModal>

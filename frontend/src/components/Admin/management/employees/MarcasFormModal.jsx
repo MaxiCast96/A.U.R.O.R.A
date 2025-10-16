@@ -172,7 +172,14 @@ const EnhancedField = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  const getFieldValue = () => value || '';
+  // CORRECCIÓN: Manejar valores array para el campo lineas
+  const getFieldValue = () => {
+    // Si el campo es 'lineas' y el valor es un array, tomar el primer elemento
+    if (field.name === 'lineas' && Array.isArray(value)) {
+      return value[0] || '';
+    }
+    return value || '';
+  };
 
   const inputClasses = `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base ${
     error ? 'border-red-500 bg-red-50' : 
@@ -188,6 +195,21 @@ const EnhancedField = ({
       );
     }
 
+    // CORRECCIÓN: Manejar el onChange para convertir a array si es necesario
+    const handleSelectChange = (e) => {
+      if (field.name === 'lineas') {
+        // Convertir el valor string a array para mantener consistencia con el backend
+        onChange({
+          target: {
+            name: field.name,
+            value: [e.target.value]
+          }
+        });
+      } else {
+        onChange(e);
+      }
+    };
+
     return (
       <div className="space-y-2">
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -196,7 +218,7 @@ const EnhancedField = ({
         <select
           name={field.name}
           value={getFieldValue()}
-          onChange={onChange}
+          onChange={handleSelectChange}
           className={inputClasses}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
@@ -287,6 +309,44 @@ const MarcasFormModal = ({
   selectedMarca = null
 }) => {
   const isEditing = !!selectedMarca;
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+  const [hasValidationErrors, setHasValidationErrors] = useState(false);
+
+  const handleFormSubmit = async (e) => {
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
+
+    // Validar campos requeridos
+    const requiredFields = ['nombre', 'paisOrigen', 'lineas', 'estado'];
+    const hasErrors = requiredFields.some(field => {
+      const value = formData[field];
+      // Para lineas, verificar si es array vacío o string vacío
+      if (field === 'lineas') {
+        return !value || (Array.isArray(value) && value.length === 0);
+      }
+      return !value;
+    });
+    
+    if (hasErrors) {
+      setHasValidationErrors(true);
+      return;
+    }
+
+    setHasValidationErrors(false);
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      await onSubmit(e);
+    } catch (error) {
+      setIsError(true);
+      console.error('Error al guardar marca:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogoChange = (logoUrl) => {
     handleInputChange({
@@ -297,61 +357,61 @@ const MarcasFormModal = ({
     });
   };
 
- const sections = [
+  const sections = [
     {
-        title: "Información General",
-        fields: [
-            { 
-                name: 'nombre', 
-                label: 'Nombre de la Marca', 
-                type: 'text', 
-                required: true,
-                placeholder: 'Ej: Ray-Ban, Oakley, Armani'
-            },
-            { 
-                name: 'paisOrigen', 
-                label: 'País de Origen', 
-                type: 'select',
-                options: [
-                    'Estados Unidos', 'Italia', 'Francia', 'Alemania', 'Suiza',
-                    'Japón', 'China', 'Corea del Sur', 'Brasil', 'España',
-                    'Reino Unido', 'Países Bajos', 'Austria', 'Dinamarca'
-                ],
-                required: true
-            },
-            { 
-                name: 'descripcion', 
-                label: 'Descripción', 
-                type: 'textarea',
-                placeholder: 'Breve descripción de la marca...',
-                className: 'md:col-span-2'
-            },
-        ]
+      title: "Información General",
+      fields: [
+        { 
+          name: 'nombre', 
+          label: 'Nombre de la Marca', 
+          type: 'text', 
+          required: true,
+          placeholder: 'Ej: Ray-Ban, Oakley, Armani'
+        },
+        { 
+          name: 'paisOrigen', 
+          label: 'País de Origen', 
+          type: 'select',
+          options: [
+            'Estados Unidos', 'Italia', 'Francia', 'Alemania', 'Suiza',
+            'Japón', 'China', 'Corea del Sur', 'Brasil', 'España',
+            'Reino Unido', 'Países Bajos', 'Austria', 'Dinamarca'
+          ],
+          required: true
+        },
+        { 
+          name: 'descripcion', 
+          label: 'Descripción', 
+          type: 'textarea',
+          placeholder: 'Breve descripción de la marca...',
+          className: 'md:col-span-2'
+        },
+      ]
     },
     {
-        title: "Líneas de Producto",
-        fields: [
-            {
-                name: 'lineas',
-                label: 'Líneas de Productos',
-                type: 'select', // o 'multi-select' si quieres múltiples selecciones
-                options: ['Premium', 'Económica'],
-                required: true
-            },
-            { 
-                name: 'estado', 
-                label: 'Estado de la Marca', 
-                type: 'select', 
-                options: ['Activa', 'Inactiva', 'Descontinuada'], 
-                required: true 
-            },
-        ]
+      title: "Líneas de Producto",
+      fields: [
+        {
+          name: 'lineas',
+          label: 'Línea de Productos',
+          type: 'select',
+          options: ['Premium', 'Económica'],
+          required: true,
+          placeholder: 'Seleccione la línea'
+        },
+        { 
+          name: 'estado', 
+          label: 'Estado de la Marca', 
+          type: 'select', 
+          options: ['Activa', 'Inactiva', 'Descontinuada'], 
+          required: true 
+        },
+      ]
     }
-];
+  ];
 
   const customContent = (
     <div className="space-y-8">
-      {/* Sección de logo */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
         <LogoUploadComponent 
           currentLogo={formData?.logo}
@@ -369,8 +429,6 @@ const MarcasFormModal = ({
       {sections.map((section, sectionIndex) => (
         <div key={`section-${sectionIndex}`} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200 flex items-center">
-            {sectionIndex === 0 && <Tag className="w-5 h-5 mr-2 text-blue-600" />}
-            {sectionIndex === 1 && <Package className="w-5 h-5 mr-2 text-green-600" />}
             {section.title}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -388,28 +446,6 @@ const MarcasFormModal = ({
           </div>
         </div>
       ))}
-
-      {/* Resumen de la marca */}
-      {formData?.nombre && formData?.paisOrigen && (
-        <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-          <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
-            <Tag className="w-5 h-5 mr-2" />
-            Resumen de la Marca
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p><span className="font-medium">Nombre:</span> {formData.nombre}</p>
-              <p><span className="font-medium">País:</span> {formData.paisOrigen}</p>
-              <p><span className="font-medium">Estado:</span> {formData.estado}</p>
-            </div>
-            <div>
-              <p><span className="font-medium">Logo:</span> {formData.logo ? 'Cargado' : 'No disponible'}</p>
-              <p><span className="font-medium">Sitio Web:</span> {formData.sitioWeb ? 'Configurado' : 'No disponible'}</p>
-              <p><span className="font-medium">Email:</span> {formData.email ? 'Configurado' : 'No disponible'}</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -417,7 +453,7 @@ const MarcasFormModal = ({
     <FormModal
       isOpen={isOpen}
       onClose={onClose}
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       title={title}
       formData={formData}
       handleInputChange={handleInputChange}
@@ -427,6 +463,10 @@ const MarcasFormModal = ({
       fields={[]}
       gridCols={1}
       size="xl"
+      isLoading={isLoading}
+      isError={isError}
+      hasValidationErrors={hasValidationErrors}
+      errorDuration={1000}
     >
       {customContent}
     </FormModal>
