@@ -75,14 +75,42 @@ export const CartProvider = ({ children }) => {
       let imagen = '';
       try {
         const imgCandidates = [];
-        if (Array.isArray(product?.imagenes) && product.imagenes[0]) imgCandidates.push(product.imagenes[0]);
+        // Arrays (could be string or object with secure_url/url/public_id)
+        if (Array.isArray(product?.imagenes) && product.imagenes.length > 0) {
+          imgCandidates.push(product.imagenes[0]);
+        }
+        // Common direct fields
         if (product?.imagen) imgCandidates.push(product.imagen);
         if (product?.imagenUrl) imgCandidates.push(product.imagenUrl);
         if (product?.imageUrl) imgCandidates.push(product.imageUrl);
-        const first = imgCandidates.find(s => typeof s === 'string' && s.trim().length > 0);
-        if (first) {
-          let src = first.trim();
-          if (src.startsWith('/src/pages/public/img/')) src = src.replace('/src/pages/public/img/','/img/');
+        if (product?.image) imgCandidates.push(product.image);
+        if (product?.foto) imgCandidates.push(product.foto);
+
+        // Resolve first usable src from candidates (strings or objects)
+        let src = '';
+        for (const cand of imgCandidates) {
+          if (typeof cand === 'string' && cand.trim().length > 0) {
+            src = cand.trim();
+            break;
+          }
+          if (cand && typeof cand === 'object') {
+            const possible = cand.secure_url || cand.url || (cand.public_id || '').trim();
+            if (possible && typeof possible === 'string') {
+              src = possible.trim();
+              break;
+            }
+          }
+        }
+
+        // Normalize legacy src and Cloudinary public_id
+        if (src) {
+          // Replace legacy dev path under src with public path
+          if (src.startsWith('/src/pages/public/img/')) src = src.replace('/src/pages/public/img/', '/img/');
+          // If it's a bare Cloudinary public_id, build a URL when cloud name is available
+          if (!/^https?:\/\//i.test(src) && !src.startsWith('/') && !src.startsWith('data:')) {
+            const cloud = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_CLOUDINARY_CLOUD_NAME) ? import.meta.env.VITE_CLOUDINARY_CLOUD_NAME : '';
+            if (cloud) src = `https://res.cloudinary.com/${cloud}/image/upload/${src}`;
+          }
           imagen = src;
         }
       } catch (_) {}

@@ -988,6 +988,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     setSelectedColor('todos');
     setPriceRange({ min: 0, max: 10000 });
     setSortBy('nombre');
+    setPromoOnly(false);
     setCurrentPage(1);
   };
 
@@ -1000,6 +1001,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     if (selectedMarca !== 'todos') filters.push(`Marca: ${selectedMarca}`);
     if (selectedMaterial !== 'todos') filters.push(`Material: ${selectedMaterial}`);
     if (selectedColor !== 'todos') filters.push(`Color: ${selectedColor}`);
+    if (promoOnly) filters.push('En promociÃ³n');
     if (priceRange.min > 0 || priceRange.max < 10000) filters.push(`Precio: $${priceRange.min} - $${priceRange.max}`);
     if (sortBy !== 'nombre') filters.push(`Orden: ${sortBy}`);
     
@@ -1485,7 +1487,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     
     const advancedFilters = {
       priceRanges: [
-        { label: 'EconÃ³mico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Economico ($0 - $100)', min: 0, max: 100, count: 0 },
         { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
         { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
         { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }
@@ -1525,7 +1527,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     
     const advancedFilters = {
       priceRanges: [
-        { label: 'EconÃ³mico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Economico ($0 - $100)', min: 0, max: 100, count: 0 },
         { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
         { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
         { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }
@@ -2895,12 +2897,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       </div>
 
       {/* Marca */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Marca</label>
+      <div className="mb-4 rounded-2xl bg-white/95 p-4 ring-1 ring-black/5 shadow-sm">
+        <label className="block text-xs font-semibold tracking-wide text-gray-600 mb-2 uppercase">Marca</label>
         <select
           value={selectedMarca}
           onChange={(e) => setSelectedMarca(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0097c2] bg-white text-sm"
         >
           <option value="todos">Todas las marcas</option>
           {getBackendFilterOptions().brands.map(brand => (
@@ -2912,12 +2914,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       </div>
 
       {/* Material */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Material</label>
+      <div className="mb-4 rounded-2xl bg-white/95 p-4 ring-1 ring-black/5 shadow-sm">
+        <label className="block text-xs font-semibold tracking-wide text-gray-600 mb-2 uppercase">Material</label>
         <select
           value={selectedMaterial || 'todos'}
           onChange={(e) => setSelectedMaterial(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0097c2] bg-white text-sm"
         >
           <option value="todos">Todos los materiales</option>
           {getBackendFilterOptions().materials.map(material => (
@@ -2929,12 +2931,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       </div>
 
       {/* Color */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Color</label>
+      <div className="mb-4 rounded-2xl bg-white/95 p-4 ring-1 ring-black/5 shadow-sm">
+        <label className="block text-xs font-semibold tracking-wide text-gray-600 mb-2 uppercase">Color</label>
         <select
           value={selectedColor || 'todos'}
           onChange={(e) => setSelectedColor(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
+          className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0097c2] bg-white text-sm"
         >
           <option value="todos">Todos los colores</option>
           {getBackendFilterOptions().colors.map(color => (
@@ -2945,19 +2947,33 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         </select>
       </div>
 
+      {/* Promociones */}
+      <div className="mb-4 rounded-2xl bg-white/95 p-4 ring-1 ring-black/5 shadow-sm">
+        <label className="block text-xs font-semibold tracking-wide text-gray-600 mb-2 uppercase">Promociones</label>
+        <label className="inline-flex items-center gap-2 text-sm text-gray-800 select-none">
+          <input
+            type="checkbox"
+            checked={promoOnly}
+            onChange={(e) => setPromoOnly(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-[#0097c2] focus:ring-[#0097c2]"
+          />
+          <span>Solo en promoción</span>
+        </label>
+      </div>
+
       {/* Filtros avanzados */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Rangos de precio</label>
+      <div className="mb-4 rounded-2xl bg-white/95 p-4 ring-1 ring-black/5 shadow-sm">
+        <label className="block text-xs font-semibold tracking-wide text-gray-600 mb-2 uppercase">Rangos de precio</label>
         <div className="space-y-2">
           {getBackendAdvancedFilters().priceRanges.map((range, index) => (
             <button
               key={index}
               onClick={() => applyAdvancedFilter('priceRange', range)}
-              className="w-full text-left p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded border transition-colors"
+              className="w-full text-left px-3 py-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors"
             >
               <div className="flex justify-between items-center">
-                <span>{range.label}</span>
-                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                <span className="text-gray-700">{range.label}</span>
+                <span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-[10px] ring-1 ring-blue-200/60">
                   {range.count}
                 </span>
               </div>
@@ -2966,150 +2982,77 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
         </div>
       </div>
 
-      {/* Rango de precio con slider visual */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Rango de precio: ${priceRange.min} - ${priceRange.max}
-        </label>
-        <div className="flex space-x-2 mb-2">
-          <input
-            type="number"
-            placeholder="Min"
-            value={priceRange.min}
-            onChange={(e) => setPriceRange({...priceRange, min: Number(e.target.value)})}
-            className="w-1/2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
-          />
-          <input
-            type="number"
-            placeholder="Max"
-            value={priceRange.max}
-            onChange={(e) => setPriceRange({...priceRange, max: Number(e.target.value)})}
-            className="w-1/2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
-          />
-        </div>
-        {/* Slider visual del rango de precio */}
-        <div className="relative">
-          <div className="w-full h-2 bg-gray-200 rounded-full">
-            <div 
-              className="h-2 bg-[#0097c2] rounded-full"
-              style={{
-                width: `${((priceRange.max - priceRange.min) / 10000) * 100}%`,
-                marginLeft: `${(priceRange.min / 10000) * 100}%`
-              }}
-            ></div>
-          </div>
-        </div>
-      </div>
+      
 
-      {/* Ordenar por */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Ordenar por</label>
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0097c2]"
-        >
-          <option value="nombre">Nombre A-Z</option>
-          <option value="precio-asc">Precio: Menor a Mayor</option>
-          <option value="precio-desc">Precio: Mayor a Menor</option>
-          <option value="marca">Marca A-Z</option>
-        </select>
-      </div>
-
-      {/* Vista */}
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700 mb-2">Vista</label>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded transition-colors ${viewMode === 'grid' ? 'bg-[#0097c2] text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            title="Vista de cuadrÃ­cula"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-            </svg>
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded transition-colors ${viewMode === 'list' ? 'bg-[#0097c2] text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
-            title="Vista de lista"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      
 
       {/* Filtros activos */}
       {getActiveFilters().length > 0 && (
-        <div className="mb-4 p-3 bg-blue-50 rounded-lg">
-          <h4 className="text-sm font-medium text-blue-800 mb-2">Filtros activos:</h4>
+        <div className="mb-4 rounded-2xl bg-white/95 p-4 ring-1 ring-black/5 shadow-sm">
+          <h4 className="text-xs font-semibold tracking-wide text-gray-700 mb-2 uppercase">Filtros activos</h4>
           <div className="flex flex-wrap gap-2">
             {getActiveFilters().map((filter, index) => (
-              <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+              <span key={index} className="px-2.5 py-1 bg-cyan-50 text-cyan-700 text-[11px] rounded-full ring-1 ring-cyan-200/60">
                 {filter}
               </span>
             ))}
           </div>
         </div>
       )}
-
     </div>
   );
 
   // Componente de producto en vista grid
   const ProductGridItem = ({ product, currentType }) => (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+    <div className="h-full flex flex-col bg-white rounded-2xl shadow-md/50 ring-1 ring-black/5 overflow-hidden transition-transform duration-300 hover:-translate-y-[2px]">
+      {/* Imagen */}
       <div className="relative">
         {(() => { const src = getProductImage(product); return src ? (
           <img 
             src={src} 
             alt={product.nombre} 
-            className="w-full h-48 object-cover hover:scale-105 transition-transform duration-300"
+            className="w-full aspect-[4/3] object-cover"
           />
         ) : (
-          <div className="w-full h-48 bg-gray-100 flex items-center justify-center text-gray-400 text-sm">
+          <div className="w-full aspect-[4/3] bg-gray-50 flex items-center justify-center text-gray-400 text-sm">
             Sin imagen
           </div>
         ); })()}
         {product.enPromocion && (
-          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded-full text-xs font-bold">
-            ¡OFERTA!
-          </div>
+          <span className="absolute top-3 right-3 text-[11px] font-medium px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 ring-1 ring-rose-200/60">Promo</span>
         )}
       </div>
-      <div className="p-4">
-        <h3 className="text-lg font-bold mb-2 text-gray-800">{product.nombre}</h3>
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">{product.descripcion}</p>
-        
-        <div className="mb-3">
+      {/* Contenido */}
+      <div className="p-4 flex-1 flex flex-col">
+        <h3 className="text-[15px] font-semibold text-gray-900 leading-snug line-clamp-2 min-h-[3rem]">{product.nombre}</h3>
+        <p className="text-gray-600 text-sm mt-2 line-clamp-2 min-h-[3rem]">{product.descripcion}</p>
+
+        <div className="mt-3 flex flex-wrap gap-2 min-h-[1.5rem]">
           {product.marcaId?.nombre && (
-            <span className="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs mr-2">
-              {product.marcaId.nombre}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-gray-50 text-gray-700 ring-1 ring-gray-200">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-gray-400" />{product.marcaId.nombre}
             </span>
           )}
           {product.categoriaId?.nombre && (
-            <span className="inline-block bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
-              {product.categoriaId.nombre}
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200/60">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400" />{product.categoriaId.nombre}
             </span>
           )}
         </div>
 
-        <div className="flex items-center justify-between mb-3">
-          <div>
-            {product.enPromocion && product.precioBase && (
-              <span className="text-gray-500 line-through text-sm">
-                {formatPrice(product.precioBase)}
-              </span>
-            )}
-            <div className="text-lg font-bold text-[#0097c2]">
-              {formatPrice(product.precioActual || product.precioBase || 0)}
-            </div>
+        <div className="mt-3">
+          {product.enPromocion && product.precioBase && (
+            <span className="block text-gray-400 line-through text-xs">
+              {formatPrice(product.precioBase)}
+            </span>
+          )}
+          <div className="text-[20px] font-extrabold tracking-tight text-[#0097c2]">
+            {formatPrice(product.precioActual || product.precioBase || 0)}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        {/* Acciones */}
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-4">
           <button 
             onClick={() => {
               if (currentType === 'personalizables' || product.categoria === 'Personalizado') {
@@ -3118,56 +3061,18 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                 handleAddToCart(product, 1);
               }
             }}
-            className="w-full bg-emerald-600 text-white py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
+            className="w-full h-10 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-colors duration-200 text-sm font-medium shadow-sm"
           >
             {currentType === 'personalizables' || product.categoria === 'Personalizado' ? 'Personalizar' : 'Agregar'}
           </button>
           <button 
             onClick={() => showProductDetails(product)}
-            className="w-full bg-[#0097c2] text-white py-2 rounded-full hover:bg-[#0077a2] transition-colors duration-300"
+            className="w-full h-10 bg-[#0097c2] text-white rounded-full hover:bg-[#0077a2] transition-colors duration-200 text-sm font-medium shadow-sm"
           >
             Ver detalles
           </button>
         </div>
       </div>
-
-      {showSolicitudModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-white/10 backdrop-blur-sm md:backdrop-blur"> 
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl p-6">
-            <h3 className="text-lg font-semibold mb-4">Solicitud de producto personalizado</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudNombre">Nombre</label>
-                <input id="solicitudNombre" name="nombre" value={solicitudForm.nombre} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudTipoLente">Tipo de lente</label>
-                <input id="solicitudTipoLente" name="tipoLente" value={solicitudForm.tipoLente} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudMaterial">Material</label>
-                <input id="solicitudMaterial" name="material" value={solicitudForm.material} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-600" htmlFor="solicitudColor">Color</label>
-                <input id="solicitudColor" name="color" value={solicitudForm.color} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600" htmlFor="solicitudDescripcion">DescripciÃ³n</label>
-                <textarea id="solicitudDescripcion" name="descripcion" value={solicitudForm.descripcion} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={3} />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm text-gray-600" htmlFor="solicitudInstrucciones">Instrucciones adicionales</label>
-                <textarea id="solicitudInstrucciones" name="instruccionesAdicionales" value={solicitudForm.instruccionesAdicionales} onChange={handleSolicitudChange} className="w-full border rounded-lg px-3 py-2" rows={2} />
-              </div>
-            </div>
-            <div className="mt-6 flex gap-3 justify-end">
-              <button onClick={() => setShowSolicitudModal(false)} className="px-4 py-2 rounded-lg border">Cancelar</button>
-              <button onClick={handleCrearSolicitudPersonalizada} className="px-4 py-2 rounded-lg bg-[#0097c2] text-white">Crear solicitud</button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 
@@ -3242,115 +3147,167 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
   const ProductDetailModal = () => {
     if (!selectedProduct) return null;
 
+    // Galería de imágenes del producto
+    const images = Array.isArray(selectedProduct?.imagenes)
+      ? selectedProduct.imagenes.filter(Boolean)
+      : [];
+    const fallback = getProductImage(selectedProduct);
+    const gallery = images.length > 0 ? images : (fallback ? [fallback] : []);
+    const [currentIdx, setCurrentIdx] = useState(0);
+
+    const goPrev = () => setCurrentIdx((idx) => (idx - 1 + gallery.length) % gallery.length);
+    const goNext = () => setCurrentIdx((idx) => (idx + 1) % gallery.length);
+    const selectIdx = (idx) => setCurrentIdx(idx);
+
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-white/10 backdrop-blur-sm md:backdrop-blur">
-        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-2xl font-bold text-gray-800">{selectedProduct.nombre}</h2>
-              <button 
-                onClick={closeProductModal}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* ImÃ¡genes */}
-              <div>
-                {(() => { const src = getProductImage(selectedProduct); return src ? (
-                  <img 
-                    src={src} 
-                    alt={selectedProduct.nombre} 
-                    className="w-full h-64 object-cover rounded-lg"
-                  />
-                ) : (
-                  <div className="w-full h-64 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">Sin imagen</div>
-                ); })()}
+      <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-md flex items-center justify-center p-4">
+        <div className="bg-white/95 rounded-3xl shadow-2xl ring-1 ring-black/5 max-w-6xl w-full max-h-[92vh] overflow-hidden">
+          {/* Header */}
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div className="min-w-0">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 truncate">{selectedProduct.nombre}</h2>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {selectedProduct.marcaId?.nombre && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-700 ring-1 ring-gray-200">{selectedProduct.marcaId.nombre}</span>
+                )}
+                {selectedProduct.categoriaId?.nombre && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-50 text-cyan-700 ring-1 ring-cyan-200/60">{selectedProduct.categoriaId.nombre}</span>
+                )}
+                {selectedProduct.enPromocion && (
+                  <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 ring-1 ring-rose-200/60">En promoción</span>
+                )}
               </div>
+            </div>
+            <button
+              onClick={closeProductModal}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100/80 text-gray-600 hover:bg-gray-200 hover:text-gray-800 transition-colors shadow-sm"
+              aria-label="Cerrar"
+            >
+              ✕
+            </button>
+          </div>
 
-              {/* InformaciÃ³n del producto */}
-              <div>
-                <p className="text-gray-600 mb-4">{selectedProduct.descripcion}</p>
-                
-                <div className="space-y-3 mb-6">
-                  {selectedProduct.marcaId?.nombre && (
-                    <div>
-                      <span className="font-semibold text-gray-700">Marca:</span>
-                      <span className="ml-2 text-gray-600">{selectedProduct.marcaId.nombre}</span>
-                    </div>
-                  )}
-                  
-                  {selectedProduct.categoriaId?.nombre && (
-                    <div>
-                      <span className="font-semibold text-gray-700">CategorÃ­a:</span>
-                      <span className="ml-2 text-gray-600">{selectedProduct.categoriaId.nombre}</span>
-                    </div>
-                  )}
-
-                  {selectedProduct.material && (
-                    <div>
-                      <span className="font-semibold text-gray-700">Material:</span>
-                      <span className="ml-2 text-gray-600">{selectedProduct.material}</span>
-                    </div>
-                  )}
-
-                  {selectedProduct.color && (
-                    <div>
-                      <span className="font-semibold text-gray-700">Color:</span>
-                      <span className="ml-2 text-gray-600">{selectedProduct.color}</span>
-                    </div>
-                  )}
-
-                  {selectedProduct.tipoLente && (
-                    <div>
-                      <span className="font-semibold text-gray-700">Tipo de lente:</span>
-                      <span className="ml-2 text-gray-600">{selectedProduct.tipoLente}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Precios */}
-                <div className="mb-6">
-                  {selectedProduct.enPromocion && selectedProduct.precioBase && (
-                    <div className="mb-2">
-                      <span className="text-gray-500 line-through">
-                        Precio original: {formatPrice(selectedProduct.precioBase)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="text-2xl font-bold text-[#0097c2]">
-                    Precio: {formatPrice(selectedProduct.precioActual || selectedProduct.precioBase || 0)}
+          {/* Body */}
+          <div className="p-6 overflow-y-auto max-h-[calc(92vh-64px)]">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+              {/* Gallery */}
+              <div className="md:col-span-7">
+                <div className="grid grid-cols-12 gap-4">
+                  {/* Vertical thumbs on desktop */}
+                  <div className="hidden md:flex md:col-span-2 flex-col gap-3 overflow-y-auto max-h-[30rem] pr-1">
+                    {gallery.map((src, idx) => (
+                      <button
+                        key={`vthumb-${idx}`}
+                        onClick={() => selectIdx(idx)}
+                        className={`relative rounded-lg overflow-hidden border transition-all ${idx === currentIdx ? 'ring-2 ring-[#0097c2] border-[#0097c2]' : 'border-gray-200 hover:border-gray-300'}`}
+                        aria-label={`Ver imagen ${idx + 1}`}
+                      >
+                        <img src={src} alt={`Miniatura ${idx + 1}`} className="w-full h-20 object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                  {/* Main image */}
+                  <div className="col-span-12 md:col-span-10">
+                    {gallery.length > 0 ? (
+                      <div className="relative group">
+                        <img
+                          src={gallery[currentIdx]}
+                          alt={selectedProduct.nombre}
+                          className="w-full aspect-[4/3] md:aspect-[5/4] object-cover rounded-2xl shadow-xl"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                        {gallery.length > 1 && (
+                          <>
+                            <button
+                              onClick={goPrev}
+                              className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/60 backdrop-blur-md hover:bg-white/80 text-gray-800 rounded-full w-10 h-10 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition"
+                              aria-label="Imagen anterior"
+                            >
+                              ‹
+                            </button>
+                            <button
+                              onClick={goNext}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/60 backdrop-blur-md hover:bg-white/80 text-gray-800 rounded-full w-10 h-10 flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition"
+                              aria-label="Imagen siguiente"
+                            >
+                              ›
+                            </button>
+                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] tracking-wide px-3 py-1 rounded-full">
+                              {currentIdx + 1} / {gallery.length}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="w-full aspect-[5/4] bg-gray-50 rounded-2xl flex items-center justify-center text-gray-400 ring-1 ring-gray-200">Sin imagen</div>
+                    )}
                   </div>
                 </div>
 
-                {/* Botones de acciÃ³n */}
-                <div className="flex space-x-3">
-                  <button 
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
-                    onClick={() => {
-                      if (location.pathname === '/productos/personalizables') {
-                        if (!user || !user.id) {
-                          showError('Inicia sesión para personalizar un producto.');
-                          return;
+                {/* Horizontal thumbs on mobile */}
+                {gallery.length > 1 && (
+                  <div className="mt-4 grid grid-cols-5 sm:grid-cols-6 gap-2 md:hidden">
+                    {gallery.map((src, idx) => (
+                      <button
+                        key={`mthumb-${idx}`}
+                        onClick={() => selectIdx(idx)}
+                        className={`relative rounded-lg overflow-hidden transition-all ${idx === currentIdx ? 'ring-2 ring-[#0097c2]' : 'opacity-70 hover:opacity-100'}`}
+                        aria-label={`Ver imagen ${idx + 1}`}
+                      >
+                        <img src={src} alt={`Miniatura ${idx + 1}`} className="w-full h-16 object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Details */}
+              <div className="md:col-span-5 space-y-6">
+                <div className="rounded-2xl bg-white/90 p-5 shadow-lg ring-1 ring-black/5">
+                  <p className="text-gray-700 leading-relaxed mb-4">{selectedProduct.descripcion}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm">
+                    {selectedProduct.material && (
+                      <div className="flex items-center justify-between py-1.5"><span className="text-gray-500">Material</span><span className="text-gray-900 font-medium">{selectedProduct.material}</span></div>
+                    )}
+                    {selectedProduct.color && (
+                      <div className="flex items-center justify-between py-1.5"><span className="text-gray-500">Color</span><span className="text-gray-900 font-medium">{selectedProduct.color}</span></div>
+                    )}
+                    {selectedProduct.tipoLente && (
+                      <div className="flex items-center justify-between py-1.5"><span className="text-gray-500">Tipo de lente</span><span className="text-gray-900 font-medium">{selectedProduct.tipoLente}</span></div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-white/90 p-5 shadow-lg ring-1 ring-black/5">
+                  {selectedProduct.enPromocion && selectedProduct.precioBase && (
+                    <div className="mb-1 text-gray-400 line-through">{formatPrice(selectedProduct.precioBase)}</div>
+                  )}
+                  <div className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#0097c2]">{formatPrice(selectedProduct.precioActual || selectedProduct.precioBase || 0)}</div>
+                  <div className="mt-5 flex flex-col sm:flex-row gap-3">
+                    <button 
+                      className="flex-1 bg-emerald-600 text-white px-5 py-3 rounded-full hover:bg-emerald-700 transition-colors duration-300 text-base font-medium shadow-md"
+                      onClick={() => {
+                        if (location.pathname === '/productos/personalizables') {
+                          if (!user || !user.id) {
+                            showError('Inicia sesión para personalizar un producto.');
+                            return;
+                          }
+                          navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+                        } else {
+                          handleAddToCart(selectedProduct, 1);
+                          setShowProductModal(false);
                         }
-                        setShowProductModal(false);
-                        navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
-                      } else {
-                        handleAddToCart(selectedProduct, 1);
-                        setShowProductModal(false);
-                      }
-                    }}
-                  >
-                    {location.pathname === '/productos/personalizables' ? 'Personalizar' : 'Agregar al carrito'}
-                  </button>
-                  <button 
-                    className="bg-white border border-[#0097c2] text-[#0097c2] px-4 py-2 rounded-full hover:bg-[#e6f7fb] transition-colors duration-300"
-                    onClick={() => navigate('/cotizaciones')}
-                  >
-                    Solicitar a Optica
-                  </button>
+                      }}
+                    >
+                      {location.pathname === '/productos/personalizables' ? 'Personalizar' : 'Agregar al carrito'}
+                    </button>
+                    <button 
+                      className="flex-1 bg-white/90 border border-[#0097c2] text-[#0097c2] px-5 py-3 rounded-full hover:bg-[#e6f7fb] transition-colors duration-300 text-base font-medium shadow-sm"
+                      onClick={() => navigate('/cotizaciones')}
+                    >
+                      Solicitar a Optica
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3382,12 +3339,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       <div className="container mx-auto py-10 px-2 sm:px-4">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Filtros */}
-          <div className="lg:w-1/4">
+          <div className="lg:w-1/5">
             {filterSection}
           </div>
 
           {/* Productos */}
-          <div className="lg:w-1/2">
+          <div className="lg:w-3/5">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-800">
                 {getTitle()}
@@ -3454,11 +3411,11 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                   </div>
                 ) : (
                   <div className={viewMode === 'grid' 
-                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" 
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-7" 
                     : "space-y-4"
                   }>
                     {sortedProducts.map((product) => (
-                      <div key={product._id}>
+                      <div key={product._id} className="h-full">
                         {viewMode === 'grid' ? (
                           <ProductGridItem product={product} currentType={type} />
                         ) : (
@@ -3494,7 +3451,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
           </div>
 
           {/* Sidebar derecha: anuncio de personalizados */}
-          <div className="lg:w-1/4">
+          <div className="lg:w-1/5">
             <div className="sticky top-24">
               <div className="bg-white rounded-xl shadow-md p-6 border border-[#0097c2]/30">
                 <div className="flex items-start gap-4">
@@ -3503,7 +3460,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                     <h3 className="text-lg font-bold text-gray-800 mb-1">¿Buscas algo único?</h3>
                     <p className="text-gray-600 text-sm mb-4">Crea tu producto personalizado eligiendo base, materiales, color y más.</p>
                     <button
-                      onClick={() => navigate('/cotizaciones/crear', { state: { openPersonalizado: true } })}
+                      onClick={() => {
+                        if (!user || !user.id) {
+                          showError('Inicia sesión para personalizar un producto.');
+                          setIsAuthModalOpen(true);
+                          return;
+                        }
+                        navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+                      }}
                       className="w-full bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors"
                     >
                       Personalizar ahora

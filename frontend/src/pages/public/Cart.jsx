@@ -98,6 +98,7 @@ const Cart = () => {
           return data?.data || data || null;
         };
         let info = await tryFetch(API_CONFIG.ENDPOINTS.LENTES);
+        if (!info && API_CONFIG.ENDPOINTS.LENTES_CRISTALES) info = await tryFetch(API_CONFIG.ENDPOINTS.LENTES_CRISTALES);
         if (!info) info = await tryFetch(API_CONFIG.ENDPOINTS.ACCESORIOS);
         if (!info) info = await tryFetch(API_CONFIG.ENDPOINTS.PRODUCTOS_PERSONALIZADOS);
         if (info && (info.nombre || info?.nombreProducto || info?.producto?.nombre)) {

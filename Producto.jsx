@@ -1478,7 +1478,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     
     const advancedFilters = {
       priceRanges: [
-        { label: 'EconÃ³mico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Economico ($0 - $100)', min: 0, max: 100, count: 0 },
         { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
         { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
         { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }
@@ -1518,7 +1518,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
     
     const advancedFilters = {
       priceRanges: [
-        { label: 'EconÃ³mico ($0 - $100)', min: 0, max: 100, count: 0 },
+        { label: 'Economico ($0 - $100)', min: 0, max: 100, count: 0 },
         { label: 'Medio ($101 - $300)', min: 101, max: 300, count: 0 },
         { label: 'Premium ($301 - $500)', min: 301, max: 500, count: 0 },
         { label: 'Lujo ($500+)', min: 501, max: 10000, count: 0 }

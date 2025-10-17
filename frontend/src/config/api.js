@@ -43,6 +43,7 @@ export const API_CONFIG = {
   // Endpoints disponibles
   ENDPOINTS: {
     LENTES: '/lentes',
+    LENTES_CRISTALES: '/lentes-cristales',
     ACCESORIOS: '/accesorios',
     PRODUCTOS_PERSONALIZADOS: '/productosPersonalizados',
     MARCAS: '/marcas',
