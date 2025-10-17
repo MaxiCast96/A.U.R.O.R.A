@@ -359,7 +359,9 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
       // Detectar tipo de producto por sus datos (independiente de la ruta)
       const categoriaNombre = (product?.categoriaId?.nombre || product?.categoria || '').toLowerCase();
       const nombreLower = (product?.nombre || '').toLowerCase();
-      const isCristalProduct = categoriaNombre.includes('cristal') || nombreLower.includes('cristal');
+      // Heurísticas reforzadas para Cristal: por categoría/nombre o por campos característicos
+      const looksLikeCristalByFields = Boolean(product?.indice || product?.vision || (Array.isArray(product?.protecciones) && product.protecciones.length > 0));
+      const isCristalProduct = categoriaNombre.includes('cristal') || nombreLower.includes('cristal') || looksLikeCristalByFields;
       const isAccessorio = categoriaNombre.includes('accesor');
       const isFrameProduct = categoriaNombre.includes('armaz') || categoriaNombre.includes('aro');
 
