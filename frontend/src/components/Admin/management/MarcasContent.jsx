@@ -459,7 +459,8 @@ const MarcasContent = () => {
         descripcion: '',
         logo: '',
         paisOrigen: '',
-        lineas: []
+        lineas: [],
+        estado: ''
     };
 
     const formValidator = (data) => {
@@ -468,6 +469,7 @@ const MarcasContent = () => {
         if (!data.descripcion?.trim()) errors.descripcion = 'La descripción es requerida';
         if (!data.paisOrigen?.trim()) errors.paisOrigen = 'El país de origen es requerido';
         if (!data.lineas || data.lineas.length === 0) errors.lineas = 'Debe seleccionar al menos una línea';
+        if (!data.estado?.trim()) errors.estado = 'El estado es requerido';
         return errors;
     };
 
@@ -480,10 +482,23 @@ const MarcasContent = () => {
     // UTILITY FUNCTIONS
     // ============================================================================
 
+    // Muestra una alerta temporal en el panel
     const showAlert = useCallback((type, message) => {
         setAlert({ type, message });
         const timer = setTimeout(() => setAlert(null), 5000);
         return () => clearTimeout(timer);
+    }, [setAlert]);
+
+    // Color de chip por línea de producto
+    const getLineaColor = useCallback((linea) => {
+        switch (linea) {
+            case 'Premium':
+                return 'bg-purple-100 text-purple-800';
+            case 'Económica':
+                return 'bg-orange-100 text-orange-800';
+            default:
+                return 'bg-gray-100 text-gray-800';
+        }
     }, []);
 
     // ============================================================================
@@ -491,10 +506,21 @@ const MarcasContent = () => {
     // ============================================================================
 
     const fetchMarcas = useCallback(async () => {
+        setLoading(true);
         try {
-            setLoading(true);
-            const response = await axiosWithFallback('get', MARCAS_EP);
-            const formattedData = response.data.map(m => ({
+            const response = await axiosWithFallback('get', MARCAS_EP, null, { timeout: 10000 });
+            let payload = response?.data;
+            // Normalizar posibles formatos de respuesta
+            if (payload && typeof payload === 'object' && !Array.isArray(payload) && Array.isArray(payload.data)) {
+                payload = payload.data;
+            }
+            if (!Array.isArray(payload)) {
+                console.warn('Respuesta inesperada de /marcas:', payload);
+                showAlert('error', 'Formato de respuesta inesperado al cargar marcas.');
+                setMarcas([]);
+                return;
+            }
+            const formattedData = payload.map(m => ({
                 ...m,
                 fechaCreacionFormatted: new Date(m.createdAt || m.fechaCreacion).toLocaleDateString(),
                 fechaCreacionRaw: new Date(m.createdAt || m.fechaCreacion),
@@ -503,6 +529,7 @@ const MarcasContent = () => {
         } catch (error) {
             console.error('Error al cargar marcas:', error);
             showAlert('error', 'Error al cargar las marcas desde el servidor.');
+            setMarcas([]);
         } finally {
             setLoading(false);
         }
@@ -540,189 +567,9 @@ const MarcasContent = () => {
         }
     };
 
-    const deleteMarca = async (id) => {
-        try {
-            await axiosWithFallback('delete', `${MARCAS_EP}/${id}`);
-            await fetchMarcas();
-            showAlert('delete', '¡Marca eliminada exitosamente!');
-            handleCloseModals();
-        } catch (error) {
-            console.error('Error al eliminar marca:', error);
-            showAlert('error', error.response?.data?.message || 'Error al eliminar la marca');
-        }
-    };
-
     // ============================================================================
-    // EFFECTS
-    // ============================================================================
-
-    useEffect(() => {
-        fetchMarcas();
-        
-        const script = document.createElement('script');
-        script.src = "https://widget.cloudinary.com/v2.0/global/all.js";
-        script.async = true;
-        document.body.appendChild(script);
-
-        return () => {
-            if (document.body.contains(script)) {
-                document.body.removeChild(script);
-            }
-        };
-    }, [fetchMarcas]);
-
-    // ========================================================================
-    // UTILITY FUNCTIONS CONTINUED
-    // ========================================================================
-
-    const getLineaColor = useCallback((linea) => {
-        switch(linea) {
-            case 'Premium': return 'bg-purple-100 text-purple-800';
-            case 'Económica': return 'bg-orange-100 text-orange-800';
-            default: return 'bg-gray-100 text-gray-800';
-        }
-    }, []);
-
-    const formatFecha = useCallback((fecha) => {
-        if (!fecha) return 'No disponible';
-        return new Date(fecha).toLocaleDateString('es-ES', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-    }, []);
-
-    const handleSortChange = useCallback((sortValue) => {
-        const [field, order] = sortValue.split('-');
-        setSortBy(field);
-        setSortOrder(order);
-        setShowSortDropdown(false);
-    }, []);
-
-    const sortData = useCallback((data) => {
-        return [...data].sort((a, b) => {
-            let valueA, valueB;
-            
-            switch (sortBy) {
-                case 'nombre':
-                    valueA = a.nombre?.toLowerCase() || '';
-                    valueB = b.nombre?.toLowerCase() || '';
-                    break;
-                case 'paisOrigen':
-                    valueA = a.paisOrigen?.toLowerCase() || '';
-                    valueB = b.paisOrigen?.toLowerCase() || '';
-                    break;
-                case 'fechaCreacion':
-                    valueA = a.fechaCreacionRaw || new Date(0);
-                    valueB = b.fechaCreacionRaw || new Date(0);
-                    break;
-                default:
-                    return 0;
-            }
-
-            if (valueA < valueB) return sortOrder === 'asc' ? -1 : 1;
-            if (valueA > valueB) return sortOrder === 'asc' ? 1 : -1;
-            return 0;
-        });
-    }, [sortBy, sortOrder]);
-
-    const applyAdvancedFilters = useCallback((marca) => {
-        if (filters.linea !== 'todas' && !marca.lineas?.includes(filters.linea)) {
-            return false;
-        }
-
-        if (filters.paisOrigen !== 'todos') {
-            const marcaPais = marca.paisOrigen?.toLowerCase() || '';
-            if (marcaPais !== filters.paisOrigen.toLowerCase()) {
-                return false;
-            }
-        }
-
-        if (filters.fechaDesde) {
-            const fechaDesde = new Date(filters.fechaDesde);
-            if (marca.fechaCreacionRaw < fechaDesde) {
-                return false;
-            }
-        }
-        if (filters.fechaHasta) {
-            const fechaHasta = new Date(filters.fechaHasta);
-            fechaHasta.setHours(23, 59, 59);
-            if (marca.fechaCreacionRaw > fechaHasta) {
-                return false;
-            }
-        }
-
-        return true;
-    }, [filters]);
-
-    const handleFilterChange = useCallback((key, value) => {
-        setFilters(prev => ({
-            ...prev,
-            [key]: value
-        }));
-    }, []);
-
-    const clearAllFilters = useCallback(() => {
-        setFilters(INITIAL_FILTERS);
-        setSearchTerm('');
-    }, []);
-
-    const hasActiveFilters = useCallback(() => {
-        return searchTerm || 
-               filters.linea !== 'todas' || 
-               filters.paisOrigen !== 'todos' || 
-               filters.fechaDesde || 
-               filters.fechaHasta;
-    }, [searchTerm, filters]);
-
-    const uniqueCountries = useMemo(() => {
-        const countries = marcas
-            .map(m => m.paisOrigen)
-            .filter(Boolean)
-            .filter((country, index, arr) => arr.indexOf(country) === index);
-        return countries.sort();
-    }, [marcas]);
-
-    // ========================================================================
-    // COMPUTED VALUES
-    // ========================================================================
-
-    const filteredAndSortedMarcas = useMemo(() => {
-        const filtered = marcas.filter(marca => {
-            const search = searchTerm.toLowerCase();
-            const matchesSearch = !searchTerm || 
-                marca.nombre?.toLowerCase().includes(search) ||
-                marca.descripcion?.toLowerCase().includes(search) ||
-                marca.paisOrigen?.toLowerCase().includes(search) ||
-                marca.lineas?.some(linea => linea.toLowerCase().includes(search));
-            
-            const matchesAdvancedFilters = applyAdvancedFilters(marca);
-            
-            return matchesSearch && matchesAdvancedFilters;
-        });
-        
-        return sortData(filtered);
-    }, [marcas, searchTerm, applyAdvancedFilters, sortData]);
-
-    const { paginatedData: currentMarcas, ...paginationProps } = usePagination(filteredAndSortedMarcas, ITEMS_PER_PAGE);
-
-    const stats = useMemo(() => {
-        const totalMarcas = marcas.length;
-        const marcasPremium = marcas.filter(m => m.lineas?.includes('Premium')).length;
-        const marcasEconomicas = marcas.filter(m => m.lineas?.includes('Económica')).length;
-        const paisesUnicos = uniqueCountries.length;
-
-        return [
-            { title: 'Total Marcas', value: totalMarcas, Icon: Bookmark, color: 'cyan' },
-            { title: 'Líneas Premium', value: marcasPremium, Icon: Tags, color: 'cyan' },
-            { title: 'Líneas Económicas', value: marcasEconomicas, Icon: Package, color: 'cyan' },
-            { title: 'Países', value: paisesUnicos, Icon: MapPin, color: 'cyan' }
-        ];
-    }, [marcas, uniqueCountries]);
-
-    // ========================================================================
     // EVENT HANDLERS
-    // ========================================================================
+    // ============================================================================
 
     const handleCloseModals = useCallback(() => {
         setModals({ addEdit: false, detail: false, delete: false });
@@ -744,7 +591,8 @@ const MarcasContent = () => {
             descripcion: marca.descripcion || '',
             logo: marca.logo || '',
             paisOrigen: marca.paisOrigen || '',
-            lineas: marca.lineas || []
+            lineas: marca.lineas || [],
+            estado: marca.estado || ''
         });
         setErrors({});
         setModals(prev => ({ ...prev, addEdit: true }));
@@ -771,7 +619,8 @@ const MarcasContent = () => {
             descripcion: formData.descripcion.trim(),
             paisOrigen: formData.paisOrigen.trim(),
             lineas: formData.lineas,
-            logo: formData.logo || ''
+            logo: formData.logo || '',
+            estado: formData.estado
         };
 
         if (selectedMarca) {

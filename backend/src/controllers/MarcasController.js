@@ -24,7 +24,8 @@ marcasController.getMarcas = async (req, res) => {
 
 // INSERT - Crear nueva marca con logo opcional
 marcasController.createMarcas = async (req, res) => {
-    const { nombre, descripcion, paisOrigen, lineas } = req.body;
+    const { nombre, descripcion, paisOrigen, lineas, estado } = req.body;
+
     let logoURL = ""; // Variable para URL del logo
 
     try {
@@ -51,7 +52,8 @@ marcasController.createMarcas = async (req, res) => {
             descripcion,
             logo: logoURL,
             paisOrigen,
-            lineas
+            lineas,
+            estado: estado || 'Activa'
         });
 
         await newMarca.save();
@@ -79,7 +81,8 @@ marcasController.deleteMarcas = async (req, res) => {
 
 // UPDATE - Actualiza marca existente con nuevos datos
 marcasController.updateMarcas = async (req, res) => {
-    const { nombre, descripcion, paisOrigen, lineas } = req.body;
+    const { nombre, descripcion, paisOrigen, lineas, estado } = req.body;
+
     let logoURL = req.body.logo; // Mantiene logo existente por defecto
 
     try {
@@ -109,7 +112,8 @@ marcasController.updateMarcas = async (req, res) => {
                 descripcion,
                 logo: logoURL,
                 paisOrigen,
-                lineas
+                lineas,
+                estado: estado || 'Activa'
             },
             { new: true } // Retorna documento actualizado
         );

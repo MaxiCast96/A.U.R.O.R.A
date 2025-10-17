@@ -206,6 +206,18 @@ clientesController.createClientes = async (req, res) => {
  */
 clientesController.deleteClientes = async (req, res) => {
     try {
+        // Evitar eliminarse a sí mismo si está autenticado
+        try {
+            const token = req.cookies?.aurora_auth_token;
+            if (token) {
+                const decoded = jsonwebtoken.verify(token, config.jwt.secret);
+                if (decoded?.id && String(decoded.id) === String(req.params.id)) {
+                    return res.status(400).json({ message: "No puedes eliminar tu propio usuario mientras estás logueado." });
+                }
+            }
+        } catch (verifyErr) {
+            // Si falla la verificación del token, continuar con la validación normal (no bloquear por esto)
+        }
         const deletedClientes = await clientesModel.findByIdAndDelete(req.params.id);
         if (!deletedClientes) {
             return res.status(404).json({ message: "Cliente no encontrado" });

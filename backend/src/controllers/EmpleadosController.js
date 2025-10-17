@@ -183,6 +183,30 @@ empleadosController.updateEmpleados = async (req, res) => {
 // DELETE - Eliminar empleado
 empleadosController.deleteEmpleados = async (req, res) => {
     try {
+        // Evitar eliminarse a sí mismo si está autenticado
+        try {
+            const token = req.cookies?.aurora_auth_token;
+            if (token) {
+                // Reutiliza el secreto JWT del config
+                const decoded = (await import('../config.js')).config ? (await import('jsonwebtoken')).default.verify(token, (await import('../config.js')).config.jwt.secret) : null;
+                // En este archivo ya tenemos config importado arriba, así que intentamos usarlo directamente si está accesible
+            }
+        } catch (_) {
+            // noop
+        }
+        try {
+            const token = req.cookies?.aurora_auth_token;
+            if (token) {
+                const jwt = (await import('jsonwebtoken')).default;
+                const { config } = await import('../config.js');
+                const decoded = jwt.verify(token, config.jwt.secret);
+                if (decoded?.id && String(decoded.id) === String(req.params.id)) {
+                    return res.status(400).json({ message: "No puedes eliminar tu propio usuario mientras estás logueado." });
+                }
+            }
+        } catch (_) {
+            // Si falla la verificación del token, continuamos sin bloquear
+        }
         // Busca y elimina empleado por ID
         const deletedEmpleado = await empleadosModel.findByIdAndDelete(req.params.id);
         if (!deletedEmpleado) {

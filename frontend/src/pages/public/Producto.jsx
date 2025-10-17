@@ -4,6 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../components/auth/AuthContext';
 import PageTransition from "../../components/transition/PageTransition.jsx";
 import Navbar from "../../components/layout/Navbar";
+import AuthModal from "../../components/auth/AuthModal";
 import EmptyProducts from "../../components/EmptyProducts.jsx";
 import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import ErrorMessage from "../../components/ErrorMessage.jsx";
@@ -40,6 +41,7 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
   // Modal para seleccionar Aro cuando se agrega un Cristal
   const [showSelectAroModal, setShowSelectAroModal] = useState(false);
   const [pendingCristal, setPendingCristal] = useState(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   // Filtros y paginaciÃ³n del modal de Aros
   const [selectAroSearch, setSelectAroSearch] = useState('');
   const [selectAroMarca, setSelectAroMarca] = useState('todos');
@@ -69,6 +71,11 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
 
   // Abrir modal de solicitud personalizada tomando el producto base seleccionado
   const openSolicitudModal = (product) => {
+    // Requiere autenticación para personalizar
+    if (!user || !user.id) {
+      showError('Inicia sesión para personalizar un producto.');
+      return;
+    }
     setSelectedProduct(product);
     setSolicitudForm((f) => ({
       ...f,
@@ -3324,6 +3331,10 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                     className="bg-emerald-600 text-white px-4 py-2 rounded-full hover:bg-emerald-700 transition-colors duration-300"
                     onClick={() => {
                       if (location.pathname === '/productos/personalizables') {
+                        if (!user || !user.id) {
+                          showError('Inicia sesión para personalizar un producto.');
+                          return;
+                        }
                         setShowProductModal(false);
                         navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
                       } else {
@@ -3427,7 +3438,14 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
                         <p className="text-gray-600 text-sm">Elige base, materiales, color, tipo de lente y modificaciones del catÃ¡logo.</p>
                       </div>
                       <button
-                        onClick={() => navigate('/cotizaciones/crear', { state: { openPersonalizado: true } })}
+                        onClick={() => {
+                          if (!user || !user.id) {
+                            showError('Inicia sesión para personalizar un producto.');
+                            setIsAuthModalOpen(true);
+                            return;
+                          }
+                          navigate('/cotizaciones/crear', { state: { openPersonalizado: true } });
+                        }}
                         className="bg-emerald-600 text-white px-6 py-3 rounded-full hover:bg-emerald-700 transition-colors"
                       >
                         Personalizar ahora
@@ -3522,6 +3540,12 @@ import Alert, { ToastContainer, useAlert } from '../../components/ui/Alert';
 
       {/* Modal para elegir Aro cuando se agrega un Cristal */}
       {showSelectAroModal && <SelectAroModal />}
+
+      {/* Auth Modal (Login/Registro) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+      />
 
       {/* Footer */}
       <footer className="bg-gradient-to-r from-[#0097c2] to-[#00b4e4] text-white mt-10 text-xs sm:text-sm">

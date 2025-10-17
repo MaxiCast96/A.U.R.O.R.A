@@ -25,7 +25,13 @@ const marcaSchema = new Schema({
             enum: ['Premium', 'Económica'], // Tipos de línea permitidos
             required: true
         }
-    ]
+    ],
+    estado: {
+        type: String,
+        enum: ['Activa', 'Inactiva', 'Descontinuada'],
+        default: 'Activa',
+        required: false
+    }
 }, {
     timestamps: true, // Agrega createdAt y updatedAt
     strict: true
