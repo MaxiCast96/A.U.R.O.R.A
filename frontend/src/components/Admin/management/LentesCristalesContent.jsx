@@ -385,8 +385,10 @@ const LentesCristalesContent = () => {
       if (form.material) fd.append('material', form.material);
       if (form.indice) fd.append('indice', form.indice);
       if (form.vision) fd.append('vision', form.vision);
-      if (Array.isArray(form.protecciones)) {
-        form.protecciones.forEach(p => fd.append('protecciones', p));
+      
+      // Protecciones - enviar como JSON string para facilitar el parsing en backend
+      if (Array.isArray(form.protecciones) && form.protecciones.length > 0) {
+        fd.append('protecciones', JSON.stringify(form.protecciones));
       }
       
       // Precios

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
-import { Building2, MapPin, Phone as PhoneIcon, AlertCircle, Clock, User } from 'lucide-react';
+import { Building2, MapPin, Phone as PhoneIcon, AlertCircle } from 'lucide-react';
 import { EL_SALVADOR_DATA } from '../../constants/ElSalvadorData';
 
 // Componente para campos de entrada mejorados
@@ -59,7 +59,6 @@ const EnhancedField = ({
     } else {
       onChange(e);
       
-      // Si se cambia el departamento, resetear municipio
       if (name === 'departamento' && inputValue !== formData.departamento) {
         onChange({
           target: {
@@ -106,12 +105,6 @@ const EnhancedField = ({
           <p className="text-red-500 text-sm flex items-center space-x-1">
             <AlertCircle className="w-4 h-4" />
             <span>{error}</span>
-          </p>
-        )}
-        {field.name === 'municipio' && isDisabled && (
-          <p className="text-blue-500 text-sm flex items-center space-x-1">
-            <AlertCircle className="w-4 h-4" />
-            <span>Primero selecciona un departamento</span>
           </p>
         )}
       </div>
@@ -303,7 +296,7 @@ const SucursalesFormModal = ({
           name: 'estado', 
           label: 'Estado de la Sucursal', 
           type: 'select', 
-          options: ['Activa', 'Inactiva', 'En Mantenimiento'], 
+          options: ['Activa', 'Inactiva'], 
           required: true 
         },
       ]
@@ -341,6 +334,7 @@ const SucursalesFormModal = ({
   const handleFormSubmit = async (e) => {
     if (e && e.preventDefault) {
       e.preventDefault();
+      e.stopPropagation();
     }
 
     setIsLoading(true);
@@ -348,12 +342,19 @@ const SucursalesFormModal = ({
     setHasValidationErrors(false);
 
     try {
-      await onSubmit(e);
+      const result = await onSubmit(e);
+      
+      if (result === false) {
+        setHasValidationErrors(true);
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(false);
     } catch (error) {
       setIsError(true);
-      console.error('Error al guardar sucursal:', error);
-    } finally {
       setIsLoading(false);
+      console.error('Error al guardar sucursal:', error);
     }
   };
 

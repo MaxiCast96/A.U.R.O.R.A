@@ -463,7 +463,7 @@ const FormModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-2 sm:p-4 animate-fadeIn">      <form 
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-60 p-2 sm:p-4 animate-fadeIn">      <form 
         onSubmit={handleSubmit}
         className="bg-white rounded-xl shadow-2xl w-full max-w-2xl md:max-w-4xl max-h-[90vh] overflow-y-auto transform transition-all duration-300 animate-slideInScale"
       >
