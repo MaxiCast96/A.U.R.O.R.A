@@ -104,13 +104,15 @@ registerEmpleadosController.register = async (req, res) => {
                 to: correo,
                 subject,
                 html,
-                text,
-                from: '"Óptica La Inteligente" <onboarding@resend.dev>'
+                text
             });
 
             res.json({ message: "Empleado registrado, por favor revisa tu correo para verificar tu cuenta." });
         } catch (err) {
             console.log("Error enviando email de verificación (Resend):", err?.message || err);
+            if (config.server?.nodeEnv !== 'production') {
+                return res.json({ message: "Error enviando email de verificación", error: err?.message || String(err) });
+            }
             return res.json({ message: "Error enviando email de verificación" });
         }
 

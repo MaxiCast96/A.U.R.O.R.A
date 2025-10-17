@@ -516,13 +516,15 @@ clientesController.forgotPassword = async (req, res) => {
                 to: correo,
                 subject,
                 html,
-                text,
-                from: '"Óptica La Inteligente" <onboarding@resend.dev>'
+                text
             });
 
             res.json({ message: "Email de recuperación enviado exitosamente" });
         } catch (err) {
             console.log("Error enviando email de recuperación (Resend):", err?.message || err);
+            if (config.server?.nodeEnv !== 'production') {
+                return res.status(500).json({ message: "Error enviando email de recuperación", error: err?.message || String(err) });
+            }
             return res.status(500).json({ message: "Error enviando email de recuperación" });
         }
 
