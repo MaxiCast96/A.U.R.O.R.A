@@ -5,35 +5,10 @@ const ENV_BASE = (typeof import.meta !== 'undefined' && import.meta.env && impor
   ? String(import.meta.env.VITE_API_BASE_URL).trim()
   : '';
 
-// En desarrollo, forzar siempre LOCAL; en producción usar ENV_BASE o PROD
-let ACTIVE_BASE = import.meta?.env?.DEV ? LOCAL_BASE : (ENV_BASE || PROD_BASE);
+// Usar siempre Railway por defecto; permitir override por ENV
+let ACTIVE_BASE = ENV_BASE || PROD_BASE;
 
-// Ping con timeout corto para decidir en runtime
-const ping = async (url, path = '/health', timeoutMs = 1200) => {
-  try {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), timeoutMs);
-    const res = await fetch(url.replace(/\/$/, '') + path, { method: 'GET', signal: controller.signal, credentials: 'include' }).catch(() => null);
-    clearTimeout(t);
-    return !!(res && res.ok);
-  } catch (_) {
-    return false;
-  }
-};
-
-// En desarrollo no hacemos ping inicial para no caer en 404 y terminar en PROD
-if (!import.meta?.env?.DEV) {
-  (async () => {
-    // Si ya se forzó por ENV, no modificar
-    if (ENV_BASE) {
-      ACTIVE_BASE = ENV_BASE;
-      return;
-    }
-    const okLocal = await ping(LOCAL_BASE, '/');
-    ACTIVE_BASE = okLocal ? LOCAL_BASE : PROD_BASE;
-    if (!import.meta.env.PROD) console.log('[API] BASE_URL activo:', ACTIVE_BASE);
-  })();
-}
+// (El ping inicial se elimina para no forzar localhost en dev.)
 
 export const API_CONFIG = {
   // URL base de la API (puede actualizarse en runtime)
@@ -122,7 +97,7 @@ export const validateApiResponse = (response) => {
     return { isValid: false, error: response.message || 'Error en la respuesta de la API' };
   }
   
-  // Si la respuesta tiene el formato {success: true, data: [...]}
+  // Si la respuesta tiene el formato {success: true, data: [...]} 
   if (response.success === true && response.data !== undefined) {
     if (!import.meta.env.PROD) console.log('validateApiResponse - Success true with data detected');
     return { isValid: true, data: response.data };
