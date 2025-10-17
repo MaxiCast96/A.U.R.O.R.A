@@ -22,7 +22,12 @@ const fetchWithFallback = async (path, options = {}) => {
     : 'http://localhost:4000/api';
 
   try {
-    const r = await tryOnce(primary);
+    let r = await tryOnce(primary);
+    // Si la respuesta del primario es 5xx y estamos en dev, probar el secundario
+    if (r && r.status >= 500 && !import.meta.env.PROD) {
+      r = await tryOnce(secondary);
+      return r;
+    }
     return r;
   } catch (e1) {
     const msg = e1?.message || '';

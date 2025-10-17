@@ -12,7 +12,7 @@ const env = import.meta.env;
 export const config = {
   // Configuración de la API
   api: {
-    baseUrl: env.VITE_API_URL || 'https://aurora-production-7e57.up.railway.app/api',
+    baseUrl: env.VITE_API_URL || 'http://localhost:4000/api',
     timeout: 10000, // 10 segundos
     retries: 3,
     headers: {
@@ -248,7 +248,7 @@ export const config = {
 export const environmentConfig = {
   development: {
     api: {
-      baseUrl: 'https://aurora-production-7e57.up.railway.app/api',
+      baseUrl: 'http://localhost:4000/api',
       timeout: 30000
     },
     logging: {

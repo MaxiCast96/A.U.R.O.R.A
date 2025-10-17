@@ -2,7 +2,7 @@
 // Env required: BREVO_API_KEY. Optional: BREVO_SENDER_NAME, BREVO_SENDER_EMAIL
 
 export async function sendEmail({ to, subject, html, text, from }) {
-  const apiKey = "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";
+  const apiKey = "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";
   if (!apiKey) {
     throw new Error('Missing BREVO_API_KEY');
   }

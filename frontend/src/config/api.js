@@ -5,9 +5,8 @@ const ENV_BASE = (typeof import.meta !== 'undefined' && import.meta.env && impor
   ? String(import.meta.env.VITE_API_BASE_URL).trim()
   : '';
 
-// Para evitar errores iniciales si el backend local no está arriba aún,
-// empezar en PROD y cambiar a LOCAL cuando el ping confirme disponibilidad.
-let ACTIVE_BASE = ENV_BASE || PROD_BASE;
+// En desarrollo, forzar siempre LOCAL; en producción usar ENV_BASE o PROD
+let ACTIVE_BASE = import.meta?.env?.DEV ? LOCAL_BASE : (ENV_BASE || PROD_BASE);
 
 // Ping con timeout corto para decidir en runtime
 const ping = async (url, path = '/health', timeoutMs = 1200) => {
@@ -22,18 +21,19 @@ const ping = async (url, path = '/health', timeoutMs = 1200) => {
   }
 };
 
-// Resolver automáticamente: preferir localhost si responde, de lo contrario usar PROD
-(async () => {
-  // Si ya se forzó por ENV, no modificar
-  if (ENV_BASE) {
-    ACTIVE_BASE = ENV_BASE;
-    return;
-  }
-  const okLocal = await ping(LOCAL_BASE, '/'); // ruta raíz suele responder
-  ACTIVE_BASE = okLocal ? LOCAL_BASE : PROD_BASE;
-  // Debug opcional
-  if (!import.meta.env.PROD) console.log('[API] BASE_URL activo:', ACTIVE_BASE);
-})();
+// En desarrollo no hacemos ping inicial para no caer en 404 y terminar en PROD
+if (!import.meta?.env?.DEV) {
+  (async () => {
+    // Si ya se forzó por ENV, no modificar
+    if (ENV_BASE) {
+      ACTIVE_BASE = ENV_BASE;
+      return;
+    }
+    const okLocal = await ping(LOCAL_BASE, '/');
+    ACTIVE_BASE = okLocal ? LOCAL_BASE : PROD_BASE;
+    if (!import.meta.env.PROD) console.log('[API] BASE_URL activo:', ACTIVE_BASE);
+  })();
+}
 
 export const API_CONFIG = {
   // URL base de la API (puede actualizarse en runtime)

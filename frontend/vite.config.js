@@ -10,7 +10,7 @@ export default defineConfig({
   base: '/A.U.R.O.R.A/',
   server: {
     proxy: {
-      '/api': 'https://aurora-production-7e57.up.railway.app',
+      '/api': 'http://localhost:4000',
     },
   },
 })
