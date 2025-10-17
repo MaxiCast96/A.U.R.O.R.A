@@ -2,35 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { API_CONFIG } from '../../config/api';
 
-// Helper fetch con fallback
+// Helper fetch for Railway (no localhost fallback)
 const fetchWithFallback = async (path, options = {}) => {
-  const buildUrl = (base) => `${base}${path}`;
-  const tryOnce = async (base) => {
-    const res = await fetch(buildUrl(base), {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-      ...options,
-    });
-    if (!res.ok) return res;
-    API_CONFIG.BASE_URL = base;
-    return res;
-  };
-
-  const primary = API_CONFIG.BASE_URL;
-  const secondary = primary.includes('localhost')
-    ? 'https://aurora-production-7e57.up.railway.app/api'
-    : 'http://localhost:4000/api';
-
-  try {
-    const r = await tryOnce(primary);
-    return r;
-  } catch (e1) {
-    const msg = e1?.message || '';
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('ECONNREFUSED')) {
-      return await tryOnce(secondary);
-    }
-    throw e1;
-  }
+  const url = `${API_CONFIG.BASE_URL}${path}`;
+  const res = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+    ...options,
+  });
+  return res;
 };
 
 import PageTransition from '../../components/transition/PageTransition';
