@@ -496,44 +496,72 @@ const PersonalizadosContent = () => {
         }
     };
 
-    const prepareEdit = (id) => {
+  const prepareEdit = (id) => {
+        console.log('🔍 PrepareEdit llamado con ID:', id);
+        
         // Buscar primero en productos personalizados normales
         let item = Array.isArray(apiData) ? apiData.find(x => x._id === id) : null;
         
         // Si no se encuentra, buscar en productos de pedidos
         if (!item && id.includes(':')) {
+            console.log('📦 Buscando en pedidos...');
             const [pedidoId, itemIndex] = id.split(':');
             const pedido = Array.isArray(pedidosData) ? pedidosData.find(p => p._id === pedidoId) : null;
+            
+            console.log('Pedido encontrado:', pedido ? 'SÍ' : 'NO');
+            
             if (pedido && Array.isArray(pedido.items)) {
                 const pedidoItem = pedido.items[parseInt(itemIndex)];
-                if (pedidoItem && pedidoItem.tipo === 'personalizado') {
+                console.log('Item del pedido:', pedidoItem);
+                
+                if (pedidoItem && (pedidoItem.tipo === 'personalizado' || !pedidoItem.tipo)) {
+                    // Obtener la fecha de entrega
+                    let fechaEntrega = '';
+                    if (pedido.fechaEntrega) {
+                        fechaEntrega = formatDate(pedido.fechaEntrega);
+                    } else if (pedido.createdAt) {
+                        // Agregar 7 días a la fecha de creación como fecha estimada
+                        const fecha = new Date(pedido.createdAt);
+                        fecha.setDate(fecha.getDate() + 7);
+                        fechaEntrega = formatDate(fecha);
+                    }
+
+                    // Calcular el precio
+                    const precio = typeof pedidoItem.subtotal === 'number' 
+                        ? pedidoItem.subtotal 
+                        : (Number(pedidoItem.precioUnitario||0) * Number(pedidoItem.cantidad||1));
+
                     // Convertir item de pedido a formato esperado
                     item = {
                         _id: id,
                         clienteId: pedido.clienteId,
-                        productoBaseId: pedidoItem.productoId || '',
-                        nombre: pedidoItem.nombre || '',
-                        descripcion: pedidoItem.categoria ? `Categoría: ${pedidoItem.categoria}` : '',
-                        categoria: pedidoItem.categoria || '',
-                        marcaId: '',
-                        material: '-',
-                        color: '-',
-                        tipoLente: '-',
-                        precioCalculado: typeof pedidoItem.subtotal === 'number' ? pedidoItem.subtotal : (Number(pedidoItem.precioUnitario||0) * Number(pedidoItem.cantidad||1)),
-                        fechaEntregaEstimada: pedido.fechaEntrega || '',
+                        productoBaseId: pedidoItem.productoId || (lenteOptions.length > 0 ? lenteOptions[0].value : ''),
+                        nombre: pedidoItem.nombre || 'Producto Personalizado',
+                        descripcion: pedidoItem.categoria ? `Categoría: ${pedidoItem.categoria}` : 'Producto personalizado desde pedido',
+                        categoria: pedidoItem.categoria || (categoriaOptions.length > 0 ? categoriaOptions[0].value : ''),
+                        marcaId: marcaOptions.length > 0 ? marcaOptions[0].value : '',
+                        material: pedidoItem.material || 'Policarbonato',
+                        color: pedidoItem.color || 'Transparente',
+                        tipoLente: pedidoItem.tipoLente || 'Monofocal',
+                        precioCalculado: precio,
+                        fechaEntregaEstimada: fechaEntrega,
                         cotizacion: {
-                            total: typeof pedidoItem.subtotal === 'number' ? pedidoItem.subtotal : (Number(pedidoItem.precioUnitario||0) * Number(pedidoItem.cantidad||1)),
-                            validaHasta: ''
+                            total: precio,
+                            validaHasta: fechaEntrega
                         }
                     };
+                    console.log('✅ Item construido desde pedido:', item);
                 }
             }
         }
         
         if (!item) {
+            console.error('❌ No se encontró el producto para editar');
             showError('No se encontró el producto para editar', 3000);
             return;
         }
+        
+        console.log('📝 Preparando formulario con item:', item);
         
         setEditingId(id);
         setFormData({
@@ -543,9 +571,9 @@ const PersonalizadosContent = () => {
             descripcion: item.descripcion || '',
             categoria: item.categoria || '',
             marcaId: item.marcaId?._id || item.marcaId || '',
-            material: item.material || '',
-            color: item.color || '',
-            tipoLente: item.tipoLente || '',
+            material: item.material || 'Policarbonato',
+            color: item.color || 'Transparente',
+            tipoLente: item.tipoLente || 'Monofocal',
             precioCalculado: typeof item.precioCalculado === 'number' ? item.precioCalculado : null,
             fechaEntregaEstimada: item.fechaEntregaEstimada ? formatDate(item.fechaEntregaEstimada) : '',
             cotizacion: {
@@ -555,6 +583,7 @@ const PersonalizadosContent = () => {
         });
         setErrors({});
         setShowEditModal(true);
+        console.log('✅ Modal de edición abierto');
     };
 
     const handleUpdate = async (e) => {
