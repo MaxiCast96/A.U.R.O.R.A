@@ -497,8 +497,44 @@ const PersonalizadosContent = () => {
     };
 
     const prepareEdit = (id) => {
-        const item = Array.isArray(apiData) ? apiData.find(x => x._id === id) : null;
-        if (!item) return;
+        // Buscar primero en productos personalizados normales
+        let item = Array.isArray(apiData) ? apiData.find(x => x._id === id) : null;
+        
+        // Si no se encuentra, buscar en productos de pedidos
+        if (!item && id.includes(':')) {
+            const [pedidoId, itemIndex] = id.split(':');
+            const pedido = Array.isArray(pedidosData) ? pedidosData.find(p => p._id === pedidoId) : null;
+            if (pedido && Array.isArray(pedido.items)) {
+                const pedidoItem = pedido.items[parseInt(itemIndex)];
+                if (pedidoItem && pedidoItem.tipo === 'personalizado') {
+                    // Convertir item de pedido a formato esperado
+                    item = {
+                        _id: id,
+                        clienteId: pedido.clienteId,
+                        productoBaseId: pedidoItem.productoId || '',
+                        nombre: pedidoItem.nombre || '',
+                        descripcion: pedidoItem.categoria ? `Categoría: ${pedidoItem.categoria}` : '',
+                        categoria: pedidoItem.categoria || '',
+                        marcaId: '',
+                        material: '-',
+                        color: '-',
+                        tipoLente: '-',
+                        precioCalculado: typeof pedidoItem.subtotal === 'number' ? pedidoItem.subtotal : (Number(pedidoItem.precioUnitario||0) * Number(pedidoItem.cantidad||1)),
+                        fechaEntregaEstimada: pedido.fechaEntrega || '',
+                        cotizacion: {
+                            total: typeof pedidoItem.subtotal === 'number' ? pedidoItem.subtotal : (Number(pedidoItem.precioUnitario||0) * Number(pedidoItem.cantidad||1)),
+                            validaHasta: ''
+                        }
+                    };
+                }
+            }
+        }
+        
+        if (!item) {
+            showError('No se encontró el producto para editar', 3000);
+            return;
+        }
+        
         setEditingId(id);
         setFormData({
             clienteId: item.clienteId?._id || item.clienteId || '',
