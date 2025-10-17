@@ -79,8 +79,7 @@ registerClientesController.register = async (req, res) => {
                 to: correoNorm,
                 subject,
                 html,
-                text,
-                from: '"Óptica La Inteligente" <onboarding@resend.dev>'
+                text
             });
 
             // En desarrollo, devolvemos también el código para facilitar pruebas
@@ -95,7 +94,8 @@ registerClientesController.register = async (req, res) => {
             console.log("Error enviando email (Resend):", error?.message || error);
             if (config.server?.nodeEnv !== 'production') {
                 return res.json({
-                    message: "No se pudo enviar el correo en desarrollo, usa el código mostrado para verificar.",
+                    message: "Error enviando email de verificación",
+                    error: error?.message || String(error),
                     devVerificationCode: verificationCode
                 });
             }

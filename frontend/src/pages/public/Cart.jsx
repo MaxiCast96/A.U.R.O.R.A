@@ -25,8 +25,7 @@ const Cart = () => {
   const [form, setForm] = useState({
     sucursalId: '',
     empleadoId: '',
-    metodoPago: 'efectivo',
-    montoPagado: '',
+    metodoPago: 'tarjeta_credito',
     emailPago: '',
     telefonoCliente: '',
     nombreCliente: '',
@@ -222,8 +221,8 @@ const Cart = () => {
       return;
     }
 
-    // Calcular montoPagado automáticamente si no se ingresó
-    const montoPagadoNum = (form.montoPagado !== '' && !Number.isNaN(Number(form.montoPagado))) ? Number(form.montoPagado) : montoTotal;
+    // Monto pagado se iguala al total automáticamente
+    const montoPagadoNum = montoTotal;
     const cambio = Math.max(0, Number(montoPagadoNum) - montoTotal);
     const payload = {
       carritoId: cart._id,
@@ -236,7 +235,7 @@ const Cart = () => {
         montoPagado: Number(montoPagadoNum),
         montoTotal: montoTotal,
         cambio,
-        numeroTransaccion: form.metodoPago === 'efectivo' || form.metodoPago === 'cheque' ? undefined : (effectiveTxId || `TX-${Date.now()}`)
+        numeroTransaccion: form.metodoPago === 'cheque' ? undefined : (effectiveTxId || `TX-${Date.now()}`)
       },
       facturaDatos: {
         // El backend valida numeroFactura como obligatorio; generamos uno temporal
@@ -469,11 +468,14 @@ const Cart = () => {
       // Mantener URLs absolutas o data URIs
       if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src;
 
-      // Normalizar BASE origin (sin /api)
+      // Si es un asset público del frontend, no prefijar con origin del backend
+      if (src.startsWith('/img/')) return src;
+
+      // Normalizar BASE origin (sin /api) para recursos servidos por backend (p.ej. /uploads)
       const apiBase = API_CONFIG.BASE_URL || '';
       const origin = apiBase.replace(/\/api$/, '');
 
-      // Si empieza con '/', pegar al origin
+      // Si empieza con '/', pegar al origin (backend)
       if (src.startsWith('/')) return `${origin}${src}`;
 
       // Si es relativo (no empieza con '/'), construir como origin + '/' + src
@@ -585,7 +587,6 @@ const Cart = () => {
                     <div>
                       <label className="block text-sm text-gray-600" htmlFor="metodoPago">Método de pago</label>
                       <select id="metodoPago" name="metodoPago" value={form.metodoPago} onChange={handleChange} className={`w-full border rounded-lg px-3 py-2 ${fieldErrors.metodoPago ? 'border-red-400' : 'border-gray-200'}`}>
-                        <option value="efectivo">Efectivo</option>
                         <option value="tarjeta_credito">Tarjeta crédito</option>
                         <option value="tarjeta_debito">Tarjeta débito</option>
                         <option value="transferencia">Transferencia</option>
@@ -593,11 +594,7 @@ const Cart = () => {
                       </select>
                       {fieldErrors.metodoPago && <p className="text-xs text-red-600 mt-1">{fieldErrors.metodoPago}</p>}
                     </div>
-                    <div>
-                      <label className="block text-sm text-gray-600" htmlFor="montoPagado">Monto pagado</label>
-                      <input id="montoPagado" type="number" name="montoPagado" placeholder="0.00" value={form.montoPagado} onChange={handleChange} className={`w-full border rounded-lg px-3 py-2 ${fieldErrors.montoPagado ? 'border-red-400' : 'border-gray-200'}`} />
-                      {fieldErrors.montoPagado && <p className="text-xs text-red-600 mt-1">{fieldErrors.montoPagado}</p>}
-                    </div>
+                    
                     <div>
                       <label className="block text-sm text-gray-600" htmlFor="emailPago">Email para recibo/pago</label>
                       <input id="emailPago" type="email" name="emailPago" placeholder="tu@correo.com" value={form.emailPago} onChange={handleChange} className={`w-full border rounded-lg px-3 py-2 ${fieldErrors.emailPago ? 'border-red-400' : 'border-gray-200'}`} />
