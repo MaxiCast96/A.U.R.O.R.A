@@ -165,23 +165,19 @@ const SucursalesContent = () => {
 
     // Estados para el formulario - CORREGIDO PARA COINCIDIR CON SucursalesFormModal
     const [formData, setFormData] = useState({
-        // Información General
-        nombre: '',
-        codigo: '',
-        correo: '',
-        telefono: '+503',
-        
-        // Ubicación
-        departamento: '',
-        municipio: '',
-        direccion: '',
-        
-        // Información Operacional
-        horarioApertura: '',
-        horarioCierre: '',
-        gerente: '',
-        estado: 'Activa'
-    });
+    // Información General
+    nombre: '',
+    correo: '',
+    telefono: '+503',
+    
+    // Ubicación
+    departamento: '',
+    municipio: '',
+    direccion: '',
+    
+    // Información Operacional
+    estado: 'Activa'
+});
     const [errors, setErrors] = useState({});
 
     // --- FUNCIÓN PARA OBTENER DATOS ---
@@ -235,92 +231,63 @@ const SucursalesContent = () => {
         return `${calle || ''}, ${ciudad || ''}, ${departamento || ''}`.replace(/(^,\s|,\s$)/g, '');
     }, []);
 
-    // --- FUNCIÓN PARA VALIDAR EL FORMULARIO ---
-    const validateForm = () => {
-        const newErrors = {};
+// --- FUNCIÓN PARA VALIDAR EL FORMULARIO ---
+const validateForm = () => {
+    const newErrors = {};
 
-        // Información General
-        if (!formData.nombre.trim()) {
-            newErrors.nombre = 'El nombre de la sucursal es obligatorio';
-        }
-        
-        if (!formData.codigo.trim()) {
-            newErrors.codigo = 'El código de la sucursal es obligatorio';
-        }
-        
-        if (!formData.correo.trim()) {
-            newErrors.correo = 'El correo electrónico es obligatorio';
-        } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
-            newErrors.correo = 'El formato del correo no es válido';
-        }
-        
-        if (!formData.telefono || formData.telefono === '+503') {
-            newErrors.telefono = 'El teléfono es obligatorio';
-        } else if (!/^\+503[6-7]\d{7}$/.test(formData.telefono)) {
-            newErrors.telefono = 'El formato del teléfono no es válido';
-        }
+    // Información General
+    if (!formData.nombre.trim()) {
+        newErrors.nombre = 'El nombre de la sucursal es obligatorio';
+    }
+    
+    if (!formData.correo.trim()) {
+        newErrors.correo = 'El correo electrónico es obligatorio';
+    } else if (!/\S+@\S+\.\S+/.test(formData.correo)) {
+        newErrors.correo = 'El formato del correo no es válido';
+    }
+    
+    if (!formData.telefono || formData.telefono === '+503') {
+        newErrors.telefono = 'El teléfono es obligatorio';
+    } else if (!/^\+503[6-7]\d{7}$/.test(formData.telefono)) {
+        newErrors.telefono = 'El formato del teléfono no es válido';
+    }
 
-        // Ubicación
-        if (!formData.departamento.trim()) {
-            newErrors.departamento = 'El departamento es obligatorio';
-        }
-        
-        if (!formData.municipio.trim()) {
-            newErrors.municipio = 'El municipio es obligatorio';
-        }
-        
-        if (!formData.direccion.trim()) {
-            newErrors.direccion = 'La dirección es obligatoria';
-        }
+    // Ubicación
+    if (!formData.departamento.trim()) {
+        newErrors.departamento = 'El departamento es obligatorio';
+    }
+    
+    if (!formData.municipio.trim()) {
+        newErrors.municipio = 'El municipio es obligatorio';
+    }
+    
+    if (!formData.direccion.trim()) {
+        newErrors.direccion = 'La dirección es obligatoria';
+    }
 
-        // Información Operacional
-        if (!formData.horarioApertura) {
-            newErrors.horarioApertura = 'El horario de apertura es obligatorio';
-        }
-        
-        if (!formData.horarioCierre) {
-            newErrors.horarioCierre = 'El horario de cierre es obligatorio';
-        }
-        
-        if (!formData.gerente.trim()) {
-            newErrors.gerente = 'El nombre del gerente es obligatorio';
-        }
-        
-        if (!formData.estado) {
-            newErrors.estado = 'El estado de la sucursal es obligatorio';
-        }
+    // Información Operacional
+    if (!formData.estado) {
+        newErrors.estado = 'El estado de la sucursal es obligatorio';
+    }
 
-        // Validación de horarios
-        if (formData.horarioApertura && formData.horarioCierre) {
-            const apertura = new Date(`1970-01-01T${formData.horarioApertura}:00`);
-            const cierre = new Date(`1970-01-01T${formData.horarioCierre}:00`);
-            
-            if (apertura >= cierre) {
-                newErrors.horarioCierre = 'El horario de cierre debe ser posterior al de apertura';
-            }
-        }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+};
 
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
+// --- FUNCIÓN PARA RESETEAR EL FORMULARIO ---
+const resetForm = () => {
+    setFormData({
+        nombre: '',
+        correo: '',
+        telefono: '+503',
+        departamento: '',
+        municipio: '',
+        direccion: '',
+        estado: 'Activa'
+    });
+    setErrors({});
+};
 
-    // --- FUNCIÓN PARA RESETEAR EL FORMULARIO ---
-    const resetForm = () => {
-        setFormData({
-            nombre: '',
-            codigo: '',
-            correo: '',
-            telefono: '+503',
-            departamento: '',
-            municipio: '',
-            direccion: '',
-            horarioApertura: '',
-            horarioCierre: '',
-            gerente: '',
-            estado: 'Activa'
-        });
-        setErrors({});
-    };
 
     // --- FUNCIÓN PARA MANEJAR ORDENAMIENTO ---
     const handleSortChange = useCallback((sortValue) => {
@@ -553,31 +520,36 @@ const SucursalesContent = () => {
     };
 
     // --- FUNCIÓN PARA ENVÍO DEL FORMULARIO ---
-    const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
+    if (e && e.preventDefault) {
         e.preventDefault();
-        
-        if (!validateForm()) {
-            return;
-        }
+        e.stopPropagation();
+    }
+    
+    // Validar el formulario primero
+    if (!validateForm()) {
+        console.log('Errores de validación:', errors);
+        return false;
+    }
 
-        // Transformar los datos para que coincidan con la estructura del backend
-        const dataToSend = {
-            nombre: formData.nombre,
-            codigo: formData.codigo,
-            correo: formData.correo,
-            telefono: formData.telefono,
-            direccion: {
-                calle: formData.direccion,
-                ciudad: formData.municipio,
-                departamento: formData.departamento
-            },
-            horarioApertura: formData.horarioApertura,
-            horarioCierre: formData.horarioCierre,
-            gerente: formData.gerente,
-            activo: formData.estado === 'Activa'
-        };
+    // Transformar los datos para que coincidan EXACTAMENTE con la estructura del backend
+    const dataToSend = {
+        nombre: formData.nombre.trim(),
+        correo: formData.correo.trim(),
+        telefono: formData.telefono,
+        direccion: {
+            calle: formData.direccion.trim(),
+            ciudad: formData.municipio.trim(),
+            departamento: formData.departamento.trim()
+        },
+        horariosAtencion: [], // Array vacío por ahora
+        activo: formData.estado === 'Activa'
+    };
 
-        let success = false;
+    console.log('Datos a enviar:', dataToSend);
+
+    let success = false;
+    try {
         if (selectedSucursal) {
             success = await updateSucursal(selectedSucursal._id, dataToSend);
         } else {
@@ -589,8 +561,15 @@ const SucursalesContent = () => {
             setShowEditModal(false);
             resetForm();
             setSelectedSucursal(null);
+            return true;
         }
-    };
+    } catch (error) {
+        console.error('Error en handleSubmit:', error);
+        showAlert('error', 'Error al procesar la solicitud');
+    }
+    
+    return false;
+};
 
     // Modal handlers
     const handleAdd = () => {
@@ -600,28 +579,24 @@ const SucursalesContent = () => {
     };
 
     const handleEdit = (sucursal) => {
-        setSelectedSucursal(sucursal);
-        const direccion = sucursal.direccion || {};
-        setFormData({
-            // Información General
-            nombre: sucursal.nombre || '',
-            codigo: sucursal.codigo || '',
-            correo: sucursal.correo || '',
-            telefono: sucursal.telefono || '+503',
-            
-            // Ubicación
-            departamento: direccion.departamento || '',
-            municipio: direccion.ciudad || '', // Nota: backend usa 'ciudad', frontend usa 'municipio'
-            direccion: direccion.calle || '',
-            
-            // Información Operacional
-            horarioApertura: sucursal.horarioApertura || '',
-            horarioCierre: sucursal.horarioCierre || '',
-            gerente: sucursal.gerente || '',
-            estado: sucursal.activo ? 'Activa' : 'Inactiva'
-        });
-        setShowEditModal(true);
-    };
+    setSelectedSucursal(sucursal);
+    const direccion = sucursal.direccion || {};
+    setFormData({
+        // Información General
+        nombre: sucursal.nombre || '',
+        correo: sucursal.correo || '',
+        telefono: sucursal.telefono || '+503',
+        
+        // Ubicación
+        departamento: direccion.departamento || '',
+        municipio: direccion.ciudad || '',
+        direccion: direccion.calle || '',
+        
+        // Información Operacional
+        estado: sucursal.activo ? 'Activa' : 'Inactiva'
+    });
+    setShowEditModal(true);
+};
 
     const handleDetail = (sucursal) => {
         setSelectedSucursal(sucursal);
