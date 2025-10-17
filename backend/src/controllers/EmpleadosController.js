@@ -153,7 +153,7 @@ empleadosController.updateEmpleados = async (req, res) => {
 
                 if (otherAdminsCount === 0) {
                     return res.status(403).json({ 
-                        message: "❌ No puedes cambiar tu propio rol de Administrador. Eres el único administrador activo del sistema." 
+                        message: "  No puedes cambiar tu propio rol de Administrador. Eres el único administrador activo del sistema." 
                     });
                 }
             }
@@ -168,7 +168,7 @@ empleadosController.updateEmpleados = async (req, res) => {
 
                 if (otherActiveAdminsCount === 0) {
                     return res.status(403).json({ 
-                        message: "❌ No puedes desactivar tu propia cuenta. Eres el único administrador activo del sistema." 
+                        message: "  No puedes desactivar tu propia cuenta. Eres el único administrador activo del sistema." 
                     });
                 }
             }
@@ -249,7 +249,7 @@ empleadosController.deleteEmpleados = async (req, res) => {
         // 🚫 BLOQUEAR: No permitir auto-eliminación
         if (currentUserId && String(currentUserId) === String(empleadoIdToDelete)) {
             return res.status(403).json({ 
-                message: "❌ No puedes eliminar tu propia cuenta mientras estás autenticado. Solicita a otro administrador que realice esta acción." 
+                message: "  No puedes eliminar tu propia cuenta mientras estás autenticado. Solicita a otro administrador que realice esta acción." 
             });
         }
 
@@ -270,7 +270,7 @@ empleadosController.deleteEmpleados = async (req, res) => {
             
             if (adminCount === 0) {
                 return res.status(403).json({ 
-                    message: "❌ No se puede eliminar al único administrador activo del sistema. Debe existir al menos un administrador." 
+                    message: "  No se puede eliminar al único administrador activo del sistema. Debe existir al menos un administrador." 
                 });
             }
         }

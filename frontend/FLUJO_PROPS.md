@@ -137,9 +137,9 @@ const BrandsCarousel = ({
 
 ## 🚫 **ANTES (INCORRECTO)**
 ```jsx
-// ❌ Componente hijo manejando datos
+//   Componente hijo manejando datos
 const BrandsCarousel = () => {
-  const { data: brands } = useData('marcas'); // ❌ Hook en hijo
+  const { data: brands } = useData('marcas'); //   Hook en hijo
   return <div>{/* render */}</div>;
 };
 ```

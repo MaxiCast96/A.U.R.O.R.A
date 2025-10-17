@@ -445,7 +445,7 @@ const ArosContent = () => {
   
   console.log('\n✔ PASO 2: Validando formulario...');
   if (!validateForm()) {
-    console.error('❌ Validación FALLÓ. Errores:', errors);
+    console.error('  Validación FALLÓ. Errores:', errors);
     showAlert('error', 'Por favor, corrige los errores del formulario.');
     return;
   }
@@ -456,7 +456,7 @@ const ArosContent = () => {
   
   // 🔥 VALIDACIÓN CRÍTICA: Asegurarse de que sucursales existe
   if (!formData.sucursales || !Array.isArray(formData.sucursales)) {
-    console.error('❌ ERROR: formData.sucursales no es un array válido:', formData.sucursales);
+    console.error('  ERROR: formData.sucursales no es un array válido:', formData.sucursales);
     showAlert('error', 'Error: Debe seleccionar al menos una sucursal');
     return;
   }
@@ -564,7 +564,7 @@ const ArosContent = () => {
     
   } catch (error) {
     console.log('\n╔═══════════════════════════════════════╗');
-    console.log('║   ❌ ERROR EN EL SUBMIT                ║');
+    console.log('║     ERROR EN EL SUBMIT                ║');
     console.log('╚═══════════════════════════════════════╝');
     
     console.error('\n🔥 Error completo:', error);
@@ -602,7 +602,7 @@ const ArosContent = () => {
     showAlert('error', `Error al guardar el aro: ${errorMessage}`);
     
     console.log('\n╔═══════════════════════════════════════╗');
-    console.log('║   ❌ FIN DEL ERROR LOGGING             ║');
+    console.log('║     FIN DEL ERROR LOGGING             ║');
     console.log('╚═══════════════════════════════════════╝\n');
   }
 };

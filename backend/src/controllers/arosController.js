@@ -63,7 +63,7 @@ async function createAros(req, res) {
             console.log('✅ Sucursales parseadas:', sucursales);
         } 
         catch (e) { 
-            console.error('❌ Error parseando sucursales:', e.message);
+            console.error('  Error parseando sucursales:', e.message);
             return res.status(400).json({ 
                 success: false,
                 message: "Error en el formato de sucursales: " + e.message 
@@ -80,7 +80,7 @@ async function createAros(req, res) {
             medidas = JSON.parse(medidas);
             console.log('✅ Medidas parseadas:', medidas);
         } catch (e) {
-            console.error('❌ Error parseando medidas:', e.message);
+            console.error('  Error parseando medidas:', e.message);
             return res.status(400).json({ 
                 success: false,
                 message: "Error en el formato de medidas: " + e.message 
@@ -97,7 +97,7 @@ async function createAros(req, res) {
             imagenes = JSON.parse(imagenes);
             console.log('✅ Imágenes parseadas, cantidad:', imagenes?.length);
         } catch (e) {
-            console.error('❌ Error parseando imágenes:', e.message);
+            console.error('  Error parseando imágenes:', e.message);
             return res.status(400).json({ 
                 success: false,
                 message: "Error en el formato de imágenes: " + e.message 
@@ -167,7 +167,7 @@ async function createAros(req, res) {
         console.log('✅ Aro creado exitosamente');
         res.json({ success: true, message: "Aro guardado", data: newAros });
     } catch (error) {
-        console.error("❌ Error creando aros:", error);
+        console.error("  Error creando aros:", error);
         const status = error.name === 'ValidationError' ? 400 : 500;
         res.status(status).json({ 
             success: false, 
@@ -202,7 +202,7 @@ async function updateAros(req, res) {
     
     // CRÍTICO: Validar que req.body existe
     if (!req.body || Object.keys(req.body).length === 0) {
-        console.error('❌ req.body está vacío o undefined');
+        console.error('  req.body está vacío o undefined');
         return res.status(400).json({ 
             success: false, 
             message: 'No se recibieron datos en el body' 
@@ -219,7 +219,7 @@ async function updateAros(req, res) {
             sucursales = JSON.parse(sucursales);
             console.log('✅ Sucursales parseadas:', sucursales);
         } catch (e) {
-            console.error('❌ Error parseando sucursales:', e.message);
+            console.error('  Error parseando sucursales:', e.message);
             return res.status(400).json({ 
                 success: false,
                 message: "Error en el formato de sucursales: " + e.message 
@@ -229,7 +229,7 @@ async function updateAros(req, res) {
     
     // Validar que sucursales existe después del parsing
     if (!sucursales) {
-        console.error('❌ Sucursales es undefined después del parsing');
+        console.error('  Sucursales es undefined después del parsing');
         return res.status(400).json({ 
             success: false, 
             message: 'El campo sucursales es requerido' 
@@ -246,7 +246,7 @@ async function updateAros(req, res) {
             medidas = JSON.parse(medidas);
             console.log('✅ Medidas parseadas:', medidas);
         } catch (e) {
-            console.error('❌ Error parseando medidas:', e.message);
+            console.error('  Error parseando medidas:', e.message);
             return res.status(400).json({ 
                 success: false,
                 message: "Error en el formato de medidas: " + e.message 
@@ -263,7 +263,7 @@ async function updateAros(req, res) {
             imagenes = JSON.parse(imagenes);
             console.log('✅ Imágenes parseadas, cantidad:', imagenes?.length);
         } catch (e) {
-            console.error('❌ Error parseando imágenes:', e.message);
+            console.error('  Error parseando imágenes:', e.message);
             return res.status(400).json({ 
                 success: false,
                 message: "Error en el formato de imágenes: " + e.message 
@@ -328,7 +328,7 @@ async function updateAros(req, res) {
                 .filter(Boolean);
             console.log('✅ Sucursales procesadas:', sucursalesLimpias.length);
         } else {
-            console.error('❌ sucursales no es un array:', typeof sucursales);
+            console.error('  sucursales no es un array:', typeof sucursales);
             return res.status(400).json({ 
                 success: false, 
                 message: 'Sucursales debe ser un array' 
@@ -397,7 +397,7 @@ async function updateAros(req, res) {
         console.log('✅ Aro actualizado exitosamente');
         res.json({ success: true, message: "Aro actualizado", data: updated });
     } catch (error) {
-        console.error("❌ Error actualizando aros:", error);
+        console.error("  Error actualizando aros:", error);
         const status = error.name === 'ValidationError' ? 400 : 500;
         res.status(status).json({ success: false, message: "Error actualizando aros: " + error.message });
     }

@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import FormModal from '../../ui/FormModal';
 import { Camera, Upload, X, User, Edit3, Eye, EyeOff, Lock, Unlock, Check, AlertCircle, Phone as PhoneIcon, ArrowRight, Save, Loader } from 'lucide-react';
 import { EL_SALVADOR_DATA } from '../../constants/ElSalvadorData';
-import { useAuth } from '../../../context/AuthContext';
 
 // URL base de tu API
 const API_URL = 'https://aurora-production-7e57.up.railway.app/api/empleados';
@@ -532,11 +531,6 @@ const EmpleadosFormModal = ({
     selectedEmpleado, 
     onReturnToOptometristaEdit 
 }) => {
-    // 🔐 OBTENER USUARIO AUTENTICADO
-    const { user } = useAuth();
-    const isEditingSelf = selectedEmpleado && user && selectedEmpleado._id === user.id;
-    const isCurrentUserAdmin = selectedEmpleado?.cargo === 'Administrador' && isEditingSelf;
-
     const [validationErrors, setValidationErrors] = useState({});
     const [isLoading, setIsLoading] = useState(false);
     const [isError, setIsError] = useState(false);
@@ -680,7 +674,9 @@ const EmpleadosFormModal = ({
           break;
         
         case 'password':
+          // 🔥 SOLO validar password si estamos CREANDO o si tiene valor al EDITAR
           if (!selectedEmpleado) { 
+            // Modo creación: password es obligatorio
             if (!value) {
               newErrors[name] = 'La contraseña es obligatoria';
             } else if (value.length < 6 || value.length > 50) {
@@ -689,8 +685,10 @@ const EmpleadosFormModal = ({
               delete newErrors[name];
             }
           } else {
+            // Modo edición: solo validar SI se está cambiando
             if (value && value.length > 0) {
-              if (value.startsWith('$2b) || value.startsWith('$2a)) {
+              // Si tiene un hash de bcrypt, es inválido (no debería pasar, pero por seguridad)
+              if (value.startsWith('$2b$') || value.startsWith('$2a$')) {
                 newErrors[name] = 'No se puede usar el hash de contraseña directamente';
               } else if (value.length < 6 || value.length > 50) {
                 newErrors[name] = 'La contraseña debe tener entre 6 y 50 caracteres';
@@ -698,6 +696,7 @@ const EmpleadosFormModal = ({
                 delete newErrors[name];
               }
             } else {
+              // Si está vacío en modo edición, es válido (no se cambiará)
               delete newErrors[name];
             }
           }
@@ -742,6 +741,7 @@ const EmpleadosFormModal = ({
       }
     };
 
+    // 🔥 useEffect MEJORADO - Inicializar password como vacío al editar
     useEffect(() => {
         if (selectedEmpleado) {
             console.log('Initializing form with employee data:', selectedEmpleado);
@@ -766,7 +766,7 @@ const EmpleadosFormModal = ({
                 ...prev,
                 ...selectedEmpleado,
                 direccion: direccionData,
-                password: '',
+                password: '', // 🔥 CRÍTICO: Siempre vacío al editar
                 fechaContratacion: selectedEmpleado.fechaContratacion 
                     ? new Date(selectedEmpleado.fechaContratacion).toISOString().split('T')[0]
                     : '',
@@ -782,21 +782,20 @@ const EmpleadosFormModal = ({
                     municipio: '',
                     direccionDetallada: ''
                 },
-                password: ''
+                password: '' // 🔥 También vacío al crear
             }));
         }
     }, [selectedEmpleado, setFormData]);
 
-    // 🔐 SECCIONES CON VALIDACIONES DE SEGURIDAD
     const sections = [
-        { title: "📝 Información Personal", fields: [
+        { title: " Información Personal", fields: [
             { name: 'nombre', label: 'Nombre', type: 'text', placeholder: 'Juan Carlos', required: true },
             { name: 'apellido', label: 'Apellido', type: 'text', placeholder: 'García López', required: true },
             { name: 'dui', label: 'DUI', type: 'text', placeholder: '12345678-9', required: true },
             { name: 'telefono', label: 'Teléfono', type: 'text', placeholder: '78901234', required: true },
             { name: 'correo', label: 'Correo Electrónico', type: 'email', placeholder: 'juan.garcia@email.com', required: true },
         ]},
-        { title: "🏠 Información de Residencia", fields: [
+        { title: " Información de Residencia", fields: [
             { 
                 name: 'direccion.departamento', 
                 label: 'Departamento', 
@@ -826,36 +825,25 @@ const EmpleadosFormModal = ({
                 required: true 
             },
         ]},
-        { title: "💼 Información Laboral", fields: [
+        { title: "Información Laboral", fields: [
             { name: 'sucursalId', label: 'Sucursal', type: 'select', options: sucursales?.map(s => ({ value: s._id, label: s.nombre })) || [], required: true },
-            { 
-                name: 'cargo', 
-                label: 'Puesto', 
-                type: 'select', 
-                options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], 
-                required: true,
-                disabled: isCurrentUserAdmin // 🔒 Deshabilitar si es el usuario actual admin
-            },
+            { name: 'cargo', label: 'Puesto', type: 'select', options: ['Administrador', 'Gerente', 'Vendedor', 'Optometrista', 'Técnico', 'Recepcionista'], required: true },
             { name: 'salario', label: 'Salario (USD)', type: 'number', placeholder: '500.00', required: true },
             { name: 'fechaContratacion', label: 'Fecha de Contratación', type: 'date', required: true },
-            { 
-                name: 'estado', 
-                label: 'Estado', 
-                type: 'select', 
-                options: ['Activo', 'Inactivo'], 
-                required: true,
-                disabled: isEditingSelf // 🔒 Deshabilitar si es el usuario actual
-            },
+            { name: 'estado', label: 'Estado', type: 'select', options: ['Activo', 'Inactivo'], required: true },
         ]}
     ];
 
+    // 🔥 handleFormSubmit MEJORADO - Eliminar password si está vacío
     const handleFormSubmit = async () => {
+        // Validar todos los campos antes de enviar
         const fieldsToValidate = [
             'nombre', 'apellido', 'dui', 'telefono', 'correo', 'cargo', 
             'sucursalId', 'salario', 'fechaContratacion', 'estado',
             'departamento', 'municipio', 'direccionDetallada'
         ];
         
+        // 🔥 Solo validar password si estamos creando
         if (!selectedEmpleado) {
             fieldsToValidate.push('password');
         }
@@ -870,6 +858,7 @@ const EmpleadosFormModal = ({
             validateField(field, value);
         });
 
+        // Si hay errores de validación, no enviar
         if (Object.keys(validationErrors).length > 0) {
             setHasValidationErrors(true);
             return;
@@ -880,9 +869,11 @@ const EmpleadosFormModal = ({
         setIsError(false);
 
         try {
+            // 🔥 PREPARAR DATOS - Eliminar password si está vacío o es un hash
             let dataToSubmit = { ...formData };
             
             if (selectedEmpleado) {
+                // Al editar: solo incluir password si tiene un valor válido y NO es un hash
                 if (!dataToSubmit.password || 
                     dataToSubmit.password.trim() === '' || 
                     dataToSubmit.password.startsWith('$2b') ||
@@ -926,19 +917,6 @@ const EmpleadosFormModal = ({
 
     const customContent = (
         <div className="space-y-8">
-            {/* 🔐 ALERTA INFORMATIVA SI ESTÁ EDITANDO SU PROPIA CUENTA */}
-            {isEditingSelf && (
-                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
-                    <div className="flex items-center space-x-2">
-                        <AlertCircle className="w-5 h-5 text-blue-600" />
-                        <p className="text-sm text-blue-800 font-medium">
-                            Estás editando tu propia cuenta. 
-                            {isCurrentUserAdmin && ' No puedes cambiar tu rol de Administrador ni desactivar tu cuenta.'}
-                        </p>
-                    </div>
-                </div>
-            )}
-
             <div className="bg-gray-50 p-6 rounded-2xl border">
                 <div className="flex justify-center">
                     <PhotoUploadComponent 
