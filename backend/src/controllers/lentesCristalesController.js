@@ -65,6 +65,7 @@ async function getLentesCristalesEnPromocion(_req, res) {
       .populate('categoriaId').populate('marcaId').populate('promocionId').populate('sucursales.sucursalId');
     return res.json({ success: true, data: items });
   } catch (error) {
+    return res.status(500).json({ success: false, message: 'Error listando promociones: ' + error.message });
   }
 }
 
@@ -76,9 +77,23 @@ async function createLenteCristal(req, res) {
     }
 
     const data = req.body || {};
+    
     // Normalizar posibles objetos en IDs
     const categoriaIdNorm = (data.categoriaId && typeof data.categoriaId === 'object') ? (data.categoriaId._id || data.categoriaId.id || '') : data.categoriaId;
     const marcaIdNorm = (data.marcaId && typeof data.marcaId === 'object') ? (data.marcaId._id || data.marcaId.id || '') : data.marcaId;
+    
+    // Normalizar protecciones
+    let protecciones = [];
+    if (Array.isArray(data.protecciones)) {
+      protecciones = data.protecciones;
+    } else if (typeof data.protecciones === 'string') {
+      try {
+        protecciones = JSON.parse(data.protecciones);
+      } catch {
+        protecciones = data.protecciones ? [data.protecciones] : [];
+      }
+    }
+    
     let imagenes = [];
 
     if (req.files && req.files.length > 0) {
@@ -105,6 +120,8 @@ async function createLenteCristal(req, res) {
       marcaId: marcaIdNorm,
       material: data.material,
       indice: data.indice,
+      vision: data.vision,
+      protecciones: protecciones,
       tratamientos: Array.isArray(data.tratamientos) ? data.tratamientos : (data.tratamientos ? [data.tratamientos] : []),
       rangoEsferico: data.rangoEsferico,
       rangoCilindrico: data.rangoCilindrico,
@@ -136,6 +153,17 @@ async function updateLenteCristal(req, res) {
     const data = req.body || {};
     const categoriaIdNormU = (data.categoriaId && typeof data.categoriaId === 'object') ? (data.categoriaId._id || data.categoriaId.id || '') : data.categoriaId;
     const marcaIdNormU = (data.marcaId && typeof data.marcaId === 'object') ? (data.marcaId._id || data.marcaId.id || '') : data.marcaId;
+    
+    // Normalizar protecciones para update
+    let proteccionesUpd = data.protecciones;
+    if (typeof proteccionesUpd === 'string') {
+      try {
+        proteccionesUpd = JSON.parse(proteccionesUpd);
+      } catch {
+        proteccionesUpd = data.protecciones ? [data.protecciones] : undefined;
+      }
+    }
+    
     let imagenes = data.imagenes || [];
 
     if (req.files && req.files.length > 0) {
@@ -150,17 +178,19 @@ async function updateLenteCristal(req, res) {
     }
 
     // Normalizar promo para update
-  const enPromoFlag = (data.enPromocion === true || data.enPromocion === 'true');
-  const promoId = data.promocionId || null;
-  const isPromoValid = enPromoFlag && promoId;
+    const enPromoFlag = (data.enPromocion === true || data.enPromocion === 'true');
+    const promoId = data.promocionId || null;
+    const isPromoValid = enPromoFlag && promoId;
 
-  const setData = {
+    const setData = {
       nombre: data.nombre,
       descripcion: data.descripcion,
       categoriaId: categoriaIdNormU,
       marcaId: marcaIdNormU,
       material: data.material,
       indice: data.indice,
+      vision: data.vision,
+      protecciones: proteccionesUpd,
       tratamientos: Array.isArray(data.tratamientos) ? data.tratamientos : (data.tratamientos ? [data.tratamientos] : undefined),
       rangoEsferico: data.rangoEsferico,
       rangoCilindrico: data.rangoCilindrico,

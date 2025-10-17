@@ -10,6 +10,15 @@ const LenteCristalSchema = new Schema({
   // Propiedades técnicas de cristales
   material: { type: String, enum: ['Vidrio', 'Policarbonato', 'Cr39'], required: true },
   indice: { type: String, enum: ['1.50', '1.56', '1.60', '1.67', '1.74', 'Otro'], required: true },
+  vision: { 
+    type: String, 
+    enum: ['Sencilla', 'Multifocal', 'Bifocal'], 
+    default: 'Sencilla' 
+  },
+  protecciones: [{ 
+    type: String,
+    enum: ['Antirreflejante', 'Filtro azul', 'Fotocromático', 'Fotogray', 'Transition', 'Polarizado', 'Endurecido']
+  }],
   tratamientos: [{ type: String }], // AR, BlueCut, Fotocromatico, Polarizado, Endurecido, etc.
   rangoEsferico: {
     min: { type: Number, default: -20 },
