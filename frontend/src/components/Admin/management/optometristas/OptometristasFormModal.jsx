@@ -345,7 +345,7 @@ const OptometristasFormModal = ({
         const validationErrors = validateForm();
         
         if (Object.keys(validationErrors).length > 0) {
-            console.error('❌ Errores de validación:', validationErrors);
+            console.error('  Errores de validación:', validationErrors);
             setLocalErrors(validationErrors);
             showValidationErrors();
             return;
@@ -405,7 +405,7 @@ const OptometristasFormModal = ({
                 handlePostSubmission();
             }
         } catch (error) {
-            console.error('❌ Error al enviar formulario:', error);
+            console.error('  Error al enviar formulario:', error);
         } finally {
             setIsLoading(false);
         }

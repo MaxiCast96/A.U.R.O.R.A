@@ -634,7 +634,7 @@ const LentesContent = () => {
     console.log('Modo:', selectedLente ? '📝 EDICIÓN' : '➕ CREACIÓN');
     
     if (!validateForm()) {
-      console.error('❌ Validación FALLIDA. Errores:', errors);
+      console.error('  Validación FALLIDA. Errores:', errors);
       showAlert('error', 'Por favor, corrige los errores del formulario.');
       return;
     }
@@ -648,7 +648,7 @@ const LentesContent = () => {
         console.log('🔄 MODO ACTUALIZACIÓN (PUT FormData)');
         
         if (!formData.sucursales || !Array.isArray(formData.sucursales)) {
-          console.error('❌ ERROR: formData.sucursales no es un array válido:', formData.sucursales);
+          console.error('  ERROR: formData.sucursales no es un array válido:', formData.sucursales);
           showAlert('error', 'Error: Debe seleccionar al menos una sucursal');
           return;
         }
@@ -772,7 +772,7 @@ const LentesContent = () => {
       console.log('✅ SUBMIT COMPLETADO EXITOSAMENTE\n');
       
     } catch (error) {
-      console.log('❌ ERROR EN EL SUBMIT');
+      console.log('  ERROR EN EL SUBMIT');
       console.error('🔥 Error completo:', error);
       console.error('📛 Error name:', error.name);
       console.error('📛 Error message:', error.message);

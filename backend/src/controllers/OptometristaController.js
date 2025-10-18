@@ -34,7 +34,7 @@ optometristaController.createOptometrista = async (req, res) => {
         });
         
         if (missingFields.length > 0) {
-            console.log('❌ Campos faltantes:', missingFields);
+            console.log('  Campos faltantes:', missingFields);
             console.log('📝 Valores recibidos:', requiredFields);
             return res.status(400).json({ 
                 message: `Faltan campos requeridos: ${missingFields.join(', ')}`,
@@ -46,14 +46,14 @@ optometristaController.createOptometrista = async (req, res) => {
         // Verificar que el empleado existe
         const empleadoExists = await empleadosModel.findById(empleadoId);
         if (!empleadoExists) {
-            console.log('❌ Empleado no encontrado:', empleadoId);
+            console.log('  Empleado no encontrado:', empleadoId);
             return res.status(404).json({ message: "Empleado no encontrado" });
         }
 
         // Verificar que el empleado no sea ya optometrista
         const optometristaExists = await optometristaModel.findOne({ empleadoId });
         if (optometristaExists) {
-            console.log('❌ Empleado ya es optometrista:', empleadoId);
+            console.log('  Empleado ya es optometrista:', empleadoId);
             return res.status(409).json({ message: "Este empleado ya es un optometrista" });
         }
 
@@ -116,7 +116,7 @@ optometristaController.createOptometrista = async (req, res) => {
             optometrista: populatedOptometrista 
         });
     } catch (error) {
-        console.error('❌ Error en createOptometrista:', error);
+        console.error('  Error en createOptometrista:', error);
         res.status(500).json({ 
             message: "Error interno del servidor: " + error.message,
             error: error.message,
@@ -195,7 +195,7 @@ optometristaController.updateOptometrista = async (req, res) => {
             optometrista: updatedOptometrista 
         });
     } catch (error) {
-        console.error('❌ Error actualizando optometrista:', error);
+        console.error('  Error actualizando optometrista:', error);
         res.status(500).json({ message: "Error actualizando optometrista: " + error.message });
     }
 };

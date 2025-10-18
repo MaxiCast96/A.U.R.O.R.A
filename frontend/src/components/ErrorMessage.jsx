@@ -20,7 +20,7 @@ const ErrorMessage = ({ error, onRetry }) => {
     if (error.includes('500')) return '⚠️';
     if (error.includes('network')) return '📡';
     if (error.includes('timeout')) return '⏰';
-    return '❌';
+    return ' ';
   };
 
   const getSuggestions = (error) => {

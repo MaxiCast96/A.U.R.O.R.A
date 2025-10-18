@@ -16,7 +16,6 @@ const empleadosController = {};
 // SELECT - Obtiene todos los empleados
 empleadosController.getEmpleados = async (req, res) => {
     try {
-        // Busca todos los empleados y puebla datos de sucursal
         const empleados = await empleadosModel.find().populate('sucursalId', 'nombre');
         res.status(200).json(empleados);
     } catch (error) {
@@ -27,7 +26,6 @@ empleadosController.getEmpleados = async (req, res) => {
 // SELECT by ID - Obtiene empleado específico por ID
 empleadosController.getEmpleadoById = async (req, res) => {
     try {
-        // Busca empleado por ID y puebla datos completos de sucursal
         const empleado = await empleadosModel.findById(req.params.id).populate('sucursalId');
         if (!empleado) {
             return res.status(404).json({ message: "Empleado no encontrado" });
@@ -47,7 +45,7 @@ empleadosController.createEmpleados = async (req, res) => {
     } = req.body;
 
     try {
-        console.log("Datos recibidos:", req.body); // Log para debugging
+        console.log("Datos recibidos:", req.body);
 
         // Verificar si ya existe empleado con el mismo correo
         if (await empleadosModel.findOne({ correo })) {
@@ -87,7 +85,7 @@ empleadosController.createEmpleados = async (req, res) => {
             salario: parseFloat(salario),
             estado: estado || 'Activo',
             password: passwordHash,
-            fotoPerfil: fotoPerfil || "", // URL de Cloudinary desde el frontend
+            fotoPerfil: fotoPerfil || "",
             direccion: {
                 departamento: departamento || "",
                 municipio: municipio || "",
@@ -97,7 +95,6 @@ empleadosController.createEmpleados = async (req, res) => {
 
         await newEmpleado.save();
         
-        // Poblar los datos del empleado para respuesta completa
         const empleadoCreado = await empleadosModel.findById(newEmpleado._id).populate('sucursalId', 'nombre');
         
         res.status(201).json({ 
@@ -111,7 +108,7 @@ empleadosController.createEmpleados = async (req, res) => {
     }
 };
 
-// UPDATE - Actualizar empleado existente
+// UPDATE - Actualizar empleado existente (CON VALIDACIONES DE SEGURIDAD)
 empleadosController.updateEmpleados = async (req, res) => {
     const { id } = req.params;
     const {
@@ -121,25 +118,73 @@ empleadosController.updateEmpleados = async (req, res) => {
     } = req.body;
 
     try {
-        console.log("Datos recibidos para actualización:", req.body); // Log para debugging
+        console.log("Datos recibidos para actualización:", req.body);
 
-        // Busca empleado existente
+        // 🔐 VALIDACIÓN: Extraer usuario autenticado
+        let currentUserId = null;
+        let currentUserCargo = null;
+        try {
+            const token = req.cookies?.aurora_auth_token;
+            if (token) {
+                const jwt = (await import('jsonwebtoken')).default;
+                const { config } = await import('../config.js');
+                const decoded = jwt.verify(token, config.jwt.secret);
+                currentUserId = decoded?.id;
+                currentUserCargo = decoded?.cargo;
+            }
+        } catch (tokenError) {
+            console.log('Error al verificar token:', tokenError.message);
+        }
+
         const empleado = await empleadosModel.findById(id);
         if (!empleado) {
             return res.status(404).json({ message: "Empleado no encontrado." });
         }
 
-        // Verificar unicidad de correo (excluyendo empleado actual)
+        // 🚫 VALIDACIÓN: No permitir que un admin se quite su propio rol de admin
+        if (currentUserId && String(currentUserId) === String(id)) {
+            if (empleado.cargo === 'Administrador' && cargo && cargo !== 'Administrador') {
+                // Verificar que existan otros administradores activos
+                const otherAdminsCount = await empleadosModel.countDocuments({
+                    cargo: 'Administrador',
+                    estado: 'Activo',
+                    _id: { $ne: id }
+                });
+
+                if (otherAdminsCount === 0) {
+                    return res.status(403).json({ 
+                        message: "  No puedes cambiar tu propio rol de Administrador. Eres el único administrador activo del sistema." 
+                    });
+                }
+            }
+
+            // 🚫 No permitir que se desactive a sí mismo si es el único admin
+            if (empleado.cargo === 'Administrador' && estado === 'Inactivo') {
+                const otherActiveAdminsCount = await empleadosModel.countDocuments({
+                    cargo: 'Administrador',
+                    estado: 'Activo',
+                    _id: { $ne: id }
+                });
+
+                if (otherActiveAdminsCount === 0) {
+                    return res.status(403).json({ 
+                        message: "  No puedes desactivar tu propia cuenta. Eres el único administrador activo del sistema." 
+                    });
+                }
+            }
+        }
+
+        // Verificar unicidad de correo
         if (correo && await empleadosModel.findOne({ correo, _id: { $ne: id } })) {
             return res.status(400).json({ message: "El correo electrónico ya pertenece a otro empleado." });
         }
         
-        // Verificar unicidad de DUI (excluyendo empleado actual)
+        // Verificar unicidad de DUI
         if (dui && await empleadosModel.findOne({ dui, _id: { $ne: id } })) {
             return res.status(400).json({ message: "El DUI ya pertenece a otro empleado." });
         }
 
-        // Prepara objeto con datos a actualizar
+        // Preparar datos de actualización
         const updateData = {
             nombre: nombre || empleado.nombre,
             apellido: apellido || empleado.apellido,
@@ -160,14 +205,16 @@ empleadosController.updateEmpleados = async (req, res) => {
         };
 
         // Encriptar nueva contraseña si se proporciona
-        if (password && password.trim() !== "") {
+        if (password && password.trim() !== "" && !password.startsWith('$2b$') && !password.startsWith('$2a$')) {
             updateData.password = await bcryptjs.hash(password, 10);
         }
 
         await empleadosModel.findByIdAndUpdate(id, updateData);
         
-        // Obtener el empleado actualizado con población
         const empleadoActualizado = await empleadosModel.findById(id).populate('sucursalId', 'nombre');
+        
+        // 📝 LOG de auditoría
+        console.log(`[AUDIT] Empleado actualizado: ${empleadoActualizado.nombre} ${empleadoActualizado.apellido} (ID: ${id}) por usuario ID: ${currentUserId || 'desconocido'}`);
         
         res.status(200).json({ 
             message: "Empleado actualizado exitosamente",
@@ -180,43 +227,60 @@ empleadosController.updateEmpleados = async (req, res) => {
     }
 };
 
-// DELETE - Eliminar empleado
+// DELETE - Eliminar empleado (CON VALIDACIONES DE SEGURIDAD)
 empleadosController.deleteEmpleados = async (req, res) => {
     try {
-        // Evitar eliminarse a sí mismo si está autenticado
-        try {
-            const token = req.cookies?.aurora_auth_token;
-            if (token) {
-                // Reutiliza el secreto JWT del config
-                const decoded = (await import('../config.js')).config ? (await import('jsonwebtoken')).default.verify(token, (await import('../config.js')).config.jwt.secret) : null;
-                // En este archivo ya tenemos config importado arriba, así que intentamos usarlo directamente si está accesible
-            }
-        } catch (_) {
-            // noop
-        }
+        const empleadoIdToDelete = req.params.id;
+        
+        // 🔐 VALIDACIÓN: Extraer usuario autenticado desde el token
+        let currentUserId = null;
         try {
             const token = req.cookies?.aurora_auth_token;
             if (token) {
                 const jwt = (await import('jsonwebtoken')).default;
                 const { config } = await import('../config.js');
                 const decoded = jwt.verify(token, config.jwt.secret);
-                if (decoded?.id && String(decoded.id) === String(req.params.id)) {
-                    return res.status(400).json({ message: "No puedes eliminar tu propio usuario mientras estás logueado." });
-                }
+                currentUserId = decoded?.id;
             }
-        } catch (_) {
-            // Si falla la verificación del token, continuamos sin bloquear
+        } catch (tokenError) {
+            console.log('Error al verificar token:', tokenError.message);
         }
-        // Busca y elimina empleado por ID
-        const deletedEmpleado = await empleadosModel.findByIdAndDelete(req.params.id);
-        if (!deletedEmpleado) {
+
+        // 🚫 BLOQUEAR: No permitir auto-eliminación
+        if (currentUserId && String(currentUserId) === String(empleadoIdToDelete)) {
+            return res.status(403).json({ 
+                message: "  No puedes eliminar tu propia cuenta mientras estás autenticado. Solicita a otro administrador que realice esta acción." 
+            });
+        }
+
+        // Buscar el empleado antes de eliminar
+        const empleadoToDelete = await empleadosModel.findById(empleadoIdToDelete);
+        
+        if (!empleadoToDelete) {
             return res.status(404).json({ message: "Empleado no encontrado" });
         }
+
+        // 🔐 VALIDACIÓN ADICIONAL: No permitir eliminar al único administrador
+        if (empleadoToDelete.cargo === 'Administrador') {
+            const adminCount = await empleadosModel.countDocuments({ 
+                cargo: 'Administrador',
+                estado: 'Activo',
+                _id: { $ne: empleadoIdToDelete }
+            });
+            
+            if (adminCount === 0) {
+                return res.status(403).json({ 
+                    message: "  No se puede eliminar al único administrador activo del sistema. Debe existir al menos un administrador." 
+                });
+            }
+        }
+
+        // Proceder con la eliminación
+        const deletedEmpleado = await empleadosModel.findByIdAndDelete(empleadoIdToDelete);
         
-        // Opcional: Eliminar la imagen de Cloudinary también
+        // Opcional: Eliminar la imagen de Cloudinary
         if (deletedEmpleado.fotoPerfil) {
             try {
-                // Extraer el public_id de la URL de Cloudinary
                 const publicId = deletedEmpleado.fotoPerfil.split('/').pop().split('.')[0];
                 await cloudinary.uploader.destroy(`empleados_perfil/${publicId}`);
             } catch (cloudinaryError) {
@@ -224,8 +288,19 @@ empleadosController.deleteEmpleados = async (req, res) => {
             }
         }
         
-        res.status(200).json({ message: "Empleado eliminado exitosamente" });
+        // 📝 LOG de auditoría
+        console.log(`[AUDIT] Empleado eliminado: ${deletedEmpleado.nombre} ${deletedEmpleado.apellido} (ID: ${empleadoIdToDelete}) por usuario ID: ${currentUserId || 'desconocido'}`);
+        
+        res.status(200).json({ 
+            message: "Empleado eliminado exitosamente",
+            empleado: {
+                nombre: deletedEmpleado.nombre,
+                apellido: deletedEmpleado.apellido,
+                cargo: deletedEmpleado.cargo
+            }
+        });
     } catch (error) {
+        console.error('Error eliminando empleado:', error);
         res.status(500).json({ message: "Error eliminando empleado: " + error.message });
     }
 };
@@ -236,25 +311,21 @@ empleadosController.forgotPassword = async (req, res) => {
     if (!correo) return res.status(400).json({ message: "Correo es requerido" });
     
     try {
-        // Busca empleado por correo
         const empleado = await empleadosModel.findOne({ correo });
         if (!empleado) return res.status(404).json({ message: "No existe usuario con ese correo" });
         
-        // Generar código de 6 dígitos
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
         
         console.log('Código generado (empleado):', resetCode);
         console.log('Expiración calculada (empleado):', new Date(Date.now() + 1000 * 60 * 30));
         
-        // Guardar código y expiración en el usuario
         empleado.resetPasswordToken = resetCode;
-        empleado.resetPasswordExpires = Date.now() + 1000 * 60 * 30; // 30 minutos
+        empleado.resetPasswordExpires = Date.now() + 1000 * 60 * 30;
         await empleado.save();
         
         console.log('Código guardado en BD (empleado):', empleado.resetPasswordToken);
         console.log('Expiración guardada en BD (empleado):', empleado.resetPasswordExpires);
         
-        // Template HTML personalizado para el email
         const htmlTemplate = `
         <!DOCTYPE html>
         <html lang="es">
@@ -489,7 +560,6 @@ empleadosController.forgotPassword = async (req, res) => {
         </head>
         <body>
             <div class="email-container">
-                <!-- Header with logo and company name -->
                 <div class="header">
                     <div class="logo-container">
                         <div class="logo">
@@ -500,7 +570,6 @@ empleadosController.forgotPassword = async (req, res) => {
                     <p class="subtitle">Tu visión, nuestra pasión</p>
                 </div>
                 
-                <!-- Main content -->
                 <div class="content">
                     <h2 class="greeting">¡Hola ${empleado.nombre}!</h2>
                     
@@ -509,20 +578,17 @@ empleadosController.forgotPassword = async (req, res) => {
                         Para continuar con el proceso de recuperación, utiliza el siguiente código de verificación:
                     </p>
                     
-                    <!-- Verification code -->
                     <div class="code-container">
                         <p class="code-label">Código de Verificación</p>
                         <h1 class="verification-code">${resetCode}</h1>
                     </div>
                     
-                    <!-- Expiry notice -->
                     <div class="expiry-notice">
                         <p class="expiry-text">
                             ⏰ Este código expirará en 30 minutos por seguridad
                         </p>
                     </div>
                     
-                    <!-- Security notice -->
                     <div class="security-notice">
                         <p class="security-text">
                             <strong>🔒 Nota de Seguridad:</strong> Si no solicitaste este cambio de contraseña, 
@@ -536,7 +602,6 @@ empleadosController.forgotPassword = async (req, res) => {
                     </p>
                 </div>
                 
-                <!-- Footer -->
                 <div class="footer">
                     <p class="footer-text">
                         Este es un correo electrónico automático, por favor no respondas a este mensaje.
@@ -593,7 +658,6 @@ empleadosController.verifyResetCode = async (req, res) => {
     console.log('Verify code attempt (empleado):', { correo, code: code.substring(0, 3) + '***' });
     
     try {
-        // Busca empleado con token válido y no expirado
         const empleado = await empleadosModel.findOne({
             correo,
             resetPasswordToken: code,
@@ -612,7 +676,6 @@ empleadosController.verifyResetCode = async (req, res) => {
             return res.status(400).json({ message: "Código inválido, expirado o correo incorrecto" });
         }
         
-        // Si llegamos aquí, el código es válido
         res.json({ message: "Código válido", valid: true });
     } catch (error) {
         console.log("Error: " + error);
@@ -628,7 +691,6 @@ empleadosController.resetPassword = async (req, res) => {
     console.log('Reset password attempt (empleado):', { correo, code: code.substring(0, 3) + '***' });
     
     try {
-        // Busca empleado con token válido y no expirado
         const empleado = await empleadosModel.findOne({
             correo,
             resetPasswordToken: code,
@@ -645,7 +707,6 @@ empleadosController.resetPassword = async (req, res) => {
         
         if (!empleado) return res.status(400).json({ message: "Código inválido, expirado o correo incorrecto" });
         
-        // Actualizar contraseña y limpiar tokens
         empleado.password = await bcryptjs.hash(newPassword, 10);
         empleado.resetPasswordToken = undefined;
         empleado.resetPasswordExpires = undefined;
