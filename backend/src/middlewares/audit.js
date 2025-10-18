@@ -32,7 +32,7 @@ export const auditLogger = async (req, res, next) => {
         const status = res.statusCode;
         // Only log interesting methods
         const interesting = ['POST', 'PUT', 'PATCH', 'DELETE'];
-        const shouldLog = interesting.includes(req.method) || status >= 400;
+        const shouldLog = interesting.includes(req.method);
         if (!shouldLog) return;
 
         // Derive entity from full original URL to avoid capturing IDs when router is mounted

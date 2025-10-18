@@ -4,6 +4,25 @@ import { Search, Filter, RefreshCw, Download, Zap } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 
 const fmtDate = (iso) => new Date(iso).toLocaleString();
+// Build a human-friendly description for a log entry
+const friendlySummary = (l) => {
+  try {
+    const name = l?.user?.nombre || 'Usuario';
+    const email = l?.user?.email ? ` (${l.user.email})` : '';
+    const roleCargo = [l?.user?.rol, l?.user?.cargo].filter(Boolean).join(' / ');
+    const roleText = roleCargo ? `, ${roleCargo}` : '';
+    const entityRaw = l?.action?.entity || (l?.request?.path || '').split('/').filter(Boolean).pop() || 'recurso';
+    const entity = String(entityRaw).replace(/[-_]/g, ' ');
+    const type = l?.action?.type;
+    const method = (l?.request?.method || '').toUpperCase();
+    const status = Number(l?.response?.status || 0);
+    const statusText = status >= 200 && status < 300 ? `exitoso (${status})` : status ? `con error (${status})` : 'con estado desconocido';
+    const verb = type === 'create' ? 'creó' : type === 'update' ? 'actualizó' : type === 'delete' ? 'eliminó' : method ? `realizó (${method})` : 'realizó una acción';
+    return `${name}${email}${roleText} ${verb} ${entity}. Resultado: ${statusText}.`;
+  } catch {
+    return l?.action?.summary || 'Acción registrada';
+  }
+};
 
 const Auditoria = () => {
   const { token } = useAuth() || {};
@@ -90,17 +109,11 @@ const Auditoria = () => {
   };
 
   const exportCSV = () => {
-    const headers = ['Fecha','Usuario','Rol/Cargo','Método','Status','Ruta','Entidad','Acción','Resumen'];
+    const headers = ['Fecha','Persona','Detalle'];
     const rows = logs.map(l => [
       fmtDate(l.timestamp || l.createdAt),
-      l.user?.nombre || '',
-      [l.user?.rol, l.user?.cargo].filter(Boolean).join(' / '),
-      l.request?.method || '',
-      l.response?.status || '',
-      l.request?.path || '',
-      l.action?.entity || '',
-      l.action?.type || '',
-      (l.action?.summary || '').replace(/\n|\r/g, ' ')
+      [l.user?.nombre, l.user?.email].filter(Boolean).join(' - '),
+      friendlySummary(l).replace(/\n|\r/g, ' ')
     ]);
     const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -167,14 +180,8 @@ const Auditoria = () => {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-3 py-2 text-left">Fecha</th>
-                <th className="px-3 py-2 text-left">Usuario</th>
-                <th className="px-3 py-2 text-left">Rol/Cargo</th>
-                <th className="px-3 py-2 text-left">Método</th>
-                <th className="px-3 py-2 text-left">Status</th>
-                <th className="px-3 py-2 text-left">Ruta</th>
-                <th className="px-3 py-2 text-left">Entidad</th>
-                <th className="px-3 py-2 text-left">Acción</th>
-                <th className="px-3 py-2 text-left">Resumen</th>
+                <th className="px-3 py-2 text-left">Persona</th>
+                <th className="px-3 py-2 text-left">Detalle</th>
               </tr>
             </thead>
             <tbody>
@@ -182,33 +189,21 @@ const Auditoria = () => {
                 Array.from({ length: 10 }).map((_, i) => (
                   <tr key={i} className="border-t animate-pulse">
                     <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-24"></div></td>
-                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
-                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
-                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-12"></div></td>
-                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-10"></div></td>
                     <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-40"></div></td>
-                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-20"></div></td>
-                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
-                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-32"></div></td>
+                    <td className="px-3 py-2"><div className="h-4 bg-gray-200 rounded w-80"></div></td>
                   </tr>
                 ))
               ) : logs.length === 0 ? (
-                <tr><td colSpan={9} className="px-3 py-6 text-center text-gray-500">Sin registros</td></tr>
+                <tr><td colSpan={3} className="px-3 py-6 text-center text-gray-500">Sin registros</td></tr>
               ) : (
                 logs.map((l, idx) => (
                   <tr key={(l._id || '')+idx} className="border-t">
                     <td className="px-3 py-2 whitespace-nowrap">{fmtDate(l.timestamp || l.createdAt)}</td>
                     <td className="px-3 py-2">
                       <div className="font-medium">{l.user?.nombre || '—'}</div>
-                      <div className="text-gray-500">{l.user?.email || ''}</div>
+                      {l.user?.email && <div className="text-gray-500">{l.user.email}</div>}
                     </td>
-                    <td className="px-3 py-2">{[l.user?.rol, l.user?.cargo].filter(Boolean).join(' / ')}</td>
-                    <td className="px-3 py-2">{l.request?.method}</td>
-                    <td className="px-3 py-2">{l.response?.status}</td>
-                    <td className="px-3 py-2 max-w-[280px] truncate" title={l.request?.path}>{l.request?.path}</td>
-                    <td className="px-3 py-2">{l.action?.entity}</td>
-                    <td className="px-3 py-2">{l.action?.type}</td>
-                    <td className="px-3 py-2 max-w-[400px] truncate" title={l.action?.summary}>{l.action?.summary}</td>
+                    <td className="px-3 py-2 max-w-[720px]" title={friendlySummary(l)}>{friendlySummary(l)}</td>
                   </tr>
                 ))
               )}
